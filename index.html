@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>수학 웹앱 모음</title>
+    <style>
+        /* 아이패드 및 전체 화면 초기화 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 전체 화면 스크롤 방지, iframe 내부만 스크롤되게 */
+            background-color: #f4f7f6;
+        }
+
+        /* 상단 바 (Top Bar) */
+        .top-bar {
+            width: 100%;
+            height: 60px;
+            background-color: #2c3e50;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 5px 15px 5px 0;
+            margin-right: 15px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* 사이드바 메뉴 (Sidebar) */
+        .sidebar {
+            position: fixed;
+            top: 60px;
+            left: -300px; /* 처음엔 숨김 */
+            width: 300px; /* 아이패드에서 터치하기 좋은 넉넉한 너비 */
+            height: calc(100% - 60px);
+            background-color: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            transition: left 0.3s ease;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open {
+            left: 0; /* 메뉴 열림 */
+        }
+
+        /* 메뉴 리스트 */
+        .menu-list {
+            flex: 1;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+
+        .menu-item {
+            display: block;
+            width: 100%;
+            padding: 18px 25px;
+            text-align: left;
+            background: none;
+            border: none;
+            border-bottom: 1px solid #eee;
+            font-size: 18px;
+            color: #333;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .menu-item:hover, .menu-item:active {
+            background-color: #f0f4f8;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        /* 👑 하단 제작자 표시 */
+        .footer {
+            padding: 20px;
+            text-align: center;
+            font-size: 15px;
+            color: #7f8c8d;
+            background-color: #f9f9f9;
+            border-top: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        /* 어두운 배경 (메뉴 열렸을 때 뒤쪽) */
+        .overlay {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            background-color: rgba(0,0,0,0.4);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+            z-index: 15;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* 웹앱이 표시될 iframe 액자 */
+        #app-frame {
+            width: 100%;
+            height: calc(100% - 60px);
+            border: none;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="menu-btn" onclick="toggleMenu()">&#9776;</button>
+        <div class="header-title">수학 실험실</div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="menu-list">
+            <button class="menu-item" onclick="loadApp('quadratic.html')">1. 이차함수 최대/최소</button>
+            <button class="menu-item" onclick="loadApp('')">2. 준비 중인 웹앱</button>
+            <button class="menu-item" onclick="loadApp('')">3. 준비 중인 웹앱</button>
+        </div>
+        
+        <div class="footer">
+            제작자 Easy NO
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <iframe id="app-frame" src="quadratic.html"></iframe>
+
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const appFrame = document.getElementById('app-frame');
+
+        // 사이드바 열고 닫기 함수
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+
+        // 앱 화면 전환 함수
+        function loadApp(url) {
+            if (url !== '') {
+                appFrame.src = url; // 선택한 파일로 액자 안의 화면 변경
+            } else {
+                alert('아직 준비 중인 앱입니다!');
+            }
+            toggleMenu(); // 클릭 후 사이드바 자동으로 닫기
+        }
+    </script>
+</body>
+</html>

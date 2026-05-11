@@ -103,6 +103,22 @@
     </div>
 
     <script>
+        // 👑 내 코드를 파일로 만들어주는 마법의 함수
+        function downloadCode() {
+            const code = document.getElementById('codeInput').value;
+            // 코드를 텍스트(HTML) 파일 형태로 변환
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            
+            // 임시 링크를 만들어 강제로 다운로드 실행
+            const a = document.createElement('a');
+            a.href = url;
+            // 학생들에게 저장될 파일 이름 (예: my_game.html)
+            a.download = 'my_game.html'; 
+            a.click();
+            
+            window.URL.revokeObjectURL(url);
+        }
         // 코드 실행 함수
         function runCode() {
             const code = document.getElementById('codeInput').value;

@@ -8,82 +8,48 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
         body, html { width: 100%; height: 100%; background-color: #f4f7f6; display: flex; flex-direction: column; }
         
-        /* 상단 도구 모음 */
         .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 20px;
-            background-color: #e0e6ed;
-            border-bottom: 2px solid #bdc3c7;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; background-color: #e0e6ed; border-bottom: 2px solid #bdc3c7;
         }
-        
         .title { font-weight: bold; color: #2c3e50; font-size: 18px; }
         
         .run-btn {
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
+            background-color: #27ae60; color: white; border: none; padding: 10px 25px;
+            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s;
         }
         .run-btn:hover { background-color: #2ecc71; }
         .run-btn:active { transform: translateY(2px); box-shadow: none; }
 
-        /* 에디터와 미리보기 창을 반반 나누는 레이아웃 */
-        .workspace {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-        }
-        
-        /* 아이패드 세로 모드일 때는 위/아래로 배치되도록 자동 조절 */
-        @media (max-width: 800px) {
-            .workspace { flex-direction: column; }
-        }
+        .workspace { display: flex; flex: 1; overflow: hidden; }
+        @media (max-width: 800px) { .workspace { flex-direction: column; } }
 
-        .pane {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            border-right: 2px solid #bdc3c7;
-        }
+        .pane { flex: 1; display: flex; flex-direction: column; border-right: 2px solid #bdc3c7; }
         .pane:last-child { border-right: none; }
         
+        /* 헤더 부분에 Flex를 주어 버튼을 우측으로 정렬합니다 */
         .pane-header {
-            background: #34495e;
-            color: white;
-            padding: 8px 15px;
-            font-size: 14px;
-            text-align: center;
+            background: #34495e; color: white; padding: 8px 15px; font-size: 14px;
+            display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 코드 입력칸 (개발자 감성의 어두운 배경) */
+        /* 전체화면 버튼 스타일 */
+        .fullscreen-btn {
+            background-color: #f39c12; color: white; border: none; padding: 4px 10px;
+            font-size: 12px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        .fullscreen-btn:hover { background-color: #e67e22; }
+
         textarea {
-            flex: 1;
-            padding: 15px;
-            font-family: 'Courier New', Courier, monospace; /* 코딩용 폰트 */
-            font-size: 16px;
-            background-color: #1e1e1e;
-            color: #d4d4d4;
-            border: none;
-            resize: none;
-            outline: none;
+            flex: 1; padding: 15px; font-family: 'Courier New', Courier, monospace;
+            font-size: 16px; background-color: #1e1e1e; color: #d4d4d4;
+            border: none; resize: none; outline: none;
         }
 
-        /* 실행 결과가 나올 하얀 도화지 */
-        iframe {
-            flex: 1;
-            width: 100%;
-            height: 100%;
-            border: none;
-            background-color: white;
-        }
+        /* 전체화면 시 배경을 하얗게 유지하기 위한 래퍼 */
+        .preview-wrapper { flex: 1; background: white; display: flex; }
+        iframe { flex: 1; width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
@@ -114,27 +80,47 @@
         </div>
 
         <div class="pane">
-            <div class="pane-header">실행 결과</div>
-            <iframe id="preview"></iframe>
+            <div class="pane-header">
+                <span>실행 결과</span>
+                <button class="fullscreen-btn" onclick="toggleFullScreen()">전체화면 ⛶</button>
+            </div>
+            <div class="preview-wrapper" id="preview-wrapper">
+                <iframe id="preview"></iframe>
+            </div>
         </div>
     </div>
 
     <script>
         function runCode() {
-            // 1. 텍스트 창에 입력된 코드를 가져옵니다.
             const code = document.getElementById('codeInput').value;
-            // 2. 미리보기 창(iframe)을 찾습니다.
             const iframe = document.getElementById('preview');
-            // 3. iframe 안의 문서(도화지)에 접근합니다.
             const doc = iframe.contentDocument || iframe.contentWindow.document;
             
-            // 4. 문서를 열고, 코드를 덮어쓴 뒤 닫아서 화면을 그립니다.
             doc.open();
             doc.write(code);
             doc.close();
         }
 
-        // 처음 화면이 켜졌을 때 기본 코드를 한 번 실행해줍니다.
+        // 👑 아이패드 호환 전체화면 기능
+        function toggleFullScreen() {
+            const wrapper = document.getElementById('preview-wrapper');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // 전체화면 켜기
+                if (wrapper.requestFullscreen) {
+                    wrapper.requestFullscreen();
+                } else if (wrapper.webkitRequestFullscreen) { // 아이패드(사파리)용
+                    wrapper.webkitRequestFullscreen();
+                }
+            } else {
+                // 전체화면 끄기
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { // 아이패드(사파리)용
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
         window.onload = runCode;
     </script>
 </body>

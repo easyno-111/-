@@ -3,182 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>수학 웹앱 모음</title>
+    <title>Easy NO 수학 실험실</title>
     <style>
-        /* 아이패드 및 전체 화면 초기화 */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: #000; }
 
-        body, html {
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* 전체 화면 스크롤 방지, iframe 내부만 스크롤되게 */
-            background-color: #f4f7f6;
-        }
-
-        /* 상단 바 (Top Bar) */
+        /* 상단 바 - 약간 반투명한 애플 감성 */
         .top-bar {
-            width: 100%;
-            height: 60px;
-            background-color: #2c3e50;
-            color: white;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            position: relative;
-            z-index: 10;
+            width: 100%; height: 60px; background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px); color: #1d1d1f; display: flex; align-items: center; justify-content: center;
+            padding: 0 20px; box-shadow: 0 1px 0 rgba(0,0,0,0.1); position: relative; z-index: 10;
         }
-
+        
         .menu-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 28px;
-            cursor: pointer;
-            padding: 5px 15px 5px 0;
-            margin-right: 15px;
+            position: absolute; left: 20px; background: none; border: none;
+            color: #007aff; font-size: 26px; cursor: pointer; padding: 5px;
         }
 
-        .header-title {
-            font-size: 20px;
-            font-weight: bold;
-        }
+        .header-title { font-size: 18px; font-weight: 700; cursor: pointer; }
 
-        /* 사이드바 메뉴 (Sidebar) */
+        /* 사이드바 */
         .sidebar {
-            position: fixed;
-            top: 60px;
-            left: -300px; /* 처음엔 숨김 */
-            width: 300px; /* 아이패드에서 터치하기 좋은 넉넉한 너비 */
-            height: calc(100% - 60px);
-            background-color: white;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            transition: left 0.3s ease;
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
+            position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
+            background-color: #ffffff; box-shadow: 2px 0 20px rgba(0,0,0,0.15);
+            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 20;
+            display: flex; flex-direction: column;
         }
+        .sidebar.open { left: 0; }
 
-        .sidebar.open {
-            left: 0; /* 메뉴 열림 */
+        .sidebar-header {
+            padding: 30px 20px 20px; font-size: 24px; font-weight: 800; color: #1d1d1f;
+            border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;
         }
+        .close-btn { background: none; border: none; font-size: 28px; color: #86868b; cursor: pointer; }
 
-        /* 메뉴 리스트 */
-        .menu-list {
-            flex: 1;
-            padding: 20px 0;
-            overflow-y: auto;
-        }
+        .menu-list { flex: 1; padding: 20px; overflow-y: auto; }
+
+        /* 메뉴 그룹 디자인 */
+        .menu-group { margin-bottom: 25px; }
+        .menu-label { font-size: 13px; font-weight: 700; color: #86868b; margin-bottom: 10px; padding-left: 10px; text-transform: uppercase; letter-spacing: 1px; }
 
         .menu-item {
-            display: block;
-            width: 100%;
-            padding: 18px 25px;
-            text-align: left;
-            background: none;
-            border: none;
-            border-bottom: 1px solid #eee;
-            font-size: 18px;
-            color: #333;
-            cursor: pointer;
-            transition: background 0.2s;
+            display: flex; align-items: center; width: 100%; padding: 12px 15px; margin-bottom: 5px;
+            text-align: left; background: none; border: none; border-radius: 10px;
+            font-size: 16px; color: #1d1d1f; cursor: pointer; transition: background 0.2s; font-weight: 500;
         }
+        .menu-item:hover, .menu-item:active { background-color: #f5f5f7; color: #007aff; }
+        
+        .menu-icon { margin-right: 12px; font-size: 20px; }
 
-        .menu-item:hover, .menu-item:active {
-            background-color: #f0f4f8;
-            color: #3498db;
-            font-weight: bold;
-        }
+        .footer { padding: 20px; text-align: center; font-size: 13px; color: #86868b; border-top: 1px solid #f0f0f0; background-color: #fafafa; }
 
-        /* 👑 하단 제작자 표시 */
-        .footer {
-            padding: 20px;
-            text-align: center;
-            font-size: 15px;
-            color: #7f8c8d;
-            background-color: #f9f9f9;
-            border-top: 1px solid #ddd;
-            font-weight: bold;
-        }
-
-        /* 어두운 배경 (메뉴 열렸을 때 뒤쪽) */
         .overlay {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            width: 100%;
-            height: calc(100% - 60px);
-            background-color: rgba(0,0,0,0.4);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease;
-            z-index: 15;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.4); opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease; z-index: 15;
         }
+        .overlay.show { opacity: 1; visibility: visible; }
 
-        .overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* 웹앱이 표시될 iframe 액자 */
-        #app-frame {
-            width: 100%;
-            height: calc(100% - 60px);
-            border: none;
-            background-color: white;
-        }
+        /* 👑 처음에 home.html을 띄웁니다! */
+        #app-frame { width: 100%; height: calc(100% - 60px); border: none; background-color: #f5f5f7; }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <button class="menu-btn" onclick="toggleMenu()">&#9776;</button>
-        <div class="header-title">수학 실험실</div>
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <div class="header-title" onclick="loadApp('home.html')">수학 실험실</div>
     </div>
 
     <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            메뉴
+            <button class="close-btn" onclick="toggleMenu()">×</button>
+        </div>
+        
         <div class="menu-list">
-            <button class="menu-item" onclick="loadApp('quadratic.html')">1. 이차함수 최대/최소</button>
-            <button class="menu-item" onclick="loadApp('pig.html')">2. 돼지게임</button>
-            <button class="menu-item" onclick="loadApp('pig2.html')">3. 돼지게임(변형)</button>
-            <button class="menu-item" onclick="loadApp('nunchi.html')">4. 눈치게임</button>
-            <button class="menu-item" onclick="loadApp('auction.html')">5. 마이너스경매</button>
-            <button class="menu-item" onclick="loadApp('editor.html')">6. 직접코딩해보기</button>
+            <button class="menu-item" onclick="loadApp('home.html')" style="background-color: #f0f8ff; color: #007aff; margin-bottom: 20px;">
+                <span class="menu-icon">🏠</span> 메인 화면으로
+            </button>
+
+            <div class="menu-group">
+                <div class="menu-label">수업 도구</div>
+                <button class="menu-item" onclick="loadApp('quadratic.html')"><span class="menu-icon">📈</span> 이차함수 탐구</button>
+            </div>
+
+            <div class="menu-group">
+                <div class="menu-label">수학 게임</div>
+                <button class="menu-item" onclick="loadApp('pig.html')"><span class="menu-icon">🐷</span> 돼지게임</button>
+                <button class="menu-item" onclick="loadApp('pig2.html')"><span class="menu-icon">🐽</span> 돼지게임(변형)</button>
+                <button class="menu-item" onclick="loadApp('nunchi.html')"><span class="menu-icon">👀</span> 눈치게임</button>
+                <button class="menu-item" onclick="loadApp('auction.html')"><span class="menu-icon">🔨</span> 마이너스 경매</button>
+            </div>
+
+            <div class="menu-group">
+                <div class="menu-label">코딩 실습</div>
+                <button class="menu-item" onclick="loadApp('editor.html')"><span class="menu-icon">⌨️</span> 코드 에디터</button>
+            </div>
         </div>
         
         <div class="footer">
-            제작자 Easy NO
+            Designed by <b>Easy NO</b>
         </div>
     </div>
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-    <iframe id="app-frame" src="quadratic.html"></iframe>
+    <iframe id="app-frame" src="home.html"></iframe>
 
     <script>
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         const appFrame = document.getElementById('app-frame');
 
-        // 사이드바 열고 닫기 함수
         function toggleMenu() {
             sidebar.classList.toggle('open');
             overlay.classList.toggle('show');
         }
 
-        // 앱 화면 전환 함수
         function loadApp(url) {
-            if (url !== '') {
-                appFrame.src = url; // 선택한 파일로 액자 안의 화면 변경
-            } else {
-                alert('아직 준비 중인 앱입니다!');
+            appFrame.src = url;
+            // 사이드바가 열려있을 때만 닫기 (홈 화면에서 카드 누를 땐 무시)
+            if (sidebar.classList.contains('open')) {
+                toggleMenu();
             }
-            toggleMenu(); // 클릭 후 사이드바 자동으로 닫기
         }
     </script>
 </body>

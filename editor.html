@@ -11,35 +11,37 @@
         .toolbar {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 20px; background-color: #e0e6ed; border-bottom: 2px solid #bdc3c7;
+            flex-wrap: wrap; gap: 10px;
         }
         .title { font-weight: bold; color: #2c3e50; font-size: 18px; }
         
+        .btn-group { display: flex; gap: 8px; }
+
         .run-btn {
-            background-color: #27ae60; color: white; border: none; padding: 10px 25px;
-            font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background-color 0.2s;
+            background-color: #27ae60; color: white; border: none; padding: 10px 20px;
+            font-size: 15px; font-weight: bold; border-radius: 8px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .run-btn:hover { background-color: #2ecc71; }
-        .run-btn:active { transform: translateY(2px); box-shadow: none; }
+        
+        .sub-btn {
+            background-color: #3498db; color: white; border: none; padding: 8px 15px;
+            font-size: 14px; border-radius: 6px; cursor: pointer; font-weight: bold;
+        }
 
         .workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
         @media (max-width: 800px) { .workspace { flex-direction: column; } }
 
-        .pane { flex: 1; display: flex; flex-direction: column; border-right: 2px solid #bdc3c7; transition: all 0.3s ease; }
-        .pane:last-child { border-right: none; }
+        .pane { flex: 1; display: flex; flex-direction: column; border-right: 2px solid #bdc3c7; }
         
         .pane-header {
             background: #34495e; color: white; padding: 8px 15px; font-size: 14px;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 전체화면 버튼 스타일 */
         .fullscreen-btn {
             background-color: #f39c12; color: white; border: none; padding: 5px 12px;
             font-size: 13px; border-radius: 4px; cursor: pointer; font-weight: bold;
-            transition: background-color 0.2s;
         }
-        .fullscreen-btn:hover { background-color: #e67e22; }
 
         textarea {
             flex: 1; padding: 15px; font-family: 'Courier New', Courier, monospace;
@@ -50,16 +52,9 @@
         .preview-wrapper { flex: 1; background: white; display: flex; }
         iframe { flex: 1; width: 100%; height: 100%; border: none; }
 
-        /* 👑 아이패드 필승 비법: 가짜 전체화면 CSS */
         .fullscreen-mode {
-            position: fixed !important;
-            top: 0;
-            left: 0;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 9999; /* 화면의 가장 맨 위로 올림 */
-            background-color: white;
-            border: none !important;
+            position: fixed !important; top: 0; left: 0; width: 100vw !important;
+            height: 100vh !important; z-index: 9999; background-color: white;
         }
     </style>
 </head>
@@ -67,13 +62,16 @@
 
     <div class="toolbar">
         <div class="title">👩‍💻 코딩 실험실</div>
-        <button class="fullscreen-btn" onclick="downloadCode()" style="background-color: #3498db; margin-right: 10px;">💾 내 코드 저장</button>
-        <button class="run-btn" onclick="runCode()">▶ 화면 새로고침</button>
+        <div class="btn-group">
+            <button class="sub-btn" onclick="copyToClipboard()" style="background-color: #9b59b6;">📋 코드 복사</button>
+            <button class="sub-btn" onclick="downloadAsTxt()">💾 문서로 저장(.txt)</button>
+            <button class="run-btn" onclick="runCode()">▶ 화면 새로고침</button>
+        </div>
     </div>
 
     <div class="workspace">
         <div class="pane">
-            <div class="pane-header">코드 입력 (HTML/CSS/JS)</div>
+            <div class="pane-header">코드 입력</div>
             <textarea id="codeInput" spellcheck="false">
 <!DOCTYPE html>
 <html>
@@ -81,12 +79,10 @@
     <style>
         body { text-align: center; margin-top: 50px; font-family: sans-serif; }
         h1 { color: #e74c3c; }
-        button { font-size: 20px; padding: 10px 20px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>안녕, 돼지게임! 🐷</h1>
-    <button onclick="alert('꿀꿀!')">돼지 버튼</button>
+    <h1>학생의 코드를 여기에! 🐷</h1>
 </body>
 </html></textarea>
         </div>
@@ -103,52 +99,57 @@
     </div>
 
     <script>
-        // 👑 내 코드를 파일로 만들어주는 마법의 함수
-        function downloadCode() {
-            const code = document.getElementById('codeInput').value;
-            // 코드를 텍스트(HTML) 파일 형태로 변환
-            const blob = new Blob([code], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
-            
-            // 임시 링크를 만들어 강제로 다운로드 실행
-            const a = document.createElement('a');
-            a.href = url;
-            // 학생들에게 저장될 파일 이름 (예: my_game.html)
-            a.download = 'my_game.html'; 
-            a.click();
-            
-            window.URL.revokeObjectURL(url);
-        }
-        // 코드 실행 함수
         function runCode() {
             const code = document.getElementById('codeInput').value;
             const iframe = document.getElementById('preview');
             const doc = iframe.contentDocument || iframe.contentWindow.document;
-            
             doc.open();
             doc.write(code);
             doc.close();
         }
 
-        // 👑 권한이 필요 없는 CSS 강제 전체화면 함수
+        // 👑 1. 코드를 .txt 문서 파일로 저장하는 함수
+        function downloadAsTxt() {
+            const code = document.getElementById('codeInput').value;
+            // 파일 형식을 'text/plain'으로 설정하여 일반 문서로 인식하게 함
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // 학번/이름을 적기 편하게 파일명을 설정
+            const fileName = prompt("파일 이름을 입력하세요 (예: 10101_홍길동)", "my_code");
+            if (fileName) {
+                a.download = fileName + '.txt';
+                a.click();
+            }
+            window.URL.revokeObjectURL(url);
+        }
+
+        // 👑 2. 코드를 한 번에 복사하는 함수 (아이패드 편리 기능)
+        function copyToClipboard() {
+            const textArea = document.getElementById('codeInput');
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // 모바일 대응
+            
+            navigator.clipboard.writeText(textArea.value).then(() => {
+                alert("코드가 클립보드에 복사되었습니다! 패들렛에 붙여넣기 하세요.");
+            });
+        }
+
         function toggleFullScreen() {
             const pane = document.getElementById('right-pane');
             const btn = document.getElementById('fs-btn');
-            
-            // fullscreen-mode 클래스를 넣었다 뺐다 합니다.
             pane.classList.toggle('fullscreen-mode');
-            
-            // 전체화면 상태일 때 버튼 모양 바꾸기
             if (pane.classList.contains('fullscreen-mode')) {
                 btn.textContent = '원래화면 복귀 ↩';
-                btn.style.backgroundColor = '#e74c3c'; // 빨간색으로 변경
+                btn.style.backgroundColor = '#e74c3c';
             } else {
                 btn.textContent = '전체화면 ⛶';
-                btn.style.backgroundColor = '#f39c12'; // 다시 주황색으로
+                btn.style.backgroundColor = '#f39c12';
             }
         }
 
-        // 처음에 한 번 실행
         window.onload = runCode;
     </script>
 </body>

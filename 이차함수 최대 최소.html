@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이차함수 최대 최소 시각화</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .input-group i {
+            font-family: "Times New Roman", Times, serif;
+            font-style: italic;
+        }
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .interval-inputs input {
+            width: 70px;
+        }
+        .info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        #result-panel {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px 25px;
+            border-radius: 8px;
+            background-color: #eef2f5;
+            color: #2c3e50;
+            min-width: 250px;
+            text-align: center;
+        }
+        canvas {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: default;
+            touch-action: none; /* 아이패드 등에서 캔버스 터치 시 화면 스크롤 방지 */
+        }
+        .max-text { color: #e74c3c; }
+        .min-text { color: #3498db; }
+    </style>
+</head>
+<body>
+
+    <h1>이차함수 최대·최소 탐구</h1>
+
+    <div class="controls">
+        <div class="input-group">
+            <i>f(x)</i> = 
+            <input type="number" id="val-a" value="1" step="0.1"> <i>x</i><sup>2</sup> + 
+            <input type="number" id="val-b" value="-4" step="0.1"> <i>x</i> + 
+            <input type="number" id="val-c" value="3" step="0.1">
+        </div>
+        
+        <div class="input-group interval-inputs">
+            구간: 
+            <input type="number" id="val-xmin" value="0" step="0.5" placeholder="없음"> 
+            &le; <i>x</i> &le; 
+            <input type="number" id="val-xmax" value="5" step="0.5" placeholder="없음">
+        </div>
+        
+        <div id="result-panel">
+            <span class="max-text">최댓값: <span id="max-display">-</span></span><br>
+            <span class="min-text">최솟값: <span id="min-display">-</span></span>
+        </div>
+    </div>
+    <div class="info">※ 구간 입력칸을 비우면 실수 전체 구간으로 간주합니다. 구간 영역을 마우스나 손가락으로 드래그해보세요!</div>
+
+    <canvas id="mathCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('mathCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const inputA = document.getElementById('val-a');
+        const inputB = document.getElementById('val-b');
+        const inputC = document.getElementById('val-c');
+        const inputXMin = document.getElementById('val-xmin');
+        const inputXMax = document.getElementById('val-xmax');
+        const maxDisplay = document.getElementById('max-display');
+        const minDisplay = document.getElementById('min-display');
+
+        const scale = 40; 
+        const originX = canvas.width / 2;
+        const originY = canvas.height / 2 + 100; 
+
+        let isDraggingLeft = false;
+        let isDraggingRight = false;
+        let isDraggingBody = false;
+        let dragOffsetX = 0;
+        const dragThreshold = 15; // 모바일/아이패드 터치를 위해 클릭 허용 범위 약간 넓힘
+
+        function getA() { return parseFloat(inputA.value) || 0; }
+        function getB() { return parseFloat(inputB.value) || 0; }
+        function getC() { return parseFloat(inputC.value) || 0; }
+        function getXMin() { return inputXMin.value === "" ? -Infinity : parseFloat(inputXMin.value); }
+        function getXMax() { return inputXMax.value === "" ? Infinity : parseFloat(inputXMax.value); }
+
+        function f(x) {
+            const a = getA(), b = getB(), c = getC();
+            return a * x * x + b * x + c;
+        }
+
+        function toMathX(px) { return (px - originX) / scale; }
+        function toMathY(py) { return -(py - originY) / scale; }
+        function toPixelX(mx) { return originX + mx * scale; }
+        function toPixelY(my) { return originY - my * scale; }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            
+            const xmin = getXMin();
+            const xmax = getXMax();
+            const isRestricted = xmin !== -Infinity && xmax !== Infinity;
+
+            if (isRestricted) drawIntervalHighlight(xmin, xmax);
+            drawParabola(isRestricted, xmin, xmax);
+            calculateAndDrawExtremes(xmin, xmax, isRestricted);
+        }
+
+        function drawGrid() {
+            ctx.lineWidth = 1;
+            ctx.font = "16px Arial"; 
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            for (let i = -20; i <= 20; i++) {
+                ctx.beginPath();
+                ctx.strokeStyle = i === 0 ? "#333" : "#e0e0e0";
+                ctx.lineWidth = i === 0 ? 2 : 1;
+                ctx.moveTo(toPixelX(i), 0);
+                ctx.lineTo(toPixelX(i), canvas.height);
+                ctx.stroke();
+                
+                if (i !== 0) {
+                    ctx.fillStyle = "#666";
+                    ctx.fillText(i, toPixelX(i), originY + 20);
+                }
+
+                ctx.beginPath();
+                ctx.strokeStyle = i === 0 ? "#333" : "#e0e0e0";
+                ctx.lineWidth = i === 0 ? 2 : 1;
+                ctx.moveTo(0, toPixelY(i));
+                ctx.lineTo(canvas.width, toPixelY(i));
+                ctx.stroke();
+
+                if (i !== 0) {
+                    ctx.fillStyle = "#666";
+                    ctx.fillText(i, originX - 20, toPixelY(i));
+                }
+            }
+            ctx.fillStyle = "#333";
+            ctx.fillText("0", originX - 15, originY + 20);
+        }
+
+        function drawIntervalHighlight(xmin, xmax) {
+            const pxMin = toPixelX(xmin);
+            const pxMax = toPixelX(xmax);
+            
+            ctx.fillStyle = "rgba(46, 204, 113, 0.15)"; 
+            ctx.fillRect(pxMin, 0, pxMax - pxMin, canvas.height);
+
+            ctx.strokeStyle = "#27ae60";
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(pxMin, 0); ctx.lineTo(pxMin, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pxMax, 0); ctx.lineTo(pxMax, canvas.height); ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawParabola(isRestricted, xmin, xmax) {
+            ctx.beginPath();
+            ctx.strokeStyle = "#bdc3c7";
+            ctx.lineWidth = 2;
+            for (let px = 0; px <= canvas.width; px += 2) {
+                let py = toPixelY(f(toMathX(px)));
+                if (px === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+
+            if (isRestricted) {
+                ctx.beginPath();
+                ctx.strokeStyle = "#2c3e50";
+                ctx.lineWidth = 4;
+                const startPx = Math.max(0, toPixelX(xmin));
+                const endPx = Math.min(canvas.width, toPixelX(xmax));
+                
+                for (let px = startPx; px <= endPx; px += 1) {
+                    let py = toPixelY(f(toMathX(px)));
+                    if (px === startPx) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function calculateAndDrawExtremes(xmin, xmax, isRestricted) {
+            const a = getA(), b = getB();
+            if (a === 0) return; 
+
+            const vertexX = -b / (2 * a);
+            const candidates = [];
+
+            if (isRestricted) {
+                candidates.push({ x: xmin, y: f(xmin) });
+                candidates.push({ x: xmax, y: f(xmax) });
+                if (vertexX >= xmin && vertexX <= xmax) {
+                    candidates.push({ x: vertexX, y: f(vertexX) });
+                }
+            } else {
+                candidates.push({ x: vertexX, y: f(vertexX) });
+            }
+
+            if (candidates.length === 0) return;
+
+            let maxPoint = candidates.reduce((p, c) => (p.y > c.y) ? p : c);
+            let minPoint = candidates.reduce((p, c) => (p.y < c.y) ? p : c);
+
+            if (!isRestricted) {
+                if (a > 0) maxPoint = null; 
+                else minPoint = null; 
+            }
+
+            maxDisplay.textContent = maxPoint ? maxPoint.y.toFixed(2) : "없음";
+            minDisplay.textContent = minPoint ? minPoint.y.toFixed(2) : "없음";
+
+            ctx.font = "bold 18px Arial";
+            if (maxPoint) drawPoint(maxPoint.x, maxPoint.y, "#e74c3c", "최댓값");
+            if (minPoint) drawPoint(minPoint.x, minPoint.y, "#3498db", "최솟값");
+        }
+
+        function drawPoint(mx, my, color, label) {
+            const px = toPixelX(mx);
+            const py = toPixelY(my);
+
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            const text = `${label} (${mx.toFixed(1)}, ${my.toFixed(1)})`;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            const textWidth = ctx.measureText(text).width;
+            ctx.fillRect(px + 10, py - 20, textWidth + 10, 25);
+
+            ctx.fillStyle = color;
+            ctx.fillText(text, px + 15 + textWidth/2, py - 8);
+        }
+
+        // 마우스 및 터치 좌표 가져오기 헬퍼 함수
+        function getPointerX(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+            }
+            return clientX - rect.left;
+        }
+
+        // 드래그 시작 이벤트
+        function handlePointerDown(e) {
+            const mouseX = getPointerX(e);
+            const mx = toMathX(mouseX);
+            const xmin = getXMin(), xmax = getXMax();
+
+            if (xmin === -Infinity || xmax === Infinity) return;
+
+            const pxMin = toPixelX(xmin), pxMax = toPixelX(xmax);
+
+            if (Math.abs(mouseX - pxMin) <= dragThreshold) {
+                isDraggingLeft = true;
+            } else if (Math.abs(mouseX - pxMax) <= dragThreshold) {
+                isDraggingRight = true;
+            } else if (mouseX > pxMin && mouseX < pxMax) {
+                isDraggingBody = true;
+                dragOffsetX = mx - xmin;
+            }
+        }
+
+        // 드래그 중 이벤트
+        function handlePointerMove(e) {
+            // 드래그 중일 때는 화면 스크롤 방지 (아이패드용)
+            if (isDraggingLeft || isDraggingRight || isDraggingBody) {
+                e.preventDefault();
+            }
+
+            const mouseX = getPointerX(e);
+            const mx = toMathX(mouseX);
+            const xmin = getXMin(), xmax = getXMax();
+
+            if (xmin !== -Infinity && xmax !== Infinity) {
+                const pxMin = toPixelX(xmin), pxMax = toPixelX(xmax);
+                if (Math.abs(mouseX - pxMin) <= dragThreshold || Math.abs(mouseX - pxMax) <= dragThreshold) {
+                    canvas.style.cursor = 'ew-resize';
+                } else if (mouseX > pxMin && mouseX < pxMax) {
+                    canvas.style.cursor = 'grab';
+                } else {
+                    canvas.style.cursor = 'default';
+                }
+            }
+
+            if (isDraggingLeft) {
+                inputXMin.value = Math.min(mx, xmax - 0.5).toFixed(1);
+                draw();
+            } else if (isDraggingRight) {
+                inputXMax.value = Math.max(mx, xmin + 0.5).toFixed(1);
+                draw();
+            } else if (isDraggingBody) {
+                const intervalWidth = xmax - xmin;
+                inputXMin.value = (mx - dragOffsetX).toFixed(1);
+                inputXMax.value = (mx - dragOffsetX + intervalWidth).toFixed(1);
+                canvas.style.cursor = 'grabbing';
+                draw();
+            }
+        }
+
+        // 드래그 종료 이벤트
+        function handlePointerUp() {
+            isDraggingLeft = false;
+            isDraggingRight = false;
+            isDraggingBody = false;
+            canvas.style.cursor = 'default';
+        }
+
+        // 이벤트 리스너 등록 (마우스 + 터치)
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        canvas.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('mouseleave', handlePointerUp);
+
+        // 모바일 및 아이패드 터치 이벤트 (passive: false를 주어 preventDefault 작동 허용)
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+        canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+        canvas.addEventListener('touchend', handlePointerUp);
+        canvas.addEventListener('touchcancel', handlePointerUp);
+
+        [inputA, inputB, inputC, inputXMin, inputXMax].forEach(input => {
+            input.addEventListener('input', draw);
+        });
+
+        draw();
+    </script>
+</body>
+</html>

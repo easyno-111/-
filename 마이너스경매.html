@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이너스 경매</title>
+    <style>
+        body {
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+            background-color: #1e272e;
+            color: #ecf0f1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        h1 { color: #f1c40f; margin-bottom: 20px; font-size: 42px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+        .screen {
+            background-color: #2c3e50;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            display: none; 
+            box-sizing: border-box;
+            border: 2px solid #34495e;
+        }
+
+        .screen.active { display: block; animation: fadeIn 0.4s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        button {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 25px;
+            transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button:hover { background-color: #d35400; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        button:disabled { background-color: #7f8c8d; cursor: not-allowed; transform: none; box-shadow: none; color: #bdc3c7;}
+
+        .input-group { margin: 30px 0; font-size: 26px; }
+        input[type="number"] {
+            padding: 12px;
+            border: 3px solid #f1c40f;
+            border-radius: 8px;
+            font-size: 26px;
+            width: 100px;
+            text-align: center;
+            outline: none;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        /* 규칙 설명 */
+        .rule-box {
+            text-align: left;
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            padding: 30px;
+            border-left: 8px solid #f39c12;
+            border-radius: 12px;
+            line-height: 1.7;
+            font-size: 20px; 
+            margin-bottom: 30px;
+        }
+        .rule-box li { margin-bottom: 15px; }
+        .highlight { color: #c0392b; font-weight: bold; }
+        .chip-icon { display: inline-block; background-color: #f1c40f; color: #d35400; border-radius: 50%; width: 24px; height: 24px; text-align: center; line-height: 24px; font-weight: bold; font-size: 14px; border: 2px solid #e67e22;}
+
+        /* --- 게임 보드 레이아웃 --- */
+        .game-top-bar {
+            display: flex;
+            justify-content: space-between;
+            background-color: #34495e;
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #bdc3c7;
+        }
+
+        .auction-center {
+            background-color: #fff;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 4px solid #f1c40f;
+            position: relative;
+        }
+
+        .current-turn-title { font-size: 36px; color: #e74c3c; font-weight: bold; margin-bottom: 20px; }
+
+        /* 중앙 경매 카드 및 칩 */
+        .auction-display {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .playing-card {
+            width: 140px; height: 200px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 15px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 70px; font-weight: bold;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: 4px solid #c0392b;
+            position: relative;
+        }
+        
+        .chips-on-card {
+            font-size: 28px; color: #2c3e50; font-weight: bold;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .big-chip {
+            background-color: #f1c40f; color: #d35400;
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 36px; border: 6px dashed #e67e22;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            animation: bounce 1s infinite alternate;
+        }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+        .action-buttons { display: flex; gap: 20px; }
+        .btn-take { background-color: #e74c3c; font-size: 26px; padding: 20px 40px; }
+        .btn-take:hover { background-color: #c0392b; }
+        .btn-pass { background-color: #3498db; font-size: 26px; padding: 20px 40px; }
+        .btn-pass:hover { background-color: #2980b9; }
+
+        /* 팀 현황 보드 */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .team-dashboard {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: left;
+            position: relative;
+            transition: 0.3s;
+            border: 4px solid transparent;
+        }
+        .team-dashboard.active-turn {
+            border-color: #e74c3c;
+            transform: scale(1.03);
+            box-shadow: 0 10px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px;}
+        .team-name { font-size: 24px; font-weight: bold; }
+        .team-score { font-size: 24px; font-weight: bold; color: #27ae60; }
+        .team-score.negative { color: #e74c3c; }
+        .team-chips { font-size: 20px; font-weight: bold; color: #e67e22; }
+
+        /* 보유 카드 목록 시각화 (연속된 카드 그룹화) */
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 60px;
+        }
+        .card-group {
+            display: flex;
+            flex-direction: row;
+        }
+        .owned-card {
+            background-color: #e74c3c; color: white;
+            width: 40px; height: 55px;
+            border-radius: 5px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 18px; font-weight: bold;
+            border: 1px solid #c0392b;
+            margin-left: -15px; /* 카드가 겹치도록 설정 */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+        }
+        .card-group .owned-card:first-child {
+            margin-left: 0;
+            background-color: #c0392b; /* 대표 카드(가장 큰 수)는 진하게 */
+            z-index: 10;
+        }
+
+        /* 최종 우승 모달 */
+        #final-winner-modal {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.95); z-index: 2000;
+            flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+        }
+        .final-title { font-size: 60px; color: #f39c12; margin-bottom: 20px; }
+        .final-name { font-size: 80px; color: #e74c3c; font-weight: bold; margin-bottom: 20px; }
+        .final-score { font-size: 40px; color: #ecf0f1; margin-bottom: 40px; }
+
+        /* --- 카드 섞기 & 제거 애니메이션 --- */
+        #screen-animation { text-align: center; }
+        .anim-title { font-size: 32px; color: #f39c12; margin-bottom: 10px; }
+        .anim-subtitle { font-size: 20px; color: #bdc3c7; margin-bottom: 40px; }
+        
+        .deck-animation-container {
+            position: relative;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+            width: 200px;
+        }
+        
+        .anim-card {
+            width: 120px; height: 180px;
+            background-color: #2c3e50; /* 카드 뒷면 색상 */
+            border: 4px solid #7f8c8d;
+            border-radius: 12px;
+            position: absolute;
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.4);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, #34495e 10px, #34495e 20px);
+        }
+        
+        /* 카드가 화면 밖으로 날아가는 효과 */
+        .fly-away {
+            transform: translate(150px, -300px) rotate(720deg) scale(0.5);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🃏 마이너스 경매</h1>
+
+    <div id="screen1" class="screen active">
+        <h2>1단계: 게임 준비</h2>
+        <p style="font-size: 24px;">게임에 참여할 조의 개수를 설정하세요.</p>
+        <div class="input-group">
+            <label>참여 조: <input type="number" id="team-count" value="4" min="4" max="6"></label>
+            <span>조 (최소 4 ~ 최대 6)</span>
+        </div>
+        <button onclick="showScreen('2')">다음 단계 ➡️</button>
+    </div>
+
+    <div id="screen2" class="screen">
+        <h2>2단계: 게임 규칙</h2>
+        <div class="rule-box">
+            <ol>
+                <li>각 조는 <b>30개의 칩 <span class="chip-icon">C</span></b>을 받고 시작합니다.</li>
+                <li>카드 덱에는 <b>-1부터 -30까지</b> 총 30장의 카드가 있습니다. 이 중 <b style="color:#e74c3c;">시작 전 무작위로 9장을 비공개로 제거</b>하고 21장으로 게임을 진행합니다.</li>
+                <li>카드가 공개되면 첫 번째 조부터 <b>[낙찰]</b>할지 <b>[보류]</b>할지 결정합니다.
+                    <ul>
+                        <li><b>[보류]</b>를 누르면 보유한 칩 1개를 카드 위에 올려두고 턴을 넘깁니다.</li>
+                        <li><b>[낙찰]</b>을 누르면 해당 카드와 <b>카드 위에 쌓인 칩을 모두</b> 가져갑니다! (점수 만회 기회)</li>
+                    </ul>
+                </li>
+                <li><span class="highlight">연속 콤보 규칙:</span> 만약 -9, -10, -11 처럼 연속된 숫자의 카드를 모았다면, 가장 큰 수(0에 가까운 수)인 <b>-9만 벌점으로 적용</b>됩니다! (단, 중간에 빠진 9장의 카드가 변수가 됩니다)</li>
+                <li>카드가 모두 소진되면, <b>(남은 칩 개수) + (카드 벌점 합계)</b>를 계산하여 <b>최종 점수가 가장 높은(가장 덜 잃은) 조</b>가 승리합니다.</li>
+            </ol>
+            <p style="text-align: center; color: #c0392b; font-weight: bold;">"저 카드를 먹어? 말아? 엄청난 딜레마를 즐겨보세요!"</p>
+        </div>
+        <button onclick="startGame()" style="font-size: 32px; padding: 20px 50px;">🎮 경매 시작하기!</button>
+    </div>
+
+    <div id="screen-animation" class="screen">
+        <div class="anim-title">카드 섞는 중... 🃏</div>
+        <div class="anim-subtitle">30장의 카드 중 9장을 무작위로 게임에서 제외합니다.</div>
+        <div class="deck-animation-container" id="anim-deck">
+            </div>
+        <div id="anim-status" style="margin-top: 30px; font-size: 24px; font-weight: bold; color: #e74c3c;"></div>
+    </div>
+
+    <div id="screen3" class="screen">
+        
+        <div class="game-top-bar">
+            <div id="cards-remaining">남은 카드: 21장</div>
+            <div>🏆 마이너스 경매 현황판</div>
+        </div>
+
+        <div class="auction-center">
+            <div class="current-turn-title" id="current-turn-display">1조, 낙찰하시겠습니까?</div>
+            
+            <div class="auction-display">
+                <div class="playing-card" id="current-card-display">-15</div>
+                <div class="chips-on-card">
+                    <div>쌓인 칩</div>
+                    <div class="big-chip" id="current-chips-display">0</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn-take" onclick="takeCard()">🃏 낙찰 (가져오기)</button>
+                <button class="btn-pass" id="btn-pass" onclick="passCard()">✋ 보류 (칩 1개 내기)</button>
+            </div>
+            <p id="pass-warning" style="color: #e74c3c; font-weight: bold; display: none; margin-top: 15px;">칩이 없어 무조건 낙찰받아야 합니다!</p>
+        </div>
+
+        <div class="teams-grid" id="teams-grid">
+            </div>
+
+    </div>
+
+    <div id="final-winner-modal">
+        <div class="final-title">🏆 최종 우승 🏆</div>
+        <div class="final-name" id="final-winner-name">00조</div>
+        <div class="final-score" id="final-winner-score">최종 점수: 0점</div>
+        
+        <table style="color: white; font-size: 20px; border-collapse: collapse; margin-bottom: 30px;" id="result-table">
+            </table>
+
+        <button onclick="location.reload()" style="background-color: #34495e; font-size: 28px;">🔄 게임 다시하기</button>
+    </div>
+
+    <script>
+        let totalTeams = 0;
+        let teams = []; // { id, name, chips, cards: [], currentScore }
+        let deck = [];
+        let currentCard = 0;
+        let chipsOnCard = 0;
+        let currentTurnIndex = 0;
+
+        function showScreen(idSuffix) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen' + idSuffix).classList.add('active');
+        }
+
+        function startGame() {
+            totalTeams = parseInt(document.getElementById('team-count').value);
+            if (totalTeams < 4 || totalTeams > 6) return alert("조는 4에서 6 사이로 설정해주세요.");
+
+            // 팀 초기화
+            teams = [];
+            for (let i = 1; i <= totalTeams; i++) {
+                teams.push({
+                    id: i,
+                    name: `${i}조`,
+                    chips: 30, // 기본 칩 30개
+                    cards: [],
+                    currentScore: 30
+                });
+            }
+
+            // 덱 생성 (-1 ~ -30을 편의상 양수 1~30으로 저장하고 계산 시 -로 처리)
+            deck = [];
+            for (let i = 1; i <= 30; i++) {
+                deck.push(i);
+            }
+            
+            // 덱 섞기 (Fisher-Yates)
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+
+            // 바로 게임화면으로 가지 않고 애니메이션 화면 띄우기
+            showScreen('-animation');
+            playDeckAnimation();
+        }
+
+        // 9장 제거 애니메이션 함수
+        function playDeckAnimation() {
+            const container = document.getElementById('anim-deck');
+            const statusText = document.getElementById('anim-status');
+            container.innerHTML = '';
+            statusText.innerText = '';
+
+            // 시각용 더미 카드 30장 쌓기
+            for(let i=0; i<30; i++) {
+                let card = document.createElement('div');
+                card.className = 'anim-card';
+                card.style.bottom = `${i * 3}px`; // 카드가 위로 쌓이는 느낌
+                card.style.right = `${i * 1.5}px`;
+                card.style.zIndex = i;
+                container.appendChild(card);
+            }
+
+            let cards = document.querySelectorAll('.anim-card');
+            let removedCount = 0;
+
+            // 0.4초 간격으로 카드 1장씩 날려보내기 (총 9장)
+            setTimeout(() => {
+                let interval = setInterval(() => {
+                    if(removedCount >= 9) {
+                        clearInterval(interval);
+                        statusText.innerText = "제거 완료! 게임을 시작합니다.";
+                        statusText.style.color = "#2ecc71";
+                        
+                        // 실제 데이터에서도 9장 제거 (21장 남음)
+                        deck.splice(0, 9); 
+                        currentTurnIndex = 0;
+                        drawNextCard();
+
+                        // 1.5초 뒤에 본 게임 화면으로 이동
+                        setTimeout(() => {
+                            showScreen('3');
+                        }, 1500); 
+                        return;
+                    }
+
+                    // 맨 위 카드부터 날려보냄
+                    let targetCard = cards[29 - removedCount];
+                    if(targetCard) {
+                        targetCard.classList.add('fly-away');
+                        statusText.innerText = `비밀 카드 제거 중... (${removedCount + 1}/9)`;
+                    }
+                    removedCount++;
+                }, 400); // 0.4초 간격
+            }, 800); // 처음 카드 쌓인 모습 0.8초 보여준 후 시작
+        }
+
+        function calculateScore(team) {
+            // 카드를 오름차순으로 정렬 (1, 2, 3...)
+            let sortedCards = [...team.cards].sort((a, b) => a - b);
+            let penalty = 0;
+
+            // 연속된 숫자 그룹 중 가장 작은 수(절댓값이 큰 수)만 벌점 부과
+            // 예: 9, 10, 11 이면 9만 벌점 (-9점)
+            for (let i = 0; i < sortedCards.length; i++) {
+                // 첫 카드이거나, 이전 카드와 연속되지 않으면 벌점 추가
+                if (i === 0 || sortedCards[i] !== sortedCards[i - 1] + 1) {
+                    penalty += sortedCards[i];
+                }
+            }
+
+            // 최종 점수 = 남은 칩 수 - 벌점 합계
+            team.currentScore = team.chips - penalty;
+            return team.currentScore;
+        }
+
+        function drawNextCard() {
+            if (deck.length === 0) {
+                endGame();
+                return;
+            }
+            currentCard = deck.pop();
+            chipsOnCard = 0;
+            updateUI();
+        }
+
+        function passCard() {
+            const team = teams[currentTurnIndex];
+            if (team.chips > 0) {
+                team.chips -= 1;
+                chipsOnCard += 1;
+                calculateScore(team);
+                
+                // 다음 팀으로 턴 넘기기
+                currentTurnIndex = (currentTurnIndex + 1) % totalTeams;
+                updateUI();
+            }
+        }
+
+        function takeCard() {
+            const team = teams[currentTurnIndex];
+            
+            // 카드 획득 및 칩 획득
+            team.cards.push(currentCard);
+            team.chips += chipsOnCard;
+            calculateScore(team);
+            
+            // 낙찰받은 팀이 다음 카드의 첫 결정권을 가짐
+            drawNextCard(); 
+        }
+
+        function updateUI() {
+            document.getElementById('cards-remaining').innerText = `남은 카드: ${deck.length}장`;
+            document.getElementById('current-card-display').innerText = `-${currentCard}`;
+            document.getElementById('current-chips-display').innerText = chipsOnCard;
+            
+            const currentTeam = teams[currentTurnIndex];
+            document.getElementById('current-turn-display').innerText = `${currentTeam.name}, 낙찰하시겠습니까?`;
+
+            // 칩이 0개면 보류 불가
+            const btnPass = document.getElementById('btn-pass');
+            const passWarning = document.getElementById('pass-warning');
+            if (currentTeam.chips <= 0) {
+                btnPass.disabled = true;
+                passWarning.style.display = 'block';
+            } else {
+                btnPass.disabled = false;
+                passWarning.style.display = 'none';
+            }
+
+            renderTeamsGrid();
+        }
+
+        function renderTeamsGrid() {
+            const grid = document.getElementById('teams-grid');
+            grid.innerHTML = '';
+
+            teams.forEach((team, index) => {
+                const isActive = index === currentTurnIndex;
+                const scoreColorClass = team.currentScore < 0 ? 'negative' : '';
+
+                // 카드 시각화 (연속된 숫자 그룹화)
+                let sortedCards = [...team.cards].sort((a, b) => a - b);
+                let cardsHtml = '';
+                let currentGroup = [];
+
+                for (let i = 0; i < sortedCards.length; i++) {
+                    currentGroup.push(sortedCards[i]);
+                    // 마지막 카드이거나 다음 카드와 연속되지 않으면 그룹 닫기
+                    if (i === sortedCards.length - 1 || sortedCards[i] !== sortedCards[i + 1] - 1) {
+                        cardsHtml += `<div class="card-group">`;
+                        currentGroup.forEach(c => {
+                            cardsHtml += `<div class="owned-card">-${c}</div>`;
+                        });
+                        cardsHtml += `</div>`;
+                        currentGroup = [];
+                    }
+                }
+
+                if (team.cards.length === 0) cardsHtml = '<div style="color:#7f8c8d;">획득한 카드 없음</div>';
+
+                const dashboard = document.createElement('div');
+                dashboard.className = `team-dashboard ${isActive ? 'active-turn' : ''}`;
+                dashboard.innerHTML = `
+                    <div class="team-header">
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-score ${scoreColorClass}">점수: ${team.currentScore}</div>
+                    </div>
+                    <div class="team-chips">보유 칩: ${team.chips}개 <span class="chip-icon" style="width:20px;height:20px;line-height:20px;font-size:12px;">C</span></div>
+                    <div style="margin-top: 15px; font-size: 14px; font-weight: bold; color: #7f8c8d; margin-bottom: 5px;">획득한 마이너스 카드</div>
+                    <div class="cards-container">
+                        ${cardsHtml}
+                    </div>
+                `;
+                grid.appendChild(dashboard);
+            });
+        }
+
+        function endGame() {
+            let maxScore = -9999;
+            let winners = [];
+
+            // 점수 정렬을 위한 복사본
+            let sortedTeams = [...teams].sort((a, b) => b.currentScore - a.currentScore);
+
+            sortedTeams.forEach(t => {
+                if (t.currentScore > maxScore) {
+                    maxScore = t.currentScore;
+                    winners = [t];
+                } else if (t.currentScore === maxScore) {
+                    winners.push(t);
+                }
+            });
+
+            const winnerNames = winners.map(w => w.name).join(', ');
+            document.getElementById('final-winner-name').innerText = winnerNames;
+            document.getElementById('final-winner-score').innerText = `최종 점수: ${maxScore}점`;
+
+            // 표 생성
+            let tableHtml = `<tr><th style="padding:10px; border-bottom:2px solid #fff;">순위</th><th style="padding:10px; border-bottom:2px solid #fff;">조 이름</th><th style="padding:10px; border-bottom:2px solid #fff;">남은 칩</th><th style="padding:10px; border-bottom:2px solid #fff;">최종 점수</th></tr>`;
+            sortedTeams.forEach((t, i) => {
+                tableHtml += `<tr>
+                    <td style="padding:10px; border-bottom:1px solid #7f8c8d;">${i+1}위</td>
+                    <td style="padding:10px; border-bottom:1px solid #7f8c8d;">${t.name}</td>
+                    <td style="padding:10px; border-bottom:1px solid #7f8c8d;">${t.chips}개</td>
+                    <td style="padding:10px; border-bottom:1px solid #7f8c8d; font-weight:bold; color:${t.currentScore < 0 ? '#e74c3c' : '#2ecc71'};">${t.currentScore}점</td>
+                </tr>`;
+            });
+            document.getElementById('result-table').innerHTML = tableHtml;
+
+            document.getElementById('screen3').style.display = 'none';
+            document.getElementById('final-winner-modal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

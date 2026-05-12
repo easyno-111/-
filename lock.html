@@ -3,55 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>이차함수 자물쇠 방탈출</title>
+    <title>이차함수 자물쇠 방탈출 GOLD</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        :root {
+            --primary: #007aff;
+            --success: #34c759;
+            --bg: #f5f5f7;
+            --card: #ffffff;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', sans-serif; }
-        body { background-color: #f5f5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .mission-card { background: white; border-radius: 20px; padding: 30px; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; border: 2px solid #007aff; }
-        .mission-title { font-size: 24px; font-weight: 800; color: #007aff; margin-bottom: 15px; }
-        .mission-text { font-size: 18px; line-height: 1.6; color: #1d1d1f; }
-        .input-section { background: #e5e5ea; border-radius: 20px; padding: 25px; width: 100%; max-width: 600px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; align-items: center; }
-        .input-group { display: flex; align-items: center; gap: 5px; font-size: 20px; font-weight: bold; }
-        input { width: 70px; padding: 10px; border-radius: 10px; border: 1px solid #c7c7cc; text-align: center; font-size: 18px; }
-        .status-panel { margin-top: 20px; font-size: 20px; font-weight: bold; padding: 15px; border-radius: 15px; width: 100%; max-width: 600px; text-align: center; }
-        .success { background-color: #34c759; color: white; display: none; }
-        .hint { background-color: #ffffff; color: #86868b; border: 1px dashed #c7c7cc; }
-        canvas { background: white; border-radius: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 100%; }
-        .refresh-btn { margin-top: 15px; padding: 10px 20px; border-radius: 10px; border: none; background: #007aff; color: white; font-weight: bold; cursor: pointer; }
+        body { background-color: var(--bg); color: #1d1d1f; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+
+        /* 메인 게임 컨테이너 */
+        .game-container {
+            width: 90%; max-width: 900px; height: 90vh; background: var(--card); border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; position: relative;
+        }
+
+        /* 헤더 섹션 */
+        .header { background: var(--primary); color: white; padding: 25px; text-align: center; position: relative; }
+        .header h1 { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+        .header p { font-size: 16px; opacity: 0.9; margin-top: 5px; }
+
+        /* 문제 제시 카드 */
+        .mission-panel { padding: 30px; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .target-box { 
+            background: #f2f2f7; padding: 25px; border-radius: 20px; border: 2px solid #e5e5ea; 
+            width: 100%; text-align: center; position: relative;
+        }
+        .target-box i { font-size: 40px; color: var(--primary); margin-bottom: 15px; }
+        .mission-text { font-size: 22px; font-weight: 700; line-height: 1.5; color: #333; }
+        .mission-text b { color: var(--primary); font-size: 26px; }
+
+        /* 입력 및 그래프 영역 */
+        .work-area { display: flex; flex: 1; padding: 0 30px 30px; gap: 20px; overflow: hidden; }
+        
+        .input-side { flex: 1; display: flex; flex-direction: column; gap: 15px; justify-content: center; }
+        .eq-row { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #444; }
+        input[type="number"] {
+            width: 85px; padding: 12px; border-radius: 12px; border: 2px solid #d1d1d6;
+            text-align: center; font-size: 20px; outline: none; transition: border 0.3s;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .graph-side { flex: 1.2; position: relative; display: flex; flex-direction: column; }
+        canvas { background: #fafafa; border-radius: 20px; border: 1px solid #eee; width: 100%; flex: 1; }
+
+        /* 하단 상태바 */
+        .status-bar {
+            background: #1d1d1f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .live-stats { font-size: 16px; font-weight: 500; font-family: monospace; }
+
+        /* 👑 성공 화면 애니메이션 */
+        #success-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 122, 255, 0.95); z-index: 100;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            color: white; text-align: center; animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        
+        .success-icon { font-size: 100px; margin-bottom: 20px; animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        
+        .success-title { font-size: 50px; font-weight: 900; margin-bottom: 10px; }
+        .success-btn {
+            margin-top: 30px; padding: 15px 40px; background: white; color: var(--primary);
+            border: none; border-radius: 50px; font-size: 20px; font-weight: 800; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* ⚙️ 교사용 설정 모드 */
+        .teacher-btn { position: fixed; bottom: 20px; right: 20px; background: #8e8e93; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 50; }
+        #teacher-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200;
+        }
+        .modal-content { background: white; padding: 40px; border-radius: 30px; width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-content h2 { margin-bottom: 10px; text-align: center; }
+        .modal-row { display: flex; justify-content: space-between; align-items: center; }
+        .apply-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; margin-top: 10px; }
+
+        @media (max-width: 800px) {
+            .work-area { flex-direction: column; }
+            .game-container { height: auto; overflow: visible; }
+            canvas { height: 250px; }
+        }
     </style>
 </head>
 <body>
-    <div class="mission-card">
-        <div class="mission-title">🔐 자물쇠 미션</div>
-        <div class="mission-text" id="mission-desc">구간 [0, 4]에서 <br><b>최댓값 5, 최솟값 1</b>이 되는 <br>이차함수의 계수(a, b, c)를 찾아라!</div>
-        <button class="refresh-btn" onclick="generateMission()">다른 미션 받기</button>
+
+    <div class="game-container">
+        <div class="header">
+            <h1>이차함수 자물쇠 탈출 <i class="fa-solid fa-key"></i></h1>
+            <p>조건을 만족하는 계수를 찾아 잠금을 해제하세요.</p>
+        </div>
+
+        <div class="mission-panel">
+            <div class="target-box">
+                <i class="fa-solid fa-lock" id="lock-icon"></i>
+                <div class="mission-text" id="mission-desc">
+                    로딩 중...
+                </div>
+            </div>
+        </div>
+
+        <div class="work-area">
+            <div class="input-side">
+                <div class="eq-row">f(x) = <input type="number" id="a" value="1" step="0.5" oninput="check()"> x²</div>
+                <div class="eq-row">+ <input type="number" id="b" value="0" step="0.5" oninput="check()"> x</div>
+                <div class="eq-row">+ <input type="number" id="c" value="0" step="0.5" oninput="check()"></div>
+                <button class="apply-btn" onclick="randomMission()" style="background: #f2f2f7; color:#333;">다른 문제 생성</button>
+            </div>
+            <div class="graph-side">
+                <canvas id="graphCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="live-stats" id="live-stats">현재 최댓값: - | 최솟값: -</div>
+            <div style="font-size: 14px; opacity: 0.7;">Easy NO 수학</div>
+        </div>
+
+        <div id="success-overlay">
+            <div class="success-icon">🔓</div>
+            <div class="success-title">축하합니다!</div>
+            <div style="font-size: 24px; font-weight: bold;">자물쇠를 열고 탈출에 성공했습니다!</div>
+            <button class="success-btn" onclick="resetGame()">다시 도전하기</button>
+        </div>
     </div>
 
-    <div class="input-section">
-        <div class="input-group">f(x) = <input type="number" id="a" value="1" step="0.5" oninput="check()"> x² +</div>
-        <div class="input-group"><input type="number" id="b" value="0" step="0.5" oninput="check()"> x +</div>
-        <div class="input-group"><input type="number" id="c" value="0" step="0.5" oninput="check()"></div>
+    <div class="teacher-btn" onclick="toggleTeacherModal()"><i class="fa-solid fa-gear"></i></div>
+    <div id="teacher-modal">
+        <div class="modal-content">
+            <h2>문제 수동 설정</h2>
+            <div class="modal-row">구간 시작 (x1): <input type="number" id="t-x1" value="0"></div>
+            <div class="modal-row">구간 끝 (x2): <input type="number" id="t-x2" value="4"></div>
+            <div class="modal-row">목표 최댓값: <input type="number" id="t-max" value="5"></div>
+            <div class="modal-row">목표 최솟값: <input type="number" id="t-min" value="1"></div>
+            <button class="apply-btn" onclick="applyTeacherMission()">이 문제로 시작하기</button>
+            <button class="apply-btn" onclick="toggleTeacherModal()" style="background:#8e8e93;">닫기</button>
+        </div>
     </div>
-
-    <div id="status" class="status-panel hint">조건을 맞춰 자물쇠를 여세요!</div>
-    <div id="success-msg" class="status-panel success">🎉 자물쇠가 열렸습니다! 정답입니다!</div>
-
-    <canvas id="graph" width="500" height="300"></canvas>
 
     <script>
-        let targetMax, targetMin, targetXMin, targetXMax;
-        const canvas = document.getElementById('graph');
+        let targetX1, targetX2, targetMax, targetMin;
+        const canvas = document.getElementById('graphCanvas');
         const ctx = canvas.getContext('2d');
 
-        function generateMission() {
-            targetXMin = Math.floor(Math.random() * 2);
-            targetXMax = targetXMin + Math.floor(Math.random() * 3) + 2;
+        // 1. 랜덤 문제 생성
+        function randomMission() {
+            targetX1 = Math.floor(Math.random() * 2);
+            targetX2 = targetX1 + Math.floor(Math.random() * 3) + 2;
             targetMax = Math.floor(Math.random() * 6) + 4;
             targetMin = Math.floor(Math.random() * 4) - 2;
-            
-            document.getElementById('mission-desc').innerHTML = `구간 [${targetXMin}, ${targetXMax}]에서 <br><b>최댓값 ${targetMax}, 최솟값 ${targetMin}</b>이 되는 <br>이차함수의 계수(a, b, c)를 찾아라!`;
-            document.getElementById('success-msg').style.display = 'none';
+            updateMissionText();
             check();
+        }
+
+        // 2. 교사 수동 설정 적용
+        function applyTeacherMission() {
+            targetX1 = parseFloat(document.getElementById('t-x1').value);
+            targetX2 = parseFloat(document.getElementById('t-x2').value);
+            targetMax = parseFloat(document.getElementById('t-max').value);
+            targetMin = parseFloat(document.getElementById('t-min').value);
+            updateMissionText();
+            toggleTeacherModal();
+            check();
+        }
+
+        function updateMissionText() {
+            document.getElementById('mission-desc').innerHTML = 
+                `구간 [<b>${targetX1}</b>, <b>${targetX2}</b>]에서<br>최댓값 <b>${targetMax}</b>, 최솟값 <b>${targetMin}</b>이 되는<br>계수를 찾으세요!`;
         }
 
         function check() {
@@ -61,44 +187,49 @@
 
             function f(x) { return a*x*x + b*x + c; }
             
-            let currentMax = -Infinity;
-            let currentMin = Infinity;
+            let curMax = -Infinity;
+            let curMin = Infinity;
             const vertexX = -b / (2 * a);
 
-            let points = [targetXMin, targetXMax];
-            if (vertexX > targetXMin && vertexX < targetXMax) points.push(vertexX);
+            let checkPoints = [targetX1, targetX2];
+            if (vertexX > targetX1 && vertexX < targetX2) checkPoints.push(vertexX);
 
-            points.forEach(x => {
+            checkPoints.forEach(x => {
                 let y = f(x);
-                if (y > currentMax) currentMax = y;
-                if (y < currentMin) currentMin = y;
+                if (y > curMax) curMax = y;
+                if (y < curMin) curMin = y;
             });
 
-            document.getElementById('status').innerHTML = `현재 최댓값: ${currentMax.toFixed(1)} / 최솟값: ${currentMin.toFixed(1)}`;
+            document.getElementById('live-stats').innerText = `현재 최댓값: ${curMax.toFixed(2)} | 최솟값: ${curMin.toFixed(2)}`;
 
-            if (Math.abs(currentMax - targetMax) < 0.2 && Math.abs(currentMin - targetMin) < 0.2) {
-                document.getElementById('success-msg').style.display = 'block';
-            } else {
-                document.getElementById('success-msg').style.display = 'none';
-            }
             draw(a, b, c);
+
+            // 정답 판정 (오차범위 0.1)
+            if (Math.abs(curMax - targetMax) < 0.11 && Math.abs(curMin - targetMin) < 0.11) {
+                showSuccess();
+            }
         }
 
         function draw(a, b, c) {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             const scale = 30;
             const ox = canvas.width / 2;
-            const oy = canvas.height - 50;
+            const oy = canvas.height - 80;
 
+            // 격자 및 축
             ctx.strokeStyle = "#e5e5ea";
             ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(canvas.width, oy); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, canvas.height); ctx.stroke();
 
             // 구간 강조
             ctx.fillStyle = "rgba(0, 122, 255, 0.1)";
-            ctx.fillRect(ox + targetXMin*scale, 0, (targetXMax-targetXMin)*scale, canvas.height);
+            ctx.fillRect(ox + targetX1*scale, 0, (targetX2-targetX1)*scale, canvas.height);
 
-            ctx.strokeStyle = "#007aff"; ctx.lineWidth = 3;
+            // 그래프 그리기
+            ctx.strokeStyle = "#007aff"; ctx.lineWidth = 4;
             ctx.beginPath();
             for(let px=0; px<canvas.width; px++) {
                 let mx = (px - ox) / scale;
@@ -109,7 +240,25 @@
             ctx.stroke();
         }
 
-        window.onload = generateMission;
+        function showSuccess() {
+            document.getElementById('success-overlay').style.display = 'flex';
+            // 폭죽 효과 대신 텍스트 애니메이션이 이미 CSS로 적용됨
+        }
+
+        function resetGame() {
+            document.getElementById('success-overlay').style.display = 'none';
+            document.getElementById('a').value = 1;
+            document.getElementById('b').value = 0;
+            document.getElementById('c').value = 0;
+            randomMission();
+        }
+
+        function toggleTeacherModal() {
+            const modal = document.getElementById('teacher-modal');
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        window.onload = randomMission;
     </script>
 </body>
 </html>

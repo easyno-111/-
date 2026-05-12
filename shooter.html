@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V16 밸런스 완벽 조율 & 칼날 돌풍)</title>
+    <title>로그라이트 화력 슈팅 (V17 스킬 스케일링 완벽화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -218,21 +218,17 @@
                 pool.push({ isRare: p.lvl_lightning === 0, name: p.lvl_lightning === 0 ? '⚡ [레어] 연쇄 번개' : '⚡ 번개 확률 & 전이 UP', apply: () => { p.lvl_lightning++; p.lightning_chance = Math.min(0.8, 0.2 + p.lvl_lightning*0.05); } });
             }
 
+            // 🌟 유도탄 데미지 & 개수 UP으로 텍스트 명확화
             if (p.lvl_homing > 0 || Math.random() < 0.3 || isDev) {
-                pool.push({ isRare: p.lvl_homing === 0, name: p.lvl_homing === 0 ? '✨ [레어] 유도 분열탄' : '✨ 유도탄 분열 개수 UP', apply: () => { p.lvl_homing++; p.homing_split++; } });
+                pool.push({ isRare: p.lvl_homing === 0, name: p.lvl_homing === 0 ? '✨ [레어] 유도 분열탄' : '✨ 유도탄 분열 개수 & 위력 UP', apply: () => { p.lvl_homing++; p.homing_split++; } });
             }
 
             if (p.lvl_sword > 0 || Math.random() < 0.25 || isDev) {
                 pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소', apply: () => { p.lvl_sword++; } });
             }
 
-            // 🌀 신규 다수기: 칼날 돌풍 (폭발 삭제 대체)
             if (p.lvl_storm > 0 || Math.random() < 0.3 || isDev) {
-                pool.push({
-                    isRare: p.lvl_storm === 0,
-                    name: p.lvl_storm === 0 ? '🌀 [레어] 칼날 돌풍 (근접 방어)' : '🌀 칼날 돌풍 반경 & 쿨감',
-                    apply: () => { p.lvl_storm++; }
-                });
+                pool.push({ isRare: p.lvl_storm === 0, name: p.lvl_storm === 0 ? '🌀 [레어] 칼날 돌풍 (근접 방어)' : '🌀 칼날 돌풍 반경 & 쿨감', apply: () => { p.lvl_storm++; } });
             }
 
             if (p.lvl_orbital > 0 || Math.random() < 0.015 || isDev) {
@@ -269,7 +265,7 @@
                 lvl_lightning: 0, lightning_chance: 0.2,
                 lvl_homing: 0, homing_split: 3,
                 lvl_sword: 0, swordTimer: 0,
-                lvl_storm: 0, stormTimer: 0, // 🌀 칼날 돌풍 변수
+                lvl_storm: 0, stormTimer: 0, 
                 lvl_vampire: 0, vampire_chance: 0, lvl_regen: 0, iframe: 0 
             };
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = [];
@@ -329,7 +325,7 @@
                 card.innerHTML = `<div class="ab-name">${ab.name}</div>`;
                 card.onclick = () => { 
                     ab.apply(); p.level++; 
-                    p.maxExp = Math.floor(p.maxExp * 1.40); // 👑 1.45 -> 1.4배로 성장 살짝 완화
+                    p.maxExp = Math.floor(p.maxExp * 1.40); 
                     p.exp = 0; 
                     document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); 
                 };
@@ -380,7 +376,6 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            // 👑 1. 완벽한 난이도 곡선 조율
             if (!isBossStage && !isBossWarning) {
                 bossSpawnTimer--;
                 
@@ -392,21 +387,23 @@
                 } 
                 else if (!devStopSpawn) {
                     if (isSwarm && swarmWarningTimer <= 0) {
-                        // 🌊 1라운드 무리 스폰 대폭 완화
                         let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(5, 12 - Math.floor(bossKills/2));
                         if (frameCount % swarmSpawnRate === 0) {
                             let swarmCount = bossKills === 0 ? 1 : 2 + Math.floor(bossKills/2);
                             for(let k=0; k<swarmCount; k++) {
-                                // 1라운드 속도 너프 (2.0~3.5), 갈수록 빨라짐
                                 let spd = bossKills === 0 ? (2.0 + Math.random()*1.5) : (3.5 + Math.random()*2.5);
                                 enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: spd, isBoss: false, color: '#e67e22' });
                             }
                         }
                     } else if (!isSwarm) {
-                        // 🚶 초반 스폰 간격 완화 및 후반 폭발 (Curve)
-                        let spawnRate = Math.max(10, 45 - bossKills * 8); // 45 -> 37 -> 29 -> 21...
+                        let spawnRate = Math.max(10, 45 - bossKills * 8); 
                         let hordeCount = 1 + Math.floor(bossKills / 3); 
                         
+                        if (bossKills >= 2) {
+                            spawnRate = Math.max(8, 30 - (bossKills - 2) * 5); 
+                            hordeCount = 3 + Math.floor(bossKills / 2); 
+                        }
+
                         if (frameCount % spawnRate === 0 && enemies.length < 150) {
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + bossKills * 0.3;
@@ -451,11 +448,10 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🌀 신규 광역 다수기: 칼날 돌풍 (Blade Storm)
             if (p.lvl_storm > 0) {
                 p.stormTimer--;
                 if (p.stormTimer <= 0) {
-                    p.stormTimer = Math.max(60, 180 - p.lvl_storm * 20); // 3초 -> 1초 쿨타임
+                    p.stormTimer = Math.max(60, 180 - p.lvl_storm * 20); 
                     let radius = 60 + p.lvl_storm * 20;
                     let stormDmg = p.dmg * 2 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_storm;
                     activeSkills.push({ type: 'storm', life: 15, maxLife: 15, r: radius, dmg: stormDmg });
@@ -506,8 +502,10 @@
                     ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.beginPath(); let r = Math.max(0.1, o.r*(o.timer/90+0.5)); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
                     if(o.timer<=0) { o.state='fire'; o.timer=40; globalShakeTimer=30; playSound('skill'); }
                 } else {
-                    o.timer--; let a = Math.max(0, o.timer/40); ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
-                    enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= (p.dmg*5); });
+                    o.timer--; let a = Math.max(0, o.timer/40); 
+                    ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
+                    // 🌟 위성폭격 스킬 파괴력 연동 수정 적용
+                    enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= (p.dmg * 10 * (1 + p.lvl_skill_dmg * 0.5)); });
                     if(o.timer<=0) orbitals.splice(i, 1);
                 }
             }
@@ -533,7 +531,13 @@
                     enemies.forEach(e => {
                         if(Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
                             let hits = s.hitLog.get(e) || 0;
-                            if(hits < 3) { s.vx *= 0.65; s.vy *= 0.65; e.hp -= 0.6; s.hitLog.set(e, hits+1); if(frameCount%5===0) spawnParticles(s.x, s.y, '#f1c40f', 1); }
+                            if(hits < 3) {
+                                s.vx *= 0.65; s.vy *= 0.65; 
+                                // 🌟 수호표창 스킬 파괴력 연동 수정 적용
+                                e.hp -= (p.dmg * 0.5 * (1 + p.lvl_skill_dmg * 0.3)); 
+                                s.hitLog.set(e, hits+1);
+                                if(frameCount%5===0) spawnParticles(s.x, s.y, '#f1c40f', 1); 
+                            }
                         }
                     });
                     if(s.x<-50||s.x>canvas.width+50||s.y<-50||s.y>canvas.height+50) shurikens.splice(i, 1);
@@ -551,8 +555,17 @@
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
                 for(let j=0; j<totalBullets; j++) {
-                    p.totalFired++; let bvx = (j - (totalBullets-1)/2) * 0.15; let isEnhanced = (p.lvl_homing > 0 && p.totalFired % 3 === 0);
-                    bullets.push({ x: p.x, y: p.y - 20, vx: bvx + p.vx * 0.15, vy: -12, dmg: isEnhanced ? p.dmg * 1.5 : p.dmg, enhanced: isEnhanced, color: isEnhanced ? '#00ffff' : '#f1c40f', r: isEnhanced ? 6 : 4 });
+                    p.totalFired++; 
+                    let bvx = (j - (totalBullets-1)/2) * 0.15; 
+                    let isEnhanced = (p.lvl_homing > 0 && p.totalFired % 3 === 0);
+                    // 🌟 유도탄 원본 공격력(2배 강화 + 스킬 파괴력) 수정 적용
+                    let enhancedDmg = p.dmg * 2.0 * (1 + p.lvl_skill_dmg * 0.5);
+                    bullets.push({ 
+                        x: p.x, y: p.y - 20, 
+                        vx: bvx + p.vx * 0.15, vy: -12, 
+                        dmg: isEnhanced ? enhancedDmg : p.dmg, 
+                        enhanced: isEnhanced, color: isEnhanced ? '#00ffff' : '#f1c40f', r: isEnhanced ? 6 : 4 
+                    });
                 }
             }
 
@@ -567,9 +580,11 @@
                         
                         if (b.enhanced) {
                             playSound('zap');
+                            // 🌟 분열된 유도탄 스킬 파괴력 연동 및 위력 증가 적용
+                            let homingDmg = p.dmg * (0.8 + p.lvl_homing * 0.5) * (1 + p.lvl_skill_dmg * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
-                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: p.dmg * (0.5 + p.lvl_homing*0.2), target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
+                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
                             }
                         }
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance) {
@@ -608,7 +623,6 @@
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
             }
 
-            // 🌀 칼날 돌풍, 냥냥펀치 등 액티브 스킬 로직
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 
@@ -623,7 +637,7 @@
                     if (sk.life === sk.maxLife - 1) { 
                         enemies.forEach(e => {
                             if (Math.hypot(e.x - sk.x, e.y - sk.y) < sk.r + e.w/2) {
-                                e.hp -= sk.dmg; e.y -= 25; // 데미지 & 넉백
+                                e.hp -= sk.dmg; e.y -= 25; 
                                 if(e.isBoss) e.iframe = 4;
                                 spawnParticles(e.x, e.y, '#00a8ff', 3);
                             }
@@ -710,7 +724,7 @@
                     playSound('kill'); score+=e.isBoss?1000:10; 
                     if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); playSound('heal'); updateUI(); }
                     
-                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10);
+                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10); 
 
                     if(e.isBoss){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 

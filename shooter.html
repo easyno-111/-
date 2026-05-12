@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V14 리스크&리턴 마스터피스)</title>
+    <title>로그라이트 화력 슈팅 (V15 완벽 밸런싱)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -227,6 +227,10 @@
                 pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소', apply: () => { p.lvl_sword++; } });
             }
 
+            if (p.lvl_explosion > 0 || Math.random() < 0.3 || isDev) {
+                pool.push({ isRare: p.lvl_explosion === 0, name: p.lvl_explosion === 0 ? '💥 [레어] 처치 시 폭발' : '💥 폭발 반경 & 데미지 UP', apply: () => { p.lvl_explosion++; p.explosion_radius += 15; p.explosion_dmg += 0.3; } });
+            }
+
             if (p.lvl_orbital > 0 || Math.random() < 0.015 || isDev) {
                 if (p.lvl_orbital === 0) pool.push({ isLegendary: true, name: '🌌 [전설] 위성 폭격', apply: () => { p.lvl_orbital++; p.orbitalTimer = 0; } });
                 else { pool.push({ name: '🌌 위성 폭격 주기 감소', apply: () => { p.lvl_orbital++; } }); pool.push({ name: '🌌 위성 폭격 범위 증가', apply: () => { p.lvl_orbital_range++; } }); }
@@ -261,6 +265,7 @@
                 lvl_lightning: 0, lightning_chance: 0.2,
                 lvl_homing: 0, homing_split: 3,
                 lvl_sword: 0, swordTimer: 0,
+                lvl_explosion: 0, explosion_radius: 50, explosion_dmg: 0.8,
                 lvl_vampire: 0, vampire_chance: 0, lvl_regen: 0, iframe: 0 
             };
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = [];
@@ -320,7 +325,6 @@
                 card.innerHTML = `<div class="ab-name">${ab.name}</div>`;
                 card.onclick = () => { 
                     ab.apply(); p.level++; 
-                    // 👑 경험치 통 증가폭 1.35 -> 1.45배 상향
                     p.maxExp = Math.floor(p.maxExp * 1.45); 
                     p.exp = 0; 
                     document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); 
@@ -372,38 +376,37 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            // 👑 1. 템포 조절 및 대규모 무리 이벤트 (보스 7초전)
+            // 👑 1. 템포 조절 (1라운드 완화 & 3라운드 폭발)
             if (!isBossStage && !isBossWarning) {
                 bossSpawnTimer--;
                 
-                // 420프레임(약 7초 전)에 대규모 무리 경고 및 스폰 시작
-                if (bossSpawnTimer === 420) { 
-                    isSwarm = true; swarmWarningTimer = 90; playSound('levelup');
-                }
-                if (bossSpawnTimer === 120) {
-                    isSwarm = false; // 보스 경고 직전에 무리 스폰 중지
-                }
+                if (bossSpawnTimer === 420) { isSwarm = true; swarmWarningTimer = 90; playSound('levelup'); }
+                if (bossSpawnTimer === 120) { isSwarm = false; }
 
                 if (bossSpawnTimer <= 0) { 
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else if (!devStopSpawn) {
                     if (isSwarm && swarmWarningTimer <= 0) {
-                        // 🌊 대규모 무리 미친 속도 스폰 (리스크 극대화)
-                        if (frameCount % 5 === 0) {
-                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
-                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
-                            if (bossKills >= 2) enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
+                        // 🌊 1라운드 대규모 무리 대폭 너프
+                        let swarmSpawnRate = bossKills === 0 ? 8 : Math.max(3, 6 - Math.floor(bossKills/2));
+                        if (frameCount % swarmSpawnRate === 0) {
+                            let swarmCount = bossKills === 0 ? 1 : 2 + Math.floor(bossKills/2);
+                            for(let k=0; k<swarmCount; k++) {
+                                // 1라운드 속도 너프 (2.5~4.0)
+                                let spd = bossKills === 0 ? (2.5 + Math.random()*1.5) : (4 + Math.random()*3);
+                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: spd, isBoss: false, color: '#e67e22' });
+                            }
                         }
                     } else if (!isSwarm) {
-                        // 👑 2. 평상시 스폰 & 3라운드(보스 2마리) 이후 난이도 폭발
-                        let spawnRate = Math.max(20, 60 - bossKills * 5);
+                        // 🚶 1라운드 평상시 스폰 간격 완화
+                        let spawnRate = Math.max(20, 80 - bossKills * 10); 
                         let hordeCount = 1 + Math.floor(bossKills / 4);
                         
-                        // 3라운드 진입 시
+                        // 🔥 3라운드(보스 2마리) 진입 시 난이도 폭발
                         if (bossKills >= 2) {
-                            spawnRate = Math.max(8, 30 - (bossKills - 2) * 5); // 매우 빠르게
-                            hordeCount = 3 + Math.floor(bossKills / 2); // 엄청 많이
+                            spawnRate = Math.max(8, 30 - (bossKills - 2) * 5); 
+                            hordeCount = 3 + Math.floor(bossKills / 2); 
                         }
 
                         if (frameCount % spawnRate === 0 && enemies.length < 150) {
@@ -605,7 +608,8 @@
                     if(sk.life<=0) activeSkills.splice(i, 1);
                 } else if(sk.type==='punch') {
                     if(sk.state==='flying') { 
-                        sk.x+=sk.vx; sk.y+=sk.vy; if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
+                        sk.x+=sk.vx; sk.y+=sk.vy; 
+                        if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
                         let hitAny = false; enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2&&Math.abs(e.y-sk.y)<sk.w/2){hitAny=true;} });
                         if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
                         if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100) sk.state='done'; 
@@ -671,7 +675,12 @@
                 if(e.hp<=0) { 
                     playSound('kill'); score+=e.isBoss?1000:10; 
                     if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); playSound('heal'); updateUI(); }
-                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10); 
+                    
+                    if(p.lvl_explosion > 0 && !e.isBoss) {
+                        let r = p.explosion_radius; particles.push({x:e.x, y:e.y, vx:0, vy:0, life:15, maxLife:15, size:r, color:'rgba(255, 60, 0, 0.7)', isAoE:true});
+                        enemies.forEach(other => { if (other !== e && Math.abs(other.x - e.x) < r && Math.abs(other.y - e.y) < r) { other.hp -= (p.dmg * p.explosion_dmg); } });
+                    } else { spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10); }
+
                     if(e.isBoss){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
@@ -686,6 +695,7 @@
                 let bb = bossBullets[i]; bb.x += bb.vx; bb.y += bb.vy;
                 ctx.fillStyle = bb.color; ctx.shadowColor = bb.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r/2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+
                 if (p.iframe <= 0 && Math.abs(bb.x - p.x) < p.w/2 && Math.abs(bb.y - p.y) < p.h/2) {
                     p.hp -= bb.dmg; p.iframe = 30; spawnParticles(p.x, p.y, '#ff0000', 15, 2); globalShakeTimer = 10; playSound('hit'); updateUI(); bossBullets.splice(i, 1);
                     if (p.hp <= 0) { gameEnd(false); return; } continue;

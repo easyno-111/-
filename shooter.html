@@ -149,9 +149,14 @@
         let particles = [];
         let activeSkills = []; 
 
-        // 👑 커스텀 이미지 객체 저장용 변수
-        let customPlayerImg = null;
-        let customEnemyImg = null;
+       // 👑 기본 캐릭터 및 적 이미지 설정
+let customPlayerImg = new Image();
+customPlayerImg.src = "player.png"; // 👈 여기에 내 캐릭터 이미지 주소나 파일명 입력
+customPlayerImg.onerror = () => { customPlayerImg = null; }; // 이미지를 못 불러오면 네모 박스로 대체
+
+let customEnemyImg = new Image();
+customEnemyImg.src = "enemy.png"; // 👈 여기에 적 캐릭터 이미지 주소나 파일명 입력
+customEnemyImg.onerror = () => { customEnemyImg = null; }; // 이미지를 못 불러오면 네모 박스로 대체
 
         // 이미지 파일 처리 함수
         function handleImage(event, type) {

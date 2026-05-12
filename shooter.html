@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (펀치 버프)</title>
+    <title>로그라이트 화력 슈팅 (펀치 AoE & 보스 패치)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -23,7 +23,6 @@
         #boss-timer-display { display: none; color: #ff4757; font-size: 24px; font-weight: 900; text-align: center; margin-top: 25px; text-shadow: 0 0 15px #ff4757; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-        /* 👑 스킬 버튼 위치 최적화 (bottom과 right를 줄여 모서리에 밀착) */
         #skill-btn {
             position: absolute; bottom: 15px; right: 15px; width: 70px; height: 70px; border-radius: 50%;
             background: rgba(0, 210, 211, 0.8); color: white; font-size: 16px; font-weight: bold;
@@ -252,15 +251,14 @@
                 }
 
             } else if (p.activeSkillType === 'punch') {
-                // 👑 펀치 기본 성능 상향 (속도 증가, 크기 증가)
                 let count = 1 + p.lvl_punch_count; 
                 for(let i=0; i<count; i++) {
                     let angle = -Math.PI/2 + (i - Math.floor(count/2)) * 0.4; 
                     activeSkills.push({
                         type: 'punch', level: 1,
-                        x: p.x, y: p.y - 30, w: 70, // 크기 상향 (50 -> 70)
-                        vx: Math.cos(angle)*18, vy: Math.sin(angle)*18, // 속도 상향
-                        state: 'flying', hoverTimer: 0, dmg: skillDmg * 0.25 // 데미지 상향
+                        x: p.x, y: p.y - 30, w: 70,
+                        vx: Math.cos(angle)*18, vy: Math.sin(angle)*18,
+                        state: 'flying', hoverTimer: 0, dmg: skillDmg * 0.25 
                     });
                 }
             }
@@ -425,6 +423,19 @@
                             }
                             activeSkills.splice(i, 1); continue;
                         }
+
+                        // 👑 펀치 충격파(AoE) 시각화 그리기
+                        ctx.save();
+                        ctx.translate(sk.x, sk.y);
+                        ctx.beginPath();
+                        let pulseRadius = sk.w * (1 + Math.sin(frameCount * 0.8) * 0.3); // 맥박처럼 뛰는 크기
+                        ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255, 71, 87, 0.2)'; // 반투명한 빨간색 파동
+                        ctx.fill();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'rgba(255, 71, 87, 0.6)';
+                        ctx.stroke();
+                        ctx.restore();
                     }
 
                     ctx.save();
@@ -442,20 +453,24 @@
                     ctx.restore();
 
                     let hitAny = false;
-                    // 👑 펀치 충격파(AoE) 범위 증가! (때릴 때 주변 적까지 모두 공격)
                     let hitBox = sk.state === 'punching' ? sk.w : sk.w/2; 
                     
                     enemies.forEach(e => {
                         if (Math.abs(e.x - sk.x) < e.w/2 + hitBox && Math.abs(e.y - sk.y) < e.h/2 + hitBox) {
                             e.hp -= sk.dmg; 
-                            e.y -= 3; // 👑 넉백(Knockback) 효과: 적을 뒤로 밀쳐냄
+                            
+                            // 👑 일반 몹만 넉백 시키기 (보스는 밀리지 않음!)
+                            if (!e.isBoss) {
+                                e.y -= 3; 
+                            }
+                            
                             particles.push({x: e.x, y: e.y, life: 5, color: '#ff4757'}); 
                             hitAny = true;
                         }
                     });
 
                     if (sk.state === 'flying' && hitAny) {
-                        sk.state = 'punching'; sk.hoverTimer = 45; // 0.75초간 오라오라 타격
+                        sk.state = 'punching'; sk.hoverTimer = 45; 
                     }
                 }
             }

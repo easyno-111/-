@@ -9,22 +9,33 @@
         body { background-color: #f5f5f7; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .container { background: white; border-radius: 25px; padding: 30px; width: 100%; max-width: 800px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
         .header { text-align: center; margin-bottom: 25px; }
+        
+        /* 새로운 입력 설정창 */
+        .setting-panel { background: #e5e5ea; padding: 15px; border-radius: 15px; display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 20px; font-weight: bold; font-size: 18px; }
+        .setting-panel input { width: 80px; padding: 8px; font-size: 18px; border: none; border-radius: 8px; text-align: center; }
+        
         .visual-area { display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
         .fence-viz { flex: 1; min-width: 300px; height: 250px; background: #f9f9fb; border-radius: 20px; display: flex; align-items: center; justify-content: center; position: relative; border: 2px dashed #d1d1d6; }
         .fence-rect { background: #34c759; border: 3px solid #28a745; position: relative; transition: all 0.1s; }
-        .label-x { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-weight: bold; color: #28a745; }
+        .label-x { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-weight: bold; color: #28a745; text-shadow: 1px 1px 0 #fff; }
         .label-y { position: absolute; left: -50px; top: 50%; transform: translateY(-50%); font-weight: bold; color: #007aff; }
-        .graph-area { flex: 1; min-width: 300px; height: 250px; background: white; }
+        
+        .graph-area { flex: 1; min-width: 300px; height: 250px; background: white; border-radius: 20px; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
         .control-panel { background: #f2f2f7; padding: 20px; border-radius: 20px; text-align: center; }
-        input[type=range] { width: 80%; height: 10px; margin: 20px 0; }
+        input[type=range] { width: 90%; height: 10px; margin: 20px 0; }
         .stats { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+        .math-eq { font-size: 18px; color: #86868b; font-family: 'Courier New', Courier, monospace; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h2>🏠 울타리 만들기 미션</h2>
-            <p>총 길이 20m의 철망으로 가장 넓은 울타리를 만드세요!</p>
+            <p>철망으로 가장 넓은 직사각형 울타리를 만드세요!</p>
+        </div>
+
+        <div class="setting-panel">
+            총 철망 길이: <input type="number" id="total-len" value="20" step="2" oninput="initFence()"> m
         </div>
 
         <div class="visual-area">
@@ -38,9 +49,9 @@
         </div>
 
         <div class="control-panel">
-            <div class="stats">가로(x): <span id="val-x">5</span>m | 넓이(y): <span id="val-area">25</span>m²</div>
-            <input type="range" id="slider" min="0.5" max="9.5" step="0.1" value="5" oninput="update()">
-            <p>함수: y = x(10 - x) = -x² + 10x</p>
+            <div class="stats">가로(x): <span id="val-x">5</span>m | 넓이(y): <span id="val-area" style="color:#e74c3c;">25</span>m²</div>
+            <input type="range" id="slider" min="0" max="10" step="0.1" value="5" oninput="update()">
+            <p class="math-eq" id="equation">함수: y = x(10 - x) = -x² + 10x</p>
         </div>
     </div>
 
@@ -49,10 +60,35 @@
         const rect = document.getElementById('rect');
         const canvas = document.getElementById('graph');
         const ctx = canvas.getContext('2d');
+        const totalLenInput = document.getElementById('total-len');
 
+        let L = 20; // 총 길이
+        let maxX = 10; // 가로 길이의 최댓값 (L/2)
+        let maxArea = 25; // 넓이의 최댓값
+
+        // 👑 철망 길이가 바뀔 때 초기화하는 함수
+        function initFence() {
+            L = parseFloat(totalLenInput.value) || 0;
+            if(L <= 0) return;
+
+            maxX = L / 2;
+            maxArea = (L / 4) * (L / 4);
+
+            // 슬라이더 범위 재설정 (0부터 가로 최대 길이까지)
+            slider.max = maxX;
+            slider.value = maxX / 2; // 초기값은 꼭짓점 위치로 세팅
+
+            // 수식 텍스트 업데이트
+            const halfL = (L / 2).toFixed(1);
+            document.getElementById('equation').innerText = `함수: y = x(${halfL} - x) = -x² + ${halfL}x`;
+
+            update();
+        }
+
+        // 슬라이더 조작 시 실행되는 함수
         function update() {
             const x = parseFloat(slider.value);
-            const y = 10 - x;
+            const y = (L / 2) - x;
             const area = x * y;
 
             document.getElementById('val-x').innerText = x.toFixed(1);
@@ -60,44 +96,76 @@
             document.getElementById('disp-x').innerText = x.toFixed(1) + 'm';
             document.getElementById('disp-y').innerText = y.toFixed(1) + 'm';
 
-            // 울타리 그래픽 업데이트
-            rect.style.width = (x * 20) + 'px';
-            rect.style.height = (y * 20) + 'px';
+            // 왼쪽 직사각형 시각화 업데이트 (최대 영역 기준 비율 조절)
+            // L=20일 때 최대 가로 10m를 200px 정도로 매핑
+            const rectScale = 250 / maxX; 
+            rect.style.width = (x * rectScale) + 'px';
+            rect.style.height = (y * rectScale) + 'px';
 
             drawGraph(x, area);
         }
 
+        // 👑 동적 스케일링이 적용된 그래프 그리기 함수
         function drawGraph(curX, curArea) {
+            // 캔버스 크기를 CSS와 일치시킴
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const scale = 20;
-            const margin = 30;
+            
+            const margin = 40; // 상하좌우 여백
+            const drawWidth = canvas.width - margin * 2;
+            const drawHeight = canvas.height - margin * 2;
 
-            // 축
-            ctx.strokeStyle = "#8e8e93";
-            ctx.beginPath(); ctx.moveTo(margin, canvas.height-margin); ctx.lineTo(canvas.width, canvas.height-margin); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(margin, 0); ctx.lineTo(margin, canvas.height-margin); ctx.stroke();
+            // X축, Y축을 도화지 크기에 맞춰 동적으로 비율 계산 (이것이 핵심!)
+            const scaleX = drawWidth / maxX;
+            // 꼭짓점이 잘리지 않도록 maxArea보다 15% 여유를 더 둠
+            const scaleY = drawHeight / (maxArea * 1.15); 
 
-            // 이차함수 그래프
-            ctx.strokeStyle = "#34c759"; ctx.lineWidth = 2;
+            // 배경 격자 및 축 그리기
+            ctx.strokeStyle = "#c7c7cc";
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(margin, canvas.height-margin); ctx.lineTo(canvas.width-10, canvas.height-margin); ctx.stroke(); // X축
+            ctx.beginPath(); ctx.moveTo(margin, 10); ctx.lineTo(margin, canvas.height-margin); ctx.stroke(); // Y축
+
+            // 1. 이차함수 곡선 부드럽게 그리기
+            ctx.strokeStyle = "#34c759"; 
+            ctx.lineWidth = 3;
             ctx.beginPath();
-            for(let mx=0; mx<=10; mx+=0.1) {
-                let my = mx * (10 - mx);
-                ctx.lineTo(margin + mx*scale, (canvas.height-margin) - my*scale);
+            for(let mx = 0; mx <= maxX; mx += maxX/100) {
+                let my = mx * ((L/2) - mx); // 넓이 계산
+                let px = margin + mx * scaleX;
+                let py = (canvas.height - margin) - my * scaleY;
+                if(mx === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
             }
             ctx.stroke();
 
-            // 현재 위치 점
+            // 2. 꼭짓점 위치 명시적으로 점 찍기
+            const vx = maxX / 2;
+            const vy = maxArea;
+            const pxV = margin + vx * scaleX;
+            const pyV = (canvas.height - margin) - vy * scaleY;
+            
+            ctx.fillStyle = "#8e8e93";
+            ctx.beginPath(); ctx.arc(pxV, pyV, 4, 0, Math.PI*2); ctx.fill();
+            ctx.font = "12px Arial"; ctx.textAlign = "center";
+            ctx.fillText(`최댓값 (${vy.toFixed(1)})`, pxV, pyV - 10);
+
+            // 3. 학생이 조작 중인 현재 위치 빨간색 점
+            const pxCur = margin + curX * scaleX;
+            const pyCur = (canvas.height - margin) - curArea * scaleY;
+            
             ctx.fillStyle = "#ff3b30";
-            ctx.beginPath();
-            ctx.arc(margin + curX*scale, (canvas.height-margin) - curArea*scale, 5, 0, Math.PI*2);
-            ctx.fill();
+            ctx.beginPath(); ctx.arc(pxCur, pyCur, 8, 0, Math.PI*2); ctx.fill();
+            
+            // 현재 점 테두리
+            ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.stroke();
         }
 
-        window.onload = () => {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-            update();
-        };
+        // 창 크기가 바뀔 때 그래프 찌그러짐 방지
+        window.addEventListener('resize', update);
+
+        window.onload = initFence;
     </script>
 </body>
 </html>

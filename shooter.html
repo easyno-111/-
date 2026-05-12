@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (UX 및 사이즈 개선)</title>
+    <title>로그라이트 화력 슈팅 (보물상자 시스템)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
-        body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         
-        #game-container { position: relative; width: 100%; max-width: 480px; height: 100vh; background: #1a1a2e; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5); border-left: 2px solid #2f3640; border-right: 2px solid #2f3640; }
+        #game-container { position: relative; width: 100%; max-width: 480px; height: 100vh; background: #1a1a2e; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); border-left: 2px solid #2f3640; border-right: 2px solid #2f3640; z-index: 1; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; pointer-events: none; z-index: 10; }
@@ -18,31 +18,24 @@
         #exp-bar { height: 100%; background: #1e90ff; width: 0%; transition: width 0.2s; }
         .bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: white; line-height: 16px; text-shadow: 1px 1px 2px black; }
 
-        /* 텍스트 정보창 (스코어, 데미지) - 버튼들과 안 겹치게 너비 제한 */
         .top-stats { display: flex; flex-direction: column; gap: 5px; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; pointer-events: auto; max-width: 70%; }
 
         #boss-timer-display { display: none; color: #ff4757; font-size: 24px; font-weight: 900; text-align: center; margin-top: 25px; text-shadow: 0 0 15px #ff4757; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-        /* 🔊 사운드 버튼 - 우측 상단 고정 */
-        #sound-btn { 
-            position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); 
-            border: 2px solid #57606f; border-radius: 50%; width: 45px; height: 45px; 
-            font-size: 20px; cursor: pointer; color: white; pointer-events: auto;
-            display: flex; justify-content: center; align-items: center; z-index: 20;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
+        /* 🔊 사운드 버튼 */
+        #sound-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.8); border: 2px solid #57606f; border-radius: 50%; width: 50px; height: 50px; font-size: 22px; cursor: pointer; color: white; pointer-events: auto; display: flex; justify-content: center; align-items: center; z-index: 999; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
 
-        /* ✨ 스킬 버튼 - 우측 하단 큼직하게 고정 */
-        #skill-btn {
-            position: absolute; bottom: 30px; right: 20px; width: 85px; height: 85px; border-radius: 50%;
-            background: rgba(0, 210, 211, 0.85); color: white; font-size: 18px; font-weight: bold;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            box-shadow: 0 0 20px rgba(0, 210, 211, 0.6); pointer-events: auto; border: 4px solid #fff; z-index: 15; cursor: pointer;
-        }
+        /* ✨ 액티브 스킬 버튼 */
+        #skill-btn { position: fixed; bottom: 20px; right: 20px; width: 85px; height: 85px; border-radius: 50%; background: rgba(0, 210, 211, 0.85); color: white; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(0, 210, 211, 0.6); pointer-events: auto; border: 4px solid #fff; z-index: 999; cursor: pointer; }
         #skill-btn:active { transform: scale(0.95); }
         #skill-btn.cooldown { background: rgba(100, 100, 100, 0.6); box-shadow: none; border-color: #888; color: #ccc; pointer-events: none; }
         #skill-btn .cool-text { font-size: 28px; font-weight: 900; }
+
+        @media (min-width: 700px) {
+            #sound-btn { top: 40px; right: auto; left: calc(50% - 240px - 80px); }
+            #skill-btn { bottom: 60px; right: calc(50% - 240px - 110px); width: 100px; height: 100px; font-size: 20px;}
+        }
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 26, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
         .title-text { font-size: 40px; font-weight: 900; color: #00a8ff; text-shadow: 0 0 20px rgba(0, 168, 255, 0.5); margin-bottom: 20px; text-align: center; }
@@ -55,18 +48,48 @@
         input[type="file"] { display: none; }
 
         #levelup-screen { display: none; pointer-events: auto; }
-        .lvl-title { font-size: 32px; color: #f1c40f; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px #f1c40f; }
-        .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 20px; margin-bottom: 15px; border: 2px solid #57606f; cursor: pointer; transition: all 0.2s; color: white; text-align: left; }
-        .ability-card:hover { border-color: #f1c40f; transform: translateX(5px); background: #3a4151; }
-        .ab-name { font-size: 20px; font-weight: bold; color: #f1c40f; margin-bottom: 5px; }
-        .ab-desc { font-size: 15px; color: #ced6e0; line-height: 1.4; }
+        #lvl-title-text { font-size: 32px; color: #f1c40f; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px #f1c40f; text-align: center; }
+        
+        .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; transition: all 0.2s; color: white; text-align: left; position: relative;}
+        .ability-card.rare { border-color: #e1b12c; background: #3a2b10; }
+        .ability-card:hover { transform: translateX(5px); background: #3a4151; }
+        .ab-name { font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 5px; }
+        .ab-desc { font-size: 14px; color: #ced6e0; line-height: 1.3; }
 
-        #dev-panel {
-            display: none; position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757;
-            border-radius: 15px; padding: 20px; color: white; z-index: 100; max-height: 80vh; overflow-y: auto;
-            pointer-events: auto; box-shadow: 0 0 30px rgba(255, 71, 87, 0.5);
+        /* 🎁 상자 이펙트 CSS */
+        .chest-box { font-size: 80px; cursor: pointer; transition: 0.2s; user-select: none; margin-top: 20px; display: inline-block; }
+        .chest-box:active { transform: scale(0.9); }
+        .chest-box.anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
+        .chest-box.anim-shake-rare { animation: shake-rare 1.4s ease-in-out forwards; }
+        .rare-chest-idle { animation: pulse-rare 0.8s infinite alternate; }
+        
+        @keyframes pulse-rare {
+            from { transform: scale(1.1); filter: drop-shadow(0 0 10px #ff9f43); }
+            to { transform: scale(1.2); filter: drop-shadow(0 0 30px #f1c40f); }
         }
+        @keyframes shake-normal {
+            0% { transform: rotate(0deg); }
+            20% { transform: rotate(-15deg) scale(1.1); }
+            40% { transform: rotate(15deg) scale(1.1); }
+            60% { transform: rotate(-15deg) scale(1.1); }
+            80% { transform: rotate(15deg) scale(1.1); }
+            100% { transform: rotate(0deg) scale(1.1); opacity: 0; }
+        }
+        @keyframes shake-rare {
+            0% { transform: rotate(0deg) scale(1.2); filter: drop-shadow(0 0 20px #f1c40f); }
+            10% { transform: rotate(-20deg) scale(1.3); filter: drop-shadow(0 0 30px #ff9f43); }
+            20% { transform: rotate(20deg) scale(1.3); filter: drop-shadow(0 0 40px #f1c40f); }
+            30% { transform: rotate(-25deg) scale(1.4); }
+            40% { transform: rotate(25deg) scale(1.4); }
+            50% { transform: rotate(-30deg) scale(1.5); filter: drop-shadow(0 0 60px #fff); }
+            60% { transform: rotate(30deg) scale(1.5); }
+            70% { transform: rotate(-30deg) scale(1.5); }
+            80% { transform: rotate(30deg) scale(1.5); }
+            90% { transform: rotate(-15deg) scale(1.5); }
+            100% { transform: rotate(0deg) scale(2); filter: drop-shadow(0 0 100px white); opacity: 0; }
+        }
+
+        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757; border-radius: 15px; padding: 20px; color: white; z-index: 1000; max-height: 80vh; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 30px rgba(255, 71, 87, 0.5); }
         #dev-panel h3 { text-align: center; color: #ff4757; margin-bottom: 15px; }
         .close-dev { background: #57606f; width: 100%; margin-bottom: 15px; padding: 12px; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size: 16px; }
         .close-dev:active { background: #ff4757; }
@@ -77,45 +100,47 @@
 </head>
 <body>
 
+    <button id="sound-btn" onclick="toggleSound()">🔊</button>
+    <div id="skill-btn" onpointerdown="fireSkill()">
+        <div id="skill-name">스킬(A)</div>
+        <div id="skill-cool" class="cool-text"></div>
+    </div>
+
     <div id="game-container">
         <div id="ui-layer" style="display: none;">
             <div class="bar-bg"><div id="hp-bar"></div><div class="bar-text" id="hp-text">HP: 100 / 100</div></div>
             <div class="bar-bg"><div id="exp-bar"></div><div class="bar-text" id="exp-text">LV.1 (0/30)</div></div>
-            
             <div class="top-stats">
                 <div id="score-display" onclick="checkDevMode()" style="cursor: pointer;">SCORE: 0</div>
                 <div id="dmg-display">데미지: 1</div>
             </div>
-            
-            <!-- 🔊 위치가 독립된 사운드 버튼 -->
-            <button id="sound-btn" onclick="toggleSound()">🔊</button>
-
             <div id="boss-timer-display">⚠️ 보스 출현! 남은 시간: 20s ⚠️</div>
-            
-            <!-- ✨ 크기를 키우고 여백을 확보한 스킬 버튼 -->
-            <div id="skill-btn" onpointerdown="fireSkill()">
-                <div id="skill-name">스킬(A)</div>
-                <div id="skill-cool" class="cool-text"></div>
-            </div>
         </div>
 
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
-            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center; font-size:14px;">드래그로 적을 쓸어버리고,<br>우측 하단의 필살기를 사용하세요!</p>
-            
+            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center; font-size:14px;">드래그로 적을 쓸어버리고,<br>필살기를 적절히 사용하세요!</p>
             <div class="skin-btn-group">
-                <button class="skin-btn" onclick="document.getElementById('p-img-upload').click()">🧑 앨범에서 내 캐릭터 적용</button>
-                <button class="skin-btn" onclick="document.getElementById('e-img-upload').click()">👾 앨범에서 적 캐릭터 적용</button>
+                <button class="skin-btn" onclick="document.getElementById('p-img-upload').click()">🧑 내 캐릭터 적용</button>
+                <button class="skin-btn" onclick="document.getElementById('e-img-upload').click()">👾 적 캐릭터 적용</button>
             </div>
             <input type="file" id="p-img-upload" accept="image/*" onchange="handleImage(event, 'player')">
             <input type="file" id="e-img-upload" accept="image/*" onchange="handleImage(event, 'enemy')">
-
             <button class="start-btn" onclick="startGame()">게임 시작</button>
         </div>
 
+        <!-- 🎁 레벨업 스크린 변경 -->
         <div class="overlay" id="levelup-screen">
-            <div class="lvl-title">LEVEL UP!</div>
-            <div id="ability-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; overflow-y: auto; max-height: 70vh;"></div>
+            <div id="lvl-title-text">보물상자 발견!</div>
+            
+            <!-- 닫힌 상자 화면 -->
+            <div id="chest-container" style="display:flex; flex-direction:column; align-items:center;">
+                <div id="chest-emoji" class="chest-box" onpointerdown="openChest()">🎁</div>
+                <p id="chest-desc" style="color:#ced6e0; margin-top:25px; font-weight:bold;">터치해서 상자를 열어보세요!</p>
+            </div>
+
+            <!-- 열린 후 스킬 선택 화면 -->
+            <div id="ability-container" style="width: 100%; display: none; flex-direction: column; align-items: center; overflow-y: auto; max-height: 70vh;"></div>
         </div>
 
         <div class="overlay" id="gameover-screen" style="display: none;">
@@ -123,18 +148,17 @@
             <p id="final-score" style="color: white; font-size: 22px; margin-bottom: 30px; text-align: center; line-height: 1.5;"></p>
             <button class="start-btn" onclick="startGame()">다시 도전하기</button>
         </div>
-
-        <div id="dev-panel">
-            <h3>🛠️ 스킬 밸런스 테스트 룸 🛠️</h3>
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <button class="dev-btn" id="dev-spawn-btn" onclick="toggleSpawn()" style="background: #2ed573;">🟢 몹 소환 켜짐</button>
-                <button class="dev-btn" onclick="clearAllEnemies()" style="background: #ff4757;">💣 화면 몹 싹쓸이</button>
-            </div>
-            <button class="close-dev" onclick="closeDevMode()">창 닫기 (게임으로 복귀)</button>
-            <div id="dev-skills"></div>
-        </div>
-
         <canvas id="gameCanvas"></canvas>
+    </div>
+
+    <div id="dev-panel">
+        <h3>🛠️ 스킬 밸런스 테스트 룸 🛠️</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="dev-btn" id="dev-spawn-btn" onclick="toggleSpawn()" style="background: #2ed573;">🟢 몹 소환 켜짐</button>
+            <button class="dev-btn" onclick="clearAllEnemies()" style="background: #ff4757;">💣 화면 몹 싹쓸이</button>
+        </div>
+        <button class="close-dev" onclick="closeDevMode()">창 닫기 (게임으로 복귀)</button>
+        <div id="dev-skills"></div>
     </div>
 
     <script>
@@ -150,23 +174,16 @@
         let isBossStage = false; let bossTimer = 20; const BOSS_SPAWN_INTERVAL = 1800; 
 
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
+        let shurikens = []; 
 
-        // 👑 기본 캐릭터 및 적 이미지 설정 (파일이 폴더에 있으면 자동 적용)
-        let customPlayerImg = new Image();
-        customPlayerImg.src = "player.png"; // 동일 폴더의 player.png 불러오기
-        customPlayerImg.onerror = () => { customPlayerImg = null; };
-
-        let customEnemyImg = new Image();
-        customEnemyImg.src = "enemy.png"; // 동일 폴더의 enemy.png 불러오기
-        customEnemyImg.onerror = () => { customEnemyImg = null; };
-
-        // 사진첩 업로드 시 덮어씌우기
+        let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
+        let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
         function handleImage(event, type) {
             const file = event.target.files[0]; if (!file) return;
             const img = new Image(); img.src = URL.createObjectURL(file);
             img.onload = () => {
-                if (type === 'player') { customPlayerImg = img; alert("내 캐릭터 이미지가 적용되었습니다!"); } 
-                else if (type === 'enemy') { customEnemyImg = img; alert("적 캐릭터 이미지가 적용되었습니다!"); }
+                if (type === 'player') { customPlayerImg = img; alert("내 캐릭터가 적용되었습니다!"); } 
+                else if (type === 'enemy') { customEnemyImg = img; alert("적 캐릭터가 적용되었습니다!"); }
             };
         }
 
@@ -202,6 +219,10 @@
         function updateMousePos(e) { let clientX = e.clientX; if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX; const rect = container.getBoundingClientRect(); mouseX = clientX - rect.left; }
         container.addEventListener('mousemove', updateMousePos); container.addEventListener('touchmove', updateMousePos, {passive: false});
 
+        function spawnShurikens() {
+            while(shurikens.length < p.lvl_shuriken_count) { shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', stickTimer: 0 }); }
+        }
+
         function getAvailableAbilities() {
             let pool = [
                 { name: '⚔️ 공격력 UP', desc: '기본 총알 파괴력이 증가합니다.', apply: () => { p.lvl_atk++; p.dmg += p.lvl_atk; } },
@@ -209,9 +230,14 @@
                 { name: '💥 탄환 개수 UP', desc: '총알이 여러 갈래로 나갑니다.', apply: () => { p.lvl_bullet++; p.bulletSpread++; } },
                 { name: '❤️ 최대 체력 UP', desc: '최대 체력이 증가합니다.', apply: () => { p.lvl_maxhp++; let add = 20 * p.lvl_maxhp; p.maxHp += add; p.hp += add; } },
                 { name: '🩹 체력 회복', desc: '즉시 체력을 회복합니다.', apply: () => { p.lvl_heal++; p.hp = Math.min(p.maxHp, p.hp + p.maxHp * (0.3 + p.lvl_heal*0.1)); } },
-                { name: '🪄 스킬 파괴력 UP', desc: '스킬 데미지가 대폭 증가합니다.', apply: () => { p.lvl_skill_dmg++; } },
-                { name: '⏳ 스킬 쿨타임 감소', desc: '스킬을 더 자주 씁니다.', apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(60, 600 - p.lvl_skill_cool * 120); } }
+                { name: '🪄 액티브 파괴력 UP', desc: '필살기 데미지가 대폭 증가합니다.', apply: () => { p.lvl_skill_dmg++; } },
+                { name: '⏳ 액티브 쿨타임 감소', desc: '필살기를 더 자주 씁니다.', apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(60, 600 - p.lvl_skill_cool * 120); } }
             ];
+
+            if (Math.random() < 0.3) {
+                if (p.lvl_shuriken_count === 0) { pool.push({ isRare: true, name: '🌟 [레어] 패시브: 표창 소환', desc: '주변을 맴도는 수호 표창을 소환합니다.', apply: () => { p.lvl_shuriken_count++; spawnShurikens(); } }); } 
+                else { pool.push({ isRare: true, name: '🌟 [레어] 표창 개수 UP', desc: '맴도는 표창의 개수가 늘어납니다.', apply: () => { p.lvl_shuriken_count++; spawnShurikens(); } }); pool.push({ isRare: true, name: '🌟 [레어] 표창 파괴력 UP', desc: '표창의 틱 데미지가 증가합니다.', apply: () => { p.lvl_shuriken_dmg++; } }); }
+            }
 
             if (p.activeSkillType === 'boomerang') {
                 if (p.lvl_boom_split < 2) { pool.push({ name: p.lvl_boom_split === 0 ? '🎇 부메랑 분열' : '🎆 부메랑 최종 분열', apply: () => { p.lvl_boom_split++; } }); }
@@ -226,13 +252,9 @@
 
         function startGame() {
             initAudio();
-            // 👑 내 캐릭터 크기를 w: 60, h: 60으로 키웠습니다!
-            p = {
-                x: canvas.width / 2, y: canvas.height - 100, w: 60, h: 60, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, 
-                dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, expMult: 1.0, activeSkillType: 'boomerang', skillTimer: 0, skillCooldownMax: 600, 
-                lvl_atk: 0, lvl_char: 0, lvl_bullet: 0, lvl_maxhp: 0, lvl_heal: 0, lvl_skill_dmg: 0, lvl_skill_cool: 0, lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 0
-            };
-            bullets = []; enemies = []; particles = []; activeSkills = []; score = 0; frameCount = 0; isBossStage = false; devStopSpawn = false;
+            p = { x: canvas.width / 2, y: canvas.height - 100, w: 60, h: 60, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, expMult: 1.0, activeSkillType: 'boomerang', skillTimer: 0, skillCooldownMax: 600, lvl_atk: 0, lvl_char: 0, lvl_bullet: 0, lvl_maxhp: 0, lvl_heal: 0, lvl_skill_dmg: 0, lvl_skill_cool: 0, lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 0, lvl_shuriken_count: 0, lvl_shuriken_dmg: 0 };
+            bullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; 
+            score = 0; frameCount = 0; isBossStage = false; devStopSpawn = false;
             document.getElementById('start-screen').style.display = 'none'; document.getElementById('gameover-screen').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
             gameState = 'PLAYING'; updateUI();
         }
@@ -257,6 +279,73 @@
 
         function gameOver(reason) { gameState = 'GAMEOVER'; document.getElementById('final-score').innerText = `SCORE: ${score}\n[ ${reason} ]`; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('gameover-screen').style.display = 'flex'; }
 
+        // 🎁 보물상자 & 스킬 선택 로직
+        let isChestOpening = false;
+        let isRareChest = false;
+
+        function triggerLevelUp() {
+            gameState = 'LEVELUP';
+            isChestOpening = false;
+            isRareChest = Math.random() < 0.1; // 10% 확률로 5개짜리 레어 상자!
+            
+            document.getElementById('levelup-screen').style.display = 'flex';
+            document.getElementById('chest-container').style.display = 'flex';
+            document.getElementById('ability-container').style.display = 'none';
+            document.getElementById('chest-desc').style.display = 'block';
+            
+            document.getElementById('lvl-title-text').innerText = isRareChest ? '✨ 대박 보물상자 발견! ✨' : '보물상자 발견!';
+            document.getElementById('lvl-title-text').style.color = isRareChest ? '#ff9f43' : '#f1c40f';
+            
+            let chestEl = document.getElementById('chest-emoji');
+            chestEl.className = 'chest-box'; 
+            chestEl.innerHTML = isRareChest ? '✨🎁✨' : '🎁';
+            
+            if (isRareChest) chestEl.classList.add('rare-chest-idle');
+        }
+
+        function openChest() {
+            if(isChestOpening) return;
+            isChestOpening = true;
+            playSound('shoot');
+            
+            document.getElementById('chest-desc').style.display = 'none';
+            let chestEl = document.getElementById('chest-emoji');
+            chestEl.classList.remove('rare-chest-idle');
+            
+            if (isRareChest) {
+                chestEl.classList.add('anim-shake-rare');
+                // 요동치는 동안 타격음
+                setTimeout(() => playSound('hit'), 400);
+                setTimeout(() => playSound('hit'), 800);
+                setTimeout(showOptions, 1400); 
+            } else {
+                chestEl.classList.add('anim-shake');
+                setTimeout(showOptions, 600); 
+            }
+        }
+
+        function showOptions() {
+            playSound('levelup');
+            document.getElementById('chest-container').style.display = 'none';
+            document.getElementById('ability-container').style.display = 'flex';
+            
+            document.getElementById('lvl-title-text').innerText = isRareChest ? '🎉 초대박 스킬 찬스! (5개) 🎉' : 'LEVEL UP!';
+            
+            let pool = getAvailableAbilities(); 
+            let shuffled = pool.sort(() => 0.5 - Math.random()); 
+            let choices = shuffled.slice(0, isRareChest ? 5 : 3);
+            
+            const cont = document.getElementById('ability-container'); cont.innerHTML = '';
+            choices.forEach(ab => {
+                let card = document.createElement('div'); 
+                card.className = ab.isRare ? 'ability-card rare' : 'ability-card'; 
+                card.innerHTML = `<div class="ab-name">${ab.name}</div><div class="ab-desc">${ab.desc}</div>`;
+                card.onclick = () => { ab.apply(); p.level++; p.maxExp = Math.floor(30 + Math.pow(p.level, 1.5) * 15); p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); };
+                cont.appendChild(card);
+            });
+        }
+
+
         function fireSkill() {
             if (p.skillTimer > 0 || gameState !== 'PLAYING') return; p.skillTimer = p.skillCooldownMax; playSound('skill');
             let skillDmg = p.dmg * 8 * (1 + p.lvl_skill_dmg * 0.5); 
@@ -264,17 +353,6 @@
             else if (p.activeSkillType === 'laser') { let count = 1 + p.lvl_laser_split * 2; for(let i=0; i<count; i++) { activeSkills.push({ type: 'laser', offsetX: (i - Math.floor(count/2)) * 50, life: 180, w: 40, dmg: skillDmg * 0.05 }); } } 
             else if (p.activeSkillType === 'punch') { let count = 1 + p.lvl_punch_count; for(let i=0; i<count; i++) { let angle = -Math.PI/2 + (i - Math.floor(count/2)) * 0.4; activeSkills.push({ type: 'punch', level: 1, x: p.x, y: p.y - 30, w: 70, vx: Math.cos(angle)*18, vy: Math.sin(angle)*18, state: 'flying', hoverTimer: 0, dmg: skillDmg * 0.25 }); } }
             updateUI();
-        }
-
-        function triggerLevelUp() {
-            gameState = 'LEVELUP'; playSound('levelup'); document.getElementById('levelup-screen').style.display = 'flex';
-            let pool = getAvailableAbilities(); let shuffled = pool.sort(() => 0.5 - Math.random()); let choices = shuffled.slice(0, 3);
-            const cont = document.getElementById('ability-container'); cont.innerHTML = '';
-            choices.forEach(ab => {
-                let card = document.createElement('div'); card.className = 'ability-card'; card.innerHTML = `<div class="ab-name">${ab.name}</div><div class="ab-effect">강화하기</div>`;
-                card.onclick = () => { ab.apply(); p.level++; p.maxExp = Math.floor(30 + Math.pow(p.level, 1.5) * 15); p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); };
-                cont.appendChild(card);
-            });
         }
 
         function spawnBoss() {
@@ -287,7 +365,6 @@
             requestAnimationFrame(gameLoop); if (gameState !== 'PLAYING') return; frameCount++;
             if (p.skillTimer > 0) { p.skillTimer--; if (frameCount % 60 === 0) updateUI(); }
             
-            // 👑 늘어난 캐릭터 크기에 맞춰 간격(Spacing)도 65px로 널찍하게 잡았습니다.
             let spacing = 65;
             p.x += (mouseX - p.x) * 0.3; let totalWidth = p.w + (p.charCount - 1) * spacing; p.x = Math.max(totalWidth/2, Math.min(canvas.width - totalWidth/2, p.x));
             
@@ -305,6 +382,23 @@
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let shurikenBaseDmg = 0.5 + p.lvl_shuriken_dmg * 0.5;
+            shurikens.forEach((s, idx) => {
+                if (s.state === 'orbit') {
+                    let targetAngle = (frameCount * 0.06) + (idx * (Math.PI * 2 / shurikens.length));
+                    s.x = p.x + Math.cos(targetAngle) * 90; s.y = p.y + Math.sin(targetAngle) * 90; s.spin += 0.3; 
+                    for (let i = 0; i < enemies.length; i++) { let e = enemies[i]; if (Math.abs(e.x - s.x) < e.w/2 + 20 && Math.abs(e.y - s.y) < e.h/2 + 20) { s.state = 'stick'; s.stickTimer = 90; break; } }
+                } else if (s.state === 'stick') {
+                    s.stickTimer--; s.spin += 0.05; 
+                    enemies.forEach(e => { if (Math.abs(e.x - s.x) < e.w/2 + 25 && Math.abs(e.y - s.y) < e.h/2 + 25) { e.hp -= shurikenBaseDmg; if (frameCount % 10 === 0) particles.push({x: e.x, y: e.y, life: 5, color: '#f1c40f'}); } });
+                    if (s.stickTimer <= 0) s.state = 'orbit';
+                }
+                ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.spin); ctx.fillStyle = '#f1c40f'; ctx.shadowColor = '#e1b12c'; ctx.shadowBlur = 10; ctx.beginPath();
+                for (let j=0; j<4; j++) { ctx.lineTo(20, 0); ctx.lineTo(4, 4); ctx.rotate(Math.PI/2); }
+                ctx.closePath(); ctx.fill(); ctx.fillStyle = 'white'; ctx.shadowBlur = 0; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill(); ctx.restore();
+            });
+
             for (let i = activeSkills.length - 1; i >= 0; i--) {
                 let sk = activeSkills[i];
                 if (sk.type === 'boomerang') {
@@ -347,7 +441,6 @@
 
             for(let i = particles.length - 1; i >= 0; i--){ let pt = particles[i]; pt.life--; ctx.fillStyle = pt.color; ctx.globalAlpha = pt.life/15; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; if(pt.life <= 0) particles.splice(i, 1); }
             
-            // 👑 내 캐릭터 그리기 (간격 적용)
             for(let i=0; i < p.charCount; i++) { 
                 let cx = p.x - ((p.charCount-1)*spacing)/2 + i*spacing;
                 if (customPlayerImg) { ctx.drawImage(customPlayerImg, cx - p.w/2, p.y - p.h/2, p.w, p.h); } 

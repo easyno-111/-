@@ -228,7 +228,7 @@
                 { name: '🩹 체력 회복', desc: '즉시 체력을 회복합니다.', getEffectText: () => `최대 체력의 ${30 + (p.lvl_heal*10)}% 회복!`, apply: () => { p.lvl_heal++; p.hp = Math.min(p.maxHp, p.hp + p.maxHp * (0.3 + p.lvl_heal*0.1)); } },
                 
                 { name: '🪄 스킬 파괴력 UP', desc: '필살기(A)의 피해량이 크게 증가합니다.', getEffectText: () => `스킬 파괴력 +${50 * (p.lvl_skill_dmg + 1)}% 증가!`, apply: () => { p.lvl_skill_dmg++; } },
-                { name: '⏳ 스킬 쿨타임 감소', desc: '필살기(A)를 더 자주 쓸 수 있습니다.', getEffectText: () => `스킬 쿨타임 감소!`, apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(120, 600 - p.lvl_skill_cool * 90); } }
+                { name: '⏳ 스킬 쿨타임 감소', desc: '필살기(A)를 더 자주 쓸 수 있습니다.', getEffectText: () => `스킬 쿨타임 대폭 감소!`, apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(60, 600 - p.lvl_skill_cool * 120); } }
             ];
 
             if (p.activeSkillType === 'boomerang') {
@@ -303,7 +303,7 @@
             ctx.restore();
         }
 
-        function updateUI() {
+function updateUI() {
             document.getElementById('hp-bar').style.width = (p.hp / p.maxHp * 100) + '%';
             document.getElementById('hp-text').innerText = `HP: ${Math.floor(p.hp)} / ${p.maxHp}`;
             document.getElementById('exp-bar').style.width = (p.exp / p.maxExp * 100) + '%';
@@ -319,13 +319,18 @@
             else if(p.activeSkillType === 'laser') nameText.innerText = '레이저';
             else nameText.innerText = '펀치';
 
+            // 👑 쿨타임 표기 로직 완벽 수정
             if (p.skillTimer > 0) {
-                btn.classList.add('cooldown'); nameText.style.display = 'none'; coolText.innerText = Math.ceil(p.skillTimer / 60);
+                btn.classList.add('cooldown'); 
+                nameText.style.display = 'none'; 
+                // 소수점 올림으로 남은 초 계산 (0.1초 남아도 1로 표시)
+                coolText.innerText = Math.ceil(p.skillTimer / 60);
             } else {
-                btn.classList.remove('cooldown'); nameText.style.display = 'block'; coolText.innerText = '';
+                btn.classList.remove('cooldown'); 
+                nameText.style.display = 'block'; 
+                coolText.innerText = ''; // 쿨타임이 0이 되면 글자 지움
             }
         }
-
         function gameOver(reason) {
             gameState = 'GAMEOVER';
             document.getElementById('final-score').innerText = `SCORE: ${score}\n달성 레벨: ${p.level}\n\n[ ${reason} ]`;

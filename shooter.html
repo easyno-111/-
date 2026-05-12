@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V18 지수적 난이도 & 돌풍 리워크)</title>
+    <title>로그라이트 화력 슈팅 (V19 키보드 A버튼 복구)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -54,6 +54,7 @@
 <body>
 
     <button id="sound-btn" onclick="toggleSound()">🔊</button>
+    <!-- 마우스 클릭과 터치를 모두 지원합니다 -->
     <div id="skill-btn" onmousedown="fireSkill(event)" ontouchstart="fireSkill(event)">
         <div id="skill-name">스킬(A)</div>
         <div id="skill-cool" style="font-size:32px; font-weight:900;"></div>
@@ -184,7 +185,20 @@
             else if(type === 'heal') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.linearRampToValueAtTime(1000, t+0.2); gain.gain.setValueAtTime(0.02, t); osc.start(t); osc.stop(t+0.2); }
         }
 
+        // 🚨 키보드 입력 및 개발자 모드 코드 완벽 복구 🚨
+        let keyBuffer = "";
         let scoreTapCount = 0; let devStopSpawn = false;
+        
+        window.addEventListener('keydown', (e) => { 
+            // A 키보드 입력 시 스킬 발사!
+            if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill(); 
+            
+            // 개발자 모드 시크릿 코드 감지
+            keyBuffer += e.key; 
+            if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4); 
+            if (keyBuffer === "1563") { openDevMode(); keyBuffer = ""; }
+        });
+
         function checkDevMode() { scoreTapCount++; if(scoreTapCount >= 5) { scoreTapCount=0; if(prompt("PW:")==="1563") openDevMode(); } }
         function openDevMode() { document.getElementById('dev-panel').style.display='block'; renderDevSkills(); }
         function closeDevMode() { document.getElementById('dev-panel').style.display='none'; }
@@ -226,7 +240,6 @@
                 pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소', apply: () => { p.lvl_sword++; } });
             }
 
-            // 🌀 칼날 돌풍 (무한 오라)
             if (p.lvl_storm > 0 || Math.random() < 0.3 || isDev) {
                 pool.push({ isRare: p.lvl_storm === 0, name: p.lvl_storm === 0 ? '🌀 [레어] 칼날 돌풍 (무한 지속 오라)' : '🌀 칼날 돌풍 반경 & 위력 UP', apply: () => { p.lvl_storm++; } });
             }
@@ -265,7 +278,7 @@
                 lvl_lightning: 0, lightning_chance: 0.2,
                 lvl_homing: 0, homing_split: 3,
                 lvl_sword: 0, swordTimer: 0,
-                lvl_storm: 0, // 오라 레벨
+                lvl_storm: 0,
                 lvl_vampire: 0, vampire_chance: 0, lvl_regen: 0, iframe: 0 
             };
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = [];
@@ -325,7 +338,6 @@
                 card.innerHTML = `<div class="ab-name">${ab.name}</div>`;
                 card.onclick = () => { 
                     ab.apply(); p.level++; 
-                    // 💎 경험치 배율 1.42배 조율 (지수적 스폰 대응)
                     p.maxExp = Math.floor(p.maxExp * 1.42); 
                     p.exp = 0; 
                     document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); 
@@ -377,7 +389,6 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            // 📈 1~20라운드 완벽한 지수적(Exponential) 스폰 로직
             if (!isBossStage && !isBossWarning) {
                 bossSpawnTimer--;
                 
@@ -389,7 +400,6 @@
                 } 
                 else if (!devStopSpawn) {
                     if (isSwarm && swarmWarningTimer <= 0) {
-                        // 대규모 무리 스폰률 (지수적 증가)
                         let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(2, Math.floor(12 * Math.pow(0.85, bossKills)));
                         if (frameCount % swarmSpawnRate === 0) {
                             let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
@@ -399,7 +409,6 @@
                             }
                         }
                     } else if (!isSwarm) {
-                        // 평상시 스폰률 (3라운드부터 지수적 증가)
                         let spawnRate = 45;
                         let hordeCount = 1;
                         
@@ -410,7 +419,7 @@
                             hordeCount = Math.min(25, Math.floor(2 * Math.pow(1.15, bossKills - 2)));
                         }
 
-                        if (frameCount % spawnRate === 0 && enemies.length < 250) { // 맵 최대 수 250으로 증가
+                        if (frameCount % spawnRate === 0 && enemies.length < 250) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.15);
                                 enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: 1+Math.floor(bossKills/1.5), speed: spd, isBoss: false });
@@ -424,7 +433,7 @@
                 swarmWarningTimer--;
                 ctx.fillStyle = `rgba(230, 126, 34, ${Math.abs(Math.sin(frameCount*0.2))})`;
                 ctx.font = "900 30px Arial"; ctx.textAlign = "center";
-                ctx.fillText("적의 대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
+                ctx.fillText("대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
             }
 
             if(isBossWarning) {
@@ -614,38 +623,6 @@
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
             }
 
-            // 🌀 칼날 돌풍 (무한 오라 로직)
-            if (p.lvl_storm > 0) {
-                let sk_r = 60 + p.lvl_storm * 20; // 범위 증가
-                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
-                ctx.globalAlpha = 0.6; ctx.strokeStyle = '#00a8ff'; ctx.lineWidth = 4;
-                ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.stroke();
-                
-                // 톱날 4개 회전
-                for(let j=0; j<4; j++) {
-                    ctx.save(); ctx.rotate((Math.PI*2/4)*j); 
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); 
-                    ctx.moveTo(sk_r-10, 0); ctx.lineTo(sk_r+10, -25); ctx.lineTo(sk_r+30, 0); ctx.fill(); 
-                    ctx.restore(); 
-                }
-                ctx.fillStyle = 'rgba(0, 168, 255, 0.15)'; ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.fill(); 
-                ctx.restore();
-                
-                // 타격 및 넉백 (1초에 4번 틱)
-                if (frameCount % 15 === 0) {
-                    let stormDmg = p.dmg * 0.8 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_storm;
-                    enemies.forEach(e => {
-                        if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
-                            e.hp -= stormDmg; 
-                            e.y -= 15; // 넉백 (위로 튕겨냄)
-                            e.x += (e.x > p.x ? 10 : -10); // 좌우로 밀쳐냄
-                            if(e.isBoss) e.iframe = 4;
-                            spawnParticles(e.x, e.y, '#00a8ff', 2);
-                        }
-                    });
-                }
-            }
-
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -684,6 +661,36 @@
                         ctx.beginPath(); ctx.arc(-14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0,-18,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
                         ctx.restore(); 
                     } else { activeSkills.splice(i, 1); }
+                }
+            }
+
+            // 🌀 칼날 돌풍 (무한 오라 로직)
+            if (p.lvl_storm > 0) {
+                let sk_r = 60 + p.lvl_storm * 20; 
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
+                ctx.globalAlpha = 0.6; ctx.strokeStyle = '#00a8ff'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.stroke();
+                
+                for(let j=0; j<4; j++) {
+                    ctx.save(); ctx.rotate((Math.PI*2/4)*j); 
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); 
+                    ctx.moveTo(sk_r-10, 0); ctx.lineTo(sk_r+10, -25); ctx.lineTo(sk_r+30, 0); ctx.fill(); 
+                    ctx.restore(); 
+                }
+                ctx.fillStyle = 'rgba(0, 168, 255, 0.15)'; ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.fill(); 
+                ctx.restore();
+                
+                if (frameCount % 15 === 0) {
+                    let stormDmg = p.dmg * 0.8 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_storm;
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
+                            e.hp -= stormDmg; 
+                            e.y -= 15; 
+                            e.x += (e.x > p.x ? 10 : -10); 
+                            if(e.isBoss) e.iframe = 4;
+                            spawnParticles(e.x, e.y, '#00a8ff', 2);
+                        }
+                    });
                 }
             }
 

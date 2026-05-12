@@ -6,46 +6,52 @@
     <title>메인 대시보드</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        /* 기본(아이패드/PC) 패딩은 40px */
         body { background-color: #f5f5f7; padding: 40px; color: #1d1d1f; }
         
-        /* 메인 타이틀 */
         .page-title {
             font-size: 32px; font-weight: 800; margin-bottom: 10px; color: #1d1d1f;
             text-align: center; letter-spacing: -0.5px;
         }
-        .page-subtitle {
-            font-size: 18px; color: #86868b; text-align: center; margin-bottom: 50px;
-        }
+        .page-subtitle { font-size: 18px; color: #86868b; text-align: center; margin-bottom: 50px; }
 
-        /* 카테고리 섹션 */
         .category-section { margin-bottom: 50px; max-width: 1000px; margin-left: auto; margin-right: auto; }
         .category-title {
             font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #1d1d1f;
             display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e5e5ea; padding-bottom: 10px;
         }
 
-        /* 카드 그리드 정렬 (아이패드 맞춤형) */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
 
-        /* 개별 카드 디자인 (애플 스타일) */
         .card {
             background: #ffffff; border-radius: 18px; padding: 25px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             border: 1px solid #f0f0f0; display: flex; flex-direction: column; gap: 10px;
         }
-        .card:hover {
-            transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
         .card:active { transform: scale(0.98); }
 
         .card-icon { font-size: 40px; }
         .card-title { font-size: 20px; font-weight: 700; color: #1d1d1f; }
         .card-desc { font-size: 15px; color: #86868b; line-height: 1.4; }
+
+        /* 📱 스마트폰을 위한 반응형 코드 (화면 너비가 600px 이하일 때만 발동!) */
+        @media (max-width: 600px) {
+            body { padding: 20px 15px; } /* 여백 줄이기 */
+            .page-title { font-size: 26px; } /* 제목 크기 줄이기 */
+            .page-subtitle { font-size: 15px; margin-bottom: 30px; }
+            .category-title { font-size: 19px; }
+            .card-grid { 
+                grid-template-columns: 1fr; /* 스마트폰에서는 카드를 무조건 1줄로 꽉 차게 */
+                gap: 15px; 
+            }
+            .card { padding: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -61,7 +67,7 @@
                 <div class="card-title">이차함수 최대·최소</div>
                 <div class="card-desc">구간을 직접 조작하며 이차함수의 극값을 시각적으로 확인해보세요.</div>
             </div>
-            </div>
+        </div>
     </div>
 
     <div class="category-section">
@@ -102,7 +108,6 @@
     </div>
 
     <script>
-        // 카드를 클릭하면 부모 창(index.html)에 있는 loadApp 함수를 실행하여 화면을 바꿉니다.
         function openApp(url) {
             if(window.parent && window.parent.loadApp) {
                 window.parent.loadApp(url);

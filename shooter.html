@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (개발자 모드 탑재)</title>
+    <title>로그라이트 화력 슈팅 (완벽한 테스트룸)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -45,7 +45,6 @@
         .ab-desc { font-size: 15px; color: #ced6e0; line-height: 1.4; }
         .ab-effect { font-size: 14px; font-weight: bold; color: #2ed573; margin-top: 8px; }
 
-        /* 🛠️ 개발자 모드 UI 스타일 */
         #dev-panel {
             display: none; position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
             width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757;
@@ -68,7 +67,6 @@
             <div class="bar-bg"><div id="hp-bar"></div><div class="bar-text" id="hp-text">HP: 100 / 100</div></div>
             <div class="bar-bg"><div id="exp-bar"></div><div class="bar-text" id="exp-text">LV.1 (0/30)</div></div>
             <div class="top-stats">
-                <!-- 👑 스코어를 여러 번 터치하면 개발자 모드 진입 -->
                 <div id="score-display" onclick="checkDevMode()" style="cursor: pointer; padding: 5px;">SCORE: 0</div>
                 <div id="dmg-display">데미지: 1</div>
             </div>
@@ -100,8 +98,15 @@
         <!-- 🛠️ 개발자 패널 -->
         <div id="dev-panel">
             <h3>🛠️ 스킬 밸런스 테스트 룸 🛠️</h3>
+            
+            <!-- 👑 몹 컨트롤 버튼 -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="dev-btn" id="dev-spawn-btn" onclick="toggleSpawn()" style="background: #2ed573;">🟢 몹 소환 켜짐</button>
+                <button class="dev-btn" onclick="clearAllEnemies()" style="background: #ff4757;">💣 화면 몹 싹쓸이</button>
+            </div>
+
             <button class="close-dev" onclick="closeDevMode()">창 닫기 (게임으로 복귀)</button>
-            <p style="text-align: center; color: #ced6e0; font-size: 12px; margin-bottom: 10px;">버튼을 누르면 즉시 능력이 적용됩니다.</p>
+            <p style="text-align: center; color: #ced6e0; font-size: 12px; margin-bottom: 10px;">버튼을 누르면 레벨 상승 없이 능력만 적용됩니다.</p>
             <div id="dev-skills"></div>
         </div>
 
@@ -131,14 +136,14 @@
         let particles = [];
         let activeSkills = []; 
 
-        // 🛠️ 개발자 모드 진입 로직
+        // 🛠️ 개발자 모드 변수
+        let devStopSpawn = false; 
         let keyBuffer = "";
         let scoreTapCount = 0;
 
         window.addEventListener('keydown', (e) => {
             if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill();
 
-            // PC용 키보드 로직
             keyBuffer += e.key;
             if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4);
             if (keyBuffer === "1563") {
@@ -147,7 +152,6 @@
             }
         });
 
-        // 모바일/아이패드용 화면 터치 로직
         function checkDevMode() {
             scoreTapCount++;
             if (scoreTapCount >= 5) {
@@ -166,11 +170,28 @@
             document.getElementById('dev-panel').style.display = 'none';
         }
 
+        // 👑 몹 소환 정지/재개 토글
+        function toggleSpawn() {
+            devStopSpawn = !devStopSpawn;
+            let btn = document.getElementById('dev-spawn-btn');
+            btn.innerText = devStopSpawn ? "🔴 몹 소환 정지됨" : "🟢 몹 소환 켜짐";
+            btn.style.background = devStopSpawn ? "#747d8c" : "#2ed573";
+        }
+
+        // 👑 모든 몹 제거 (즉사)
+        function clearAllEnemies() {
+            enemies.forEach(e => {
+                particles.push({x: e.x, y: e.y, life: 15, color: '#ff4757'});
+            });
+            enemies = [];
+            isBossStage = false;
+            document.getElementById('boss-timer-display').style.display = 'none';
+        }
+
         function renderDevSkills() {
             const container = document.getElementById('dev-skills');
             container.innerHTML = '';
             
-            // 현재 얻을 수 있는 모든 능력을 가져옴
             let pool = getAvailableAbilities();
             
             pool.forEach(ab => {
@@ -179,9 +200,9 @@
                 btn.innerHTML = ab.name;
                 btn.onclick = () => {
                     ab.apply();
-                    p.level++; // 강제로 레벨도 올려줌
+                    // 👑 p.level++; 코드를 삭제하여 레벨 상승을 막음!
                     updateUI();
-                    renderDevSkills(); // 스킬을 고르면 새로운 트리가 열릴 수 있으므로 새로고침
+                    renderDevSkills();
                 };
                 container.appendChild(btn);
             });
@@ -257,11 +278,17 @@
             mouseX = canvas.width / 2;
             bullets = []; enemies = []; particles = []; activeSkills = [];
             score = 0; frameCount = 0; isBossStage = false;
+            devStopSpawn = false; // 새 게임 시 소환 켜기
             
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('gameover-screen').style.display = 'none';
             document.getElementById('boss-timer-display').style.display = 'none';
+            document.getElementById('dev-panel').style.display = 'none';
             document.getElementById('ui-layer').style.display = 'block';
+            
+            let spawnBtn = document.getElementById('dev-spawn-btn');
+            spawnBtn.innerText = "🟢 몹 소환 켜짐";
+            spawnBtn.style.background = "#2ed573";
             
             gameState = 'PLAYING';
             updateUI();
@@ -404,20 +431,30 @@
                 }
             }
 
-            if (isBossStage) {
-                if (frameCount % 60 === 0) {
+            // 👑 개발자 모드: 소환 정지 상태가 아닐 때만 몹 스폰
+            if (!devStopSpawn) {
+                if (isBossStage) {
+                    if (frameCount % 60 === 0) {
+                        bossTimer--;
+                        document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
+                        if (bossTimer <= 0) { gameOver("시간 초과! 보스 격파에 실패했습니다."); return; }
+                    }
+                } else {
+                    if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) spawnBoss();
+                    else {
+                        let spawnRate = Math.max(4, 30 - p.level * 2); 
+                        if (frameCount % spawnRate === 0) {
+                            let baseHp = 1 + Math.floor(p.level / 3); 
+                            enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -30, w: 25, h: 25, hp: baseHp, maxHp: baseHp, speed: Math.random() * 2 + 2 + (p.level*0.1), color: '#ff4757', isBoss: false });
+                        }
+                    }
+                }
+            } else if (isBossStage) {
+                // 소환 멈춤 상태여도 보스 타이머는 흘러가야 함
+                if (frameCount % 60 === 0 && enemies.length > 0) {
                     bossTimer--;
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     if (bossTimer <= 0) { gameOver("시간 초과! 보스 격파에 실패했습니다."); return; }
-                }
-            } else {
-                if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) spawnBoss();
-                else {
-                    let spawnRate = Math.max(4, 30 - p.level * 2); 
-                    if (frameCount % spawnRate === 0) {
-                        let baseHp = 1 + Math.floor(p.level / 3); 
-                        enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -30, w: 25, h: 25, hp: baseHp, maxHp: baseHp, speed: Math.random() * 2 + 2 + (p.level*0.1), color: '#ff4757', isBoss: false });
-                    }
                 }
             }
 

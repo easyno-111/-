@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V13 대규모 무리 & 새로고침)</title>
+    <title>로그라이트 화력 슈팅 (V14 리스크&리턴 마스터피스)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -54,7 +54,7 @@
 <body>
 
     <button id="sound-btn" onclick="toggleSound()">🔊</button>
-    <div id="skill-btn" onmousedown="fireSkill()" ontouchstart="fireSkill(event)">
+    <div id="skill-btn" onmousedown="fireSkill(event)" ontouchstart="fireSkill(event)">
         <div id="skill-name">스킬(A)</div>
         <div id="skill-cool" style="font-size:32px; font-weight:900;"></div>
     </div>
@@ -89,7 +89,6 @@
                 <p style="color:white; margin-top:20px;">터치하여 열기</p>
             </div>
             <div id="ability-container" style="width: 100%; display: none; flex-direction: column; align-items: center; overflow-y: auto; max-height: 70vh;"></div>
-            <!-- 🔄 새로고침 버튼 추가 -->
             <button id="reroll-btn">🔄 능력 새로고침 (1회)</button>
         </div>
 
@@ -134,7 +133,7 @@
 
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
-        let swords = []; // 🗡️ 심판의 검 배열
+        let swords = []; 
 
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
         let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
@@ -214,10 +213,8 @@
                 { name: '💖 초당 자연 회복', apply: () => { p.lvl_regen++; } }
             ];
 
-            if (Math.random() < 0.03 || isDev) {
-                pool.push({ isLegendary: true, name: '💠 [초희귀] 샷건 (탄환 x2)', apply: () => { p.bulletMultiplier *= 2; } });
-            }
-
+            if (Math.random() < 0.03 || isDev) pool.push({ isLegendary: true, name: '💠 [초희귀] 샷건 (탄환 x2)', apply: () => { p.bulletMultiplier *= 2; } });
+            
             if (p.lvl_lightning > 0 || Math.random() < 0.25 || isDev) {
                 pool.push({ isRare: p.lvl_lightning === 0, name: p.lvl_lightning === 0 ? '⚡ [레어] 연쇄 번개' : '⚡ 번개 확률 & 전이 UP', apply: () => { p.lvl_lightning++; p.lightning_chance = Math.min(0.8, 0.2 + p.lvl_lightning*0.05); } });
             }
@@ -226,13 +223,8 @@
                 pool.push({ isRare: p.lvl_homing === 0, name: p.lvl_homing === 0 ? '✨ [레어] 유도 분열탄' : '✨ 유도탄 분열 개수 UP', apply: () => { p.lvl_homing++; p.homing_split++; } });
             }
 
-            // 🗡️ 신규 단일 극딜 스킬: 심판의 검
             if (p.lvl_sword > 0 || Math.random() < 0.25 || isDev) {
-                pool.push({
-                    isRare: p.lvl_sword === 0,
-                    name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소',
-                    apply: () => { p.lvl_sword++; }
-                });
+                pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소', apply: () => { p.lvl_sword++; } });
             }
 
             if (p.lvl_orbital > 0 || Math.random() < 0.015 || isDev) {
@@ -269,8 +261,7 @@
                 lvl_lightning: 0, lightning_chance: 0.2,
                 lvl_homing: 0, homing_split: 3,
                 lvl_sword: 0, swordTimer: 0,
-                lvl_vampire: 0, vampire_chance: 0,
-                lvl_regen: 0, iframe: 0 
+                lvl_vampire: 0, vampire_chance: 0, lvl_regen: 0, iframe: 0 
             };
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = [];
             score = 0; bossKills = 0; frameCount = 0; isBossStage = false; isBossWarning = false; isSwarm = false;
@@ -292,10 +283,10 @@
         }
 
         let isChestOpening = false;
-        let currentChestReroll = 1; // 🔄 리롤 가능 횟수 (상자당 1회)
+        let currentChestReroll = 1; 
 
         function triggerLevelUp() { 
-            gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; currentChestReroll = 1; // 횟수 초기화
+            gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; currentChestReroll = 1; 
             document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; document.getElementById('reroll-btn').style.display = 'none';
             let chestEl = document.getElementById('chest-emoji'); chestEl.className = 'chest-box'; 
             if (isRareChest) { document.getElementById('lvl-title-text').innerText = '✨ 황금 상자! ✨'; document.getElementById('lvl-title-text').style.color = '#00ffff'; chestEl.innerHTML = '✨🎁✨'; } 
@@ -314,12 +305,11 @@
             document.getElementById('chest-container').style.display = 'none';
             document.getElementById('ability-container').style.display = 'flex';
             
-            // 🔄 리롤 버튼 표시 로직
             const rerollBtn = document.getElementById('reroll-btn');
             rerollBtn.style.display = currentChestReroll > 0 ? 'inline-block' : 'none';
             rerollBtn.onclick = () => {
                 if(currentChestReroll > 0) {
-                    currentChestReroll--; playSound('shoot'); showOptions(); // 리롤!
+                    currentChestReroll--; playSound('shoot'); showOptions();
                 }
             };
 
@@ -328,7 +318,13 @@
             choices.forEach(ab => {
                 let card = document.createElement('div'); card.className = ab.isLegendary ? 'ability-card legendary' : (ab.isRare ? 'ability-card rare' : 'ability-card');
                 card.innerHTML = `<div class="ab-name">${ab.name}</div>`;
-                card.onclick = () => { ab.apply(); p.level++; p.maxExp *= 1.35; p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); };
+                card.onclick = () => { 
+                    ab.apply(); p.level++; 
+                    // 👑 경험치 통 증가폭 1.35 -> 1.45배 상향
+                    p.maxExp = Math.floor(p.maxExp * 1.45); 
+                    p.exp = 0; 
+                    document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); 
+                };
                 cont.appendChild(card);
             });
         }
@@ -343,12 +339,6 @@
             else if(p.activeSkillType === 'punch') { for(let i=0; i<(1+p.lvl_punch_count); i++) activeSkills.push({ type: 'punch', level: 1, x: p.x, y: p.y - 30, w: 70, vx: Math.cos(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18 + p.vx*0.3, vy: Math.sin(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18, state: 'flying', hitTimer: 60, dmg: sd*0.25 }); }
             updateUI();
         }
-        
-        window.addEventListener('keydown', (e) => { 
-            if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill(); 
-            keyBuffer += e.key; if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4); 
-            if (keyBuffer === "1563") { openDevMode(); keyBuffer = ""; }
-        });
 
         function gameEnd(win) {
             gameState = 'END'; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('end-screen').style.display = 'flex';
@@ -360,10 +350,7 @@
 
         function spawnParticles(x, y, color, count, speedMult = 1) {
             for(let i=0; i<count; i++) {
-                particles.push({
-                    x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult,
-                    life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false
-                });
+                particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false });
             }
         }
 
@@ -385,46 +372,56 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            // 🌊 대규모 무리 & 보스 스폰 로직
+            // 👑 1. 템포 조절 및 대규모 무리 이벤트 (보스 7초전)
             if (!isBossStage && !isBossWarning) {
                 bossSpawnTimer--;
                 
-                if (bossSpawnTimer === 180) { // 👑 보스 나오기 3초 전: 대규모 무리 이벤트 발생!
+                // 420프레임(약 7초 전)에 대규모 무리 경고 및 스폰 시작
+                if (bossSpawnTimer === 420) { 
                     isSwarm = true; swarmWarningTimer = 90; playSound('levelup');
+                }
+                if (bossSpawnTimer === 120) {
+                    isSwarm = false; // 보스 경고 직전에 무리 스폰 중지
                 }
 
                 if (bossSpawnTimer <= 0) { 
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else if (!devStopSpawn) {
-                    if (isSwarm) {
-                        // 🌊 화면을 덮는 대규모 스폰
-                        if (frameCount % 6 === 0) {
-                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 3+Math.random()*2, isBoss: false, color: '#e67e22' });
-                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 3+Math.random()*2, isBoss: false, color: '#e67e22' });
+                    if (isSwarm && swarmWarningTimer <= 0) {
+                        // 🌊 대규모 무리 미친 속도 스폰 (리스크 극대화)
+                        if (frameCount % 5 === 0) {
+                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
+                            enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
+                            if (bossKills >= 2) enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: 1+Math.floor(bossKills/2), speed: 4+Math.random()*3, isBoss: false, color: '#e67e22' });
                         }
-                    } else {
-                        // 초반은 느리고 후반 갈수록 점진적 증가
+                    } else if (!isSwarm) {
+                        // 👑 2. 평상시 스폰 & 3라운드(보스 2마리) 이후 난이도 폭발
                         let spawnRate = Math.max(20, 60 - bossKills * 5);
-                        if (frameCount % spawnRate === 0 && enemies.length < 80) {
-                            let hordeCount = 1 + Math.floor(bossKills / 4);
+                        let hordeCount = 1 + Math.floor(bossKills / 4);
+                        
+                        // 3라운드 진입 시
+                        if (bossKills >= 2) {
+                            spawnRate = Math.max(8, 30 - (bossKills - 2) * 5); // 매우 빠르게
+                            hordeCount = 3 + Math.floor(bossKills / 2); // 엄청 많이
+                        }
+
+                        if (frameCount % spawnRate === 0 && enemies.length < 150) {
                             for(let k=0; k<hordeCount; k++) {
-                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: 1+Math.floor(bossKills/2), speed: 1.5+Math.random()*2, isBoss: false });
+                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: 1+Math.floor(bossKills/1.5), speed: 1.5+Math.random()*2, isBoss: false });
                             }
                         }
                     }
                 }
             }
 
-            // 🚨 대규모 무리 경고 텍스트
             if (swarmWarningTimer > 0) {
                 swarmWarningTimer--;
-                ctx.fillStyle = 'rgba(230, 126, 34, ' + Math.abs(Math.sin(frameCount*0.2)) + ')';
+                ctx.fillStyle = `rgba(230, 126, 34, ${Math.abs(Math.sin(frameCount*0.2))})`;
                 ctx.font = "900 30px Arial"; ctx.textAlign = "center";
-                ctx.fillText("적의 대규모 무리 접근 중!", canvas.width/2, canvas.height/3);
+                ctx.fillText("대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
             }
 
-            // 🚨 보스 경고 연출
             if(isBossWarning) {
                 bossWarningTimer--;
                 ctx.fillStyle = `rgba(255, 0, 0, ${0.1 + Math.sin(frameCount*0.2)*0.1})`; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -452,13 +449,11 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🗡️ 신규: 심판의 검 (단일 극딜)
             if (p.lvl_sword > 0) {
                 p.swordTimer--;
                 if (p.swordTimer <= 0) {
                     p.swordTimer = Math.max(60, 240 - p.lvl_sword * 30);
                     if (enemies.length > 0) {
-                        // 가장 체력이 높은 적 탐색
                         let target = enemies.reduce((max, e) => (e.hp > max.hp ? e : max), enemies[0]);
                         if (target) {
                             swords.push({x: target.x, y: -100, targetY: target.y, dmg: p.dmg * 10 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_sword, life: 30, hit: false});
@@ -469,25 +464,19 @@
             for (let i = swords.length - 1; i >= 0; i--) {
                 let s = swords[i];
                 if (!s.hit) {
-                    s.y += 40; // 엄청 빠르게 하강
+                    s.y += 40; 
                     ctx.fillStyle = '#fff'; ctx.shadowColor = '#f39c12'; ctx.shadowBlur = 20;
                     ctx.fillRect(s.x - 6, s.y - 100, 12, 100); 
-                    ctx.beginPath(); ctx.moveTo(s.x-20, s.y-70); ctx.lineTo(s.x+20, s.y-70); ctx.lineWidth=5; ctx.strokeStyle='#f39c12'; ctx.stroke();
-                    ctx.shadowBlur = 0;
-
+                    ctx.beginPath(); ctx.moveTo(s.x-20, s.y-70); ctx.lineTo(s.x+20, s.y-70); ctx.lineWidth=5; ctx.strokeStyle='#f39c12'; ctx.stroke(); ctx.shadowBlur = 0;
                     if (s.y >= s.targetY) {
                         s.hit = true; playSound('hit'); globalShakeTimer = 15; spawnParticles(s.x, s.y, '#f39c12', 20, 2);
-                        enemies.forEach(e => {
-                            if (Math.abs(e.x - s.x) < e.w/2 + 25 && Math.abs(e.y - s.y) < e.h/2 + 25) { e.hp -= s.dmg; }
-                        });
+                        enemies.forEach(e => { if (Math.abs(e.x - s.x) < e.w/2 + 25 && Math.abs(e.y - s.y) < e.h/2 + 25) { e.hp -= s.dmg; } });
                     }
                 } else {
-                    s.life--;
-                    if (s.life <= 0) swords.splice(i, 1);
+                    s.life--; if (s.life <= 0) swords.splice(i, 1);
                 }
             }
 
-            // 위성 폭격
             if(p.lvl_orbital > 0) {
                 p.orbitalTimer--;
                 if(p.orbitalTimer <= 0) {
@@ -499,20 +488,16 @@
             for (let i = orbitals.length - 1; i >= 0; i--) {
                 let o = orbitals[i];
                 if(o.state === 'aim') {
-                    o.timer--; 
-                    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.1);
-                    ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.beginPath(); 
-                    let r = Math.max(0.1, o.r*(o.timer/90+0.5)); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
+                    o.timer--; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.1);
+                    ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.beginPath(); let r = Math.max(0.1, o.r*(o.timer/90+0.5)); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
                     if(o.timer<=0) { o.state='fire'; o.timer=40; globalShakeTimer=30; playSound('skill'); }
                 } else {
-                    o.timer--; let a = Math.max(0, o.timer/40); 
-                    ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
+                    o.timer--; let a = Math.max(0, o.timer/40); ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
                     enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= (p.dmg*5); });
                     if(o.timer<=0) orbitals.splice(i, 1);
                 }
             }
 
-            // 수호 표창
             if(p.lvl_shuriken_active) {
                 if(frameCount % 60 === 0 && shurikens.filter(s=>s.state==='orbit').length < p.shurikenLimit) {
                     shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: new Map() });
@@ -527,20 +512,14 @@
             for(let i=shurikens.length-1; i>=0; i--) {
                 let s = shurikens[i];
                 if(s.state === 'orbit') {
-                    let idx = shurikens.filter(sh=>sh.state==='orbit').indexOf(s);
-                    let total = Math.max(1, shurikens.filter(sh=>sh.state==='orbit').length);
-                    let ang = (frameCount*0.1) + (idx*Math.PI*2/total);
-                    s.x = p.x + Math.cos(ang)*85; s.y = p.y + Math.sin(ang)*85; s.spin += 0.3;
+                    let idx = shurikens.filter(sh=>sh.state==='orbit').indexOf(s); let total = Math.max(1, shurikens.filter(sh=>sh.state==='orbit').length);
+                    let ang = (frameCount*0.1) + (idx*Math.PI*2/total); s.x = p.x + Math.cos(ang)*85; s.y = p.y + Math.sin(ang)*85; s.spin += 0.3;
                 } else {
                     s.x += s.vx; s.y += s.vy; s.spin += 0.6;
                     enemies.forEach(e => {
                         if(Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
                             let hits = s.hitLog.get(e) || 0;
-                            if(hits < 3) {
-                                s.vx *= 0.65; s.vy *= 0.65; 
-                                e.hp -= 0.6; s.hitLog.set(e, hits+1);
-                                if(frameCount%5===0) spawnParticles(s.x, s.y, '#f1c40f', 1);
-                            }
+                            if(hits < 3) { s.vx *= 0.65; s.vy *= 0.65; e.hp -= 0.6; s.hitLog.set(e, hits+1); if(frameCount%5===0) spawnParticles(s.x, s.y, '#f1c40f', 1); }
                         }
                     });
                     if(s.x<-50||s.x>canvas.width+50||s.y<-50||s.y>canvas.height+50) shurikens.splice(i, 1);
@@ -558,28 +537,19 @@
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
                 for(let j=0; j<totalBullets; j++) {
-                    p.totalFired++;
-                    let bvx = (j - (totalBullets-1)/2) * 0.15;
-                    let isEnhanced = (p.lvl_homing > 0 && p.totalFired % 3 === 0);
-                    bullets.push({ 
-                        x: p.x, y: p.y - 20, 
-                        vx: bvx + p.vx * 0.15, vy: -12, 
-                        dmg: isEnhanced ? p.dmg * 1.5 : p.dmg, 
-                        enhanced: isEnhanced, color: isEnhanced ? '#00ffff' : '#f1c40f', r: isEnhanced ? 6 : 4
-                    });
+                    p.totalFired++; let bvx = (j - (totalBullets-1)/2) * 0.15; let isEnhanced = (p.lvl_homing > 0 && p.totalFired % 3 === 0);
+                    bullets.push({ x: p.x, y: p.y - 20, vx: bvx + p.vx * 0.15, vy: -12, dmg: isEnhanced ? p.dmg * 1.5 : p.dmg, enhanced: isEnhanced, color: isEnhanced ? '#00ffff' : '#f1c40f', r: isEnhanced ? 6 : 4 });
                 }
             }
 
             for(let i=bullets.length-1; i>=0; i--) {
                 let b = bullets[i]; b.x+=b.vx; b.y+=b.vy; 
                 ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                
                 let hit = false;
                 for(let j=0; j<enemies.length; j++){
                     let e = enemies[j];
                     if(Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         e.hp -= b.dmg; bullets.splice(i, 1); playSound('hit'); hit=true;
-                        
                         if (b.enhanced) {
                             playSound('zap');
                             for(let k=0; k<p.homing_split; k++) {
@@ -587,10 +557,8 @@
                                 homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: p.dmg * (0.5 + p.lvl_homing*0.2), target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
                             }
                         }
-
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance) {
-                            playSound('zap');
-                            let ld = (p.dmg*0.6) * (1 + p.lvl_skill_dmg*0.4);
+                            playSound('zap'); let ld = (p.dmg*0.6) * (1 + p.lvl_skill_dmg*0.4);
                             let targets = enemies.filter(en=>en!==e).sort((a,b)=>Math.hypot(a.x-e.x,a.y-e.y)-Math.hypot(b.x-e.x,b.y-e.y)).slice(0, 2+p.lvl_lightning);
                             let lx = e.x, ly = e.y;
                             targets.forEach(t => { lightnings.push({x1: lx, y1: ly, x2: t.x, y2: t.y, life: 10}); t.hp -= ld; lx=t.x; ly=t.y; });
@@ -603,28 +571,18 @@
 
             for (let i = homingBullets.length - 1; i >= 0; i--) {
                 let hb = homingBullets[i]; hb.life--;
-                
                 if (!hb.target || hb.target.hp <= 0 || !enemies.includes(hb.target)) {
                     let closestDist = Infinity; let closestE = null;
-                    for(let j=0; j<enemies.length; j++) { 
-                        if (enemies[j] !== hb.ignore && !hb.hitLog.has(enemies[j])) {
-                            let dist = Math.hypot(enemies[j].x - hb.x, enemies[j].y - hb.y); 
-                            if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } 
-                        }
-                    }
+                    for(let j=0; j<enemies.length; j++) { if (enemies[j] !== hb.ignore && !hb.hitLog.has(enemies[j])) { let dist = Math.hypot(enemies[j].x - hb.x, enemies[j].y - hb.y); if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } } }
                     hb.target = closestE;
                 }
-                
                 if (hb.target) {
                     let dx = hb.target.x - hb.x; let dy = hb.target.y - hb.y; let dist = Math.max(1, Math.hypot(dx, dy));
                     hb.vx += (dx/dist) * 2.0; hb.vy += (dy/dist) * 2.0; 
                     let speed = Math.hypot(hb.vx, hb.vy); if (speed > 8) { hb.vx = (hb.vx/speed)*8; hb.vy = (hb.vy/speed)*8; }
                 }
                 hb.x += hb.vx; hb.y += hb.vy;
-                
-                ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5;
-                ctx.beginPath(); ctx.arc(hb.x, hb.y, 5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-                
+                ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5; ctx.beginPath(); ctx.arc(hb.x, hb.y, 5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
                     if (e !== hb.ignore && !hb.hitLog.has(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
@@ -647,8 +605,7 @@
                     if(sk.life<=0) activeSkills.splice(i, 1);
                 } else if(sk.type==='punch') {
                     if(sk.state==='flying') { 
-                        sk.x+=sk.vx; sk.y+=sk.vy; 
-                        if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
+                        sk.x+=sk.vx; sk.y+=sk.vy; if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
                         let hitAny = false; enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2&&Math.abs(e.y-sk.y)<sk.w/2){hitAny=true;} });
                         if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
                         if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100) sk.state='done'; 
@@ -656,8 +613,7 @@
                     else if (sk.state==='punching') { 
                         sk.hitTimer--; 
                         if(sk.hitTimer%10===0){
-                            playSound('hit'); let aoe = sk.w * 1.5;
-                            particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:'rgba(255,159,243,0.8)', isAoE:true});
+                            playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:'rgba(255,159,243,0.8)', isAoE:true});
                             enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
@@ -670,9 +626,7 @@
                         if(sk.state==='punching') ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); 
                         ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,0,sk.w*0.4,sk.w*0.35,0,0,Math.PI*2); ctx.fill(); 
                         ctx.fillStyle='#ff9ff3'; ctx.beginPath(); ctx.arc(0,5,sk.w*0.15,0,Math.PI*2); ctx.fill(); 
-                        ctx.beginPath(); ctx.arc(-14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
-                        ctx.beginPath(); ctx.arc(0,-18,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
-                        ctx.beginPath(); ctx.arc(14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
+                        ctx.beginPath(); ctx.arc(-14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0,-18,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
                         ctx.restore(); 
                     } else { activeSkills.splice(i, 1); }
                 }
@@ -688,8 +642,7 @@
                         let bulletCount = 3 + Math.floor(bossKills/3); 
                         let spread = 0.2 + Math.min(0.3, bossKills*0.02);
                         for(let a = 0; a < bulletCount; a++) {
-                            let currentAngle = angle - spread*(bulletCount-1)/2 + a*spread;
-                            let speed = 4 + bossKills * 0.15;
+                            let currentAngle = angle - spread*(bulletCount-1)/2 + a*spread; let speed = 4 + bossKills * 0.15;
                             bossBullets.push({ x: e.x, y: e.y + e.h/2, vx: Math.cos(currentAngle) * speed, vy: Math.sin(currentAngle) * speed, r: 7, color: '#ff4757', dmg: 10 + bossKills * 2 });
                         }
                     }
@@ -702,12 +655,9 @@
                 
                 if(!drawn) {
                     if (e.isBoss) {
-                        ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(frameCount*0.05);
-                        ctx.fillStyle = '#8e44ad'; ctx.shadowColor = '#d980fa'; ctx.shadowBlur = 20;
-                        ctx.beginPath(); ctx.roundRect(-e.w/2, -e.h/2, e.w, e.h, 15); ctx.fill();
-                        ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0, e.w/4, 0, Math.PI*2); ctx.fill();
-                        ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0, e.w/4 * (0.5 + Math.sin(frameCount*0.1)*0.5), 0, Math.PI*2); ctx.fill();
-                        ctx.restore();
+                        ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(frameCount*0.05); ctx.fillStyle = '#8e44ad'; ctx.shadowColor = '#d980fa'; ctx.shadowBlur = 20;
+                        ctx.beginPath(); ctx.roundRect(-e.w/2, -e.h/2, e.w, e.h, 15); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0, e.w/4, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0, e.w/4 * (0.5 + Math.sin(frameCount*0.1)*0.5), 0, Math.PI*2); ctx.fill(); ctx.restore();
                     } else {
                         ctx.save(); let grad = ctx.createLinearGradient(e.x, e.y-e.h/2, e.x, e.y+e.h/2); grad.addColorStop(0, e.color || '#ff4757'); grad.addColorStop(1, '#111'); ctx.fillStyle = grad;
                         ctx.beginPath(); ctx.roundRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h, 6); ctx.fill();
@@ -716,21 +666,12 @@
                     }
                 }
 
-                if(e.isBoss) { 
-                    ctx.fillStyle='#333'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w, 8); 
-                    ctx.fillStyle='#ff4757'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w*Math.max(0, e.hp/e.maxHp), 8); 
-                }
+                if(e.isBoss) { ctx.fillStyle='#333'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w, 8); ctx.fillStyle='#ff4757'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w*Math.max(0, e.hp/e.maxHp), 8); }
                 
                 if(e.hp<=0) { 
                     playSound('kill'); score+=e.isBoss?1000:10; 
-                    
-                    if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) {
-                        p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire);
-                        spawnParticles(p.x, p.y, '#2ecc71', 2); playSound('heal'); updateUI();
-                    }
-
+                    if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); playSound('heal'); updateUI(); }
                     spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10); 
-
                     if(e.isBoss){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
@@ -743,10 +684,8 @@
 
             for (let i = bossBullets.length - 1; i >= 0; i--) {
                 let bb = bossBullets[i]; bb.x += bb.vx; bb.y += bb.vy;
-                ctx.fillStyle = bb.color; ctx.shadowColor = bb.color; ctx.shadowBlur = 10;
-                ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = bb.color; ctx.shadowColor = bb.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI*2); ctx.fill();
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r/2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
-
                 if (p.iframe <= 0 && Math.abs(bb.x - p.x) < p.w/2 && Math.abs(bb.y - p.y) < p.h/2) {
                     p.hp -= bb.dmg; p.iframe = 30; spawnParticles(p.x, p.y, '#ff0000', 15, 2); globalShakeTimer = 10; playSound('hit'); updateUI(); bossBullets.splice(i, 1);
                     if (p.hp <= 0) { gameEnd(false); return; } continue;
@@ -762,8 +701,7 @@
             }
 
             for (let i = particles.length - 1; i >= 0; i--) {
-                let pt = particles[i]; pt.life--; pt.x += pt.vx; pt.y += pt.vy;
-                let lifeRatio = Math.max(0, pt.life / (pt.maxLife || 25)); ctx.globalAlpha = lifeRatio;
+                let pt = particles[i]; pt.life--; pt.x += pt.vx; pt.y += pt.vy; let lifeRatio = Math.max(0, pt.life / (pt.maxLife || 25)); ctx.globalAlpha = lifeRatio;
                 if (pt.isAoE) { ctx.strokeStyle = pt.color; ctx.lineWidth = 3; ctx.beginPath(); let r = Math.max(0.1, pt.size * (1 - lifeRatio)); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.stroke(); } 
                 else { ctx.fillStyle = pt.color; ctx.beginPath(); let r = Math.max(0.1, pt.size * lifeRatio); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.fill(); }
                 ctx.globalAlpha = 1; if (pt.life <= 0) particles.splice(i, 1);

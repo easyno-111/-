@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>이차함수 자물쇠 방탈출</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', sans-serif; }
+        body { background-color: #f5f5f7; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .mission-card { background: white; border-radius: 20px; padding: 30px; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; border: 2px solid #007aff; }
+        .mission-title { font-size: 24px; font-weight: 800; color: #007aff; margin-bottom: 15px; }
+        .mission-text { font-size: 18px; line-height: 1.6; color: #1d1d1f; }
+        .input-section { background: #e5e5ea; border-radius: 20px; padding: 25px; width: 100%; max-width: 600px; display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; align-items: center; }
+        .input-group { display: flex; align-items: center; gap: 5px; font-size: 20px; font-weight: bold; }
+        input { width: 70px; padding: 10px; border-radius: 10px; border: 1px solid #c7c7cc; text-align: center; font-size: 18px; }
+        .status-panel { margin-top: 20px; font-size: 20px; font-weight: bold; padding: 15px; border-radius: 15px; width: 100%; max-width: 600px; text-align: center; }
+        .success { background-color: #34c759; color: white; display: none; }
+        .hint { background-color: #ffffff; color: #86868b; border: 1px dashed #c7c7cc; }
+        canvas { background: white; border-radius: 20px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 100%; }
+        .refresh-btn { margin-top: 15px; padding: 10px 20px; border-radius: 10px; border: none; background: #007aff; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="mission-card">
+        <div class="mission-title">🔐 자물쇠 미션</div>
+        <div class="mission-text" id="mission-desc">구간 [0, 4]에서 <br><b>최댓값 5, 최솟값 1</b>이 되는 <br>이차함수의 계수(a, b, c)를 찾아라!</div>
+        <button class="refresh-btn" onclick="generateMission()">다른 미션 받기</button>
+    </div>
+
+    <div class="input-section">
+        <div class="input-group">f(x) = <input type="number" id="a" value="1" step="0.5" oninput="check()"> x² +</div>
+        <div class="input-group"><input type="number" id="b" value="0" step="0.5" oninput="check()"> x +</div>
+        <div class="input-group"><input type="number" id="c" value="0" step="0.5" oninput="check()"></div>
+    </div>
+
+    <div id="status" class="status-panel hint">조건을 맞춰 자물쇠를 여세요!</div>
+    <div id="success-msg" class="status-panel success">🎉 자물쇠가 열렸습니다! 정답입니다!</div>
+
+    <canvas id="graph" width="500" height="300"></canvas>
+
+    <script>
+        let targetMax, targetMin, targetXMin, targetXMax;
+        const canvas = document.getElementById('graph');
+        const ctx = canvas.getContext('2d');
+
+        function generateMission() {
+            targetXMin = Math.floor(Math.random() * 2);
+            targetXMax = targetXMin + Math.floor(Math.random() * 3) + 2;
+            targetMax = Math.floor(Math.random() * 6) + 4;
+            targetMin = Math.floor(Math.random() * 4) - 2;
+            
+            document.getElementById('mission-desc').innerHTML = `구간 [${targetXMin}, ${targetXMax}]에서 <br><b>최댓값 ${targetMax}, 최솟값 ${targetMin}</b>이 되는 <br>이차함수의 계수(a, b, c)를 찾아라!`;
+            document.getElementById('success-msg').style.display = 'none';
+            check();
+        }
+
+        function check() {
+            const a = parseFloat(document.getElementById('a').value) || 0;
+            const b = parseFloat(document.getElementById('b').value) || 0;
+            const c = parseFloat(document.getElementById('c').value) || 0;
+
+            function f(x) { return a*x*x + b*x + c; }
+            
+            let currentMax = -Infinity;
+            let currentMin = Infinity;
+            const vertexX = -b / (2 * a);
+
+            let points = [targetXMin, targetXMax];
+            if (vertexX > targetXMin && vertexX < targetXMax) points.push(vertexX);
+
+            points.forEach(x => {
+                let y = f(x);
+                if (y > currentMax) currentMax = y;
+                if (y < currentMin) currentMin = y;
+            });
+
+            document.getElementById('status').innerHTML = `현재 최댓값: ${currentMax.toFixed(1)} / 최솟값: ${currentMin.toFixed(1)}`;
+
+            if (Math.abs(currentMax - targetMax) < 0.2 && Math.abs(currentMin - targetMin) < 0.2) {
+                document.getElementById('success-msg').style.display = 'block';
+            } else {
+                document.getElementById('success-msg').style.display = 'none';
+            }
+            draw(a, b, c);
+        }
+
+        function draw(a, b, c) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const scale = 30;
+            const ox = canvas.width / 2;
+            const oy = canvas.height - 50;
+
+            ctx.strokeStyle = "#e5e5ea";
+            ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(canvas.width, oy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, canvas.height); ctx.stroke();
+
+            // 구간 강조
+            ctx.fillStyle = "rgba(0, 122, 255, 0.1)";
+            ctx.fillRect(ox + targetXMin*scale, 0, (targetXMax-targetXMin)*scale, canvas.height);
+
+            ctx.strokeStyle = "#007aff"; ctx.lineWidth = 3;
+            ctx.beginPath();
+            for(let px=0; px<canvas.width; px++) {
+                let mx = (px - ox) / scale;
+                let my = a*mx*mx + b*mx + c;
+                let py = oy - my*scale;
+                if(px===0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+        }
+
+        window.onload = generateMission;
+    </script>
+</body>
+</html>

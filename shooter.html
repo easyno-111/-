@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (기능 복구 및 최종 밸런스)</title>
+    <title>로그라이트 화력 슈팅 (최종 복구판)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -59,6 +59,10 @@
         
         @keyframes shake-normal { 0%, 100% { transform: rotate(0deg); } 20%, 60% { transform: rotate(-15deg); } 40%, 80% { transform: rotate(15deg); } 100% { opacity: 0; } }
         @keyframes shake-rare { 0%, 100% { transform: rotate(0deg); } 10%, 30%, 50%, 70%, 90% { transform: rotate(-25deg) scale(1.4); } 20%, 40%, 60%, 80% { transform: rotate(25deg) scale(1.4); } 100% { opacity: 0; scale: 2.5; } }
+
+        /* 🛠️ 개발자 패널 */
+        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757; border-radius: 15px; padding: 20px; color: white; z-index: 1000; overflow-y: auto; pointer-events: auto; }
+        .dev-btn { background: #2f3542; color: white; border: 1px solid #747d8c; padding: 12px; margin: 4px; border-radius: 8px; cursor: pointer; flex: 1 1 45%; font-size: 13px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -74,7 +78,7 @@
             <div class="bar-bg"><div id="hp-bar"></div><div class="bar-text" id="hp-text">HP: 100 / 100</div></div>
             <div class="bar-bg"><div id="exp-bar"></div><div class="bar-text" id="exp-text">LV.1 (0/30)</div></div>
             <div class="top-stats">
-                <div id="score-display">SCORE: 0</div>
+                <div id="score-display" onclick="checkDevMode()" style="cursor: pointer;">SCORE: 0</div>
                 <div id="boss-kill-display">처치한 보스: 0 / 20</div>
             </div>
             <div id="boss-timer-display">⚠️ 보스 출현! 남은 시간: 20s ⚠️</div>
@@ -82,9 +86,8 @@
 
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
-            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center; font-size:14px;">20마리의 보스를 처치하여 행성을 구하세요!</p>
+            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center;">20마리의 보스를 처치하여 행성을 구하세요!</p>
             
-            <!-- 👑 캐릭터 변경 버튼 복구 -->
             <div class="skin-btn-group">
                 <button class="skin-btn" onclick="document.getElementById('p-img-upload').click()">🧑 내 캐릭터</button>
                 <button class="skin-btn" onclick="document.getElementById('e-img-upload').click()">👾 적 캐릭터</button>
@@ -112,6 +115,17 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
+    <!-- 🛠️ 개발자 모드 패널 복구 -->
+    <div id="dev-panel">
+        <h3>🛠️ 스킬 밸런스 테스트 룸</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="dev-btn" id="dev-spawn-btn" onclick="toggleSpawn()" style="background: #2ed573;">🟢 몹 소환 켜짐</button>
+            <button class="dev-btn" onclick="clearAllEnemies()" style="background: #ff4757;">💣 몹 싹쓸이</button>
+        </div>
+        <button class="dev-btn" style="width:100%; background:#57606f;" onclick="closeDevMode()">창 닫기</button>
+        <div id="dev-skills" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top:15px;"></div>
+    </div>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -126,7 +140,7 @@
 
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; let shurikens = []; 
 
-        // 👑 이미지 변수 및 업로드 함수 복구
+        // 이미지 복구
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
         let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
         
@@ -139,6 +153,7 @@
             };
         }
 
+        // 오디오
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx; let isSoundOn = true;
         function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -153,18 +168,51 @@
             else if (type === 'levelup') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t + 0.1); osc.frequency.setValueAtTime(800, t + 0.2); gain.gain.setValueAtTime(0.1, t); osc.start(t); osc.stop(t + 0.4); }
         }
 
-        window.addEventListener('keydown', (e) => { if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill(); });
+        // 🛠️ 개발자 모드 키보드(1563) 복구
+        let keyBuffer = "";
+        let scoreTapCount = 0;
+        let devStopSpawn = false;
+
+        window.addEventListener('keydown', (e) => { 
+            if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill(); 
+            keyBuffer += e.key; 
+            if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4); 
+            if (keyBuffer === "1563") { openDevMode(); keyBuffer = ""; }
+        });
+        
+        function checkDevMode() { 
+            scoreTapCount++; 
+            if (scoreTapCount >= 5) { 
+                scoreTapCount = 0; let pw = prompt("개발자 비밀번호:"); 
+                if (pw === "1563") openDevMode(); 
+            } 
+        }
+        
+        function openDevMode() { document.getElementById('dev-panel').style.display = 'block'; renderDevSkills(); }
+        function closeDevMode() { document.getElementById('dev-panel').style.display = 'none'; }
+        function toggleSpawn() { devStopSpawn = !devStopSpawn; let btn = document.getElementById('dev-spawn-btn'); btn.innerText = devStopSpawn ? "🔴 몹 소환 정지" : "🟢 몹 소환 켜짐"; btn.style.background = devStopSpawn ? "#747d8c" : "#2ed573"; }
+        function clearAllEnemies() { enemies.forEach(e => particles.push({x: e.x, y: e.y, life: 10, color: '#ff4757'})); enemies = []; isBossStage = false; document.getElementById('boss-timer-display').style.display = 'none'; }
+
+        function renderDevSkills() {
+            const container = document.getElementById('dev-skills'); container.innerHTML = '';
+            getAvailableAbilities().forEach(ab => { 
+                let btn = document.createElement('button'); btn.className = 'dev-btn'; btn.innerHTML = ab.name; 
+                btn.onclick = () => { ab.apply(); updateUI(); renderDevSkills(); }; 
+                container.appendChild(btn); 
+            });
+        }
+
         let mouseX = 0; window.mouseX_val = canvas.width / 2;
         container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
         container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; e.preventDefault(); }, {passive: false});
 
-        // 👑 풀버전 스킬 목록 복구 (부메랑, 레이저, 펀치)
+        // 풀버전 스킬 목록 복구
         function getAvailableAbilities() {
             let pool = [
-                { name: '⚔️ 공격력 UP', apply: () => { p.lvl_atk++; p.dmg += p.lvl_atk; } },
-                { name: '🤖 캐릭터 개수 UP', apply: () => { p.lvl_char++; p.charCount++; } },
-                { name: '💥 탄환 개수 UP', apply: () => { p.lvl_bullet++; p.bulletSpread++; } },
-                { name: '❤️ 최대 체력 UP', apply: () => { p.lvl_maxhp++; let add = 40; p.maxHp += add; p.hp += add; } },
+                { name: '⚔️ 공격력 UP', apply: () => { p.lvl_atk++; p.dmg += 1; } },
+                { name: '🤖 캐릭터 추가', apply: () => { p.lvl_char++; p.charCount++; } },
+                { name: '💥 탄환 확산', apply: () => { p.lvl_bullet++; p.bulletSpread++; } },
+                { name: '❤️ 최대 체력 UP', apply: () => { p.lvl_maxhp++; p.maxHp += 50; p.hp += 50; } },
                 { name: '🩹 체력 회복', apply: () => { p.lvl_heal++; p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); } },
                 { name: '🪄 스킬 파괴력 UP', apply: () => { p.lvl_skill_dmg++; } },
                 { name: '⏳ 스킬 쿨타임 감소', apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(60, 600 - p.lvl_skill_cool * 120); } }
@@ -194,15 +242,14 @@
                 x: canvas.width / 2, y: canvas.height - 100, w: 60, h: 60, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, 
                 dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, activeSkillType: 'boomerang', skillTimer: 0, skillCooldownMax: 600, 
                 lvl_atk: 0, lvl_char: 0, lvl_bullet: 0, lvl_maxhp: 0, lvl_heal: 0, lvl_skill_dmg: 0, lvl_skill_cool: 0, 
-                lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 0, 
-                lvl_shuriken_active: false, shurikenLimit: 5 
+                lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
+                lvl_shuriken_active: false, shurikenLimit: 5, lastShurikenTime: 0
             };
-            bullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; score = 0; bossKills = 0; frameCount = 0; isBossStage = false;
+            bullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; score = 0; bossKills = 0; frameCount = 0; isBossStage = false; devStopSpawn = false;
             document.getElementById('start-screen').style.display = 'none'; document.getElementById('gameover-screen').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
             gameState = 'PLAYING'; updateUI();
         }
 
-        // 👑 입체 박스 그리기 함수 복구
         function draw3DBox(x, y, w, h, color, text="") {
             ctx.save(); let grad = ctx.createLinearGradient(x, y-h/2, x, y+h/2); grad.addColorStop(0, color); grad.addColorStop(1, '#111'); ctx.fillStyle = grad;
             ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h, 6); ctx.fill();
@@ -232,7 +279,7 @@
             document.getElementById('hp-bar').style.width = (p.hp / p.maxHp * 100) + '%';
             document.getElementById('hp-text').innerText = `HP: ${Math.floor(p.hp)} / ${p.maxHp}`;
             document.getElementById('exp-bar').style.width = (p.exp / p.maxExp * 100) + '%';
-            document.getElementById('exp-text').innerText = `LV.${p.level} (${Math.floor(p.exp)}/${p.maxExp})`;
+            document.getElementById('exp-text').innerText = `LV.${p.level} (${Math.floor(p.exp)}/${Math.floor(p.maxExp)})`;
             document.getElementById('score-display').innerText = `SCORE: ${score}`;
             document.getElementById('boss-kill-display').innerText = `처치한 보스: ${bossKills} / ${WIN_CONDITION}`;
             updateSkillUI();
@@ -246,11 +293,11 @@
         }
 
         let isChestOpening = false; let isRareChest = false;
-        function triggerLevelUp() { gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; document.getElementById('chest-desc').style.display = 'block'; document.getElementById('lvl-title-text').innerText = isRareChest ? '✨ 황금 상자! ✨' : '보물상자 발견!'; let chestEl = document.getElementById('chest-emoji'); chestEl.className = 'chest-box'; chestEl.innerHTML = isRareChest ? '✨🎁✨' : '🎁'; }
+        function triggerLevelUp() { gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; document.getElementById('lvl-title-text').innerText = isRareChest ? '✨ 황금 상자! ✨' : '보물상자 발견!'; let chestEl = document.getElementById('chest-emoji'); chestEl.className = 'chest-box'; chestEl.innerHTML = isRareChest ? '✨🎁✨' : '🎁'; }
         function openChest() { if(isChestOpening) return; isChestOpening = true; playSound('shoot'); let chestEl = document.getElementById('chest-emoji'); if (isRareChest) { chestEl.classList.add('anim-shake-rare'); setTimeout(showOptions, 1400); } else { chestEl.classList.add('anim-shake'); setTimeout(showOptions, 600); } }
-        function showOptions() { playSound('levelup'); document.getElementById('chest-container').style.display = 'none'; document.getElementById('ability-container').style.display = 'flex'; let choices = getAvailableAbilities().sort(() => 0.5 - Math.random()).slice(0, isRareChest ? 5 : 3); const cont = document.getElementById('ability-container'); cont.innerHTML = ''; choices.forEach(ab => { let card = document.createElement('div'); card.className = ab.isRare ? 'ability-card rare' : 'ability-card'; card.innerHTML = `<div class="ab-name">${ab.name}</div>`; card.onclick = () => { ab.apply(); p.level++; p.maxExp = Math.floor(30 + Math.pow(p.level, 1.5) * 15); p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); }; cont.appendChild(card); }); }
+        function showOptions() { playSound('levelup'); document.getElementById('chest-container').style.display = 'none'; document.getElementById('ability-container').style.display = 'flex'; let choices = getAvailableAbilities().sort(() => 0.5 - Math.random()).slice(0, isRareChest ? 5 : 3); const cont = document.getElementById('ability-container'); cont.innerHTML = ''; choices.forEach(ab => { let card = document.createElement('div'); card.className = ab.isRare ? 'ability-card rare' : 'ability-card'; card.innerHTML = `<div class="ab-name">${ab.name}</div>`; card.onclick = () => { ab.apply(); p.level++; p.maxExp *= 1.15; p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); }; cont.appendChild(card); }); }
 
-        // 👑 풀버전 스킬 발사 로직 복구
+        // 스킬 발사 (복구)
         function fireSkill() { 
             if (p.skillTimer > 0 || gameState !== 'PLAYING') return; 
             p.skillTimer = p.skillCooldownMax; playSound('skill'); 
@@ -278,7 +325,7 @@
 
             // 표창 렌더링 및 로직
             if (p.lvl_shuriken_active) {
-                if (frameCount % 60 === 0 && shurikens.length < p.shurikenLimit) { shurikens.push({ x: p.x, y: p.y, state: 'orbit', target: null }); }
+                if (frameCount - p.lastShurikenTime > 60 && shurikens.length < p.shurikenLimit) { shurikens.push({ x: p.x, y: p.y, state: 'orbit', target: null }); p.lastShurikenTime = frameCount; }
                 if (shurikens.length >= p.shurikenLimit && shurikens.every(s => s.state === 'orbit')) { shurikens.forEach(s => s.state = 'launch'); }
             }
 
@@ -307,45 +354,71 @@
             let spacing = 65; p.x += (window.mouseX_val - p.x) * 0.2; p.x = Math.max((p.w+(p.charCount-1)*spacing)/2, Math.min(canvas.width - (p.w+(p.charCount-1)*spacing)/2, p.x));
             if (frameCount % p.fireDelay === 0) { playSound('shoot'); let startX = p.x - ((p.charCount - 1) * spacing) / 2; for(let i=0; i < p.charCount; i++) { let cx = startX + i*spacing; for(let j=0; j < p.bulletSpread; j++) bullets.push({ x: cx + (j - (p.bulletSpread-1)/2) * 10, y: p.y - 20, vx: (j - (p.bulletSpread-1)/2) * 0.1, vy: -12, dmg: p.dmg }); } }
 
-            const BOSS_SPAWN_INTERVAL = 1800; 
-            if (!isBossStage && frameCount % BOSS_SPAWN_INTERVAL === 0) {
-                isBossStage = true; bossTimer = 25;
-                let bossHp = 100 * Math.pow(1.15, bossKills);
-                enemies.push({ x: canvas.width/2, y: -100, w: 100, h: 100, hp: bossHp, maxHp: bossHp, speed: 0.4 + bossKills*0.1, isBoss: true, iframe: 0 });
-                document.getElementById('boss-timer-display').style.display = 'block';
-            } else if (!isBossStage && frameCount % 40 === 0) {
-                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 35, h: 35, hp: 1 + Math.floor(bossKills/2), speed: 2 + Math.random()*1.5, isBoss: false });
+            if (!devStopSpawn) {
+                if (isBossStage) {
+                    if (frameCount % 60 === 0) { bossTimer--; document.getElementById('boss-timer-display').innerText = `⚠️ 보스: ${bossTimer}s ⚠️`; if (bossTimer <= 0) { gameEnd(false); return; } }
+                } else {
+                    if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) {
+                        isBossStage = true; bossTimer = 25; let bossHp = 100 * Math.pow(1.15, bossKills);
+                        enemies.push({ x: canvas.width/2, y: -100, w: 100, h: 100, hp: bossHp, maxHp: bossHp, speed: 0.4 + bossKills*0.1, isBoss: true, iframe: 0 });
+                        document.getElementById('boss-timer-display').style.display = 'block';
+                    } else if (frameCount % 40 === 0) {
+                        enemies.push({ x: Math.random()*canvas.width, y: -30, w: 35, h: 35, hp: 1 + Math.floor(bossKills/2), speed: 2 + Math.random()*1.5, isBoss: false });
+                    }
+                }
             }
-            if (isBossStage && frameCount % 60 === 0) { bossTimer--; document.getElementById('boss-timer-display').innerText = `⚠️ 보스: ${bossTimer}s ⚠️`; if (bossTimer <= 0) gameEnd(false); }
 
-            // 👑 풀버전 액티브 스킬 로직 (부메랑, 레이저, 펀치) + 펀치 밸런스 유지
+            // 👑 풀버전 액티브 스킬 로직 및 애니메이션 복구
             for (let i = activeSkills.length - 1; i >= 0; i--) {
                 let sk = activeSkills[i];
                 if (sk.type === 'boomerang') { 
                     if (sk.state === 'flying') { sk.x += sk.vx; sk.y += sk.vy; if (sk.y < -sk.w || sk.x < -sk.w || sk.x > canvas.width + sk.w) { activeSkills.splice(i, 1); continue; } } 
                     else { sk.hoverTimer--; if (sk.hoverTimer <= 0) { if (sk.level <= p.lvl_boom_split && sk.level < 3) for(let j=0; j<5; j++) activeSkills.push({ type: 'boomerang', level: sk.level+1, x: sk.x, y: sk.y, w: sk.w*0.6, vx: Math.cos((Math.PI*2/5)*j)*12, vy: Math.sin((Math.PI*2/5)*j)*12, state: 'flying', hoverTimer: 0, dmg: sk.dmg }); activeSkills.splice(i, 1); continue; } } 
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle = sk.level === 1 ? '#00d2d3' : '#48dbfb'; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore(); 
-                    let hitAny = false; for(let j=0; j<enemies.length; j++){ let e = enemies[j]; if (Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { e.hp-=sk.dmg; if(frameCount%10===0) playSound('hit'); hitAny=true; } } 
+                    let hitAny = false; enemies.forEach(e => { if (Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { e.hp-=sk.dmg; if(frameCount%10===0) playSound('hit'); hitAny=true; } });
                     if (sk.state === 'flying' && hitAny) { sk.state='hovering'; sk.hoverTimer=60; } 
                 }
                 else if (sk.type === 'laser') { 
                     sk.life--; let lx = p.x + sk.offsetX; ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = '#fff'; ctx.fillRect(lx - 20, 0, 40, p.y); ctx.restore(); 
-                    for(let j=0; j<enemies.length; j++){ let e = enemies[j]; if (Math.abs(e.x - lx) < 40 && e.y < p.y) { e.hp -= sk.dmg; if(frameCount%15===0) playSound('hit'); } } 
+                    enemies.forEach(e => { if (Math.abs(e.x - lx) < 40 && e.y < p.y) { e.hp -= sk.dmg; if(frameCount%15===0) playSound('hit'); } });
                     if (sk.life <= 0) activeSkills.splice(i, 1); 
                 }
                 else if (sk.type === 'punch') { 
-                    sk.x += (sk.vx || 0); sk.y += sk.vy;
-                    ctx.fillStyle = '#ff4757'; ctx.globalAlpha = Math.max(0.3, Math.pow(0.7, sk.level-1)); ctx.fillRect(sk.x-sk.w/2, sk.y-sk.h/2, sk.w, sk.w); ctx.globalAlpha = 1;
+                    if (sk.state === 'flying') {
+                        sk.x += sk.vx; sk.y += sk.vy;
+                        if (sk.y < -sk.w || sk.x < -sk.w || sk.x > canvas.width + sk.w) { activeSkills.splice(i, 1); continue; }
+                    } else if (sk.state === 'punching') {
+                        sk.hoverTimer--;
+                        if (sk.hoverTimer <= 0) {
+                            if (sk.level <= p.lvl_punch_split) {
+                                for(let j=0; j<3; j++) {
+                                    activeSkills.push({ type: 'punch', level: sk.level + 1, x: sk.x, y: sk.y, w: sk.w * 0.7, vx: Math.cos(-Math.PI/2 + (j-1)*0.8)*15, vy: Math.sin(-Math.PI/2 + (j-1)*0.8)*15, state: 'flying', hoverTimer: 0, dmg: sk.dmg * 0.8 });
+                                }
+                            }
+                            activeSkills.splice(i, 1); continue;
+                        }
+                        ctx.save(); ctx.translate(sk.x, sk.y); ctx.beginPath(); ctx.arc(0, 0, sk.w*(1+Math.sin(frameCount*0.8)*0.3), 0, Math.PI*2); ctx.fillStyle = 'rgba(255, 71, 87, 0.2)'; ctx.fill(); ctx.restore();
+                    }
+
+                    ctx.save(); ctx.translate(sk.x, sk.y);
+                    if (sk.state === 'flying') { ctx.rotate(Math.atan2(sk.vy, sk.vx) + Math.PI/2); }
+                    else { ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); let scale = 1+Math.sin(frameCount*1.5)*0.2; ctx.scale(scale, scale); }
+                    ctx.globalAlpha = Math.max(0.3, Math.pow(0.7, sk.level-1));
+                    ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.roundRect(-sk.w/2, -sk.w/2, sk.w, sk.w, 10); ctx.fill(); ctx.restore();
+
+                    let hitAny = false; let hitBox = sk.state === 'punching' ? sk.w : sk.w/2;
                     enemies.forEach(e => {
-                        if (Math.abs(e.x - sk.x) < e.w/2 + sk.w/2 && Math.abs(e.y - sk.y) < e.h/2 + sk.w/2) {
+                        if (Math.abs(e.x - sk.x) < e.w/2 + hitBox && Math.abs(e.y - sk.y) < e.h/2 + hitBox) {
                             if (e.isBoss && e.iframe > 0) return;
-                            let actualDmg = sk.dmg * Math.pow(0.7, sk.level - 1); 
+                            let actualDmg = sk.dmg * Math.pow(0.7, sk.level - 1);
                             e.hp -= actualDmg;
-                            if (e.isBoss) { e.iframe = 4; playSound('hit'); } 
-                            if (sk.state === 'flying' && sk.level <= p.lvl_punch_split) { sk.state = 'done'; for (let j = 0; j < 2; j++) activeSkills.push({ type: 'punch', level: sk.level+1, x: sk.x, y: sk.y, w: sk.w*0.8, vx: (j===0?-5:5), vy: -10, dmg: sk.dmg, state:'flying' }); }
+                            if (e.isBoss) { e.iframe = 4; playSound('hit'); }
+                            else { e.y -= 3; }
+                            hitAny = true;
+                            if(frameCount % 10 === 0) playSound('hit');
                         }
                     });
-                    if (sk.y < -100 || sk.state === 'done') activeSkills.splice(i, 1);
+                    if (sk.state === 'flying' && hitAny) { sk.state = 'punching'; sk.hoverTimer = 45; }
                 }
             }
 
@@ -355,7 +428,6 @@
                 if (b && b.y < -50) bullets.splice(i, 1);
             }
 
-            // 👑 이미지 렌더링 복구
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i]; e.y += e.speed;
                 if (e.isBoss && e.iframe > 0) e.iframe--;
@@ -381,13 +453,13 @@
                     playSound('kill'); score += e.isBoss ? 1000 : 10;
                     if (e.isBoss) {
                         bossKills++; isBossStage = false; document.getElementById('boss-timer-display').style.display = 'none';
-                        if (bossKills >= WIN_CONDITION) gameEnd(true);
+                        if (bossKills >= WIN_CONDITION) { gameEnd(true); return; }
                         else { p.exp += p.maxExp; updateUI(); }
                     } else { p.exp += 2; }
                     enemies.splice(i, 1); if (p.exp >= p.maxExp) triggerLevelUp(); updateUI();
                 } else if (e.y > canvas.height + 50) {
                     p.hp -= (e.isBoss ? 50 : 5); enemies.splice(i, 1); updateUI();
-                    if (p.hp <= 0) gameEnd(false);
+                    if (p.hp <= 0) { gameEnd(false); return; }
                 }
             }
 

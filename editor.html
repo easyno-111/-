@@ -108,10 +108,13 @@
 
     <script>
         const codeArea = document.getElementById('codeInput');
-
-        // 1. 코드 실행
+// 1. 코드 실행 (스마트 구두점 방지 기능 추가)
         function runCode() {
-            const code = codeArea.value;
+            let code = codeArea.value;
+            
+            // 👑 아이패드 자동변환 따옴표를 코딩용 따옴표로 강제 교체하는 마법의 코드
+            code = code.replace(/[“”]/g, '"').replace(/[‘’]/g, "'");
+
             const iframe = document.getElementById('preview');
             const doc = iframe.contentDocument || iframe.contentWindow.document;
             doc.open();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (버그 완전 수정판)</title>
+    <title>로그라이트 화력 슈팅 (최종 밸런스 패치)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -18,61 +18,39 @@
         #exp-bar { height: 100%; background: #1e90ff; width: 0%; transition: width 0.2s; }
         .bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: white; line-height: 16px; text-shadow: 1px 1px 2px black; }
 
-        .top-stats { display: flex; flex-direction: column; gap: 5px; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; pointer-events: auto; max-width: 70%; }
+        .top-stats { display: flex; flex-direction: column; gap: 5px; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; pointer-events: auto; }
 
         #boss-timer-display { display: none; color: #ff4757; font-size: 22px; font-weight: 900; text-align: center; margin-top: 25px; text-shadow: 0 0 15px #ff4757; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
-        /* 사운드 버튼 */
         #sound-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.8); border: 2px solid #57606f; border-radius: 50%; width: 50px; height: 50px; font-size: 22px; cursor: pointer; color: white; pointer-events: auto; display: flex; justify-content: center; align-items: center; z-index: 999; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
 
-        /* 액티브 스킬 버튼 */
         #skill-btn { position: fixed; bottom: 20px; right: 20px; width: 85px; height: 85px; border-radius: 50%; background: rgba(0, 210, 211, 0.85); color: white; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(0, 210, 211, 0.6); pointer-events: auto; border: 4px solid #fff; z-index: 999; cursor: pointer; transition: 0.1s; }
         #skill-btn:active { transform: scale(0.9); }
         #skill-btn.cooldown { background: rgba(100, 100, 100, 0.7); box-shadow: none; border-color: #888; color: #ccc; pointer-events: none; }
-        #skill-btn .cool-text { font-size: 32px; font-weight: 900; color: white; }
+        #skill-btn .cool-text { font-size: 32px; font-weight: 900; }
 
         @media (min-width: 700px) {
             #sound-btn { top: 40px; right: auto; left: calc(50% - 240px - 80px); }
-            #skill-btn { bottom: 60px; right: calc(50% - 240px - 110px); width: 100px; height: 100px; font-size: 20px;}
+            #skill-btn { bottom: 60px; right: calc(50% - 240px - 110px); width: 100px; height: 100px;}
         }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 26, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 26, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
         .title-text { font-size: 40px; font-weight: 900; color: #00a8ff; text-shadow: 0 0 20px rgba(0, 168, 255, 0.5); margin-bottom: 20px; text-align: center; }
-        .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 0.1s; pointer-events: auto; margin-top: 10px; }
-        .start-btn:active { transform: scale(0.95); }
+        .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 0.1s; pointer-events: auto; }
 
-        .skin-btn-group { display: flex; gap: 10px; margin-bottom: 30px; }
-        .skin-btn { padding: 10px 15px; background: #2f3542; color: white; border: 1px solid #57606f; border-radius: 10px; font-size: 13px; cursor: pointer; pointer-events: auto; }
-        
         #levelup-screen { display: none; pointer-events: auto; }
-        #lvl-title-text { font-size: 32px; color: #f1c40f; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px #f1c40f; text-align: center; }
-        
-        .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; transition: all 0.2s; color: white; text-align: left; position: relative;}
+        .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; color: white; }
         .ability-card.rare { border-color: #e1b12c; background: #3a2b10; }
-        .ability-card:hover { transform: translateX(5px); background: #3a4151; }
-        .ab-name { font-size: 18px; font-weight: bold; color: #f1c40f; margin-bottom: 5px; }
-        .ab-desc { font-size: 14px; color: #ced6e0; line-height: 1.3; }
 
-        .chest-box { font-size: 80px; cursor: pointer; transition: 0.2s; user-select: none; margin-top: 20px; display: inline-block; }
-        .chest-box.anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
-        .chest-box.anim-shake-rare { animation: shake-rare 1.4s ease-in-out forwards; }
+        .chest-box { font-size: 80px; cursor: pointer; user-select: none; }
+        .anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
+        .anim-shake-rare { animation: shake-rare 1.4s ease-in-out forwards; }
         
-        @keyframes shake-normal {
-            0%, 100% { transform: rotate(0deg); }
-            20%, 60% { transform: rotate(-15deg); }
-            40%, 80% { transform: rotate(15deg); }
-            100% { opacity: 0; }
-        }
-        @keyframes shake-rare {
-            0%, 100% { transform: rotate(0deg); }
-            10%, 30%, 50%, 70%, 90% { transform: rotate(-25deg) scale(1.4); }
-            20%, 40%, 60%, 80% { transform: rotate(25deg) scale(1.4); }
-            100% { opacity: 0; scale: 2.5; }
-        }
+        @keyframes shake-normal { 0%, 100% { transform: rotate(0deg); } 20%, 60% { transform: rotate(-15deg); } 40%, 80% { transform: rotate(15deg); } 100% { opacity: 0; } }
+        @keyframes shake-rare { 0%, 100% { transform: rotate(0deg); } 10%, 30%, 50%, 70%, 90% { transform: rotate(-25deg) scale(1.4); } 20%, 40%, 60%, 80% { transform: rotate(25deg) scale(1.4); } 100% { opacity: 0; scale: 2.5; } }
 
-        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757; border-radius: 15px; padding: 20px; color: white; z-index: 1000; max-height: 80vh; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 30px rgba(255, 71, 87, 0.5); }
-        .dev-btn { background: #2f3542; color: white; border: 1px solid #747d8c; padding: 12px; margin: 4px; border-radius: 8px; cursor: pointer; flex: 1 1 45%; font-size: 13px; font-weight: bold; }
+        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757; border-radius: 15px; padding: 20px; color: white; z-index: 1000; overflow-y: auto; pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -89,48 +67,33 @@
             <div class="bar-bg"><div id="exp-bar"></div><div class="bar-text" id="exp-text">LV.1 (0/30)</div></div>
             <div class="top-stats">
                 <div id="score-display" onclick="checkDevMode()" style="cursor: pointer;">SCORE: 0</div>
-                <div id="dmg-display">데미지: 1</div>
+                <div id="boss-kill-display">처치한 보스: 0 / 5</div>
             </div>
             <div id="boss-timer-display">⚠️ 보스 출현! 남은 시간: 20s ⚠️</div>
         </div>
 
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
-            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center; font-size:14px;">드래그로 적을 쓸어버리고,<br>필살기를 적절히 사용하세요!</p>
-            <div class="skin-btn-group">
-                <button class="skin-btn" onclick="document.getElementById('p-img-upload').click()">🧑 내 캐릭터</button>
-                <button class="skin-btn" onclick="document.getElementById('e-img-upload').click()">👾 적 캐릭터</button>
-            </div>
-            <input type="file" id="p-img-upload" accept="image/*" onchange="handleImage(event, 'player')">
-            <input type="file" id="e-img-upload" accept="image/*" onchange="handleImage(event, 'enemy')">
+            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center;">보스 5마리를 처치하여 행성을 구하세요!</p>
             <button class="start-btn" onclick="startGame()">게임 시작</button>
         </div>
 
         <div class="overlay" id="levelup-screen">
-            <div id="lvl-title-text">보물상자 발견!</div>
+            <div id="lvl-title-text" style="font-size:24px; color:#f1c40f; margin-bottom:15px; font-weight:900;">레벨업!</div>
             <div id="chest-container" style="display:flex; flex-direction:column; align-items:center;">
                 <div id="chest-emoji" class="chest-box" onpointerdown="openChest()">🎁</div>
-                <p id="chest-desc" style="color:#ced6e0; margin-top:25px; font-weight:bold;">터치해서 열기!</p>
+                <p style="color:white; margin-top:20px;">상자를 터치하세요!</p>
             </div>
-            <div id="ability-container" style="width: 100%; display: none; flex-direction: column; align-items: center; overflow-y: auto; max-height: 70vh;"></div>
+            <div id="ability-container" style="width: 100%; display: none; flex-direction: column; align-items: center;"></div>
         </div>
 
-        <div class="overlay" id="gameover-screen" style="display: none;">
-            <div class="title-text" style="color: #ff4757;">GAME OVER</div>
-            <p id="final-score" style="color: white; font-size: 22px; margin-bottom: 30px; text-align: center;"></p>
-            <button class="start-btn" onclick="startGame()">다시 도전</button>
+        <div class="overlay" id="end-screen" style="display: none;">
+            <div id="end-title" class="title-text"></div>
+            <p id="end-score" style="color: white; font-size: 20px; margin-bottom: 30px;"></p>
+            <button class="start-btn" onclick="location.reload()">처음으로</button>
         </div>
+
         <canvas id="gameCanvas"></canvas>
-    </div>
-
-    <div id="dev-panel">
-        <h3>🛠️ 테스트 룸</h3>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <button class="dev-btn" id="dev-spawn-btn" onclick="toggleSpawn()" style="background: #2ed573;">🟢 몹 소환 중</button>
-            <button class="dev-btn" onclick="clearAllEnemies()" style="background: #ff4757;">💣 몹 싹쓸이</button>
-        </div>
-        <button class="dev-btn" style="width:100%; background:#57606f;" onclick="closeDevMode()">닫기</button>
-        <div id="dev-skills"></div>
     </div>
 
     <script>
@@ -141,17 +104,11 @@
         window.addEventListener('resize', resize); resize();
 
         let gameState = 'START';
-        let frameCount = 0; let score = 0;
-        let isBossStage = false; let bossTimer = 20; const BOSS_SPAWN_INTERVAL = 1800; 
-        let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; let shurikens = []; 
+        let frameCount = 0; let score = 0; let bossKills = 0;
+        const WIN_CONDITION = 5;
+        let isBossStage = false; let bossTimer = 20; 
 
-        let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
-        let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
-        function handleImage(event, type) {
-            const file = event.target.files[0]; if (!file) return;
-            const img = new Image(); img.src = URL.createObjectURL(file);
-            img.onload = () => { if (type === 'player') customPlayerImg = img; else customEnemyImg = img; };
-        }
+        let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; let shurikens = []; 
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx; let isSoundOn = true;
@@ -164,228 +121,223 @@
             else if (type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, t); gain.gain.setValueAtTime(0.03, t); osc.start(t); osc.stop(t + 0.05); } 
             else if (type === 'kill') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, t); gain.gain.setValueAtTime(0.05, t); osc.start(t); osc.stop(t + 0.2); } 
             else if (type === 'skill') { osc.type = 'triangle'; osc.frequency.setValueAtTime(200, t); osc.frequency.linearRampToValueAtTime(800, t + 0.3); gain.gain.setValueAtTime(0.05, t); osc.start(t); osc.stop(t + 0.3); } 
-            else if (type === 'levelup') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t + 0.1); osc.frequency.setValueAtTime(800, t + 0.2); gain.gain.setValueAtTime(0.1, t); osc.start(t); osc.stop(t + 0.4); }
+            else if (type === 'levelup') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(800, t + 0.2); gain.gain.setValueAtTime(0.1, t); osc.start(t); osc.stop(t + 0.4); }
         }
 
-        let devStopSpawn = false; let scoreTapCount = 0;
-        window.addEventListener('keydown', (e) => { if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill(); });
-        function checkDevMode() { scoreTapCount++; if (scoreTapCount >= 5) { scoreTapCount = 0; let pw = prompt("PW:"); if (pw === "1563") openDevMode(); } }
-        function openDevMode() { document.getElementById('dev-panel').style.display = 'block'; renderDevSkills(); }
-        function closeDevMode() { document.getElementById('dev-panel').style.display = 'none'; }
-        function toggleSpawn() { devStopSpawn = !devStopSpawn; document.getElementById('dev-spawn-btn').innerText = devStopSpawn ? "🔴 몹 정지" : "🟢 몹 소환 중"; }
-        function clearAllEnemies() { enemies.forEach(e => particles.push({x: e.x, y: e.y, life: 10, color: '#ff4757'})); enemies = []; isBossStage = false; document.getElementById('boss-timer-display').style.display = 'none'; }
-        
-        function renderDevSkills() {
-            const container = document.getElementById('dev-skills'); container.innerHTML = '';
-            getAvailableAbilities().forEach(ab => { let btn = document.createElement('button'); btn.className = 'dev-btn'; btn.innerHTML = ab.name; btn.onclick = () => { ab.apply(); updateUI(); renderDevSkills(); }; container.appendChild(btn); });
-        }
-
-        let mouseX = 0;
-        function updateMousePos(e) { let clientX = e.clientX; if (e.touches && e.touches.length > 0) clientX = e.touches[0].clientX; const rect = container.getBoundingClientRect(); mouseX = clientX - rect.left; }
-        container.addEventListener('mousemove', updateMousePos); container.addEventListener('touchmove', updateMousePos, {passive: false});
+        function checkDevMode() { let pw = prompt("관리자 암호:"); if (pw === "1563") p.exp += 1000; }
 
         function getAvailableAbilities() {
             let pool = [
-                { name: '⚔️ 공격력 UP', apply: () => { p.lvl_atk++; p.dmg += p.lvl_atk; } },
-                { name: '🤖 포탑 추가', apply: () => { p.lvl_char++; p.charCount++; } },
-                { name: '💥 탄환 확산', apply: () => { p.lvl_bullet++; p.bulletSpread++; } },
-                { name: '❤️ 체력 UP', apply: () => { p.lvl_maxhp++; p.maxHp += 40; p.hp += 40; } },
-                { name: '🩹 즉시 회복', apply: () => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); } },
-                { name: '🪄 필살기 강화', apply: () => { p.lvl_skill_dmg++; } },
-                { name: '⏳ 쿨타임 감소', apply: () => { p.lvl_skill_cool++; p.skillCooldownMax = Math.max(60, 600 - p.lvl_skill_cool * 120); } }
+                { name: '⚔️ 공격력 증가', apply: () => { p.lvl_atk++; p.dmg += 1; } },
+                { name: '🤖 포탑 추가', apply: () => { p.charCount++; } },
+                { name: '💥 탄환 확산', apply: () => { p.bulletSpread++; } },
+                { name: '❤️ 체력 증가', apply: () => { p.maxHp += 50; p.hp += 50; } },
+                { name: '⏳ 쿨타임 감소', apply: () => { p.skillCooldownMax = Math.max(60, p.skillCooldownMax - 60); } }
             ];
-            if (Math.random() < 0.3) pool.push({ isRare: true, name: '🌟 수호 표창', apply: () => { p.lvl_shuriken_count++; while(shurikens.length < p.lvl_shuriken_count) shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', stickTimer: 0 }); } });
-            if (p.activeSkillType === 'boomerang') {
-                if (p.lvl_boom_split < 2) pool.push({ name: '🎇 부메랑 분열', apply: () => { p.lvl_boom_split++; } });
-                pool.push({ name: '🔄 레이저로 변경', apply: () => { p.activeSkillType = 'laser'; p.skillCooldownMax = 600; p.skillTimer = 0; } });
-                pool.push({ name: '🔄 펀치로 변경', apply: () => { p.activeSkillType = 'punch'; p.skillCooldownMax = 600; p.skillTimer = 0; } });
-            }
-            if (p.activeSkillType === 'laser') pool.push({ name: '🔱 레이저 증폭', apply: () => { p.lvl_laser_split++; } });
-            if (p.activeSkillType === 'punch') pool.push({ name: '💥 펀치 연쇄분열', apply: () => { p.lvl_punch_split++; } });
+            // 표창 레어 스킬
+            if (Math.random() < 0.3) pool.push({ isRare: true, name: '🌟 [레어] 수호 표창', apply: () => { p.lvl_shuriken_active = true; p.shurikenLimit = Math.min(10, p.shurikenLimit + 1); } });
+            if (p.activeSkillType === 'punch') pool.push({ name: '🥊 펀치 분열 강화', apply: () => { p.lvl_punch_split++; } });
             return pool;
         }
 
         function startGame() {
             initAudio();
-            p = { x: canvas.width / 2, y: canvas.height - 100, w: 60, h: 60, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, activeSkillType: 'boomerang', skillTimer: 0, skillCooldownMax: 600, lvl_atk: 0, lvl_char: 0, lvl_bullet: 0, lvl_maxhp: 0, lvl_skill_dmg: 0, lvl_skill_cool: 0, lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 0, lvl_shuriken_count: 0, lvl_shuriken_dmg: 0 };
-            bullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; score = 0; frameCount = 0; isBossStage = false; devStopSpawn = false;
-            document.getElementById('start-screen').style.display = 'none'; document.getElementById('gameover-screen').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
+            p = { x: canvas.width / 2, y: canvas.height - 100, w: 60, h: 60, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, activeSkillType: 'punch', skillTimer: 0, skillCooldownMax: 600, lvl_atk: 0, lvl_punch_split: 1, 
+                  lvl_shuriken_active: false, shurikenLimit: 5, lastShurikenTime: 0 };
+            bullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; score = 0; bossKills = 0; frameCount = 0; isBossStage = false;
+            document.getElementById('start-screen').style.display = 'none'; document.getElementById('end-screen').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
             gameState = 'PLAYING'; updateUI();
-        }
-
-        function draw3DBox(x, y, w, h, color, text="") {
-            ctx.save(); let grad = ctx.createLinearGradient(x, y-h/2, x, y+h/2); grad.addColorStop(0, color); grad.addColorStop(1, '#111'); ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h, 6); ctx.fill();
-            ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.roundRect(x - w/2, y - h/2, w, h*0.2, [6, 6, 0, 0]); ctx.fill();
-            if(text) { ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x, y); }
-            ctx.restore();
-        }
-
-        // 🛠️ 버그 수정 1: 쿨타임 UI 전용 동기화 함수
-        function updateSkillUI() {
-            let btn = document.getElementById('skill-btn');
-            let coolText = document.getElementById('skill-cool');
-            let nameText = document.getElementById('skill-name');
-            nameText.innerText = p.activeSkillType === 'boomerang' ? '부메랑' : (p.activeSkillType === 'laser' ? '레이저' : '펀치');
-
-            if (p.skillTimer > 0) {
-                btn.classList.add('cooldown');
-                nameText.style.display = 'none';
-                coolText.innerText = Math.ceil(p.skillTimer / 60);
-            } else {
-                btn.classList.remove('cooldown');
-                nameText.style.display = 'block';
-                coolText.innerText = '';
-            }
         }
 
         function updateUI() {
             document.getElementById('hp-bar').style.width = (p.hp / p.maxHp * 100) + '%';
-            document.getElementById('hp-text').innerText = `HP: ${Math.floor(p.hp)} / ${p.maxHp}`;
             document.getElementById('exp-bar').style.width = (p.exp / p.maxExp * 100) + '%';
-            document.getElementById('exp-text').innerText = `LV.${p.level} (${Math.floor(p.exp)}/${p.maxExp})`;
             document.getElementById('score-display').innerText = `SCORE: ${score}`;
-            document.getElementById('dmg-display').innerText = `ATK: ${p.dmg}`;
-            updateSkillUI();
+            document.getElementById('boss-kill-display').innerText = `처치한 보스: ${bossKills} / ${WIN_CONDITION}`;
+            let btn = document.getElementById('skill-btn');
+            if (p.skillTimer > 0) { btn.classList.add('cooldown'); document.getElementById('skill-cool').innerText = Math.ceil(p.skillTimer / 60); }
+            else { btn.classList.remove('cooldown'); document.getElementById('skill-cool').innerText = ''; }
         }
 
-        function gameOver(reason) { gameState = 'GAMEOVER'; document.getElementById('final-score').innerText = `SCORE: ${score}\n[ ${reason} ]`; document.getElementById('ui-layer').style.display = 'none'; document.getElementById('gameover-screen').style.display = 'flex'; }
+        let isChestOpening = false;
+        function triggerLevelUp() { gameState = 'LEVELUP'; isChestOpening = false; document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; }
+        function openChest() { 
+            if(isChestOpening) return; isChestOpening = true; playSound('shoot');
+            let chest = document.getElementById('chest-emoji'); chest.classList.add('anim-shake');
+            setTimeout(() => {
+                document.getElementById('chest-container').style.display = 'none';
+                document.getElementById('ability-container').style.display = 'flex';
+                let choices = getAvailableAbilities().sort(() => 0.5-Math.random()).slice(0, 3);
+                const cont = document.getElementById('ability-container'); cont.innerHTML = '';
+                choices.forEach(ab => {
+                    let card = document.createElement('div'); card.className = ab.isRare ? 'ability-card rare' : 'ability-card'; card.innerHTML = `<b>${ab.name}</b>`;
+                    card.onclick = () => { ab.apply(); p.level++; p.exp=0; p.maxExp*=1.2; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); };
+                    cont.appendChild(card);
+                });
+            }, 600);
+        }
 
-        let isChestOpening = false; let isRareChest = false;
-        function triggerLevelUp() { gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; document.getElementById('chest-desc').style.display = 'block'; document.getElementById('lvl-title-text').innerText = isRareChest ? '✨ 황금 상자! ✨' : '보물상자 발견!'; let chestEl = document.getElementById('chest-emoji'); chestEl.className = 'chest-box'; chestEl.innerHTML = isRareChest ? '✨🎁✨' : '🎁'; }
-        function openChest() { if(isChestOpening) return; isChestOpening = true; playSound('shoot'); let chestEl = document.getElementById('chest-emoji'); if (isRareChest) { chestEl.classList.add('anim-shake-rare'); setTimeout(showOptions, 1400); } else { chestEl.classList.add('anim-shake'); setTimeout(showOptions, 600); } }
-        function showOptions() { playSound('levelup'); document.getElementById('chest-container').style.display = 'none'; document.getElementById('ability-container').style.display = 'flex'; let choices = getAvailableAbilities().sort(() => 0.5 - Math.random()).slice(0, isRareChest ? 5 : 3); const cont = document.getElementById('ability-container'); cont.innerHTML = ''; choices.forEach(ab => { let card = document.createElement('div'); card.className = ab.isRare ? 'ability-card rare' : 'ability-card'; card.innerHTML = `<div class="ab-name">${ab.name}</div>`; card.onclick = () => { ab.apply(); p.level++; p.maxExp = Math.floor(30 + Math.pow(p.level, 1.5) * 15); p.exp = 0; document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); }; cont.appendChild(card); }); }
+        function fireSkill() { 
+            if (p.skillTimer > 0 || gameState !== 'PLAYING') return; 
+            p.skillTimer = p.skillCooldownMax; playSound('skill'); 
+            activeSkills.push({ type: 'punch', level: 1, x: p.x, y: p.y - 30, w: 70, vx: 0, vy: -15, state: 'flying', hoverTimer: 0, dmg: p.dmg * 5 }); 
+            updateUI(); 
+        }
 
-        function fireSkill() { if (p.skillTimer > 0 || gameState !== 'PLAYING') return; p.skillTimer = p.skillCooldownMax; playSound('skill'); let skillDmg = p.dmg * 8 * (1 + p.lvl_skill_dmg * 0.5); if (p.activeSkillType === 'boomerang') activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: 0, vy: -15, state: 'flying', hoverTimer: 0, dmg: skillDmg * 0.08 }); else if (p.activeSkillType === 'laser') { let count = 1 + p.lvl_laser_split * 2; for(let i=0; i<count; i++) activeSkills.push({ type: 'laser', offsetX: (i - Math.floor(count/2)) * 50, life: 180, w: 40, dmg: skillDmg * 0.05 }); } else if (p.activeSkillType === 'punch') { let count = 1 + p.lvl_punch_count; for(let i=0; i<count; i++) activeSkills.push({ type: 'punch', level: 1, x: p.x, y: p.y - 30, w: 70, vx: Math.cos(-Math.PI/2+(i-Math.floor(count/2))*0.4)*18, vy: Math.sin(-Math.PI/2+(i-Math.floor(count/2))*0.4)*18, state: 'flying', hoverTimer: 0, dmg: skillDmg * 0.25 }); } updateUI(); }
-
-        function spawnBoss() {
-            isBossStage = true;
-            bossTimer = 20;
-            document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
-            document.getElementById('boss-timer-display').style.display = 'block';
-            enemies = [];
-            let dps = (60 / Math.max(1, p.fireDelay)) * p.charCount * p.bulletSpread * p.dmg;
-            let bossHp = Math.max(100, Math.floor(dps * 15));
-            enemies.push({ x: canvas.width / 2, y: -60, w: 90, h: 90, hp: bossHp, maxHp: bossHp, speed: 0.3, color: '#8e44ad', isBoss: true });
+        function gameEnd(win) {
+            gameState = 'END';
+            document.getElementById('ui-layer').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'flex';
+            document.getElementById('end-title').innerText = win ? "VICTORY!" : "GAME OVER";
+            document.getElementById('end-title').style.color = win ? "#00a8ff" : "#ff4757";
+            document.getElementById('end-score').innerText = `최종 점수: ${score}\n처치한 보스: ${bossKills}`;
         }
 
         function gameLoop() {
-            requestAnimationFrame(gameLoop); if (gameState !== 'PLAYING') return; frameCount++;
-            
-            // 🛠️ 버그 수정 2: 쿨타임 정확하게 초 단위 갱신
-            if (p.skillTimer > 0) {
-                p.skillTimer--;
-                if (p.skillTimer <= 0) {
-                    p.skillTimer = 0;
-                    updateSkillUI(); 
-                } else if (p.skillTimer % 60 === 0) {
-                    updateSkillUI();
+            if (gameState !== 'PLAYING') { requestAnimationFrame(gameLoop); return; }
+            frameCount++; ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer % 60 === 0) updateUI(); }
+
+            // 🌀 표창 로직 (1초마다 생성 및 자동 발사)
+            if (p.lvl_shuriken_active) {
+                if (frameCount - p.lastShurikenTime > 60 && shurikens.length < p.shurikenLimit) {
+                    shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', target: null });
+                    p.lastShurikenTime = frameCount;
+                }
+                if (shurikens.length >= p.shurikenLimit && shurikens.every(s => s.state === 'orbit')) {
+                    shurikens.forEach(s => s.state = 'launch');
                 }
             }
-            
-            let spacing = 65; p.x += (mouseX - p.x) * 0.3; p.x = Math.max((p.w+(p.charCount-1)*spacing)/2, Math.min(canvas.width - (p.w+(p.charCount-1)*spacing)/2, p.x));
-            if (frameCount % p.fireDelay === 0) { playSound('shoot'); let startX = p.x - ((p.charCount - 1) * spacing) / 2; for(let i=0; i < p.charCount; i++) { let cx = startX + i*spacing; for(let j=0; j < p.bulletSpread; j++) bullets.push({ x: cx + (j - (p.bulletSpread-1)/2) * 10, y: p.y - 20, vx: (j - (p.bulletSpread-1)/2) * 0.1, vy: -12, dmg: p.dmg }); } }
 
-            // 보스 소환 로직 깔끔하게 정리
-            if (!devStopSpawn) { 
-                if (isBossStage) { 
-                    if (frameCount % 60 === 0) { 
-                        bossTimer--; 
-                        document.getElementById('boss-timer-display').innerText = `⚠️ 보스: ${bossTimer}s ⚠️`; 
-                        if (bossTimer <= 0) { gameOver("시간 초과!"); return; } 
-                    } 
-                } else { 
-                    if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) { 
-                        spawnBoss();
-                    } else if (frameCount % Math.max(4, 30 - p.level * 2) === 0) {
-                        enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -30, w: 35, h: 35, hp: 1 + Math.floor(p.level / 3), maxHp: 1 + Math.floor(p.level / 3), speed: Math.random() * 2 + 2, color: '#ff4757', isBoss: false }); 
-                    } 
-                } 
+            // 캐릭터 이동
+            let mouseX = 0; // 실제론 이벤트에서 가져옴
+            p.x += (window.mouseX_val - p.x) * 0.2; 
+            p.x = Math.max(30, Math.min(canvas.width - 30, p.x));
+
+            // 총알 발사
+            if (frameCount % p.fireDelay === 0) {
+                for(let i=0; i<p.charCount; i++) {
+                    let cx = p.x + (i - (p.charCount-1)/2) * 50;
+                    for(let j=0; j<p.bulletSpread; j++) {
+                        bullets.push({ x: cx + (j - (p.bulletSpread-1)/2) * 10, y: p.y-20, vy: -12, dmg: p.dmg });
+                    }
+                }
+                playSound('shoot');
             }
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // 표창
-            shurikens.forEach((s, idx) => { if (s.state === 'orbit') { let targetAngle = (frameCount * 0.06) + (idx * (Math.PI * 2 / shurikens.length)); s.x = p.x + Math.cos(targetAngle) * 90; s.y = p.y + Math.sin(targetAngle) * 90; s.spin += 0.3; for (let i = 0; i < enemies.length; i++) { let e = enemies[i]; if (Math.abs(e.x - s.x) < e.w/2 + 20 && Math.abs(e.y - s.y) < e.h/2 + 20) { s.state = 'stick'; s.stickTimer = 90; break; } } } else { s.stickTimer--; s.spin += 0.05; for(let i=0; i<enemies.length; i++){ let e = enemies[i]; if (Math.abs(e.x - s.x) < e.w/2 + 25 && Math.abs(e.y - s.y) < e.h/2 + 25) { e.hp -= (0.5+p.lvl_shuriken_dmg*0.5); if (frameCount % 10 === 0) { particles.push({x: e.x, y: e.y, life: 5, color: '#f1c40f'}); playSound('hit'); } } } if (s.stickTimer <= 0) s.state = 'orbit'; } ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.spin); ctx.fillStyle = '#f1c40f'; ctx.beginPath(); for (let j=0; j<4; j++) { ctx.lineTo(20, 0); ctx.lineTo(4, 4); ctx.rotate(Math.PI/2); } ctx.fill(); ctx.restore(); });
+            // 몬스터 소환 및 난이도 조절
+            if (!isBossStage && frameCount % BOSS_SPAWN_INTERVAL === 0) {
+                isBossStage = true; bossTimer = 20;
+                enemies.push({ x: canvas.width/2, y: -100, w: 100, h: 100, hp: 100 * Math.pow(1.5, bossKills), maxHp: 100 * Math.pow(1.5, bossKills), speed: 0.5 + bossKills*0.2, isBoss: true, iframe: 0 });
+                document.getElementById('boss-timer-display').style.display = 'block';
+            } else if (!isBossStage && frameCount % 30 === 0) {
+                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 35, h: 35, hp: 1 + bossKills, speed: 2 + Math.random()*2, isBoss: false });
+            }
 
-            // 액티브 스킬 (안전한 Reverse for loop 적용)
+            if (isBossStage && frameCount % 60 === 0) {
+                bossTimer--; document.getElementById('boss-timer-display').innerText = `⚠️ 보스: ${bossTimer}s ⚠️`;
+                if (bossTimer <= 0) gameEnd(false);
+            }
+
+            // 🌀 표창 렌더링 및 로직
+            for(let i=shurikens.length-1; i>=0; i--) {
+                let s = shurikens[i];
+                if (s.state === 'orbit') {
+                    let angle = (frameCount * 0.1) + (i * Math.PI * 2 / p.shurikenLimit);
+                    s.x = p.x + Math.cos(angle) * 80; s.y = p.y + Math.sin(angle) * 80;
+                } else if (s.state === 'launch') {
+                    let target = enemies[0];
+                    if (target) {
+                        let dx = target.x - s.x; let dy = target.y - s.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        s.x += (dx/dist) * 15; s.y += (dy/dist) * 15;
+                        if (dist < 40) { s.state = 'stick'; s.target = target; s.timer = 120; }
+                    } else { s.y -= 10; if(s.y < -50) shurikens.splice(i, 1); }
+                } else if (s.state === 'stick') {
+                    if (s.target && enemies.includes(s.target)) {
+                        s.x = s.target.x; s.y = s.target.y;
+                        s.target.hp -= 0.5; // 도트 데미지
+                        if (frameCount % 10 === 0) particles.push({x: s.x, y: s.y, life: 10, color: '#f1c40f'});
+                    }
+                    s.timer--; if (s.timer <= 0) shurikens.splice(i, 1);
+                }
+                ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(s.x, s.y, 8, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 펀치 (핵심: 보스 무적프레임 및 데미지 감쇄 적용)
             for (let i = activeSkills.length - 1; i >= 0; i--) {
-                let sk = activeSkills[i];
-                if (sk.type === 'boomerang') { if (sk.state === 'flying') { sk.x += sk.vx; sk.y += sk.vy; if (sk.y < -sk.w || sk.x < -sk.w || sk.x > canvas.width + sk.w) { activeSkills.splice(i, 1); continue; } } else { sk.hoverTimer--; if (sk.hoverTimer <= 0) { if (sk.level <= p.lvl_boom_split && sk.level < 3) for(let j=0; j<5; j++) activeSkills.push({ type: 'boomerang', level: sk.level+1, x: sk.x, y: sk.y, w: sk.w*0.6, vx: Math.cos((Math.PI*2/5)*j)*12, vy: Math.sin((Math.PI*2/5)*j)*12, state: 'flying', hoverTimer: 0, dmg: sk.dmg }); activeSkills.splice(i, 1); continue; } } ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle = sk.level === 1 ? '#00d2d3' : '#48dbfb'; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.restore(); let hitAny = false; for(let j=0; j<enemies.length; j++){ let e = enemies[j]; if (Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { e.hp-=sk.dmg; if(frameCount%10===0) playSound('hit'); hitAny=true; } } if (sk.state === 'flying' && hitAny) { sk.state='hovering'; sk.hoverTimer=60; } }
-                else if (sk.type === 'laser') { sk.life--; let lx = p.x + sk.offsetX; ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = '#fff'; ctx.fillRect(lx - 20, 0, 40, p.y); ctx.restore(); for(let j=0; j<enemies.length; j++){ let e = enemies[j]; if (Math.abs(e.x - lx) < 40 && e.y < p.y) { e.hp -= sk.dmg; if(frameCount%15===0) playSound('hit'); } } if (sk.life <= 0) activeSkills.splice(i, 1); }
-                else if (sk.type === 'punch') { if (sk.state === 'flying') { sk.x += sk.vx; sk.y += sk.vy; if (sk.y < -sk.w || sk.x < -sk.w || sk.x > canvas.width + sk.w) { activeSkills.splice(i, 1); continue; } } else { sk.hoverTimer--; if (sk.hoverTimer <= 0) { if (sk.level <= p.lvl_punch_split) { playSound('split'); for(let j=0; j<3; j++) activeSkills.push({ type: 'punch', level: sk.level + 1, x: sk.x, y: sk.y, w: sk.w * 0.7, vx: Math.cos(-Math.PI/2+(j-1)*0.8)*15, vy: Math.sin(-Math.PI/2+(j-1)*0.8)*15, state: 'flying', hoverTimer: 0, dmg: sk.dmg * 0.8 }); } activeSkills.splice(i, 1); continue; } } ctx.save(); ctx.translate(sk.x, sk.y); if (sk.state === 'flying') ctx.rotate(Math.atan2(sk.vy, sk.vx)+Math.PI/2); else ctx.translate((Math.random()-0.5)*10, (Math.random()-0.5)*10); ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.roundRect(-sk.w/2, -sk.w/2, sk.w, sk.w, 10); ctx.fill(); ctx.restore(); let hitAny = false; for(let j=0; j<enemies.length; j++){ let e = enemies[j]; if (Math.abs(e.x-sk.x)<sk.w && Math.abs(e.y-sk.y)<sk.w) { e.hp-=sk.dmg; if(!e.isBoss) e.y-=3; if(frameCount%10===0) playSound('hit'); hitAny=true; } } if (sk.state==='flying'&&hitAny) { sk.state='punching'; sk.hoverTimer=45; } }
+                let sk = activeSkills[i]; sk.x += (sk.vx || 0); sk.y += sk.vy;
+                ctx.fillStyle = '#ff4757'; ctx.globalAlpha = Math.max(0.2, 1 - (sk.level-1)*0.2); // 분열될수록 투명해짐(약해짐)
+                ctx.fillRect(sk.x-sk.w/2, sk.y-sk.h/2, sk.w, sk.h); ctx.globalAlpha = 1;
+
+                enemies.forEach(e => {
+                    if (Math.abs(e.x - sk.x) < e.w/2 + sk.w/2 && Math.abs(e.y - sk.y) < e.h/2 + sk.h/2) {
+                        if (e.isBoss && e.iframe > 0) return; // 보스 무적 프레임 작동
+                        
+                        let actualDmg = sk.dmg * Math.pow(0.7, sk.level - 1); // 👑 세대별 30% 데미지 감소
+                        e.hp -= actualDmg;
+                        if (e.isBoss) { e.iframe = 3; playSound('hit'); } // 보스 0.05초 무적 부여
+
+                        if (sk.state === 'flying' && sk.level <= p.lvl_punch_split) {
+                            sk.state = 'done';
+                            for (let j = 0; j < 2; j++) {
+                                activeSkills.push({ type: 'punch', level: sk.level+1, x: sk.x, y: sk.y, w: sk.w*0.8, vx: (j===0?-5:5), vy: -10, dmg: sk.dmg });
+                            }
+                        }
+                    }
+                });
+                if (sk.y < -100 || sk.state === 'done') activeSkills.splice(i, 1);
             }
 
-            // 총알 및 적 배열 안전한 삭제를 위한 Reverse for loop 교체 완료
-            for (let i = bullets.length - 1; i >= 0; i--) { 
-                let b = bullets[i]; b.x += b.vx; b.y += b.vy; ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill(); 
-                if (b.y < 0) bullets.splice(i, 1); 
+            // 총알 및 적 처리
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i]; b.y += b.vy; ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+                enemies.forEach(e => {
+                    if (Math.abs(b.x - e.x) < e.w/2 && Math.abs(b.y - e.y) < e.h/2) {
+                        e.hp -= b.dmg; bullets.splice(i, 1); playSound('hit');
+                    }
+                });
+                if (b && b.y < -50) bullets.splice(i, 1);
             }
-            
+
             for (let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i]; e.y += e.speed; 
+                let e = enemies[i]; e.y += e.speed;
+                if (e.isBoss && e.iframe > 0) e.iframe--; // 보스 무적 시간 차감
                 
-                // 🛠️ 버그 수정 3: 적 그리기 시 에러 방지 (try-catch)
-                let drawnEnemy = false;
-                if (customEnemyImg && customEnemyImg.complete && customEnemyImg.naturalWidth > 0 && !e.isBoss) {
-                    try {
-                        ctx.drawImage(customEnemyImg, e.x - e.w/2, e.y - e.h/2, e.w, e.h);
-                        ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-                        ctx.shadowColor = "black"; ctx.shadowBlur = 4; ctx.fillText(Math.ceil(e.hp), e.x, e.y); ctx.shadowBlur = 0;
-                        drawnEnemy = true;
-                    } catch(err) {}
-                }
-                if (!drawnEnemy) { draw3DBox(e.x, e.y, e.w, e.h, e.color, e.isBoss ? Math.ceil(e.hp) : Math.ceil(e.hp)); }
-
-                if (e.isBoss) { 
-                    ctx.fillStyle = '#333'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w, 8); 
-                    let hpRatio = Math.max(0, e.hp/e.maxHp); if(isNaN(hpRatio)) hpRatio=0;
-                    ctx.fillStyle = '#ff4757'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w*hpRatio, 8); 
-                }
+                if (customEnemyImg && !e.isBoss) ctx.drawImage(customEnemyImg, e.x-e.w/2, e.y-e.h/2, e.w, e.h);
+                else ctx.fillStyle = e.isBoss ? '#8e44ad' : '#ff4757';
                 
-                for (let j = bullets.length - 1; j >= 0; j--) { 
-                    let b = bullets[j]; 
-                    if (Math.abs(b.x - e.x) < e.w/2 && Math.abs(b.y - e.y) < e.h/2) { 
-                        e.hp -= b.dmg; bullets.splice(j, 1); playSound('hit'); break;
-                    } 
-                }
+                if (!customEnemyImg || e.isBoss) ctx.fillRect(e.x-e.w/2, e.y-e.h/2, e.w, e.h);
                 
-                if (e.hp <= 0) { 
-                    playSound('kill'); 
-                    if (e.isBoss) { isBossStage = false; document.getElementById('boss-timer-display').style.display='none'; p.exp += p.maxExp; p.hp = Math.min(p.maxHp, p.hp+p.maxHp*0.5); score+=5000; } 
-                    else { score += e.maxHp*10; p.exp += e.maxHp; } 
-                    enemies.splice(i, 1); 
-                    if (p.exp >= p.maxExp) triggerLevelUp(); 
-                    updateUI(); 
-                    continue; 
-                }
-                if (e.y > canvas.height) { 
-                    p.hp -= e.isBoss ? p.maxHp : e.maxHp*2; enemies.splice(i, 1); updateUI(); 
-                    if (p.hp <= 0) { gameOver("성 파괴됨!"); return; } 
-                    continue; 
+                if (e.hp <= 0) {
+                    playSound('kill'); score += e.isBoss ? 1000 : 10;
+                    if (e.isBoss) {
+                        bossKills++; isBossStage = false; document.getElementById('boss-timer-display').style.display = 'none';
+                        if (bossKills >= WIN_CONDITION) gameEnd(true);
+                        else { p.exp += p.maxExp; updateUI(); }
+                    } else { p.exp += 2; }
+                    enemies.splice(i, 1); if (p.exp >= p.maxExp) triggerLevelUp(); updateUI();
+                } else if (e.y > canvas.height + 50) {
+                    p.hp -= (e.isBoss ? 50 : 10); enemies.splice(i, 1); updateUI();
+                    if (p.hp <= 0) gameEnd(false);
                 }
             }
 
-            for(let i = particles.length - 1; i >= 0; i--){ 
-                let pt = particles[i]; pt.life--; ctx.fillStyle = pt.color; ctx.globalAlpha = pt.life/10; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; 
-                if(pt.life <= 0) particles.splice(i, 1); 
+            // 캐릭터 렌더링
+            for(let i=0; i<p.charCount; i++) {
+                let cx = p.x + (i - (p.charCount-1)/2) * 50;
+                if (customPlayerImg) ctx.drawImage(customPlayerImg, cx-p.w/2, p.y-p.h/2, p.w, p.h);
+                else { ctx.fillStyle = '#00a8ff'; ctx.fillRect(cx-p.w/2, p.y-p.h/2, p.w, p.h); }
             }
-            
-            // 🛠️ 버그 수정 4: 내 캐릭터 그리기 시 에러가 나더라도 무조건 박스라도 그리도록 방어 코드 추가
-            for(let i=0; i < p.charCount; i++) { 
-                let cx = p.x - ((p.charCount-1)*spacing)/2 + i*spacing;
-                let drawnPlayer = false;
-                if (customPlayerImg && customPlayerImg.complete && customPlayerImg.naturalWidth > 0) { 
-                    try {
-                        ctx.drawImage(customPlayerImg, cx - p.w/2, p.y - p.h/2, p.w, p.h); 
-                        drawnPlayer = true;
-                    } catch(err) {}
-                } 
-                if (!drawnPlayer) { 
-                    draw3DBox(cx, p.y, p.w, p.h, '#00a8ff'); 
-                }
-            }
+
+            requestAnimationFrame(gameLoop);
         }
+
+        const BOSS_SPAWN_INTERVAL = 1500;
+        window.mouseX_val = canvas.width / 2;
+        container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
+        container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; e.preventDefault(); }, {passive: false});
+
         requestAnimationFrame(gameLoop);
     </script>
 </body>

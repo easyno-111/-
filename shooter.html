@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (무한 분열 펀치)</title>
+    <title>로그라이트 화력 슈팅 (커스텀 스킨 기능)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -38,6 +38,12 @@
         .title-text { font-size: 40px; font-weight: 900; color: #00a8ff; text-shadow: 0 0 20px rgba(0, 168, 255, 0.5); margin-bottom: 20px; text-align: center; }
         .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: transform 0.1s; pointer-events: auto; }
         .start-btn:active { transform: scale(0.95); }
+
+        /* 👑 커스텀 이미지 버튼 스타일 */
+        .skin-btn-group { display: flex; gap: 10px; margin-bottom: 30px; }
+        .skin-btn { padding: 10px 20px; background: #2f3542; color: white; border: 1px solid #57606f; border-radius: 10px; font-size: 14px; cursor: pointer; pointer-events: auto; }
+        .skin-btn:active { background: #57606f; }
+        input[type="file"] { display: none; }
 
         #levelup-screen { display: none; pointer-events: auto; }
         .lvl-title { font-size: 32px; color: #f1c40f; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 15px #f1c40f; }
@@ -83,7 +89,16 @@
 
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
-            <p style="color: #ced6e0; margin-bottom: 40px; text-align: center;">드래그로 적을 쓸어버리고,<br>A버튼으로 진화하는 필살기를 사용하세요!</p>
+            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center;">드래그로 적을 쓸어버리고,<br>A버튼으로 진화하는 필살기를 사용하세요!</p>
+            
+            <!-- 👑 스킨 설정 UI -->
+            <div class="skin-btn-group">
+                <button class="skin-btn" onclick="document.getElementById('p-img-upload').click()">🧑 내 캐릭터 변경</button>
+                <button class="skin-btn" onclick="document.getElementById('e-img-upload').click()">👾 적 캐릭터 변경</button>
+            </div>
+            <input type="file" id="p-img-upload" accept="image/*" onchange="handleImage(event, 'player')">
+            <input type="file" id="e-img-upload" accept="image/*" onchange="handleImage(event, 'enemy')">
+
             <button class="start-btn" onclick="startGame()">게임 시작</button>
         </div>
 
@@ -134,6 +149,27 @@
         let particles = [];
         let activeSkills = []; 
 
+        // 👑 커스텀 이미지 객체 저장용 변수
+        let customPlayerImg = null;
+        let customEnemyImg = null;
+
+        // 이미지 파일 처리 함수
+        function handleImage(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const img = new Image();
+            img.src = URL.createObjectURL(file);
+            img.onload = () => {
+                if (type === 'player') {
+                    customPlayerImg = img;
+                    alert("내 캐릭터 이미지가 적용되었습니다!");
+                } else if (type === 'enemy') {
+                    customEnemyImg = img;
+                    alert("적 캐릭터 이미지가 적용되었습니다!");
+                }
+            };
+        }
+
         // 🎵 오디오 엔진
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
@@ -169,7 +205,7 @@
                 osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.setValueAtTime(600, t + 0.1); osc.frequency.setValueAtTime(800, t + 0.2);
                 gain.gain.setValueAtTime(0.2, t); gain.gain.linearRampToValueAtTime(0.001, t + 0.4);
                 osc.start(t); osc.stop(t + 0.4);
-            } else if (type === 'split') { // 분열 시 짧은 효과음
+            } else if (type === 'split') { 
                 osc.type = 'square'; osc.frequency.setValueAtTime(800, t); osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05);
                 gain.gain.setValueAtTime(0.03, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
                 osc.start(t); osc.stop(t + 0.05);
@@ -235,10 +271,7 @@
 
             if (p.activeSkillType === 'boomerang') {
                 if (p.lvl_boom_split < 2) {
-                    pool.push({
-                        name: p.lvl_boom_split === 0 ? '🎇 부메랑 분열' : '🎆 부메랑 최종 분열', 
-                        apply: () => { p.lvl_boom_split++; }
-                    });
+                    pool.push({ name: p.lvl_boom_split === 0 ? '🎇 부메랑 분열' : '🎆 부메랑 최종 분열', apply: () => { p.lvl_boom_split++; } });
                 }
                 pool.push({ name: '🟢 부메랑 크기 UP', apply: () => { p.lvl_boom_size++; } });
                 pool.push({ name: '🔄 스킬 교체: 레이저', apply: () => { p.activeSkillType = 'laser'; p.skillCooldownMax = 600; p.skillTimer = 0; } });
@@ -249,8 +282,7 @@
             }
             if (p.activeSkillType === 'punch') {
                 pool.push({ name: '🥊 펀치 개수 UP', apply: () => { p.lvl_punch_count++; } });
-                // 👑 펀치 분열은 계속해서 레벨업이 가능하도록 제한 해제 (무한 세대 분열)
-                pool.push({ name: '💥 펀치 연쇄 분열 UP', desc: '펀치가 분열되는 세대(Generation)가 늘어납니다.', apply: () => { p.lvl_punch_split++; } });
+                pool.push({ name: '💥 펀치 연쇄 분열 UP', desc: '펀치가 분열되는 횟수가 늘어납니다.', apply: () => { p.lvl_punch_split++; } });
             }
             return pool;
         }
@@ -258,7 +290,7 @@
         function startGame() {
             initAudio();
             p = {
-                x: canvas.width / 2, y: canvas.height - 80, w: 30, h: 30, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30,
+                x: canvas.width / 2, y: canvas.height - 80, w: 40, h: 40, hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, // w,h 30에서 40으로 살짝 키움 (이미지 잘 보이게)
                 dmg: 1, charCount: 1, bulletSpread: 1, fireDelay: 15, expMult: 1.0, activeSkillType: 'boomerang', skillTimer: 0, skillCooldownMax: 600, 
                 lvl_atk: 0, lvl_char: 0, lvl_bullet: 0, lvl_maxhp: 0, lvl_heal: 0, lvl_skill_dmg: 0, lvl_skill_cool: 0, lvl_boom_split: 0, lvl_boom_size: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 0
             };
@@ -285,9 +317,7 @@
             document.getElementById('exp-text').innerText = `LV.${p.level} (${Math.floor(p.exp)}/${p.maxExp})`;
             document.getElementById('score-display').innerText = `SCORE: ${score}`;
             document.getElementById('dmg-display').innerText = `데미지: ${p.dmg}`;
-            let btn = document.getElementById('skill-btn');
-            let coolText = document.getElementById('skill-cool');
-            let nameText = document.getElementById('skill-name');
+            let btn = document.getElementById('skill-btn'); let coolText = document.getElementById('skill-cool'); let nameText = document.getElementById('skill-name');
             nameText.innerText = p.activeSkillType === 'boomerang' ? '부메랑' : (p.activeSkillType === 'laser' ? '레이저' : '펀치');
             if (p.skillTimer > 0) { btn.classList.add('cooldown'); nameText.style.display = 'none'; coolText.innerText = Math.ceil(p.skillTimer / 60); }
             else { btn.classList.remove('cooldown'); nameText.style.display = 'block'; coolText.innerText = ''; }
@@ -348,7 +378,7 @@
 
             if (!devStopSpawn) {
                 if (isBossStage) { if (frameCount % 60 === 0) { bossTimer--; document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`; if (bossTimer <= 0) { gameOver("시간 초과!"); return; } } }
-                else { if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) spawnBoss(); else if (frameCount % Math.max(4, 30 - p.level * 2) === 0) enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -30, w: 25, h: 25, hp: 1 + Math.floor(p.level / 3), maxHp: 1 + Math.floor(p.level / 3), speed: Math.random() * 2 + 2 + (p.level*0.1), color: '#ff4757', isBoss: false }); }
+                else { if (frameCount > 0 && frameCount % BOSS_SPAWN_INTERVAL === 0) spawnBoss(); else if (frameCount % Math.max(4, 30 - p.level * 2) === 0) enemies.push({ x: Math.random() * (canvas.width - 30) + 15, y: -30, w: 35, h: 35, hp: 1 + Math.floor(p.level / 3), maxHp: 1 + Math.floor(p.level / 3), speed: Math.random() * 2 + 2 + (p.level*0.1), color: '#ff4757', isBoss: false }); } // w,h 25에서 35로 키움
             }
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -359,7 +389,6 @@
                     else if (sk.state === 'hovering') { 
                         sk.hoverTimer--; 
                         if (sk.hoverTimer <= 0) {
-                            // 부메랑 분열 (최대 3세대)
                             if (sk.level <= p.lvl_boom_split && sk.level < 3) {
                                 for(let j=0; j<5; j++) { activeSkills.push({ type: 'boomerang', level: sk.level+1, x: sk.x, y: sk.y, w: sk.w * 0.6, vx: Math.cos((Math.PI*2/5)*j)*12, vy: Math.sin((Math.PI*2/5)*j)*12, state: 'flying', hoverTimer: 0, dmg: sk.dmg }); }
                             }
@@ -381,17 +410,9 @@
                     else if (sk.state === 'punching') {
                         sk.hoverTimer--;
                         if (sk.hoverTimer <= 0) {
-                            // 👑 펀치 연쇄 분열 로직 (현재 레벨이 업그레이드 레벨보다 작으면 무한 분열)
                             if (sk.level <= p.lvl_punch_split) {
-                                playSound('split'); // 🎵 분열음
-                                for(let j=0; j<3; j++) {
-                                    activeSkills.push({
-                                        type: 'punch', level: sk.level + 1,
-                                        x: sk.x, y: sk.y, w: sk.w * 0.7, 
-                                        vx: Math.cos(-Math.PI/2 + (j-1)*0.8)*15, vy: Math.sin(-Math.PI/2 + (j-1)*0.8)*15,
-                                        state: 'flying', hoverTimer: 0, dmg: sk.dmg * 0.8
-                                    });
-                                }
+                                playSound('split'); 
+                                for(let j=0; j<3; j++) { activeSkills.push({ type: 'punch', level: sk.level + 1, x: sk.x, y: sk.y, w: sk.w * 0.7, vx: Math.cos(-Math.PI/2 + (j-1)*0.8)*15, vy: Math.sin(-Math.PI/2 + (j-1)*0.8)*15, state: 'flying', hoverTimer: 0, dmg: sk.dmg * 0.8 }); }
                             }
                             activeSkills.splice(i, 1); continue;
                         }
@@ -405,15 +426,39 @@
             }
 
             for (let i = bullets.length - 1; i >= 0; i--) { let b = bullets[i]; b.x += b.vx; b.y += b.vy; ctx.fillStyle = '#f1c40f'; ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill(); if (b.y < 0) bullets.splice(i, 1); }
+            
+            // 👑 적 그리기 (이미지 vs 기본 박스)
             for (let i = enemies.length - 1; i >= 0; i--) {
-                let e = enemies[i]; e.y += e.speed; draw3DBox(e.x, e.y, e.w, e.h, e.color, e.isBoss ? Math.ceil(e.hp) : "");
+                let e = enemies[i]; e.y += e.speed; 
+                
+                if (customEnemyImg && !e.isBoss) {
+                    ctx.drawImage(customEnemyImg, e.x - e.w/2, e.y - e.h/2, e.w, e.h);
+                    // 체력 텍스트 이미지 위에 덧그리기
+                    ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                    ctx.shadowColor = "black"; ctx.shadowBlur = 4; // 글씨 잘 보이게 그림자 추가
+                    ctx.fillText(Math.ceil(e.hp), e.x, e.y);
+                    ctx.shadowBlur = 0; // 초기화
+                } else {
+                    draw3DBox(e.x, e.y, e.w, e.h, e.color, e.isBoss ? Math.ceil(e.hp) : Math.ceil(e.hp));
+                }
+
                 if (e.isBoss) { ctx.fillStyle = '#333'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w, 8); ctx.fillStyle = '#ff4757'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w*(e.hp/e.maxHp), 8); }
                 for (let j = bullets.length - 1; j >= 0; j--) { let b = bullets[j]; if (Math.abs(b.x - e.x) < e.w/2 && Math.abs(b.y - e.y) < e.h/2) { e.hp -= b.dmg; bullets.splice(j, 1); particles.push({x: e.x, y: e.y, life: 10, color: '#ff6b81'}); playSound('hit'); break; } }
                 if (e.hp <= 0) { playSound('kill'); if (e.isBoss) { isBossStage = false; document.getElementById('boss-timer-display').style.display='none'; p.exp += p.maxExp; p.hp = Math.min(p.maxHp, p.hp+p.maxHp*0.5); score+=5000; } else { score += e.maxHp*10; p.exp += e.maxHp; } enemies.splice(i, 1); if (p.exp >= p.maxExp) triggerLevelUp(); updateUI(); continue; }
                 if (e.y > canvas.height) { p.hp -= e.isBoss ? p.maxHp : e.maxHp*2; enemies.splice(i, 1); updateUI(); if (p.hp <= 0) { gameOver("성 파괴됨!"); return; } continue; }
             }
+
             for(let i = particles.length - 1; i >= 0; i--){ let pt = particles[i]; pt.life--; ctx.fillStyle = pt.color; ctx.globalAlpha = pt.life/15; ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; if(pt.life <= 0) particles.splice(i, 1); }
-            for(let i=0; i < p.charCount; i++) { draw3DBox(p.x - ((p.charCount-1)*35)/2 + i*35, p.y, p.w, p.h, '#00a8ff'); }
+            
+            // 👑 내 캐릭터 그리기 (이미지 vs 기본 박스)
+            for(let i=0; i < p.charCount; i++) { 
+                let cx = p.x - ((p.charCount-1)*35)/2 + i*35;
+                if (customPlayerImg) {
+                    ctx.drawImage(customPlayerImg, cx - p.w/2, p.y - p.h/2, p.w, p.h);
+                } else {
+                    draw3DBox(cx, p.y, p.w, p.h, '#00a8ff'); 
+                }
+            }
         }
         requestAnimationFrame(gameLoop);
     </script>

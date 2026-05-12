@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (펀치 AoE & 보스 패치)</title>
+    <title>로그라이트 화력 슈팅 (개발자 모드 탑재)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #0f0f1a; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
@@ -18,7 +18,7 @@
         #exp-bar { height: 100%; background: #1e90ff; width: 0%; transition: width 0.2s; }
         .bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: white; line-height: 16px; text-shadow: 1px 1px 2px black; }
 
-        .top-stats { display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; }
+        .top-stats { display: flex; justify-content: space-between; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; pointer-events: auto; }
 
         #boss-timer-display { display: none; color: #ff4757; font-size: 24px; font-weight: 900; text-align: center; margin-top: 25px; text-shadow: 0 0 15px #ff4757; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
@@ -45,6 +45,20 @@
         .ab-desc { font-size: 15px; color: #ced6e0; line-height: 1.4; }
         .ab-effect { font-size: 14px; font-weight: bold; color: #2ed573; margin-top: 8px; }
 
+        /* 🛠️ 개발자 모드 UI 스타일 */
+        #dev-panel {
+            display: none; position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 450px; background: rgba(0, 0, 0, 0.95); border: 2px solid #ff4757;
+            border-radius: 15px; padding: 20px; color: white; z-index: 100; max-height: 80vh; overflow-y: auto;
+            pointer-events: auto; box-shadow: 0 0 30px rgba(255, 71, 87, 0.5);
+        }
+        #dev-panel h3 { text-align: center; color: #ff4757; margin-bottom: 15px; }
+        .close-dev { background: #57606f; width: 100%; margin-bottom: 15px; padding: 12px; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; font-size: 16px; }
+        .close-dev:active { background: #ff4757; }
+        .dev-btn { background: #2f3542; color: white; border: 1px solid #747d8c; padding: 12px; margin: 4px; border-radius: 8px; cursor: pointer; flex: 1 1 45%; font-size: 13px; font-weight: bold; }
+        .dev-btn:active { background: #ff4757; transform: scale(0.95); }
+        #dev-skills { display: flex; flex-wrap: wrap; gap: 5px; }
+
     </style>
 </head>
 <body>
@@ -54,7 +68,9 @@
             <div class="bar-bg"><div id="hp-bar"></div><div class="bar-text" id="hp-text">HP: 100 / 100</div></div>
             <div class="bar-bg"><div id="exp-bar"></div><div class="bar-text" id="exp-text">LV.1 (0/30)</div></div>
             <div class="top-stats">
-                <div id="score-display">SCORE: 0</div><div id="dmg-display">데미지: 1</div>
+                <!-- 👑 스코어를 여러 번 터치하면 개발자 모드 진입 -->
+                <div id="score-display" onclick="checkDevMode()" style="cursor: pointer; padding: 5px;">SCORE: 0</div>
+                <div id="dmg-display">데미지: 1</div>
             </div>
             <div id="boss-timer-display">⚠️ 보스 출현! 남은 시간: 20s ⚠️</div>
             
@@ -79,6 +95,14 @@
             <div class="title-text" style="color: #ff4757; text-shadow: 0 0 20px #ff4757;">GAME OVER</div>
             <p id="final-score" style="color: white; font-size: 22px; margin-bottom: 30px; text-align: center; line-height: 1.5;"></p>
             <button class="start-btn" onclick="startGame()">다시 도전하기</button>
+        </div>
+
+        <!-- 🛠️ 개발자 패널 -->
+        <div id="dev-panel">
+            <h3>🛠️ 스킬 밸런스 테스트 룸 🛠️</h3>
+            <button class="close-dev" onclick="closeDevMode()">창 닫기 (게임으로 복귀)</button>
+            <p style="text-align: center; color: #ced6e0; font-size: 12px; margin-bottom: 10px;">버튼을 누르면 즉시 능력이 적용됩니다.</p>
+            <div id="dev-skills"></div>
         </div>
 
         <canvas id="gameCanvas"></canvas>
@@ -107,6 +131,63 @@
         let particles = [];
         let activeSkills = []; 
 
+        // 🛠️ 개발자 모드 진입 로직
+        let keyBuffer = "";
+        let scoreTapCount = 0;
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill();
+
+            // PC용 키보드 로직
+            keyBuffer += e.key;
+            if (keyBuffer.length > 4) keyBuffer = keyBuffer.slice(-4);
+            if (keyBuffer === "1563") {
+                openDevMode();
+                keyBuffer = ""; 
+            }
+        });
+
+        // 모바일/아이패드용 화면 터치 로직
+        function checkDevMode() {
+            scoreTapCount++;
+            if (scoreTapCount >= 5) {
+                scoreTapCount = 0;
+                let pw = prompt("개발자 테스트 모드 비밀번호를 입력하세요:");
+                if (pw === "1563") openDevMode();
+            }
+        }
+
+        function openDevMode() {
+            document.getElementById('dev-panel').style.display = 'block';
+            renderDevSkills();
+        }
+
+        function closeDevMode() {
+            document.getElementById('dev-panel').style.display = 'none';
+        }
+
+        function renderDevSkills() {
+            const container = document.getElementById('dev-skills');
+            container.innerHTML = '';
+            
+            // 현재 얻을 수 있는 모든 능력을 가져옴
+            let pool = getAvailableAbilities();
+            
+            pool.forEach(ab => {
+                let btn = document.createElement('button');
+                btn.className = 'dev-btn';
+                btn.innerHTML = ab.name;
+                btn.onclick = () => {
+                    ab.apply();
+                    p.level++; // 강제로 레벨도 올려줌
+                    updateUI();
+                    renderDevSkills(); // 스킬을 고르면 새로운 트리가 열릴 수 있으므로 새로고침
+                };
+                container.appendChild(btn);
+            });
+        }
+
+
         let mouseX = 0;
         function updateMousePos(e) {
             let clientX = e.clientX;
@@ -116,10 +197,6 @@
         }
         container.addEventListener('mousemove', updateMousePos);
         container.addEventListener('touchmove', updateMousePos, {passive: false});
-
-        window.addEventListener('keydown', (e) => {
-            if ((e.key === 'a' || e.key === 'A') && gameState === 'PLAYING') fireSkill();
-        });
 
         function getAvailableAbilities() {
             let pool = [
@@ -136,7 +213,7 @@
             if (p.activeSkillType === 'boomerang') {
                 if (p.lvl_boom_split < 2) {
                     pool.push({
-                        name: p.lvl_boom_split === 0 ? '🎇 부메랑 분열 (진화)' : '🎆 부메랑 2차 분열 (최종 진화)', 
+                        name: p.lvl_boom_split === 0 ? '🎇 부메랑 분열' : '🎆 부메랑 최종 분열', 
                         desc: p.lvl_boom_split === 0 ? '부메랑이 회전을 마친 뒤 5갈래로 쪼개집니다.' : '쪼개진 부메랑이 한 번 더 5갈래로 쪼개집니다!',
                         getEffectText: () => p.lvl_boom_split === 0 ? `사방으로 쪼개지는 부메랑 생성!` : `분열 부메랑 폭증!`,
                         apply: () => { p.lvl_boom_split++; }
@@ -152,12 +229,12 @@
             }
             
             if (p.activeSkillType === 'laser') {
-                pool.push({ name: '🔱 레이저 갈래 UP (진화)', desc: '레이저가 양옆으로 추가 발사됩니다.', getEffectText: () => `동시 발사 레이저 수 증가!`, apply: () => { p.lvl_laser_split++; } });
+                pool.push({ name: '🔱 레이저 갈래 UP', desc: '레이저가 양옆으로 추가 발사됩니다.', getEffectText: () => `동시 발사 레이저 수 증가!`, apply: () => { p.lvl_laser_split++; } });
             }
 
             if (p.activeSkillType === 'punch') {
                 pool.push({ name: '🥊 펀치 개수 UP', desc: '한 번에 발사하는 펀치 수가 늘어납니다.', getEffectText: () => `동시 발사 펀치 수 증가!`, apply: () => { p.lvl_punch_count++; } });
-                pool.push({ name: '💥 펀치 분열 (진화)', desc: '펀치가 끝난 후 3개의 작은 펀치로 갈라집니다.', getEffectText: () => `펀치 다중 타격 생성!`, apply: () => { p.lvl_punch_split++; } });
+                pool.push({ name: '💥 펀치 분열', desc: '펀치가 끝난 후 3개의 작은 펀치로 갈라집니다.', getEffectText: () => `펀치 다중 타격 생성!`, apply: () => { p.lvl_punch_split++; } });
             }
             
             return pool;
@@ -424,13 +501,12 @@
                             activeSkills.splice(i, 1); continue;
                         }
 
-                        // 👑 펀치 충격파(AoE) 시각화 그리기
                         ctx.save();
                         ctx.translate(sk.x, sk.y);
                         ctx.beginPath();
-                        let pulseRadius = sk.w * (1 + Math.sin(frameCount * 0.8) * 0.3); // 맥박처럼 뛰는 크기
+                        let pulseRadius = sk.w * (1 + Math.sin(frameCount * 0.8) * 0.3);
                         ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(255, 71, 87, 0.2)'; // 반투명한 빨간색 파동
+                        ctx.fillStyle = 'rgba(255, 71, 87, 0.2)'; 
                         ctx.fill();
                         ctx.lineWidth = 2;
                         ctx.strokeStyle = 'rgba(255, 71, 87, 0.6)';
@@ -458,12 +534,9 @@
                     enemies.forEach(e => {
                         if (Math.abs(e.x - sk.x) < e.w/2 + hitBox && Math.abs(e.y - sk.y) < e.h/2 + hitBox) {
                             e.hp -= sk.dmg; 
-                            
-                            // 👑 일반 몹만 넉백 시키기 (보스는 밀리지 않음!)
                             if (!e.isBoss) {
                                 e.y -= 3; 
                             }
-                            
                             particles.push({x: e.x, y: e.y, life: 5, color: '#ff4757'}); 
                             hitAny = true;
                         }

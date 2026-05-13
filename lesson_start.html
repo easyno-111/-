@@ -12,11 +12,14 @@
             --neon-purple: #92fe9d;
             --neon-pink: #ff0055;
             --dark-bg: #050505;
-            --glass-bg: rgba(20, 20, 30, 0.85);
+            --glass-bg: rgba(20, 20, 30, 0.9);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+
+        /* 수학 문자 이텔릭체 공통 스타일 */
+        .math { font-style: italic; font-family: "Times New Roman", Times, serif; }
 
         /* 🚪 초기 접속 및 폭죽 */
         #launch-overlay {
@@ -35,7 +38,7 @@
         /* 하단 네비게이션바 */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
-            background: rgba(0,0,0,0.8); border-top: 1px solid var(--neon-blue);
+            background: rgba(0,0,0,0.9); border-top: 1px solid var(--neon-blue);
             display: flex; justify-content: space-between; align-items: center; padding: 0 clamp(10px, 5vw, 40px);
             z-index: 2500; opacity: 0; visibility: hidden; transition: 1s;
         }
@@ -59,15 +62,17 @@
         }
 
         .stage {
-            min-width: 100vw; height: 100%; padding: clamp(15px, 3vw, 40px);
-            display: flex; justify-content: center; align-items: center; overflow-y: auto;
+            min-width: 100vw; height: 100%; padding: clamp(15px, 2vw, 40px);
+            display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
 
         .activity-card {
             background: var(--glass-bg); backdrop-filter: blur(15px);
             border: 2px solid var(--neon-blue); border-radius: 20px;
-            width: 100%; max-width: 1300px; display: flex; flex-direction: column; 
+            width: 100%; max-width: 1300px; max-height: 90vh; /* 아이패드 꽉 차게 */
+            display: flex; flex-direction: column; 
             box-shadow: 0 0 40px rgba(0,210,255,0.15); margin: auto;
+            overflow-y: auto; /* 내용 넘치면 스크롤 */
         }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid rgba(0,210,255,0.3); text-align: center; }
@@ -76,7 +81,7 @@
 
         .card-body { padding: clamp(15px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; flex: 1; }
         .flex-row { display: flex; flex-wrap: wrap; gap: 20px; }
-        .panel { flex: 1; min-width: 300px; background: rgba(0,0,0,0.4); border-radius: 15px; padding: 20px; border: 1px solid #333; }
+        .panel { flex: 1; min-width: 300px; rgba(0,0,0,0.6); border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid #333; }
 
         /* 공통 퀴즈/입력 스타일 */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--neon-purple); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
@@ -95,16 +100,16 @@
         .check-btn:hover { background: var(--neon-blue); color: black; }
         .feedback { font-size: clamp(16px, 2vw, 20px); font-weight: bold; margin-top: 10px; min-height: 25px; }
 
-        /* SVG 그래픽 요소 */
-        .svg-graph { width: 100%; max-height: 200px; display: block; margin: 10px auto; }
+        /* SVG 그래픽 요소 (가는 선, 축, 화살표 추가) */
+        .svg-graph { width: 100%; max-height: 250px; display: block; margin: 10px auto; border: 1px solid #222; background: #fff; border-radius: 10px; }
         
         /* Stage 3 (시뮬레이터) */
-        iframe { width: 100%; height: 60vh; min-height: 400px; border: none; border-radius: 10px; }
+        iframe { width: 100%; height: 65vh; border: none; border-radius: 10px; }
 
-        /* Stage 4 (테이블) */
-        .math-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: center; font-size: clamp(14px, 2vw, 18px); }
+        /* Stage 4 (테이블 전면 개편) */
+        .math-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: center; font-size: clamp(14px, 2.2vw, 19px); min-width: 900px;}
         .math-table th, .math-table td { border: 1px solid #444; padding: clamp(10px, 1.5vw, 15px); }
-        .math-table th { background: rgba(0, 210, 255, 0.1); color: var(--neon-blue); font-family: 'Orbitron'; }
+        .math-table th { background: rgba(0, 210, 255, 0.1); color: var(--neon-blue); font-family: 'Orbitron'; font-weight: 700; }
         .math-table .highlight-row { background: rgba(146, 254, 157, 0.05); }
 
         ::-webkit-scrollbar { width: 8px; }
@@ -122,21 +127,21 @@
 
     <div class="bottom-nav" id="bottom-nav">
         <button class="nav-btn" id="prev-btn" onclick="moveStage(-1)" disabled><i class="fa-solid fa-chevron-left"></i> PREV</button>
-        <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> ROCKET</button>
+        <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
         <button class="nav-btn" id="next-btn" onclick="moveStage(1)">NEXT <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <div id="stages-wrapper">
         
         <div class="stage" id="stage-0">
-            <div class="activity-card" style="opacity: 0; transition: 1s;" id="stage-1-card">
+            <div class="activity-card" style="opacity: 0; transform: translateY(50px); transition: all 1.2s ease-out; background: var(--glass-bg); border-color: var(--neon-blue);" id="stage-0-card">
                 <div class="card-header">
                     <div class="step-tag">STAGE 01. 생각 열기</div>
-                    <div class="card-title">이차함수 y = x² - 6x + 10 탐구</div>
+                    <div class="card-title">이차함수 <span class="math">y = x² - 6x + 10</span> 탐구</div>
                 </div>
                 <div class="card-body flex-row">
-                    <div class="panel">
-                        <h3>1️⃣ 그래프를 보고 이차함수의 최댓값과 최솟값을 찾아보세요.</h3>
+                    <div class="panel" style="flex: 1.2;">
+                        <h3>1️⃣ 실수 전체 범위일 때, 이차함수의 최댓값과 최솟값을 선택하세요.</h3>
                         <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
                             최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
                             최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
@@ -144,16 +149,16 @@
                         </div>
                         <div class="feedback" id="fb-q1"></div>
 
-                        <h3 style="margin-top: 30px;">2️⃣ x=1과 x=4 직선을 긋고, 1 ≤ x ≤ 4 일 때 y의 값의 범위를 구해보세요.</h3>
+                        <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
                         <p class="desc">(우측의 '직선 긋기' 버튼을 먼저 누르세요)</p>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <input type="number" id="q2-min" style="width: 70px;"> ≤ y ≤ <input type="number" id="q2-max" style="width: 70px;">
+                            <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
                             <button class="check-btn" onclick="checkQ2()">확인</button>
                         </div>
                         <div class="feedback" id="fb-q2"></div>
                     </div>
                     <div class="panel" style="display: flex; flex-direction: column;">
-                        <canvas id="math-canvas" style="width:100%; height:250px; background:white; border-radius:10px;"></canvas>
+                        <canvas id="math-canvas" style="width:100%; flex:1; background:white; border-radius:10px; border:2px solid #555;"></canvas>
                         <button class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                     </div>
                 </div>
@@ -168,37 +173,39 @@
                 </div>
                 <div class="card-body flex-row">
                     <div class="panel" style="text-align: center;">
-                        <h3 style="color: var(--neon-blue);">a > 0 (아래로 볼록)</h3>
-                        <svg class="svg-graph" viewBox="0 0 200 150">
-                            <line x1="20" y1="130" x2="180" y2="130" stroke="#666" stroke-width="2"/>
-                            <line x1="100" y1="20" x2="100" y2="140" stroke="#666" stroke-width="2" stroke-dasharray="4"/>
-                            <path d="M 40 30 Q 100 180 160 30" fill="transparent" stroke="#00d2ff" stroke-width="4"/>
-                            <circle cx="100" cy="105" r="5" fill="#ff0055"/>
-                            <text x="110" y="110" fill="white" font-size="16">p</text>
+                        <h3 style="color: var(--neon-blue); font-family: 'Times New Roman', serif;"><i>a > 0</i> (아래로 볼록)</h3>
+                        <svg class="svg-graph" viewBox="0 0 200 160">
+                            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#444" /></marker></defs>
+                            <line x1="20" y1="130" x2="180" y2="130" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="150" x2="100" y2="30" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="30" x2="100" y2="140" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/> <path d="M 40 30 Q 100 200 160 30" fill="transparent" stroke="#00d2ff" stroke-width="2.5"/>
+                            
+                            <circle cx="100" cy="115" r="4" fill="#ff0055"/>
+                            <text x="105" y="125" fill="#333" font-size="14" font-style="italic">q</text>
+                            <text x="185" y="135" fill="#333" font-size="14" font-style="italic">x</text>
+                            <text x="90" y="25" fill="#333" font-size="14" font-style="italic">y</text>
+                            <text x="105" y="145" fill="#333" font-size="14" font-style="italic">p</text>
                         </svg>
-                        <p class="desc">x = p 에서 최솟값 q를 갖는다.</p>
-                        <div style="margin-top: 15px; font-size: 20px;">
-                            그렇다면 최댓값은? 
-                            <select id="s2-q1">
-                                <option value="">선택</option><option value="q">q</option><option value="x">없다</option>
-                            </select>
+                        <p class="desc">대칭축 <span class="math">x=p</span> 에서 꼭짓점 <span class="math">(p, q)</span>를 가집니다.</p>
+                        <div style="margin-top: 15px; font-size: 20px; color: var(--neon-purple);">
+                            이때, 최댓값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                            / 최솟값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
                         </div>
                     </div>
                     <div class="panel" style="text-align: center;">
-                        <h3 style="color: var(--neon-purple);">a < 0 (위로 볼록)</h3>
-                        <svg class="svg-graph" viewBox="0 0 200 150">
-                            <line x1="20" y1="130" x2="180" y2="130" stroke="#666" stroke-width="2"/>
-                            <line x1="100" y1="20" x2="100" y2="140" stroke="#666" stroke-width="2" stroke-dasharray="4"/>
-                            <path d="M 40 140 Q 100 -10 160 140" fill="transparent" stroke="#92fe9d" stroke-width="4"/>
-                            <circle cx="100" cy="55" r="5" fill="#ff0055"/>
-                            <text x="110" y="50" fill="white" font-size="16">p</text>
+                        <h3 style="color: var(--neon-purple); font-family: 'Times New Roman', serif;"><i>a < 0</i> (위로 볼록)</h3>
+                        <svg class="svg-graph" viewBox="0 0 200 160">
+                            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#444" /></marker></defs>
+                            <line x1="20" y1="130" x2="180" y2="130" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="150" x2="100" y2="30" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="20" x2="100" y2="140" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/> <path d="M 40 140 Q 100 -50 160 140" fill="transparent" stroke="#92fe9d" stroke-width="2.5"/>
+                            
+                            <circle cx="100" cy="45" r="4" fill="#ff0055"/>
+                            <text x="105" y="55" fill="#333" font-size="14" font-style="italic">q</text>
+                            <text x="185" y="135" fill="#333" font-size="14" font-style="italic">x</text>
+                            <text x="90" y="25" fill="#333" font-size="14" font-style="italic">y</text>
+                            <text x="105" y="145" fill="#333" font-size="14" font-style="italic">p</text>
                         </svg>
-                        <p class="desc">x = p 에서 최댓값 q를 갖는다.</p>
-                        <div style="margin-top: 15px; font-size: 20px;">
-                            그렇다면 최솟값은? 
-                            <select id="s2-q2">
-                                <option value="">선택</option><option value="q">q</option><option value="x">없다</option>
-                            </select>
+                        <p class="desc">대칭축 <span class="math">x=p</span> 에서 꼭짓점 <span class="math">(p, q)</span>를 가집니다.</p>
+                        <div style="margin-top: 15px; font-size: 20px; color: var(--neon-blue);">
+                            이때, 최댓값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                            / 최솟값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
                         </div>
                     </div>
                 </div>
@@ -221,47 +228,50 @@
             <div class="activity-card">
                 <div class="card-header">
                     <div class="step-tag">STAGE 04. 최종 미션</div>
-                    <div class="card-title">제한된 범위의 최대/최소 규칙 찾기</div>
+                    <div class="card-title">제한된 범위의 최대/최소 규칙 찾기 (<span class="math">α ≤ x ≤ β</span>)</div>
                 </div>
                 <div class="card-body" style="overflow-x: auto;">
                     <table class="math-table">
                         <tr>
-                            <th>a의 부호</th>
-                            <th>α ≤ p ≤ β (꼭짓점 포함)</th>
-                            <th>p < α (꼭짓점 왼쪽에 존재)</th>
-                            <th>p > β (꼭짓점 오른쪽에 존재)</th>
+                            <th>꼭짓점의 위치</th>
+                            <th>(1) 꼭짓점 포함 (<span class="math">α ≤ p ≤ β</span>)</th>
+                            <th>(2) 범위 왼쪽 (<span class="math">p < α</span>)</th>
+                            <th>(3) 범위 오른쪽 (<span class="math">p > β</span>)</th>
                         </tr>
                         <tr>
-                            <td style="color: var(--neon-blue); font-weight: bold; font-size: 24px;">a > 0</td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 10 20 Q 50 120 90 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 55 Q 50 120 80 40" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="55" x2="30" y2="80" stroke="#666"/><line x1="50" y1="75" x2="50" y2="80" stroke="#666"/><line x1="80" y1="40" x2="80" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="47" y="75" fill="white" font-size="10">p</text><text x="75" y="75" fill="white" font-size="10">β</text></svg>
-                                최댓값 f(β)<br>최솟값 f(p)
+                            <td class="math" style="color: var(--neon-blue); font-size: 26px;">a > 0</td>
+                            <td style="background: rgba(0,210,255,0.02);">
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="80" y1="20" x2="80" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 20 20 Q 80 200 140 20" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 70 Q 80 140 120 40" fill="none" stroke="#e84393" stroke-width="3"/><line x1="40" y1="70" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="80" y1="110" x2="80" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="40" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="77" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
+                                최댓값: <span class="math">f(α)</span> 또는 <span class="math">f(β)</span><br>
+                                최솟값: <span class="math">f(p)</span>
                             </td>
                             <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M -10 20 Q 30 120 70 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 40 95 Q 55 60 70 20" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="75" x2="30" y2="80" stroke="#666"/><line x1="40" y1="95" x2="40" y2="80" stroke="#666"/><line x1="70" y1="20" x2="70" y2="80" stroke="#666"/><text x="27" y="75" fill="white" font-size="10">p</text><text x="35" y="75" fill="white" font-size="10">α</text><text x="72" y="75" fill="white" font-size="10">β</text></svg>
-                                최댓값 f(β)<br>최솟값 f(α)
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="30" y1="20" x2="30" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 0 30 Q 30 180 80 20" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 100 L 70 30" fill="none" stroke="#e84393" stroke-width="3"/><line x1="30" y1="105" x2="30" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="40" y1="100" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="70" y1="30" x2="70" y2="120" stroke="#444" stroke-dasharray="2"/><text x="27" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="67" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
+                                최댓값: <span class="math">f(β)</span><br>
+                                최솟값: <span class="math">f(α)</span>
                             </td>
                             <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 30 20 Q 70 120 110 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 20 Q 45 60 60 95" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="20" x2="30" y2="80" stroke="#666"/><line x1="60" y1="95" x2="60" y2="80" stroke="#666"/><line x1="70" y1="75" x2="70" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="62" y="75" fill="white" font-size="10">β</text><text x="72" y="75" fill="white" font-size="10">p</text></svg>
-                                최댓값 f(α)<br>최솟값 f(β)
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="130" y1="20" x2="130" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 80 20 Q 130 180 160 30" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 90 30 L 120 100" fill="none" stroke="#e84393" stroke-width="3"/><line x1="90" y1="30" x2="90" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="100" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="130" y1="105" x2="130" y2="120" stroke="#444" stroke-dasharray="2"/><text x="85" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text><text x="127" y="132" fill="#333" font-size="12" font-style="italic">p</text></svg>
+                                최댓값: <span class="math">f(α)</span><br>
+                                최솟값: <span class="math">f(β)</span>
                             </td>
                         </tr>
                         <tr class="highlight-row">
-                            <td style="color: var(--neon-purple); font-weight: bold; font-size: 24px;">a < 0</td>
+                            <td class="math" style="color: var(--neon-purple); font-size: 26px;">a < 0</td>
                             <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 10 80 Q 50 -20 90 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 45 Q 50 -20 80 60" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="45" x2="30" y2="80" stroke="#666"/><line x1="50" y1="25" x2="50" y2="80" stroke="#666"/><line x1="80" y1="60" x2="80" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="47" y="75" fill="white" font-size="10">p</text><text x="75" y="75" fill="white" font-size="10">β</text></svg>
-                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="80" y1="10" x2="80" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 20 120 Q 80 -40 140 120" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 50 Q 80 -20 120 100" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="40" y1="50" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="80" y1="10" x2="80" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="100" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="77" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
+                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
                             </td>
                             <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M -10 80 Q 30 -20 70 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 40 5 Q 55 40 70 80" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="25" x2="30" y2="80" stroke="#666"/><line x1="40" y1="5" x2="40" y2="80" stroke="#666"/><line x1="70" y1="80" x2="70" y2="80" stroke="#666"/><text x="27" y="75" fill="white" font-size="10">p</text><text x="35" y="75" fill="white" font-size="10">α</text><text x="72" y="75" fill="white" font-size="10">β</text></svg>
-                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="30" y1="10" x2="30" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 10 70 Q 30 -40 80 120" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 25 Q 55 60 70 120" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="30" y1="15" x2="30" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="40" y1="25" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="70" y1="120" x2="70" y2="120" stroke="#444" stroke-dasharray="2"/><text x="27" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="67" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
+                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
                             </td>
                             <td>
-                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 30 80 Q 70 -20 110 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 80 Q 45 40 60 5" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="80" x2="30" y2="80" stroke="#666"/><line x1="60" y1="5" x2="60" y2="80" stroke="#666"/><line x1="70" y1="25" x2="70" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="62" y="75" fill="white" font-size="10">β</text><text x="72" y="75" fill="white" font-size="10">p</text></svg>
-                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="130" y1="10" x2="130" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 80 120 Q 130 -40 160 70" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 90 120 Q 105 60 120 25" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="90" y1="120" x2="90" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="25" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="130" y1="15" x2="130" y2="120" stroke="#444" stroke-dasharray="2"/><text x="85" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text><text x="127" y="132" fill="#333" font-size="12" font-style="italic">p</text></svg>
+                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
                             </td>
                         </tr>
                     </table>
@@ -288,7 +298,7 @@
             document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
 
             // 폭죽 버튼은 1페이지(stage-0)에서만 보이도록
-            document.getElementById('fw-btn').style.display = (currentStage === 0) ? 'block' : 'none';
+            document.getElementById('fw-btn').style.display = (currentStage === 0) ? 'flex' : 'none';
         }
 
         // ==========================================
@@ -307,7 +317,7 @@
             // 폭죽 캔버스 리사이즈 및 1단계 그래프 캔버스 초기화
             window.addEventListener('resize', () => { 
                 fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; 
-                initStage1Graph(); 
+                if(currentStage === 0) initStage1Graph(); 
             });
             initStage1Graph();
             animateFw();
@@ -340,7 +350,10 @@
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             shotsFired++;
             if (shotsFired >= 3) {
-                document.getElementById('stage-1-card').style.opacity = '1'; // 폭죽 3번 후 콘텐츠 등장
+                // 폭죽 3번 후 콘텐츠 등장 로직 수정 (제대로 작동하게)
+                const stage0Card = document.getElementById('stage-0-card');
+                stage0Card.style.opacity = '1';
+                stage0Card.style.transform = 'translateY(0)';
             }
         }
         function animateFw() {
@@ -366,8 +379,8 @@
             const maxVal = document.getElementById('q1-max').value;
             const minVal = document.getElementById('q1-min').value;
             const fb = document.getElementById('fb-q1');
-            if (maxVal === "x" && minVal === "1") { fb.style.color = "var(--neon-purple)"; fb.innerText = "정답입니다! 아래로 볼록한 그래프는 최댓값이 없죠."; }
-            else { fb.style.color = "#ff4757"; fb.innerText = "다시 생각해보세요. 그래프의 가장 낮은 곳은 어디일까요?"; }
+            if (maxVal === "x" && minVal === "1") { fb.style.color = "var(--neon-purple)"; fb.innerText = "정답입니다! 아래로 볼록한 그래프는 실수 전체 범위에서 최댓값이 없죠."; }
+            else { fb.style.color = "#ff4757"; fb.innerText = "다시 생각해보세요. 그래프의 가장 낮은 곳(꼭짓점)은 어디일까요?"; }
         }
         function checkQ2() {
             const minVal = document.getElementById('q2-min').value;
@@ -380,15 +393,15 @@
         let mCtx; let mathCanvas; let linesDrawn = false;
         function initStage1Graph() {
             mathCanvas = document.getElementById('math-canvas'); mCtx = mathCanvas.getContext('2d');
-            const container = mathCanvas.parentElement; mathCanvas.width = container.clientWidth; mathCanvas.height = 250;
+            const container = mathCanvas.parentElement; mathCanvas.width = container.clientWidth; mathCanvas.height = container.clientHeight - 20;
             drawGraph();
         }
         function drawGraph() {
             if(!mCtx) return;
-            const w = mathCanvas.width; const h = mathCanvas.height; const scale = 30; const ox = w / 2 - 2*scale; const oy = h - 2*scale;
+            const w = mathCanvas.width; const h = mathCanvas.height; const scale = w > 500 ? 30 : 25; const ox = w / 2 - 2*scale; const oy = h - 2*scale;
             mCtx.clearRect(0, 0, w, h);
             mCtx.strokeStyle = "#eee"; mCtx.lineWidth = 1;
-            for(let i = -10; i <= 10; i++) {
+            for(let i = -15; i <= 15; i++) {
                 mCtx.beginPath(); mCtx.moveTo(ox + i*scale, 0); mCtx.lineTo(ox + i*scale, h); mCtx.stroke();
                 mCtx.beginPath(); mCtx.moveTo(0, oy - i*scale); mCtx.lineTo(w, oy - i*scale); mCtx.stroke();
             }
@@ -414,7 +427,7 @@
         }
         function drawLimitLines() { linesDrawn = true; drawGraph(); }
 
-        // select 박스 변경 시 자동 피드백 (Stage 2 & 4 용도 - 선생님이 순회하며 지도하실 때 편리함)
+        // select 박스 변경 시 자동 스타일 적용
         document.querySelectorAll('select').forEach(sel => {
             sel.addEventListener('change', function() {
                 if(this.value !== "") this.style.borderColor = "var(--neon-purple)";

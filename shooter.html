@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V27 환영검 리워크)</title>
+    <title>로그라이트 화력 슈팅 (V28 상자 시스템 개편 & 관통 시각화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -281,40 +281,54 @@
         container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
         container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; }, {passive: true});
 
+        // 📦 스킬 풀(Pool) 로직 전면 개편 (가중치 & 리얼 랜덤 셔플 적용)
         function getAvailableAbilities(isDev = false) {
-            let pool = [
-                { name: '🔫 연사 속도 UP (평타 기관총)', apply: () => { p.lvl_firespeed++; recalculateStats(); } },
-                { name: '⚔️ 공격력 UP (데미지 대폭 상승)', apply: () => { p.lvl_atk++; recalculateStats(); } },
-                { name: '🏹 기본 공격 관통 횟수 UP', apply: () => { p.lvl_pierce++; recalculateStats(); } },
-                { name: '💥 탄환 확산 (부채꼴 범위 증가)', apply: () => { p.lvl_bullet++; recalculateStats(); } },
-                { name: '🪄 스킬 파괴력 UP', apply: () => { p.lvl_skill_dmg++; recalculateStats(); } },
-                { name: '⏳ 스킬 쿨타임 감소', apply: () => { p.lvl_skill_cd++; recalculateStats(); } },
-                { name: '🧛 처치 시 흡혈', apply: () => { p.lvl_vampire++; recalculateStats(); } },
-                { name: '💖 초당 자연 회복', apply: () => { p.lvl_regen++; recalculateStats(); } }
-            ];
-
-            if (Math.random() < 0.03 || isDev) pool.push({ isLegendary: true, name: '💠 [초희귀] 샷건 (탄환 x2)', apply: () => { p.lvl_shotgun++; recalculateStats(); } });
-            if (p.lvl_lightning > 0 || Math.random() < 0.25 || isDev) pool.push({ isRare: p.lvl_lightning === 0, name: p.lvl_lightning === 0 ? '⚡ [레어] 연쇄 번개 (관통 레이저)' : '⚡ 번개 확률 & 갯수 UP', apply: () => { p.lvl_lightning++; recalculateStats(); } });
-            if (p.lvl_homing > 0 || Math.random() < 0.3 || isDev) pool.push({ isRare: p.lvl_homing === 0, name: p.lvl_homing === 0 ? '✨ [레어] 유도 분열탄' : '✨ 유도탄 분열 개수 & 위력 UP', apply: () => { p.lvl_homing++; recalculateStats(); } });
+            let pool = [];
             
-            // 🗡️ 심판의 검 (환영검 배열) 텍스트 변경
-            if (p.lvl_sword > 0 || Math.random() < 0.25 || isDev) pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (환영검 진형)' : '🗡️ 환영검 개수 & 위력 UP', apply: () => { p.lvl_sword++; recalculateStats(); } });
-            
-            if (p.lvl_blackhole > 0 || Math.random() < 0.1 || isDev) pool.push({ isRare: p.lvl_blackhole === 0, name: p.lvl_blackhole === 0 ? '🌌 [레어] 블랙홀 탄환 (초광역 몹 집결)' : '🌌 블랙홀 범위 및 발동 확률 UP', apply: () => { p.lvl_blackhole++; recalculateStats(); } });
-            if (p.lvl_storm > 0 || Math.random() < 0.3 || isDev) pool.push({ isRare: p.lvl_storm === 0, name: p.lvl_storm === 0 ? '🌀 [레어] 칼날 돌풍 (무한 지속 오라)' : '🌀 칼날 돌풍 반경 & 위력 UP', apply: () => { p.lvl_storm++; recalculateStats(); } });
-            if (p.lvl_orbital > 0 || Math.random() < 0.015 || isDev) {
-                if (p.lvl_orbital === 0) pool.push({ isLegendary: true, name: '☄️ [전설] 위성 폭격', apply: () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); } });
-                else { pool.push({ name: '☄️ 위성 폭격 주기 감소', apply: () => { p.lvl_orbital++; recalculateStats(); } }); pool.push({ name: '☄️ 위성 폭격 범위 증가', apply: () => { p.lvl_orbital_range++; recalculateStats(); } }); }
-            }
-            if (p.lvl_shuriken > 0 || Math.random() < 0.3 || isDev) pool.push({ isRare: p.lvl_shuriken === 0, name: p.lvl_shuriken === 0 ? '🌟 [레어] 수호 표창' : '🌟 수호 표창 개수 UP', apply: () => { p.lvl_shuriken++; recalculateStats(); } });
+            // Helper function: 확률(chance)에 따라 풀에 추가
+            const add = (skill, chance = 1.0) => {
+                if (isDev || Math.random() < chance) pool.push(skill);
+            };
 
+            // 1) 기본 패시브 스킬 (높은 확률로 등장, 상자 풀을 다채롭게 만듦)
+            add({ name: '🔫 연사 속도 UP (평타 기관총)', apply: () => { p.lvl_firespeed++; recalculateStats(); } }, 0.8);
+            add({ name: '⚔️ 공격력 UP (데미지 대폭 상승)', apply: () => { p.lvl_atk++; recalculateStats(); } }, 0.8);
+            add({ name: '🏹 기본 공격 관통 횟수 UP', apply: () => { p.lvl_pierce++; recalculateStats(); } }, 0.8);
+            add({ name: '💥 탄환 확산 (부채꼴 범위 증가)', apply: () => { p.lvl_bullet++; recalculateStats(); } }, 0.7);
+            add({ name: '🪄 스킬 파괴력 UP', apply: () => { p.lvl_skill_dmg++; recalculateStats(); } }, 0.7);
+            add({ name: '⏳ 스킬 쿨타임 감소', apply: () => { p.lvl_skill_cd++; recalculateStats(); } }, 0.7);
+            add({ name: '🧛 처치 시 흡혈', apply: () => { p.lvl_vampire++; recalculateStats(); } }, 0.5);
+            add({ name: '💖 초당 자연 회복', apply: () => { p.lvl_regen++; recalculateStats(); } }, 0.5);
+
+            // 2) 레어/전설 무기 및 스킬 (보유 중이면 등장 확률 대폭 UP)
+            if (p.lvl_shotgun === 0) add({ isLegendary: true, name: '💠 [초희귀] 샷건 (탄환 x2)', apply: () => { p.lvl_shotgun++; recalculateStats(); } }, 0.03);
+            
+            add({ isRare: p.lvl_lightning === 0, name: p.lvl_lightning === 0 ? '⚡ [레어] 연쇄 번개 (관통 레이저)' : '⚡ 번개 확률 & 갯수 UP', apply: () => { p.lvl_lightning++; recalculateStats(); } }, p.lvl_lightning > 0 ? 0.6 : 0.2);
+            add({ isRare: p.lvl_homing === 0, name: p.lvl_homing === 0 ? '✨ [레어] 유도 분열탄' : '✨ 유도탄 분열 개수 & 위력 UP', apply: () => { p.lvl_homing++; recalculateStats(); } }, p.lvl_homing > 0 ? 0.6 : 0.2);
+            add({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (환영검 진형)' : '🗡️ 환영검 개수 & 위력 UP', apply: () => { p.lvl_sword++; recalculateStats(); } }, p.lvl_sword > 0 ? 0.6 : 0.2);
+            add({ isRare: p.lvl_blackhole === 0, name: p.lvl_blackhole === 0 ? '🌌 [레어] 블랙홀 탄환 (초광역 몹 집결)' : '🌌 블랙홀 범위 및 발동 확률 UP', apply: () => { p.lvl_blackhole++; recalculateStats(); } }, p.lvl_blackhole > 0 ? 0.5 : 0.1);
+            add({ isRare: p.lvl_storm === 0, name: p.lvl_storm === 0 ? '🌀 [레어] 칼날 돌풍 (무한 지속 오라)' : '🌀 칼날 돌풍 반경 & 위력 UP', apply: () => { p.lvl_storm++; recalculateStats(); } }, p.lvl_storm > 0 ? 0.6 : 0.2);
+            
+            add({ isLegendary: p.lvl_orbital === 0, name: p.lvl_orbital === 0 ? '☄️ [전설] 위성 폭격' : '☄️ 위성 폭격 주기 & 범위 증가', apply: () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); } }, p.lvl_orbital > 0 ? 0.4 : 0.02);
+            add({ isRare: p.lvl_shuriken === 0, name: p.lvl_shuriken === 0 ? '🌟 [레어] 수호 표창' : '🌟 수호 표창 개수 UP', apply: () => { p.lvl_shuriken++; recalculateStats(); } }, p.lvl_shuriken > 0 ? 0.6 : 0.2);
+
+            // 3) 액티브 스킬 업그레이드 (무조건 뜨는 현상 방지 -> 확률 조정)
             if (p.activeSkillType === 'boomerang') {
-                pool.push({ name: '🎇 부메랑 분열', apply: () => { p.lvl_boom_split++; recalculateStats(); } });
-                if (Math.random() < 0.15 || isDev) pool.push({ name: '🔄 스킬 교체: 레이저', apply: () => { p.activeSkillType = 'laser'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } });
-                pool.push({ name: '🔄 스킬 교체: 냥냥펀치', apply: () => { p.activeSkillType = 'punch'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } });
+                add({ name: '🎇 부메랑 분열 UP', apply: () => { p.lvl_boom_split++; recalculateStats(); } }, 0.6);
+            } else if (p.activeSkillType === 'laser') {
+                add({ name: '🔱 레이저 갈래 UP', apply: () => { p.lvl_laser_split++; recalculateStats(); } }, 0.6);
+            } else if (p.activeSkillType === 'punch') {
+                add({ name: '🐾 냥냥펀치 개수 UP', apply: () => { p.lvl_punch_count++; recalculateStats(); } }, 0.5);
+                add({ name: '💥 냥냥펀치 분열 UP', apply: () => { p.lvl_punch_split++; recalculateStats(); } }, 0.5);
             }
-            if (p.activeSkillType === 'laser') pool.push({ name: '🔱 레이저 갈래 UP', apply: () => { p.lvl_laser_split++; recalculateStats(); } });
-            if (p.activeSkillType === 'punch') { pool.push({ name: '🐾 냥냥펀치 개수 UP', apply: () => { p.lvl_punch_count++; recalculateStats(); } }); pool.push({ name: '💥 냥냥펀치 분열 UP', apply: () => { p.lvl_punch_split++; recalculateStats(); } }); }
+
+            // 4) 액티브 스킬 교체권 (매우 낮은 확률)
+            if (p.activeSkillType !== 'boomerang') add({ name: '🔄 스킬 교체: 🪃 부메랑', apply: () => { p.activeSkillType = 'boomerang'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
+            if (p.activeSkillType !== 'laser') add({ name: '🔄 스킬 교체: 🔱 레이저', apply: () => { p.activeSkillType = 'laser'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
+            if (p.activeSkillType !== 'punch') add({ name: '🔄 스킬 교체: 🐾 냥냥펀치', apply: () => { p.activeSkillType = 'punch'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
+
+            // 풀이 너무 적을 경우를 대비한 기본 보상
+            if (pool.length < 5) pool.push({ name: '💖 체력 50% 즉시 회복', apply: () => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.5); updateUI(); } });
 
             return pool;
         }
@@ -381,7 +395,15 @@
                 if(currentChestReroll > 0) { currentChestReroll--; playSound('shoot'); showOptions(); }
             };
 
-            let choices = getAvailableAbilities().sort(() => 0.5 - Math.random()).slice(0, isRareChest ? 5 : 3);
+            let pool = getAvailableAbilities();
+            
+            // 📦 완벽한 무작위 셔플 (Fisher-Yates 알고리즘) 적용!
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            
+            let choices = pool.slice(0, isRareChest ? 5 : 3);
             const cont = document.getElementById('ability-container'); cont.innerHTML = '';
             choices.forEach(ab => {
                 let card = document.createElement('div'); card.className = ab.isLegendary ? 'ability-card legendary' : (ab.isRare ? 'ability-card rare' : 'ability-card');
@@ -521,15 +543,13 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🕳️ 리얼 블랙홀: 날아가는 검은 구체 & 빨아들이기 효과 (데미지 0)
+            // 🕳️ 리얼 블랙홀: 날아가는 검은 구체 & 빨아들이기 (데미지 0)
             for (let i = blackholes.length - 1; i >= 0; i--) {
                 let bh = blackholes[i]; 
                 bh.life--;
-                bh.y += bh.vy; // 탄환처럼 전진
+                bh.y += bh.vy; 
                 
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(frameCount * 0.1);
-                
-                // 인터스텔라 풍 블랙홀 시각 효과
                 let grad = ctx.createRadialGradient(0,0, bh.r*0.2, 0,0, bh.r);
                 grad.addColorStop(0, 'rgba(0,0,0,1)');
                 grad.addColorStop(0.5, 'rgba(100,0,200,0.5)');
@@ -544,23 +564,18 @@
                 ctx.beginPath(); ctx.arc(0, 0, bh.r * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill();
                 ctx.restore();
                 
-                // 몹을 강제로 빨아들임
                 enemies.forEach(e => {
                     let dx = bh.x - e.x; let dy = bh.y - e.y; let dist = Math.hypot(dx, dy);
                     if (dist < bh.r * 2.5 && !e.isBoss) {
                         e.x += (dx / dist) * 7; 
                         e.y += (dy / dist) * 7;
-                        if (dist < bh.r * 0.5) {
-                            e.x += Math.cos(frameCount*0.2)*5;
-                            e.y += Math.sin(frameCount*0.2)*5;
-                        }
+                        if (dist < bh.r * 0.5) { e.x += Math.cos(frameCount*0.2)*5; e.y += Math.sin(frameCount*0.2)*5; }
                     }
                 });
-                // 생명력이 다하거나 화면 위로 완전히 넘어가면 소멸
                 if (bh.life <= 0 || bh.y < -300) blackholes.splice(i, 1);
             }
 
-            // 🐾 액티브 스킬: 부메랑 / 레이저 / 냥냥펀치 (오리지널 롤백 & 관통 추가)
+            // 🐾 액티브 스킬
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -592,7 +607,6 @@
                     enemies.forEach(e => { if(Math.abs(e.x-lx)<40 && e.y<p.y) { e.hp-=sk.dmg; } });
                     if(sk.life<=0) activeSkills.splice(i, 1);
                 } else if(sk.type==='punch') {
-                    // 🐾 냥냥펀치 오리지널 롤백 & 분열 무적 관통 부여
                     if(sk.state==='flying') { 
                         sk.x+=sk.vx; sk.y+=sk.vy; 
                         if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
@@ -602,11 +616,9 @@
                         if (sk.pierceTimer <= 0) {
                             let hitAny = false; 
                             enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ hitAny=true; } });
-                            // 적에 닿으면 제자리 멈춤 및 난타 시작
                             if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
                         } else {
-                            // 관통 중일 때 닿는 적 데미지
-                            if (frameCount % 5 === 0) {
+                            if (frameCount % 5 === 0) { 
                                 enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ e.hp -= sk.dmg*0.2; } });
                             }
                         }
@@ -624,10 +636,8 @@
                             enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
-                            // 분열 캡 적용 (p.lvl_punch_split 까지만)
                             if(sk.splitLevel < p.lvl_punch_split) { 
                                 for(let j=0; j<2; j++) { 
-                                    // 분열 시 30프레임(0.5초) 관통 무적 부여
                                     activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 30}); 
                                 } 
                             }
@@ -644,7 +654,6 @@
                 }
             }
 
-            // 🗡️ 심판의 검 (환영검 배열 리워크)
             if (p.lvl_sword > 0) {
                 p.swordTimer--;
                 if (p.swordTimer <= 0) {
@@ -652,14 +661,14 @@
                     if (enemies.length > 0) {
                         let target = enemies.reduce((max, e) => (e.hp > max.hp ? e : max), enemies[0]);
                         if (target) {
-                            let swordCount = 3 + p.lvl_sword * 2; // 레벨당 2개씩 증가 (기본 5개)
-                            let swordDmg = p.dmg * 20 * (1 + (p.lvl_skill_dmg||0)); // 개별 위력
+                            let swordCount = 3 + p.lvl_sword * 2; 
+                            let swordDmg = p.dmg * 20 * (1 + (p.lvl_skill_dmg||0)); 
                             for (let k = 0; k < swordCount; k++) {
                                 swords.push({
                                     target: target,
                                     angle: (Math.PI * 2 / swordCount) * k,
                                     orbitRadius: 80,
-                                    delay: 30 + k * 8, // 0.5초 후 8프레임 간격으로 순차 발사
+                                    delay: 30 + k * 8, 
                                     state: 'orbit',
                                     dmg: swordDmg,
                                     x: target.x + Math.cos((Math.PI * 2 / swordCount) * k) * 80,
@@ -673,11 +682,8 @@
                 }
             }
 
-            // 🗡️ 환영검 상태 업데이트 및 렌더링
             for (let i = swords.length - 1; i >= 0; i--) {
                 let s = swords[i];
-                
-                // 타겟이 죽었거나 없으면 가장 가까운 적을 새로 탐색 (딜 낭비 방지)
                 if (!s.target || s.target.hp <= 0 || !enemies.includes(s.target)) {
                     let closestDist = Infinity; let closestE = null;
                     for(let j=0; j<enemies.length; j++) { 
@@ -685,7 +691,7 @@
                         if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } 
                     }
                     s.target = closestE;
-                    if (!s.target) s.state = 'strike'; // 적이 아예 없으면 그냥 돌진 후 소멸
+                    if (!s.target) s.state = 'strike'; 
                 }
 
                 let angleToTarget = s.angle;
@@ -695,7 +701,7 @@
                         s.angle += 0.1; 
                         let targetX = s.target.x + Math.cos(s.angle) * s.orbitRadius;
                         let targetY = s.target.y + Math.sin(s.angle) * s.orbitRadius;
-                        s.x += (targetX - s.x) * 0.3; // 부드럽게 타겟 주변으로 이동
+                        s.x += (targetX - s.x) * 0.3; 
                         s.y += (targetY - s.y) * 0.3;
                         angleToTarget = Math.atan2(s.target.y - s.y, s.target.x - s.x);
                     }
@@ -707,51 +713,25 @@
                         let dx = s.target.x - s.x; let dy = s.target.y - s.y;
                         let dist = Math.hypot(dx, dy);
                         angleToTarget = Math.atan2(dy, dx);
-                        
-                        s.x += Math.cos(angleToTarget) * 30; // 매우 빠른 속도로 꽂힘
-                        s.y += Math.sin(angleToTarget) * 30;
-                        
+                        s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
                         if (dist < s.target.w/2 + 20) {
-                            s.target.hp -= s.dmg;
-                            s.hit = true;
-                            playSound('hit');
+                            s.target.hp -= s.dmg; s.hit = true; playSound('hit');
                             spawnParticles(s.x, s.y, '#f39c12', 15, 2);
                             if(s.target.isBoss) s.target.iframe = 2;
                         }
                     } else {
-                        // 타겟이 없으면 직진
-                        s.x += Math.cos(s.angle) * 30;
-                        s.y += Math.sin(s.angle) * 30;
+                        s.x += Math.cos(s.angle) * 30; s.y += Math.sin(s.angle) * 30;
                         if(s.x < -100 || s.x > canvas.width+100 || s.y < -100 || s.y > canvas.height+100) s.hit = true;
                     }
                 }
 
-                // 얇은 환영검 렌더링
                 if (!s.hit) {
-                    ctx.save();
-                    ctx.translate(s.x, s.y);
-                    ctx.rotate(angleToTarget + Math.PI/2); 
-                    
-                    ctx.shadowColor = '#f39c12'; ctx.shadowBlur = 10;
-                    ctx.fillStyle = '#fff';
-                    
-                    // 칼날
-                    ctx.beginPath();
-                    ctx.moveTo(0, -25); 
-                    ctx.lineTo(4, 10);  
-                    ctx.lineTo(-4, 10); 
-                    ctx.closePath();
-                    ctx.fill();
-                    
-                    // 코등이 & 손잡이
-                    ctx.fillStyle = '#f39c12';
-                    ctx.fillRect(-8, 10, 16, 3);
-                    ctx.fillRect(-2, 13, 4, 8);
-                    
+                    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); 
+                    ctx.shadowColor = '#f39c12'; ctx.shadowBlur = 10; ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(4, 10); ctx.lineTo(-4, 10); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#f39c12'; ctx.fillRect(-8, 10, 16, 3); ctx.fillRect(-2, 13, 4, 8);
                     ctx.restore();
-                } else {
-                    swords.splice(i, 1);
-                }
+                } else { swords.splice(i, 1); }
             }
 
             if(p.lvl_orbital > 0) {
@@ -816,11 +796,10 @@
             let targetX = Math.max(20, Math.min(canvas.width-20, window.mouseX_val));
             p.vx = (targetX - p.x)*0.25; p.x += p.vx;
             
-            // 🔫 샷건 발사 (부채꼴 확산 스케일링 상향)
+            // 🔫 샷건 발사 (부채꼴 확산 상향)
             if(frameCount%p.fireDelay === 0) {
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
-                // 확산 각도 범위 (최대 120도 부채꼴)
                 let maxSpreadAngle = Math.min(Math.PI * 0.8, (totalBullets * 0.15)); 
                 
                 for(let j=0; j<totalBullets; j++) {
@@ -829,7 +808,6 @@
                     let bvx = Math.sin(angleOffset) * 15 + p.vx * 0.15; 
                     let bvy = -Math.cos(angleOffset) * 15;
 
-                    // 🕳️ 블랙홀 시드 발사 판정
                     let isBhSeed = (p.bh_chance > 0 && Math.random() < p.bh_chance);
                     let isEnhanced = (p.lvl_homing > 0 && p.totalFired % 3 === 0);
                     let enhancedDmg = p.dmg * 2.0 * (1 + (p.lvl_skill_dmg||0) * 0.5);
@@ -852,13 +830,19 @@
                 let b = bullets[i]; b.x+=b.vx; b.y+=b.vy; 
                 
                 if(b.isBhSeed) {
-                    ctx.save();
-                    ctx.shadowBlur = 10; ctx.shadowColor = 'purple';
+                    ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = 'purple';
                     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke();
-                    ctx.restore();
+                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
                 } else {
-                    ctx.fillStyle=b.color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                    // 🏹 관통 총알 시각화 (에너지 화살 형태)
+                    ctx.fillStyle=b.color; 
+                    if (b.pierce > 0) {
+                        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
+                        ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+                        ctx.beginPath(); ctx.moveTo(b.r * 2.5, 0); ctx.lineTo(-b.r, b.r * 0.8); ctx.lineTo(-b.r, -b.r * 0.8); ctx.closePath(); ctx.fill(); ctx.restore();
+                    } else {
+                        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                    }
                 }
                 
                 let removed = false;
@@ -866,7 +850,6 @@
                     let e = enemies[j];
                     if(!b.hitLog.has(e) && Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         
-                        // 🕳️ 블랙홀 시드 적중 시 개화
                         if (b.isBhSeed) {
                             let bh_radius = 120 + p.lvl_blackhole * 30; 
                             let bh_life = 60 + p.lvl_blackhole * 20;
@@ -973,9 +956,7 @@
                     let stormDmg = p.dmg * 1.5 * (1 + (p.lvl_skill_dmg||0) * 0.5) * p.lvl_storm; 
                     enemies.forEach(e => {
                         if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
-                            e.hp -= stormDmg; 
-                            e.y -= 15; 
-                            e.x += (e.x > p.x ? 10 : -10); 
+                            e.hp -= stormDmg; e.y -= 15; e.x += (e.x > p.x ? 10 : -10); 
                             if(e.isBoss) e.iframe = 4;
                             spawnParticles(e.x, e.y, '#00a8ff', 2);
                         }

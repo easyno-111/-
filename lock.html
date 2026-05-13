@@ -11,15 +11,69 @@
             --success: #34c759;
             --bg: #f5f5f7;
             --card: #ffffff;
+            --gold: #ffd700;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', sans-serif; }
-        body { background-color: var(--bg); color: #1d1d1f; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        
+        /* 화면 잘림 현상 해결: min-height 및 overflow-y 적용 */
+        body { 
+            background-color: var(--bg); 
+            color: #1d1d1f; 
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow-x: hidden; 
+            overflow-y: auto; 
+            padding: 20px 0;
+        }
+
+        /* 🚪 도입부 문 애니메이션 스타일 */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 9999; perspective: 1200px; display: flex;
+            background: #050505;
+        }
+        .door {
+            width: 50%; height: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            border: 2px solid #333;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            transition: transform 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+            position: relative;
+        }
+        .door.left { transform-origin: left; border-right: 5px solid #111; }
+        .door.right { transform-origin: right; border-left: 5px solid #111; }
+        
+        /* 문 열림 상태 */
+        .door.open.left { transform: rotateY(-105deg); }
+        .door.open.right { transform: rotateY(105deg); }
+
+        .intro-content {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 10000; text-align: center; color: white;
+            transition: opacity 0.5s ease;
+            width: 90%; max-width: 400px;
+        }
+        .intro-content i { font-size: 80px; color: var(--gold); margin-bottom: 20px; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+        .intro-title { font-size: 32px; font-weight: 900; margin-bottom: 30px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); line-height: 1.3; }
+        .start-btn {
+            padding: 16px 45px; font-size: 20px; font-weight: 800;
+            background: var(--gold); color: #111;
+            border: none; border-radius: 40px; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s; outline: none;
+        }
+        .start-btn:hover { transform: scale(1.05); box-shadow: 0 15px 25px rgba(255, 215, 0, 0.5); }
 
         /* 메인 게임 컨테이너 */
         .game-container {
-            width: 90%; max-width: 900px; height: 90vh; background: var(--card); border-radius: 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; position: relative;
+            width: 90%; max-width: 900px; 
+            min-height: 90vh; /* 고정 height 대신 min-height 사용 */
+            background: var(--card); border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); 
+            display: flex; flex-direction: column; overflow: hidden; position: relative;
         }
 
         /* 헤더 섹션 */
@@ -38,23 +92,21 @@
         .mission-text b { color: var(--primary); font-size: 26px; }
 
         /* 입력 및 그래프 영역 */
-        .work-area { display: flex; flex: 1; padding: 0 30px 30px; gap: 20px; overflow: hidden; }
+        .work-area { display: flex; flex: 1; padding: 0 30px 30px; gap: 30px; }
         
         .input-side { flex: 1; display: flex; flex-direction: column; gap: 15px; justify-content: center; }
-        .eq-row { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #444; }
+        .eq-row { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; color: #444; flex-wrap: wrap; }
         input[type="number"] {
             width: 85px; padding: 12px; border-radius: 12px; border: 2px solid #d1d1d6;
             text-align: center; font-size: 20px; outline: none; transition: border 0.3s;
         }
         input:focus { border-color: var(--primary); }
 
-        .graph-side { flex: 1.2; position: relative; display: flex; flex-direction: column; }
+        .graph-side { flex: 1.2; position: relative; display: flex; flex-direction: column; min-height: 300px; }
         canvas { background: #fafafa; border-radius: 20px; border: 1px solid #eee; width: 100%; flex: 1; }
 
         /* 하단 상태바 */
-        .status-bar {
-            background: #1d1d1f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center;
-        }
+        .status-bar { background: #1d1d1f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .live-stats { font-size: 16px; font-weight: 500; font-family: monospace; }
 
         /* 👑 성공 화면 애니메이션 */
@@ -69,12 +121,13 @@
         .success-icon { font-size: 100px; margin-bottom: 20px; animation: bounce 1s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
         
-        .success-title { font-size: 50px; font-weight: 900; margin-bottom: 10px; }
+        .success-title { font-size: 40px; font-weight: 900; margin-bottom: 10px; }
         .success-btn {
             margin-top: 30px; padding: 15px 40px; background: white; color: var(--primary);
             border: none; border-radius: 50px; font-size: 20px; font-weight: 800; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: 0.2s;
         }
+        .success-btn:hover { transform: scale(1.05); }
 
         /* ⚙️ 교사용 설정 모드 */
         .teacher-btn { position: fixed; bottom: 20px; right: 20px; background: #8e8e93; color: white; width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 50; }
@@ -82,20 +135,37 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200;
         }
-        .modal-content { background: white; padding: 40px; border-radius: 30px; width: 400px; display: flex; flex-direction: column; gap: 15px; }
+        .modal-content { background: white; padding: 30px; border-radius: 30px; width: 90%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; }
         .modal-content h2 { margin-bottom: 10px; text-align: center; }
         .modal-row { display: flex; justify-content: space-between; align-items: center; }
-        .apply-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; margin-top: 10px; }
+        .apply-btn { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; margin-top: 10px; cursor: pointer;}
+        .random-btn { background: #f2f2f7; color: #333; border: none; padding: 15px; border-radius: 15px; font-weight: bold; margin-top: 15px; cursor: pointer;}
 
+        /* 모바일 대응 반응형 처리 */
         @media (max-width: 800px) {
+            body { padding: 10px; }
             .work-area { flex-direction: column; }
-            .game-container { height: auto; overflow: visible; }
-            canvas { height: 250px; }
+            .graph-side { min-height: 350px; }
+            .eq-row { justify-content: center; }
+            .header h1 { font-size: 20px; }
+            .mission-text { font-size: 18px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 🚪 도입부 (문 방탈출 애니메이션) -->
+    <div id="intro-screen">
+        <div class="door left" id="door-left"></div>
+        <div class="door right" id="door-right"></div>
+        <div class="intro-content" id="intro-content">
+            <i class="fa-solid fa-lock"></i>
+            <div class="intro-title">이차함수 자물쇠<br>방탈출 GOLD</div>
+            <button class="start-btn" onclick="startGame()">도전 시작하기</button>
+        </div>
+    </div>
+
+    <!-- 메인 게임 UI -->
     <div class="game-container">
         <div class="header">
             <h1>이차함수 자물쇠 탈출 <i class="fa-solid fa-key"></i></h1>
@@ -114,9 +184,9 @@
         <div class="work-area">
             <div class="input-side">
                 <div class="eq-row">f(x) = <input type="number" id="a" value="1" step="0.5" oninput="check()"> x²</div>
-                <div class="eq-row">+ <input type="number" id="b" value="0" step="0.5" oninput="check()"> x</div>
-                <div class="eq-row">+ <input type="number" id="c" value="0" step="0.5" oninput="check()"></div>
-                <button class="apply-btn" onclick="randomMission()" style="background: #f2f2f7; color:#333;">다른 문제 생성</button>
+                <div class="eq-row">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <input type="number" id="b" value="0" step="0.5" oninput="check()"> x</div>
+                <div class="eq-row">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ <input type="number" id="c" value="0" step="0.5" oninput="check()"></div>
+                <button class="random-btn" onclick="randomMission()"><i class="fa-solid fa-rotate-right"></i> 다른 문제 생성</button>
             </div>
             <div class="graph-side">
                 <canvas id="graphCanvas"></canvas>
@@ -131,19 +201,20 @@
         <div id="success-overlay">
             <div class="success-icon">🔓</div>
             <div class="success-title">축하합니다!</div>
-            <div style="font-size: 24px; font-weight: bold;">자물쇠를 열고 탈출에 성공했습니다!</div>
-            <button class="success-btn" onclick="resetGame()">다시 도전하기</button>
+            <div style="font-size: 20px; font-weight: bold;">자물쇠를 열고 탈출에 성공했습니다!</div>
+            <button class="success-btn" onclick="resetGame()">다음 문제 도전</button>
         </div>
     </div>
 
+    <!-- 교사용 수동 설정 모달 -->
     <div class="teacher-btn" onclick="toggleTeacherModal()"><i class="fa-solid fa-gear"></i></div>
     <div id="teacher-modal">
         <div class="modal-content">
             <h2>문제 수동 설정</h2>
-            <div class="modal-row">구간 시작 (x1): <input type="number" id="t-x1" value="0"></div>
-            <div class="modal-row">구간 끝 (x2): <input type="number" id="t-x2" value="4"></div>
-            <div class="modal-row">목표 최댓값: <input type="number" id="t-max" value="5"></div>
-            <div class="modal-row">목표 최솟값: <input type="number" id="t-min" value="1"></div>
+            <div class="modal-row">구간 시작 (x1): <input type="number" id="t-x1" value="0" style="width: 80px; padding: 5px; text-align: center;"></div>
+            <div class="modal-row">구간 끝 (x2): <input type="number" id="t-x2" value="4" style="width: 80px; padding: 5px; text-align: center;"></div>
+            <div class="modal-row">목표 최댓값: <input type="number" id="t-max" value="5" style="width: 80px; padding: 5px; text-align: center;"></div>
+            <div class="modal-row">목표 최솟값: <input type="number" id="t-min" value="1" style="width: 80px; padding: 5px; text-align: center;"></div>
             <button class="apply-btn" onclick="applyTeacherMission()">이 문제로 시작하기</button>
             <button class="apply-btn" onclick="toggleTeacherModal()" style="background:#8e8e93;">닫기</button>
         </div>
@@ -153,6 +224,21 @@
         let targetX1, targetX2, targetMax, targetMin;
         const canvas = document.getElementById('graphCanvas');
         const ctx = canvas.getContext('2d');
+
+        // 🚪 도입부 시작 애니메이션 트리거
+        function startGame() {
+            // 내용 숨기기
+            document.getElementById('intro-content').style.opacity = '0';
+            // 양쪽 문 열기
+            document.getElementById('door-left').classList.add('open');
+            document.getElementById('door-right').classList.add('open');
+            
+            // 애니메이션 종료 후 요소 감추기 (그래프 초기 렌더링 최적화)
+            setTimeout(() => {
+                document.getElementById('intro-screen').style.display = 'none';
+                check(); // 화면 사이즈에 맞게 캔버스 초기 조정
+            }, 1500);
+        }
 
         // 1. 랜덤 문제 생성
         function randomMission() {
@@ -181,6 +267,9 @@
         }
 
         function check() {
+            // 캔버스가 표시되지 않은 상태에서의 오류 방지
+            if(canvas.offsetWidth === 0) return;
+
             const a = parseFloat(document.getElementById('a').value) || 0;
             const b = parseFloat(document.getElementById('b').value) || 0;
             const c = parseFloat(document.getElementById('c').value) || 0;
@@ -192,7 +281,7 @@
             const vertexX = -b / (2 * a);
 
             let checkPoints = [targetX1, targetX2];
-            if (vertexX > targetX1 && vertexX < targetX2) checkPoints.push(vertexX);
+            if (a !== 0 && vertexX > targetX1 && vertexX < targetX2) checkPoints.push(vertexX);
 
             checkPoints.forEach(x => {
                 let y = f(x);
@@ -200,12 +289,18 @@
                 if (y < curMin) curMin = y;
             });
 
+            // a가 0이 되어 상수/일차 함수가 된 경우의 예외처리
+            if(a === 0) {
+                curMax = Math.max(f(targetX1), f(targetX2));
+                curMin = Math.min(f(targetX1), f(targetX2));
+            }
+
             document.getElementById('live-stats').innerText = `현재 최댓값: ${curMax.toFixed(2)} | 최솟값: ${curMin.toFixed(2)}`;
 
             draw(a, b, c);
 
             // 정답 판정 (오차범위 0.1)
-            if (Math.abs(curMax - targetMax) < 0.11 && Math.abs(curMin - targetMin) < 0.11) {
+            if (a !== 0 && Math.abs(curMax - targetMax) < 0.11 && Math.abs(curMin - targetMin) < 0.11) {
                 showSuccess();
             }
         }
@@ -215,9 +310,9 @@
             canvas.height = canvas.offsetHeight;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            const scale = 30;
+            const scale = canvas.width > 500 ? 30 : 25; // 모바일 등 작은 화면에서는 스케일 조정
             const ox = canvas.width / 2;
-            const oy = canvas.height - 80;
+            const oy = canvas.height - (canvas.height * 0.3); // 바닥 기준 위치 조정
 
             // 격자 및 축
             ctx.strokeStyle = "#e5e5ea";
@@ -227,6 +322,12 @@
             // 구간 강조
             ctx.fillStyle = "rgba(0, 122, 255, 0.1)";
             ctx.fillRect(ox + targetX1*scale, 0, (targetX2-targetX1)*scale, canvas.height);
+
+            // 축 숫자 표시 (선택사항)
+            ctx.fillStyle = "#999";
+            ctx.font = "12px Arial";
+            ctx.fillText(targetX1, ox + targetX1*scale - 5, oy + 15);
+            ctx.fillText(targetX2, ox + targetX2*scale - 5, oy + 15);
 
             // 그래프 그리기
             ctx.strokeStyle = "#007aff"; ctx.lineWidth = 4;
@@ -242,7 +343,6 @@
 
         function showSuccess() {
             document.getElementById('success-overlay').style.display = 'flex';
-            // 폭죽 효과 대신 텍스트 애니메이션이 이미 CSS로 적용됨
         }
 
         function resetGame() {
@@ -258,7 +358,13 @@
             modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        window.onload = randomMission;
+        // 창 크기 변경 시 그래프 다시 그리기
+        window.addEventListener('resize', check);
+
+        // 초기 로드 시 문제 생성 대기 (문 뒤에서 렌더링 됨)
+        window.onload = () => {
+            randomMission();
+        };
     </script>
 </body>
 </html>

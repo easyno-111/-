@@ -61,7 +61,7 @@
         #stages-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
             display: flex; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-            visibility: hidden; opacity: 0; /* 처음엔 폭죽 화면이므로 숨김 */
+            visibility: hidden; opacity: 0;
         }
         #stages-wrapper.visible { visibility: visible; opacity: 1; }
 
@@ -118,6 +118,15 @@
         .quiz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; text-align: center; margin-top: 10px; }
         .quiz-col { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid #444; }
         @media (max-width: 800px) { .quiz-grid { grid-template-columns: 1fr; } }
+
+        /* Stage 5: 그리기 패드 도구 */
+        .drawing-tools { display: flex; gap: 10px; margin-bottom: 10px; width: 100%; justify-content: center; flex-wrap: wrap; }
+        .tool-btn { padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-blue { background: var(--neon-blue); color: black; }
+        .btn-pink { background: var(--neon-pink); color: white; }
+        .btn-eraser { background: #555; color: white; }
+        .btn-clear { background: #ff4757; color: white; }
+        .tool-btn:hover { transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -164,7 +173,7 @@
                         <div class="feedback" id="fb-q2"></div>
                     </div>
                     <div class="panel" style="display: flex; flex-direction: column;">
-                        <canvas id="math-canvas" style="width:100%; flex:1; min-height:250px; background:white; border-radius:10px; border:2px solid #555;"></canvas>
+                        <canvas id="math-canvas" style="width:100%; flex:1; min-height:280px; background:white; border-radius:10px; border:2px solid #555;"></canvas>
                         <button class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                     </div>
                 </div>
@@ -179,7 +188,6 @@
                 </div>
                 <div class="card-body">
                     <img src="step2_image.png" alt="실수 전체 범위 최대 최소" class="textbook-img">
-                    
                     <div class="flex-row">
                         <div class="panel" style="text-align: center;">
                             <h3 style="color: var(--neon-blue);"><i>a > 0</i> (아래로 볼록)</h3>
@@ -211,12 +219,11 @@
         <div class="stage" id="stage-3">
             <div class="activity-card">
                 <div class="card-header">
-                    <div class="step-tag">STAGE 04. 최종 미션</div>
+                    <div class="step-tag">STAGE 04. 핵심 미션</div>
                     <div class="card-title">제한된 범위의 최대/최소 규칙 찾기 (<span class="math">α ≤ x ≤ β</span>)</div>
                 </div>
                 <div class="card-body">
                     <img src="step4_image.png" alt="제한된 범위 최대 최소" class="textbook-img">
-                    
                     <h3 style="margin-top: 10px; width: 100%; text-align: center;">💡 <span class="math">a < 0</span> 일 때의 빈칸을 채워보세요.</h3>
                     <div class="quiz-grid">
                         <div class="quiz-col">
@@ -239,9 +246,32 @@
             </div>
         </div>
 
+        <div class="stage" id="stage-4">
+            <div class="activity-card" style="height: 100%;">
+                <div class="card-header">
+                    <div class="step-tag">STAGE 05. 실전 미션</div>
+                    <div class="card-title">태블릿 펜슬로 직접 풀어보기</div>
+                </div>
+                <div class="card-body" style="display: flex; flex-direction: column; height: 100%; overflow: hidden;">
+                    <img src="step5_image.png" alt="예제 1" class="textbook-img" style="max-height: 120px; object-fit: contain; margin-bottom: 10px;">
+                    
+                    <div class="drawing-tools">
+                        <button class="tool-btn btn-blue" onclick="setTool('pen', '#0984e3')"><i class="fa-solid fa-pen"></i> 파란펜</button>
+                        <button class="tool-btn btn-pink" onclick="setTool('pen', '#ff0055')"><i class="fa-solid fa-pen"></i> 빨간펜</button>
+                        <button class="tool-btn btn-eraser" onclick="setTool('eraser')"><i class="fa-solid fa-eraser"></i> 지우개</button>
+                        <button class="tool-btn btn-clear" onclick="clearCanvas()"><i class="fa-solid fa-trash"></i> 전체 지우기</button>
+                    </div>
+                    
+                    <div style="flex: 1; width: 100%; border: 3px solid #555; border-radius: 10px; background: #fff; overflow: hidden; position: relative;">
+                        <canvas id="drawing-pad" style="width: 100%; height: 100%; touch-action: none; cursor: crosshair;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div> <script>
         // ==========================================
-        // 폭죽 시스템 (수정됨: 3번 발사 후 버튼 등장)
+        // 폭죽 시스템
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
@@ -256,6 +286,7 @@
             window.addEventListener('resize', () => { 
                 fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; 
                 if(contentRevealed && currentStage === 0) initStage1Graph(); 
+                if(currentStage === 4) resizePad(); // 태블릿 패드 리사이즈
             });
             animateFw();
         }
@@ -288,15 +319,13 @@
             playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             shotsFired++;
-            
-            // 폭죽 3번 쏘면 'NEXT STEP' 버튼 보이기
             if (shotsFired >= 3 && !contentRevealed) {
                 document.getElementById('show-content-btn').style.display = 'block';
             }
         }
 
         function animateFw() {
-            if(contentRevealed) return; // 내용 나오면 폭죽 중단
+            if(contentRevealed) return; 
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
@@ -312,28 +341,24 @@
         }
 
         // ==========================================
-        // 스테이지 트랜지션 (폭죽 -> Stage 0)
+        // 스테이지 트랜지션
         // ==========================================
         function revealContent() {
             contentRevealed = true;
-            fwCanvas.style.display = 'none'; // 캔버스 숨김
-            
-            // 버튼 교체
+            fwCanvas.style.display = 'none'; 
             document.getElementById('fw-btn').style.display = 'none';
             document.getElementById('show-content-btn').style.display = 'none';
             document.getElementById('prev-btn').style.display = 'block';
             document.getElementById('next-btn').style.display = 'block';
-
-            // 콘텐츠 컨테이너 보이기
             document.getElementById('stages-wrapper').classList.add('visible');
             initStage1Graph();
         }
 
         // ==========================================
-        // SPA 슬라이드 로직
+        // SPA 슬라이드 로직 (총 5개로 증가)
         // ==========================================
         let currentStage = 0;
-        const totalStages = 4;
+        const totalStages = 5;
 
         function moveStage(dir) {
             currentStage += dir;
@@ -341,13 +366,17 @@
             if(currentStage >= totalStages) currentStage = totalStages - 1;
 
             document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
-            
             document.getElementById('prev-btn').disabled = (currentStage === 0);
             document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
+
+            // Stage 5로 이동 시 그리기 패드 초기화
+            if (currentStage === 4) {
+                setTimeout(resizePad, 400); // 슬라이드 애니메이션 끝난 후 크기 설정
+            }
         }
 
         // ==========================================
-        // Stage 1: 퀴즈 및 캔버스 로직
+        // Stage 1: 퀴즈 및 캔버스 (숫자 표시 추가)
         // ==========================================
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;
@@ -374,40 +403,140 @@
             if(!mCtx) return;
             const w = mathCanvas.width; const h = mathCanvas.height; const scale = w > 500 ? 30 : 25; const ox = w / 2 - 2*scale; const oy = h - 2*scale;
             mCtx.clearRect(0, 0, w, h);
+            
+            // 격자 그리기
             mCtx.strokeStyle = "#eee"; mCtx.lineWidth = 1;
             for(let i = -15; i <= 15; i++) {
                 mCtx.beginPath(); mCtx.moveTo(ox + i*scale, 0); mCtx.lineTo(ox + i*scale, h); mCtx.stroke();
                 mCtx.beginPath(); mCtx.moveTo(0, oy - i*scale); mCtx.lineTo(w, oy - i*scale); mCtx.stroke();
             }
-            mCtx.strokeStyle = "#333"; mCtx.lineWidth = 2;
-            mCtx.beginPath(); mCtx.moveTo(ox, 0); mCtx.lineTo(ox, h); mCtx.stroke(); mCtx.beginPath(); mCtx.moveTo(0, oy); mCtx.lineTo(w, oy); mCtx.stroke();
             
+            // 축 그리기
+            mCtx.strokeStyle = "#333"; mCtx.lineWidth = 2;
+            mCtx.beginPath(); mCtx.moveTo(ox, 0); mCtx.lineTo(ox, h); mCtx.stroke(); 
+            mCtx.beginPath(); mCtx.moveTo(0, oy); mCtx.lineTo(w, oy); mCtx.stroke();
+            
+            // ⭐ 축에 숫자 표시 추가 ⭐
+            mCtx.fillStyle = "#333"; mCtx.font = "14px Arial";
+            mCtx.fillText("O", ox - 15, oy + 15);
+            mCtx.fillText("2", ox + 2*scale - 5, oy + 15);
+            mCtx.fillText("4", ox + 4*scale - 5, oy + 15);
+            mCtx.fillText("6", ox + 6*scale - 5, oy + 15);
+            mCtx.fillText("x", w - 15, oy + 15);
+            mCtx.fillText("2", ox - 15, oy - 2*scale + 5);
+            mCtx.fillText("4", ox - 15, oy - 4*scale + 5);
+            mCtx.fillText("6", ox - 15, oy - 6*scale + 5);
+            mCtx.fillText("10", ox - 20, oy - 10*scale + 5);
+            mCtx.fillText("y", ox + 5, 15);
+
+            // 포물선 그리기
             mCtx.strokeStyle = "#e84393"; mCtx.lineWidth = 3; mCtx.beginPath();
             for(let px = 0; px <= w; px++) { let x = (px - ox) / scale; let y = (x*x) - 6*x + 10; let py = oy - y*scale; if(px === 0) mCtx.moveTo(px, py); else mCtx.lineTo(px, py); }
             mCtx.stroke();
 
+            // 직선 그리기
             if (linesDrawn) {
                 const px1 = ox + 1*scale; const px4 = ox + 4*scale;
                 mCtx.fillStyle = "rgba(0, 210, 255, 0.2)"; mCtx.fillRect(px1, 0, px4 - px1, h);
                 mCtx.strokeStyle = "#0984e3"; mCtx.lineWidth = 2; mCtx.setLineDash([5, 5]);
-                mCtx.beginPath(); mCtx.moveTo(px1, 0); mCtx.lineTo(px1, h); mCtx.stroke(); mCtx.beginPath(); mCtx.moveTo(px4, 0); mCtx.lineTo(px4, h); mCtx.stroke();
+                mCtx.beginPath(); mCtx.moveTo(px1, 0); mCtx.lineTo(px1, h); mCtx.stroke(); 
+                mCtx.beginPath(); mCtx.moveTo(px4, 0); mCtx.lineTo(px4, h); mCtx.stroke();
                 mCtx.setLineDash([]);
                 mCtx.strokeStyle = "#00d2ff"; mCtx.lineWidth = 5; mCtx.beginPath();
                 for(let px = px1; px <= px4; px++) { let x = (px - ox) / scale; let y = (x*x) - 6*x + 10; let py = oy - y*scale; if(px === px1) mCtx.moveTo(px, py); else mCtx.lineTo(px, py); }
                 mCtx.stroke();
                 mCtx.fillStyle = "#00d2ff"; mCtx.beginPath(); mCtx.arc(ox + 3*scale, oy - 1*scale, 6, 0, Math.PI*2); mCtx.fill(); // Min
                 mCtx.fillStyle = "#ff7675"; mCtx.beginPath(); mCtx.arc(ox + 1*scale, oy - 5*scale, 6, 0, Math.PI*2); mCtx.fill(); // Max
+                
+                // ⭐ 직선 위치 1, 4 숫자 강조 표시 ⭐
+                mCtx.fillStyle = "#0984e3"; mCtx.font = "bold 16px Arial";
+                mCtx.fillText("1", px1 - 5, oy + 25);
+                mCtx.fillText("4", px4 - 5, oy + 25);
             }
         }
         function drawLimitLines() { linesDrawn = true; drawGraph(); }
 
-        // select 박스 변경 시 테두리 색상 변경
-        document.querySelectorAll('select').forEach(sel => {
-            sel.addEventListener('change', function() {
-                if(this.value !== "") this.style.borderColor = "var(--neon-purple)";
-                else this.style.borderColor = "var(--neon-blue)";
-            });
-        });
+        // ==========================================
+        // Stage 5: 그리기 패드 로직 (태블릿 펜슬 지원)
+        // ==========================================
+        const pad = document.getElementById('drawing-pad');
+        const padCtx = pad.getContext('2d');
+        let isDrawing = false;
+        let currentTool = 'pen';
+        let currentColor = '#0984e3'; // 기본 파란색
+
+        function resizePad() {
+            const rect = pad.parentElement.getBoundingClientRect();
+            // 화면 픽셀 비율에 맞춰 해상도 높이기 (레티나/아이패드 디스플레이 대응)
+            pad.width = rect.width;
+            pad.height = rect.height;
+            padCtx.lineCap = 'round';
+            padCtx.lineJoin = 'round';
+        }
+
+        function getMousePos(e) {
+            const rect = pad.getBoundingClientRect();
+            // 터치 이벤트인지 마우스 이벤트인지 구분
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = getMousePos(e);
+            padCtx.beginPath();
+            padCtx.moveTo(pos.x, pos.y);
+            e.preventDefault(); // 스크롤 방지
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+
+            if (currentTool === 'eraser') {
+                padCtx.lineWidth = 30; // 지우개는 두껍게
+                padCtx.strokeStyle = '#ffffff'; // 하얀색으로 덮어씀
+            } else {
+                padCtx.lineWidth = 3; // 펜은 얇게
+                padCtx.strokeStyle = currentColor;
+            }
+
+            padCtx.lineTo(pos.x, pos.y);
+            padCtx.stroke();
+            padCtx.beginPath();
+            padCtx.moveTo(pos.x, pos.y);
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            padCtx.beginPath();
+        }
+
+        // 이벤트 리스너 등록 (마우스 & 터치 모두 지원)
+        pad.addEventListener('mousedown', startDrawing);
+        pad.addEventListener('mousemove', draw);
+        pad.addEventListener('mouseup', stopDrawing);
+        pad.addEventListener('mouseout', stopDrawing);
+
+        pad.addEventListener('touchstart', startDrawing, {passive: false});
+        pad.addEventListener('touchmove', draw, {passive: false});
+        pad.addEventListener('touchend', stopDrawing);
+
+        function setTool(tool, color) {
+            currentTool = tool;
+            if(color) currentColor = color;
+        }
+
+        function clearCanvas() {
+            if(confirm("모든 필기를 지우시겠습니까?")) {
+                padCtx.clearRect(0, 0, pad.width, pad.height);
+            }
+        }
     </script>
 </body>
 </html>

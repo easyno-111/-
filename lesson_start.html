@@ -2,87 +2,115 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>비밀 요원 훈련 - Stage 01</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00d2ff;
             --neon-purple: #92fe9d;
             --dark-bg: #050505;
+            --glass-bg: rgba(20, 20, 30, 0.85);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh;}
+        /* 터치 시 스크롤 방지 및 화면 꽉 차게 설정 */
+        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; display: flex; flex-direction: column;}
 
         /* 🚪 초기 접속 버튼 */
         #launch-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center;
         }
         .access-btn {
-            padding: 25px 60px; font-size: 30px; font-family: 'Orbitron'; background: none;
+            padding: clamp(15px, 3vw, 25px) clamp(30px, 5vw, 60px); 
+            font-size: clamp(20px, 4vw, 30px); font-family: 'Orbitron'; background: none;
             border: 3px solid var(--neon-blue); color: var(--neon-blue); cursor: pointer;
             border-radius: 10px; box-shadow: 0 0 30px rgba(0,210,255,0.4); transition: 0.3s;
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
 
-        /* 🎆 애니메이션 캔버스 */
-        #firework-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
+        /* 🎆 폭죽 캔버스 */
+        #firework-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
 
-        /* 📄 수업 콘텐츠 (처음엔 숨김) */
-        #main-content {
-            width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center;
-            opacity: 0; visibility: hidden; transition: all 1.5s ease-out; position: relative; z-index: 1500;
-        }
-        #main-content.visible { opacity: 1; visibility: visible; transform: translateY(0); }
-
-        .mission-card {
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
-            border: 2px solid var(--neon-blue); border-radius: 30px;
-            padding: 100px; width: 90%; max-width: 1400px; text-align: center;
-            box-shadow: 0 0 50px rgba(0,210,255,0.2);
-        }
-
-        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: 32px; margin-bottom: 25px; display: block; }
-        
-        /* 글자 크기 대폭 조절 (아주 크게) */
-        h1 { font-size: 6rem; font-weight: 900; margin-bottom: 50px; word-break: keep-all; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
-        .description { font-size: 3.2rem; line-height: 1.5; color: #ccc; margin-bottom: 60px; word-break: keep-all;}
-        .highlight { color: var(--neon-purple); text-shadow: 0 0 15px rgba(146, 254, 157, 0.6); }
-
-        .function-box {
-            display: inline-block; background: rgba(0, 210, 255, 0.12);
-            padding: 40px 80px; border-radius: 25px; border: 1px solid var(--neon-blue);
-            font-size: 4rem; font-family: 'Orbitron', serif; margin-top: 30px;
-            box-shadow: 0 0 30px rgba(0,210,255,0.3);
-        }
-
-        /* 컨트롤 버튼 */
+        /* 🚀 폭죽 컨트롤 버튼 */
         .controls {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 30px; z-index: 1500;
-            opacity: 0; visibility: hidden; transition: 1s;
+            position: fixed; bottom: clamp(20px, 5vh, 40px); left: 50%; transform: translateX(-50%);
+            display: flex; gap: clamp(10px, 2vw, 30px); z-index: 1500;
+            opacity: 0; visibility: hidden; transition: 1s; width: 100%; justify-content: center; padding: 0 10px;
         }
         .controls.visible { opacity: 1; visibility: visible; }
         
         .nav-btn {
             background: rgba(255,255,255,0.1); border: 2px solid var(--neon-blue); color: white;
-            padding: 20px 50px; border-radius: 50px; cursor: pointer; font-size: 28px; font-weight: bold;
-            display: flex; align-items: center; gap: 10px; transition: 0.3s;
-            font-family: 'Orbitron', sans-serif; text-shadow: 0 0 5px rgba(255,255,255,0.2);
+            padding: clamp(10px, 2vh, 20px) clamp(20px, 4vw, 50px); 
+            border-radius: 50px; cursor: pointer; font-size: clamp(16px, 3vw, 24px); font-weight: bold;
+            display: flex; align-items: center; gap: 10px; transition: 0.3s; white-space: nowrap;
         }
         .nav-btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 20px rgba(0,210,255,0.5); }
 
-        .content-proceed-btn {
-            margin-top: 50px; padding: 25px 60px; font-size: 32px; font-family: 'Orbitron', sans-serif;
-            background: none; border: 3px solid var(--neon-blue); color: var(--neon-blue);
-            border-radius: 15px; cursor: pointer; box-shadow: 0 0 20px rgba(0,210,255,0.3);
-            transition: 0.3s;
+        /* 📄 인터랙티브 학습 콘텐츠 (아이패드 맞춤형 반응형 레이아웃) */
+        #main-content {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center; padding: clamp(10px, 3vw, 40px);
+            opacity: 0; visibility: hidden; transition: all 1s ease-out; z-index: 1800;
         }
-        .content-proceed-btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 30px rgba(0,210,255,0.5); }
+        #main-content.visible { opacity: 1; visibility: visible; }
 
+        .activity-card {
+            background: var(--glass-bg); backdrop-filter: blur(15px);
+            border: 2px solid var(--neon-blue); border-radius: 20px;
+            width: 100%; max-width: 1200px; max-height: 100%; overflow-y: auto;
+            display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,210,255,0.2);
+        }
+
+        /* 내부 상단 헤더 */
+        .card-header { padding: clamp(15px, 3vw, 25px); border-bottom: 1px solid rgba(0,210,255,0.3); text-align: center; }
+        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: clamp(18px, 2.5vw, 24px); font-weight: bold; }
+        .card-title { font-size: clamp(24px, 4vw, 36px); font-weight: 900; margin-top: 10px; }
+
+        /* 내부 그리드 (문제 영역 / 그래프 영역) */
+        .card-body {
+            display: flex; flex-direction: row; flex-wrap: wrap; flex: 1;
+            padding: clamp(15px, 3vw, 30px); gap: 20px;
+        }
+        .left-panel, .right-panel { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px; }
+
+        /* 퀴즈 박스 스타일 */
+        .quiz-box { background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 15px; padding: 20px; }
+        .quiz-box h3 { font-size: clamp(18px, 2.5vw, 22px); color: var(--neon-purple); margin-bottom: 15px; line-height: 1.4; }
+        
+        .input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; font-size: clamp(16px, 2vw, 20px); }
+        .input-row input {
+            width: 80px; padding: 8px; font-size: clamp(16px, 2vw, 20px); text-align: center;
+            background: #111; color: white; border: 1px solid var(--neon-blue); border-radius: 8px; outline: none;
+        }
+        .check-btn {
+            background: rgba(0, 210, 255, 0.2); border: 1px solid var(--neon-blue); color: white;
+            padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .check-btn:hover { background: var(--neon-blue); color: black; }
+        .feedback { font-size: 14px; font-weight: bold; margin-top: 5px; min-height: 20px; }
+
+        /* 우측 그래프 캔버스 구역 */
+        .graph-container {
+            background: #fff; border-radius: 15px; overflow: hidden; position: relative;
+            flex: 1; min-height: 300px; border: 2px solid #555; display: flex; justify-content: center; align-items: center;
+        }
+        #math-canvas { width: 100%; height: 100%; touch-action: none; }
+
+        .draw-line-btn {
+            width: 100%; padding: 15px; margin-top: 10px; font-size: 18px; font-weight: bold;
+            background: var(--neon-purple); color: black; border: none; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 0 15px rgba(146, 254, 157, 0.4); transition: 0.3s;
+        }
+        .draw-line-btn:hover { transform: scale(0.98); }
+
+        /* 스크롤바 커스텀 (아이패드 고려) */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -93,48 +121,71 @@
 
     <canvas id="firework-canvas"></canvas>
 
+    <div class="controls visible" id="controls">
+        <button class="nav-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
+        <button class="nav-btn" id="next-step-btn" style="border-color: var(--neon-purple); color: var(--neon-purple); visibility: hidden; opacity: 0; transition: all 1s ease-out;" onclick="showInteractiveLab()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+
     <div id="main-content">
-        <div class="mission-card">
-            <span class="step-tag">STAGE 01. 생각 열기</span>
-            <h1>이차함수의 <span class="highlight">최대와 최소</span></h1>
-            <p class="description">
-                방금 우리가 쏘아 올린 폭죽이 <span class="highlight">최고 높이</span>에 도달하는 순간!<br>
-                우리는 이차함수를 통해 그 비밀을 풀 수 있습니다.
-            </p>
-            <div class="function-box">
-                y = -x² + 12x
+        <div class="activity-card">
+            <div class="card-header">
+                <div class="step-tag">STAGE 01. 생각 열기</div>
+                <div class="card-title">이차함수 y = x² - 6x + 10 탐구</div>
             </div>
-            <button class="content-proceed-btn" onclick="location.href='quadratic.html'">NEXT LAB <i class="fa-solid fa-arrow-right"></i></button>
+            
+            <div class="card-body">
+                <div class="left-panel">
+                    <div class="quiz-box">
+                        <h3>1️⃣ 그래프를 보고 이차함수의 최댓값과 최솟값을 찾아보세요.</h3>
+                        <div class="input-row">
+                            최댓값: <input type="text" id="q1-max" placeholder="없음?"> 
+                            최솟값: <input type="number" id="q1-min">
+                            <button class="check-btn" onclick="checkQ1()">확인</button>
+                        </div>
+                        <div class="feedback" id="fb-q1"></div>
+                    </div>
+
+                    <div class="quiz-box">
+                        <h3>2️⃣ x=1과 x=4 직선을 긋고, 1 ≤ x ≤ 4 일 때 y의 값의 범위를 구해보세요.</h3>
+                        <div style="font-size: 14px; color: #aaa; margin-bottom: 10px;">(먼저 우측의 '직선 긋기' 버튼을 눌러보세요!)</div>
+                        <div class="input-row">
+                            <input type="number" id="q2-min"> ≤ y ≤ <input type="number" id="q2-max">
+                            <button class="check-btn" onclick="checkQ2()">확인</button>
+                        </div>
+                        <div class="feedback" id="fb-q2"></div>
+                    </div>
+                </div>
+
+                <div class="right-panel">
+                    <div class="graph-container">
+                        <canvas id="math-canvas" width="400" height="300"></canvas>
+                    </div>
+                    <button class="draw-line-btn" onclick="drawLimitLines()"><i class="fa-solid fa-pen-ruler"></i> x=1, x=4 직선 긋기</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="controls visible" id="controls">
-        <button class="nav-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> LAUNCH ROCKET</button>
-        <button class="nav-btn" id="next-step-btn" style="border-color: var(--neon-purple); color: var(--neon-purple); visibility: hidden; opacity: 0; transition: all 1s ease-out;" onclick="showContent()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
-    </div>
-
     <script>
-        const canvas = document.getElementById('firework-canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // ==========================================
+        // 1. 폭죽 시스템 (Web Audio & Canvas)
+        // ==========================================
+        const fwCanvas = document.getElementById('firework-canvas');
+        const fwCtx = fwCanvas.getContext('2d');
+        fwCanvas.width = window.innerWidth;
+        fwCanvas.height = window.innerHeight;
 
-        // --- 사운드 엔진 (Web Audio API) ---
         let audioCtx;
-        
         function playWhiz() {
             if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 1.2);
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + 1.2);
         }
-
         function playBoom() {
             if (!audioCtx) return;
             const noise = audioCtx.createBufferSource();
@@ -145,49 +196,27 @@
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
             filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
-            const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
             noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
             noise.start(); noise.stop(audioCtx.currentTime + 1.5);
         }
-        
-        function playSuccess() {
-            if (!audioCtx) return;
-            const osc1 = audioCtx.createOscillator(); osc1.type = 'sine'; osc1.frequency.setValueAtTime(500, audioCtx.currentTime);
-            const osc2 = audioCtx.createOscillator(); osc2.type = 'sine'; osc2.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
-            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
-            osc1.start(); osc1.stop(audioCtx.currentTime + 0.5);
-            osc2.start(); osc2.stop(audioCtx.currentTime + 0.5);
-        }
 
-        // --- 폭죽 애니메이션 엔진 ---
         let particles = [];
-        let rocket = { x: canvas.width / 2, y: canvas.height, vy: 0, vx: 0, active: false };
-        let shotsFiredCounter = 0; // 몇 번 발사했는지 카운트
-        let gravity = 0.2; // 중력 세기
+        let rocket = { active: false };
+        let shotsFired = 0;
 
         function initMission() {
-            // 소리 환경 활성화
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             document.getElementById('launch-overlay').style.display = 'none';
-            // 애니메이션 루프 시작
-            animate();
+            animateFw();
         }
 
         function launchRocket() {
-            // 이미 발사 중이면 대기
             if (rocket.active) return;
-
-            // 랜덤 높이와 각도 설정
-            rocket.x = canvas.width / 2;
-            rocket.y = canvas.height;
-            // vy는 올라가는 속도. -11 ~ -14.1 범위 (gravity가 0.2일 때 높이 300 ~ 500)
-            rocket.vy = -(11 + Math.random() * 6.1); 
-            // vx는 옆으로 가는 속도. -3 ~ 3 범위 (방향도 랜덤)
-            rocket.vx = (Math.random() - 0.5) * 6;
-            
+            rocket.x = fwCanvas.width / 2;
+            rocket.y = fwCanvas.height;
+            rocket.vy = -(12 + Math.random() * 3);
+            rocket.vx = (Math.random() - 0.5) * 5;
             rocket.active = true;
             playWhiz();
         }
@@ -195,90 +224,161 @@
         function createExplosion(x, y) {
             playBoom();
             for (let i = 0; i < 100; i++) {
-                particles.push({
-                    x: x, y: y,
-                    vx: (Math.random() - 0.5) * 12,
-                    vy: (Math.random() - 0.5) * 12,
-                    color: `hsl(${Math.random() * 360}, 100%, 60%)`,
-                    life: 1.0
-                });
+                particles.push({ x: x, y: y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             }
-            
-            // 발사 횟수 증가
-            shotsFiredCounter++;
-            
-            // 3번 이상 발사하면 "다음 단계" 버튼 나타남
-            if (shotsFiredCounter >= 3) {
+            shotsFired++;
+            if (shotsFired >= 3) {
                 const nextBtn = document.getElementById('next-step-btn');
-                if (nextBtn.style.visibility === 'hidden') {
-                    nextBtn.style.visibility = 'visible';
-                    nextBtn.style.opacity = '1';
-                    playSuccess(); // 버튼 나타날 때 소리
-                }
+                nextBtn.style.visibility = 'visible'; nextBtn.style.opacity = '1';
             }
         }
 
-        function showContent() {
-            // 발사 인터페이스 숨기기
-            document.getElementById('controls').classList.remove('visible');
-            // 폭죽 애니메이션 중단 (루프는 돌지만 캔버스 클리어 안함)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 교과서 내용 화면 중앙에 아주 크게 등장
-            const mainContent = document.getElementById('main-content');
-            mainContent.classList.add('visible');
-        }
-
-        function animate() {
-            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)'; // 잔상 효과
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+        function animateFw() {
+            fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             if (rocket.active) {
-                // 포물선 궤적 운동 (중력 적용)
-                rocket.vy += gravity; 
-                rocket.x += rocket.vx;
-                rocket.y += rocket.vy;
-
-                // 폭죽 발사 점 그리기
-                ctx.beginPath();
-                ctx.arc(rocket.x, rocket.y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = varColor('--neon-blue');
-                ctx.fill();
-
-                // 정점에 도달했을 때 (속도가 0에 가까워질 때) 터뜨림
-                if (rocket.vy >= 0) {
-                    createExplosion(rocket.x, rocket.y);
-                    rocket.active = false;
-                }
+                rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
+                fwCtx.beginPath(); fwCtx.arc(rocket.x, rocket.y, 4, 0, Math.PI*2); fwCtx.fillStyle = '#00d2ff'; fwCtx.fill();
+                if (rocket.vy >= 0) { createExplosion(rocket.x, rocket.y); rocket.active = false; }
             }
-
             particles.forEach((p, index) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += 0.1; // 입자에도 중력 적용
-                p.life -= 0.015; // 서서히 사라짐
-                ctx.globalAlpha = p.life;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
+                p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.life -= 0.015;
+                fwCtx.globalAlpha = p.life; fwCtx.beginPath(); fwCtx.arc(p.x, p.y, 3, 0, Math.PI*2); fwCtx.fillStyle = p.color; fwCtx.fill();
                 if (p.life <= 0) particles.splice(index, 1);
             });
+            fwCtx.globalAlpha = 1;
+            requestAnimationFrame(animateFw);
+        }
+
+        window.addEventListener('resize', () => { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; drawGraph(); });
+
+        // ==========================================
+        // 2. 인터랙티브 학습 모듈 시스템
+        // ==========================================
+        function showInteractiveLab() {
+            document.getElementById('controls').classList.remove('visible');
+            setTimeout(() => { document.getElementById('main-content').classList.add('visible'); drawGraph(); }, 500);
+        }
+
+        // 정답 체크 로직
+        function checkQ1() {
+            const maxVal = document.getElementById('q1-max').value.replace(/\s/g, ''); // 공백제거
+            const minVal = document.getElementById('q1-min').value;
+            const fb = document.getElementById('fb-q1');
             
-            ctx.globalAlpha = 1; // 투명도 초기화
-
-            requestAnimationFrame(animate);
+            if ((maxVal === "없다" || maxVal === "없음" || maxVal === "X" || maxVal === "x") && minVal == "1") {
+                fb.style.color = "var(--neon-purple)"; fb.innerText = "정답입니다! 아래로 볼록한 그래프는 최댓값이 없죠.";
+            } else {
+                fb.style.color = "#ff4757"; fb.innerText = "다시 생각해보세요. 그래프의 가장 낮은 곳은 어디일까요?";
+            }
         }
 
-        function varColor(name) {
-            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        function checkQ2() {
+            const minVal = document.getElementById('q2-min').value;
+            const maxVal = document.getElementById('q2-max').value;
+            const fb = document.getElementById('fb-q2');
+            
+            if (minVal == "1" && maxVal == "5") {
+                fb.style.color = "var(--neon-purple)"; fb.innerText = "완벽합니다! 제한된 범위 안에서 가장 높고 낮은 값을 잘 찾았네요.";
+            } else {
+                fb.style.color = "#ff4757"; fb.innerText = "x가 1부터 4까지일 때, y값(높이)이 어디부터 어디까지 변하는지 그래프를 다시 확인해보세요!";
+            }
         }
 
-        // 창 크기 변경 시 캔버스 크기 재조정
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        // ==========================================
+        // 3. 그래프 그리기 (HTML5 Canvas)
+        // ==========================================
+        const mathCanvas = document.getElementById('math-canvas');
+        const mCtx = mathCanvas.getContext('2d');
+        let linesDrawn = false;
+
+        function drawGraph() {
+            // 반응형 캔버스 크기 조정
+            const container = mathCanvas.parentElement;
+            mathCanvas.width = container.clientWidth;
+            mathCanvas.height = container.clientHeight;
+            
+            const w = mathCanvas.width;
+            const h = mathCanvas.height;
+            const scale = w > 500 ? 40 : 30; // 모바일에선 스케일 축소
+            const ox = w / 2 - 3*scale; // y축을 살짝 왼쪽으로 이동
+            const oy = h - 2*scale; // x축을 바닥 쪽에
+
+            mCtx.clearRect(0, 0, w, h);
+
+            // 격자 그리기
+            mCtx.strokeStyle = "#eee"; mCtx.lineWidth = 1;
+            for(let i = -10; i <= 10; i++) {
+                mCtx.beginPath(); mCtx.moveTo(ox + i*scale, 0); mCtx.lineTo(ox + i*scale, h); mCtx.stroke();
+                mCtx.beginPath(); mCtx.moveTo(0, oy - i*scale); mCtx.lineTo(w, oy - i*scale); mCtx.stroke();
+            }
+
+            // 축 그리기
+            mCtx.strokeStyle = "#333"; mCtx.lineWidth = 2;
+            mCtx.beginPath(); mCtx.moveTo(ox, 0); mCtx.lineTo(ox, h); mCtx.stroke(); // y축
+            mCtx.beginPath(); mCtx.moveTo(0, oy); mCtx.lineTo(w, oy); mCtx.stroke(); // x축
+
+            // 숫자 표시
+            mCtx.fillStyle = "#333"; mCtx.font = "14px Arial";
+            mCtx.fillText("O", ox - 15, oy + 15);
+            mCtx.fillText("2", ox + 2*scale - 5, oy + 15);
+            mCtx.fillText("4", ox + 4*scale - 5, oy + 15);
+            mCtx.fillText("6", ox + 6*scale - 5, oy + 15);
+            mCtx.fillText("x", w - 15, oy + 15);
+            mCtx.fillText("2", ox - 15, oy - 2*scale + 5);
+            mCtx.fillText("4", ox - 15, oy - 4*scale + 5);
+            mCtx.fillText("6", ox - 15, oy - 6*scale + 5);
+            mCtx.fillText("y", ox + 5, 15);
+
+            // 포물선 그리기 y = x^2 - 6x + 10
+            mCtx.strokeStyle = "#e84393"; mCtx.lineWidth = 3;
+            mCtx.beginPath();
+            for(let px = 0; px <= w; px++) {
+                let x = (px - ox) / scale;
+                let y = (x*x) - 6*x + 10;
+                let py = oy - y*scale;
+                if(px === 0) mCtx.moveTo(px, py); else mCtx.lineTo(px, py);
+            }
+            mCtx.stroke();
+
+            // x=1, x=4 제한선 및 영역 표시 (버튼 눌렀을 때만)
+            if (linesDrawn) {
+                const px1 = ox + 1*scale;
+                const px4 = ox + 4*scale;
+
+                // 영역 색칠
+                mCtx.fillStyle = "rgba(0, 210, 255, 0.2)";
+                mCtx.fillRect(px1, 0, px4 - px1, h);
+
+                // 파란 점선 긋기
+                mCtx.strokeStyle = "#0984e3"; mCtx.lineWidth = 2; mCtx.setLineDash([5, 5]);
+                mCtx.beginPath(); mCtx.moveTo(px1, 0); mCtx.lineTo(px1, h); mCtx.stroke();
+                mCtx.beginPath(); mCtx.moveTo(px4, 0); mCtx.lineTo(px4, h); mCtx.stroke();
+                mCtx.setLineDash([]); // 점선 초기화
+
+                // 포물선 굵게 표시 (구간 내)
+                mCtx.strokeStyle = "#00d2ff"; mCtx.lineWidth = 5;
+                mCtx.beginPath();
+                for(let px = px1; px <= px4; px++) {
+                    let x = (px - ox) / scale;
+                    let y = (x*x) - 6*x + 10;
+                    let py = oy - y*scale;
+                    if(px === px1) mCtx.moveTo(px, py); else mCtx.lineTo(px, py);
+                }
+                mCtx.stroke();
+
+                // 최댓값, 최솟값 점 찍기
+                const pMinX = ox + 3*scale; const pMinY = oy - 1*scale; // (3, 1)
+                const pMaxX = ox + 1*scale; const pMaxY = oy - 5*scale; // (1, 5)
+
+                mCtx.fillStyle = "#00d2ff"; mCtx.beginPath(); mCtx.arc(pMinX, pMinY, 6, 0, Math.PI*2); mCtx.fill();
+                mCtx.fillStyle = "#ff7675"; mCtx.beginPath(); mCtx.arc(pMaxX, pMaxY, 6, 0, Math.PI*2); mCtx.fill();
+            }
+        }
+
+        function drawLimitLines() {
+            linesDrawn = true;
+            drawGraph(); // 캔버스 다시 그리기
+        }
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V20 광역기 폭발 & 블랙홀)</title>
+    <title>로그라이트 화력 슈팅 (V21 액티브 스킬 완벽 복구)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -132,7 +132,7 @@
 
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
-        let swords = []; let blackholes = []; // 🕳️ 블랙홀 배열
+        let swords = []; let blackholes = []; 
 
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
         let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
@@ -234,9 +234,8 @@
                 pool.push({ isRare: p.lvl_sword === 0, name: p.lvl_sword === 0 ? '🗡️ [레어] 심판의 검 (보스 극딜)' : '🗡️ 심판의 검 쿨타임 감소', apply: () => { p.lvl_sword++; } });
             }
 
-            // 🕳️ 신규 스킬: 블랙홀
             if (p.lvl_blackhole > 0 || Math.random() < 0.2 || isDev) {
-                pool.push({ isRare: p.lvl_blackhole === 0, name: p.lvl_blackhole === 0 ? '🌌 [레어] 블랙홀 (적 강제 집령)' : '🌌 블랙홀 크기 & 지속 시간 UP', apply: () => { p.lvl_blackhole++; } });
+                pool.push({ isRare: p.lvl_blackhole === 0, name: p.lvl_blackhole === 0 ? '🌌 [레어] 블랙홀 (적 강제 집결)' : '🌌 블랙홀 크기 & 지속 시간 UP', apply: () => { p.lvl_blackhole++; } });
             }
 
             if (p.lvl_storm > 0 || Math.random() < 0.3 || isDev) {
@@ -278,7 +277,7 @@
                 lvl_homing: 0, homing_split: 3,
                 lvl_sword: 0, swordTimer: 0,
                 lvl_storm: 0,
-                lvl_blackhole: 0, blackholeTimer: 0, // 🕳️ 블랙홀 변수
+                lvl_blackhole: 0, blackholeTimer: 0, 
                 lvl_vampire: 0, vampire_chance: 0, lvl_regen: 0, iframe: 0 
             };
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = [];
@@ -433,7 +432,7 @@
                 swarmWarningTimer--;
                 ctx.fillStyle = `rgba(230, 126, 34, ${Math.abs(Math.sin(frameCount*0.2))})`;
                 ctx.font = "900 30px Arial"; ctx.textAlign = "center";
-                ctx.fillText("적의 대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
+                ctx.fillText("대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
             }
 
             if(isBossWarning) {
@@ -449,7 +448,7 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    // 👹 보스 체력 상향 (1.15배 -> 1.25배)
+                    // 👹 보스 기본 체력 및 스케일링 상향
                     let bh = 150 * Math.pow(1.25, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
@@ -464,48 +463,75 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🕳️ 신규: 블랙홀 로직
+            // 🕳️ 블랙홀 로직
             if (p.lvl_blackhole > 0) {
                 p.blackholeTimer--;
                 if (p.blackholeTimer <= 0) {
                     p.blackholeTimer = Math.max(90, 240 - p.lvl_blackhole * 30);
-                    // 무작위 적 근처 또는 플레이어 근처에 생성
                     let t = enemies.length > 0 ? enemies[Math.floor(Math.random() * enemies.length)] : null;
-                    let bx = t ? t.x : p.x;
-                    let by = t ? t.y : p.y - 100;
-                    let bh_radius = 80 + p.lvl_blackhole * 30;
-                    let bh_life = 60 + p.lvl_blackhole * 20;
+                    let bx = t ? t.x : p.x; let by = t ? t.y : p.y - 100;
+                    let bh_radius = 80 + p.lvl_blackhole * 30; let bh_life = 60 + p.lvl_blackhole * 20;
                     blackholes.push({x: bx, y: by, r: bh_radius, life: bh_life, maxLife: bh_life, dmg: p.dmg * 0.5 * (1 + p.lvl_skill_dmg * 0.5)});
                     playSound('skill');
                 }
             }
-            
             for (let i = blackholes.length - 1; i >= 0; i--) {
-                let bh = blackholes[i];
-                bh.life--;
-                
-                // 블랙홀 그리기
+                let bh = blackholes[i]; bh.life--;
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(frameCount * 0.2);
-                let scale = bh.life / bh.maxLife;
-                ctx.beginPath(); ctx.arc(0, 0, bh.r * scale, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(20, 0, 50, 0.8)'; ctx.fill();
-                ctx.lineWidth = 3; ctx.strokeStyle = 'purple'; ctx.stroke();
-                // 안쪽 코어
-                ctx.beginPath(); ctx.arc(0, 0, bh.r * scale * 0.4, 0, Math.PI * 2);
-                ctx.fillStyle = 'black'; ctx.fill();
-                ctx.restore();
-
-                // 끌어당기기 및 데미지 (보스 제외)
+                let scale = bh.life / bh.maxLife; ctx.beginPath(); ctx.arc(0, 0, bh.r * scale, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(20, 0, 50, 0.8)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'purple'; ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, bh.r * scale * 0.4, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill(); ctx.restore();
+                
                 enemies.forEach(e => {
                     let dx = bh.x - e.x; let dy = bh.y - e.y; let dist = Math.hypot(dx, dy);
                     if (dist < bh.r * 1.5 && !e.isBoss) {
-                        e.x += (dx / dist) * 4; e.y += (dy / dist) * 4;
-                        e.hp -= bh.dmg;
+                        e.x += (dx / dist) * 4; e.y += (dy / dist) * 4; e.hp -= bh.dmg;
                         if (frameCount % 10 === 0) spawnParticles(e.x, e.y, 'purple', 1);
                     }
                 });
-
                 if (bh.life <= 0) blackholes.splice(i, 1);
+            }
+
+            // 🚨 액티브 스킬 로직 (완벽 복구) 🚨
+            for(let i=activeSkills.length-1; i>=0; i--) {
+                let sk = activeSkills[i];
+                if(sk.type==='boomerang') {
+                    if(sk.state==='flying') { sk.x+=sk.vx; sk.y+=sk.vy; if(sk.y<-sk.w||sk.x<-sk.w||sk.x>canvas.width+sk.w) {activeSkills.splice(i,1); continue;} }
+                    else { sk.hoverTimer--; if(sk.hoverTimer<=0) { if(sk.level<=p.lvl_boom_split && sk.level<3) for(let j=0; j<5; j++) activeSkills.push({type:'boomerang', level:sk.level+1, x:sk.x, y:sk.y, w:sk.w*0.6, vx:Math.cos(j*Math.PI*2/5)*12, vy:Math.sin(j*Math.PI*2/5)*12, state:'flying', hoverTimer:0, dmg:sk.dmg}); activeSkills.splice(i,1); continue; } }
+                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle='#00d2d3'; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
+                    enemies.forEach(e => { if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { e.hp-=sk.dmg; if(sk.state==='flying'){sk.state='hovering'; sk.hoverTimer=60;} } });
+                } else if(sk.type==='laser') {
+                    sk.life--; let lx = p.x + sk.offsetX; ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.fillRect(lx-20, 0, 40, p.y); ctx.globalAlpha=1;
+                    enemies.forEach(e => { if(Math.abs(e.x-lx)<40 && e.y<p.y) { e.hp-=sk.dmg; } });
+                    if(sk.life<=0) activeSkills.splice(i, 1);
+                } else if(sk.type==='punch') {
+                    if(sk.state==='flying') { 
+                        sk.x+=sk.vx; sk.y+=sk.vy; 
+                        if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
+                        let hitAny = false; enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2&&Math.abs(e.y-sk.y)<sk.w/2){hitAny=true;} });
+                        if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
+                        if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100) sk.state='done'; 
+                    }
+                    else if (sk.state==='punching') { 
+                        sk.hitTimer--; 
+                        if(sk.hitTimer%10===0){
+                            playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:'rgba(255,159,243,0.8)', isAoE:true});
+                            enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss) e.iframe=4; } });
+                        }
+                        if(sk.hitTimer<=0){
+                            if(sk.level<=p.lvl_punch_split) { for(let j=0; j<2; j++) { activeSkills.push({type:'punch',level:sk.level+1,x:sk.x,y:sk.y,w:sk.w*0.8,vx:sk.vx+(j===0?-5:5),vy:-10,dmg:sk.dmg,state:'flying',hitTimer:60}); } }
+                            sk.state='done';
+                        }
+                    }
+                    if (sk.state !== 'done') {
+                        ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); 
+                        if(sk.state==='punching') ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); 
+                        ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,0,sk.w*0.4,sk.w*0.35,0,0,Math.PI*2); ctx.fill(); 
+                        ctx.fillStyle='#ff9ff3'; ctx.beginPath(); ctx.arc(0,5,sk.w*0.15,0,Math.PI*2); ctx.fill(); 
+                        ctx.beginPath(); ctx.arc(-14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0,-18,sk.w*0.08,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(14,-10,sk.w*0.08,0,Math.PI*2); ctx.fill(); 
+                        ctx.restore(); 
+                    } else { activeSkills.splice(i, 1); }
+                }
             }
 
             if (p.lvl_sword > 0) {
@@ -634,7 +660,7 @@
                         }
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance) {
                             playSound('zap'); 
-                            // ⚡ 체인 라이트닝 버프 (기본 데미지 상향 및 타겟 2명씩 추가)
+                            // ⚡ 체인 라이트닝 데미지 1.6배로 대폭 상향 및 전이 타겟 2배
                             let ld = (p.dmg * 1.6) * (1 + p.lvl_skill_dmg * 0.5); 
                             let targets = enemies.filter(en=>en!==e).sort((a,b)=>Math.hypot(a.x-e.x,a.y-e.y)-Math.hypot(b.x-e.x,b.y-e.y)).slice(0, 3 + p.lvl_lightning * 2);
                             let lx = e.x, ly = e.y;
@@ -670,7 +696,7 @@
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
             }
 
-            // 🌀 칼날 돌풍 (위력 대폭 강화)
+            // 🌀 칼날 돌풍 (무한 오라 로직, 데미지 상향)
             if (p.lvl_storm > 0) {
                 let sk_r = 60 + p.lvl_storm * 20; 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
@@ -687,7 +713,7 @@
                 ctx.restore();
                 
                 if (frameCount % 15 === 0) {
-                    let stormDmg = p.dmg * 1.5 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_storm; // 틱당 데미지 2배 가까이 상승
+                    let stormDmg = p.dmg * 1.5 * (1 + p.lvl_skill_dmg * 0.5) * p.lvl_storm; 
                     enemies.forEach(e => {
                         if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
                             e.hp -= stormDmg; 
@@ -711,7 +737,7 @@
                         let spread = 0.2 + Math.min(0.3, bossKills*0.02);
                         for(let a = 0; a < bulletCount; a++) {
                             let currentAngle = angle - spread*(bulletCount-1)/2 + a*spread; 
-                            let speed = 5 + bossKills * 0.2; // 보스 탄막 약간 상향
+                            let speed = 5 + bossKills * 0.2;
                             bossBullets.push({ x: e.x, y: e.y + e.h/2, vx: Math.cos(currentAngle) * speed, vy: Math.sin(currentAngle) * speed, r: 7, color: '#ff4757', dmg: 10 + bossKills * 2 });
                         }
                     }

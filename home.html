@@ -3,128 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>메인 대시보드</title>
+    <title>AGENT DASHBOARD - 수학 훈련소</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
-        /* 기본(아이패드/PC) 패딩은 40px */
-        body { background-color: #f5f5f7; padding: 40px; color: #1d1d1f; }
+        :root {
+            --neon-blue: #00d2ff;
+            --neon-purple: #92fe9d;
+            --dark-bg: #0a0b10;
+            --panel-bg: rgba(10, 11, 16, 0.95);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: white; }
+
+        /* 터미널 상단 바 */
+        .top-bar {
+            width: 100%; height: 60px; background-color: rgba(0, 0, 0, 0.8);
+            border-bottom: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.2);
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 20px; position: relative; z-index: 10;
+        }
         
-        .page-title {
-            font-size: 32px; font-weight: 800; margin-bottom: 10px; color: #1d1d1f;
-            text-align: center; letter-spacing: -0.5px;
+        .menu-btn {
+            position: absolute; left: 15px; background: none; border: none;
+            color: var(--neon-blue); font-size: 26px; cursor: pointer; padding: 5px;
+            text-shadow: 0 0 8px var(--neon-blue); transition: 0.3s;
         }
-        .page-subtitle { font-size: 18px; color: #86868b; text-align: center; margin-bottom: 50px; }
+        .menu-btn:hover { color: white; }
 
-        .category-section { margin-bottom: 50px; max-width: 1000px; margin-left: auto; margin-right: auto; }
-        .category-title {
-            font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #1d1d1f;
-            display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e5e5ea; padding-bottom: 10px;
-        }
-
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+        .header-title { 
+            font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 700; 
+            cursor: pointer; color: var(--neon-blue); letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
         }
 
-        .card {
-            background: #ffffff; border-radius: 18px; padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1px solid #f0f0f0; display: flex; flex-direction: column; gap: 10px;
+        /* 사이드바 메뉴 */
+        .sidebar {
+            position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
+            background-color: var(--panel-bg); border-right: 1px solid var(--neon-blue);
+            box-shadow: 5px 0 20px rgba(0, 210, 255, 0.1);
+            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 20;
+            display: flex; flex-direction: column;
         }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
-        .card:active { transform: scale(0.98); }
+        .sidebar.open { left: 0; }
 
-        .card-icon { font-size: 40px; }
-        .card-title { font-size: 20px; font-weight: 700; color: #1d1d1f; }
-        .card-desc { font-size: 15px; color: #86868b; line-height: 1.4; }
+        .sidebar-header {
+            padding: 30px 20px 20px; font-size: 20px; font-family: 'Orbitron', sans-serif; 
+            font-weight: 700; color: white; border-bottom: 1px solid rgba(0, 210, 255, 0.3); 
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .close-btn { background: none; border: none; font-size: 28px; color: #86868b; cursor: pointer; transition: 0.3s; }
+        .close-btn:hover { color: var(--neon-blue); }
 
-        /* 📱 스마트폰을 위한 반응형 코드 (화면 너비가 600px 이하일 때만 발동!) */
+        .menu-list { flex: 1; padding: 20px; overflow-y: auto; }
+        .menu-group { margin-bottom: 25px; }
+        .menu-label { 
+            font-size: 12px; font-weight: 700; color: var(--neon-blue); 
+            margin-bottom: 10px; padding-left: 10px; letter-spacing: 2px; font-family: 'Orbitron', sans-serif;
+        }
+
+        .menu-item {
+            display: flex; align-items: center; width: 100%; padding: 12px 15px; margin-bottom: 5px;
+            text-align: left; background: none; border: 1px solid transparent; border-radius: 8px;
+            font-size: 15px; color: #ccc; cursor: pointer; transition: all 0.2s; font-weight: 500;
+        }
+        .menu-item:hover, .menu-item:active { 
+            background-color: rgba(0, 210, 255, 0.1); color: white;
+            border: 1px solid var(--neon-blue); box-shadow: inset 0 0 10px rgba(0,210,255,0.2);
+        }
+        .menu-icon { margin-right: 12px; font-size: 18px; width: 25px; text-align: center; color: var(--neon-purple); }
+
+        .footer { 
+            padding: 20px; text-align: center; font-size: 12px; color: #666; 
+            border-top: 1px solid rgba(0, 210, 255, 0.3); background-color: #050505; 
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.7); opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease; z-index: 15; backdrop-filter: blur(3px);
+        }
+        .overlay.show { opacity: 1; visibility: visible; }
+
+        #app-frame { width: 100%; height: calc(100% - 60px); border: none; background-color: var(--dark-bg); }
+
         @media (max-width: 600px) {
-            body { padding: 20px 15px; } /* 여백 줄이기 */
-            .page-title { font-size: 26px; } /* 제목 크기 줄이기 */
-            .page-subtitle { font-size: 15px; margin-bottom: 30px; }
-            .category-title { font-size: 19px; }
-            .card-grid { 
-                grid-template-columns: 1fr; /* 스마트폰에서는 카드를 무조건 1줄로 꽉 차게 */
-                gap: 15px; 
-            }
-            .card { padding: 20px; }
+            .sidebar { width: 280px; left: -280px; }
+            .sidebar.open { left: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="page-title">수학 실험실 🚀</div>
-    <div class="page-subtitle">원하는 활동을 선택하여 학습을 시작하세요!</div>
+    <div class="top-bar">
+        <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
+        <div class="header-title" onclick="loadApp('lesson.html')">SYSTEM OVERRIDE</div>
+    </div>
 
-<div class="category-section">
-        <div class="category-title"><span>📚</span> 정규 수업 도구</div>
-        <div class="card-grid">
-            <div class="card" onclick="openApp('quadratic.html')">
-                <div class="card-icon">📈</div>
-                <div class="card-title">이차함수 탐구</div>
-                <div class="card-desc">그래프를 직접 조작하며 최대·최소의 원리를 시각적으로 확인합니다.</div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span><i class="fa-solid fa-terminal"></i> MENU</span>
+            <button class="close-btn" onclick="toggleMenu()">×</button>
+        </div>
+        
+        <div class="menu-list">
+            <button class="menu-item" onclick="loadApp('lesson_start.html')" style="background: rgba(0,210,255,0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); margin-bottom: 20px;">
+                <span class="menu-icon"><i class="fa-solid fa-chalkboard-user"></i></span> 요원 브리핑 (메인)
+            </button>
+
+            <div class="menu-group">
+                <div class="menu-label">TRAINING TOOLS</div>
+                <button class="menu-item" onclick="loadApp('quadratic.html')"><span class="menu-icon"><i class="fa-solid fa-chart-line"></i></span> 데이터 시뮬레이터</button>
+                <button class="menu-item" onclick="loadApp('lock.html')"><span class="menu-icon"><i class="fa-solid fa-unlock-keyhole"></i></span> 암호 해독 (방탈출)</button>
+                <button class="menu-item" onclick="loadApp('fence.html')"><span class="menu-icon"><i class="fa-solid fa-vector-square"></i></span> 필드 테스트 (울타리)</button>
             </div>
-            <div class="card" onclick="openApp('lock.html')">
-                <div class="card-icon">🔐</div>
-                <div class="card-title">자물쇠 방탈출</div>
-                <div class="card-desc">미션으로 주어진 최대·최소 조건을 만족하는 이차함수를 찾아보세요!</div>
-            </div>
-            <div class="card" onclick="openApp('fence.html')">
-                <div class="card-icon">🏠</div>
-                <div class="card-title">울타리 최대 넓이</div>
-                <div class="card-desc">철망의 길이에 따른 최대 넓이를 이차함수로 해결해봅니다.</div>
+
+            <div class="menu-group">
+                <div class="menu-label">SIMULATION GAMES</div>
+                <button class="menu-item" onclick="loadApp('pig.html')"><span class="menu-icon">🐷</span> PIG 프로젝트 (기본)</button>
+                <button class="menu-item" onclick="loadApp('pig2.html')"><span class="menu-icon">🐽</span> PIG 프로젝트 (심화)</button>
+                <button class="menu-item" onclick="loadApp('nunchi.html')"><span class="menu-icon">👀</span> 심리전 시뮬레이터</button>
+                <button class="menu-item" onclick="loadApp('auction.html')"><span class="menu-icon">🔨</span> 마이너스 옥션</button>
             </div>
         </div>
-    </div>
-    <div class="category-section">
-        <div class="category-title"><span>🎮</span> 수학 게임 모음</div>
-        <div class="card-grid">
-            <div class="card" onclick="openApp('pig.html')">
-                <div class="card-icon">🐷</div>
-                <div class="card-title">돼지게임 (기본)</div>
-                <div class="card-desc">확률과 통계를 활용한 가장 기본적인 돼지게임입니다.</div>
-            </div>
-            <div class="card" onclick="openApp('pig2.html')">
-                <div class="card-icon">🐽</div>
-                <div class="card-title">돼지게임 (변형)</div>
-                <div class="card-desc">룰이 변형된 한층 더 스릴 넘치는 돼지게임입니다.</div>
-            </div>
-            <div class="card" onclick="openApp('nunchi.html')">
-                <div class="card-icon">👀</div>
-                <div class="card-title">눈치게임</div>
-                <div class="card-desc">친구들과의 심리전을 통해 수학적 전략을 세워보세요.</div>
-            </div>
-            <div class="card" onclick="openApp('auction.html')">
-                <div class="card-icon">🔨</div>
-                <div class="card-title">마이너스 경매</div>
-                <div class="card-desc">음수 개념을 완벽하게 이해할 수 있는 치열한 경매 게임!</div>
-            </div>
+        
+        <div class="footer">
+            SECURE SYSTEM by <b>Easy NO</b>
         </div>
     </div>
 
-    <div class="category-section">
-        <div class="category-title"><span>💻</span> 코딩 및 실습</div>
-        <div class="card-grid">
-            <div class="card" onclick="openApp('editor.html')">
-                <div class="card-icon">⌨️</div>
-                <div class="card-title">라이브 코드 에디터</div>
-                <div class="card-desc">선생님이 공유한 코드를 직접 수정하고 결과를 확인해보세요!</div>
-            </div>
-            <div class="card" onclick="openApp('shooter.html')">
-                <div class="card-icon">🚀</div>
-                <div class="card-title">화력 슈팅 서바이버</div>
-                <div class="card-desc">연산 능력을 올려 적을 쓸어버리고 끝까지 살아남으세요!</div>
-            </div>
-        </div>
-    </div>
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <iframe id="app-frame" src="lesson_start.html"></iframe>
 
     <script>
-        function openApp(url) {
-            if(window.parent && window.parent.loadApp) {
-                window.parent.loadApp(url);
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const appFrame = document.getElementById('app-frame');
+
+        function toggleMenu() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+
+        function loadApp(url) {
+            appFrame.src = url;
+            if (sidebar.classList.contains('open')) {
+                toggleMenu();
             }
         }
     </script>

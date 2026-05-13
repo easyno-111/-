@@ -14,7 +14,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; }
+        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh;}
 
         /* 🚪 초기 접속 버튼 */
         #launch-overlay {
@@ -29,50 +29,66 @@
         .access-btn:hover { background: var(--neon-blue); color: #000; }
 
         /* 🎆 애니메이션 캔버스 */
-        #firework-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000; pointer-events: none; }
+        #firework-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; pointer-events: none; }
 
         /* 📄 수업 콘텐츠 (처음엔 숨김) */
         #main-content {
             width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center;
-            opacity: 0; transform: translateY(50px); transition: all 1.5s ease-out;
+            opacity: 0; visibility: hidden; transition: all 1.5s ease-out; position: relative; z-index: 1500;
         }
+        #main-content.visible { opacity: 1; visibility: visible; transform: translateY(0); }
 
         .mission-card {
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
             border: 2px solid var(--neon-blue); border-radius: 30px;
-            padding: 80px; width: 85%; max-width: 1300px; text-align: center;
+            padding: 100px; width: 90%; max-width: 1400px; text-align: center;
+            box-shadow: 0 0 50px rgba(0,210,255,0.2);
         }
 
-        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: 28px; margin-bottom: 20px; display: block; }
+        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: 32px; margin-bottom: 25px; display: block; }
         
-        /* 글자 크기 대폭 조절 */
-        h1 { font-size: 5rem; font-weight: 900; margin-bottom: 40px; word-break: keep-all; }
-        .description { font-size: 2.8rem; line-height: 1.4; color: #ccc; margin-bottom: 50px; }
-        .highlight { color: var(--neon-purple); text-shadow: 0 0 10px rgba(146, 254, 157, 0.5); }
+        /* 글자 크기 대폭 조절 (아주 크게) */
+        h1 { font-size: 6rem; font-weight: 900; margin-bottom: 50px; word-break: keep-all; text-shadow: 0 0 20px rgba(255,255,255,0.2);}
+        .description { font-size: 3.2rem; line-height: 1.5; color: #ccc; margin-bottom: 60px; word-break: keep-all;}
+        .highlight { color: var(--neon-purple); text-shadow: 0 0 15px rgba(146, 254, 157, 0.6); }
 
         .function-box {
-            display: inline-block; background: rgba(0, 210, 255, 0.1);
-            padding: 30px 60px; border-radius: 20px; border: 1px solid var(--neon-blue);
-            font-size: 3.5rem; font-family: 'Orbitron', serif; margin-top: 30px;
+            display: inline-block; background: rgba(0, 210, 255, 0.12);
+            padding: 40px 80px; border-radius: 25px; border: 1px solid var(--neon-blue);
+            font-size: 4rem; font-family: 'Orbitron', serif; margin-top: 30px;
+            box-shadow: 0 0 30px rgba(0,210,255,0.3);
         }
 
         /* 컨트롤 버튼 */
         .controls {
-            position: fixed; bottom: 40px; right: 40px; display: flex; gap: 20px; z-index: 1500;
-            opacity: 0; transition: 1s;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 30px; z-index: 1500;
+            opacity: 0; visibility: hidden; transition: 1s;
         }
+        .controls.visible { opacity: 1; visibility: visible; }
+        
         .nav-btn {
             background: rgba(255,255,255,0.1); border: 2px solid var(--neon-blue); color: white;
-            width: 80px; height: 80px; border-radius: 50%; cursor: pointer; font-size: 30px;
+            padding: 20px 50px; border-radius: 50px; cursor: pointer; font-size: 28px; font-weight: bold;
+            display: flex; align-items: center; gap: 10px; transition: 0.3s;
+            font-family: 'Orbitron', sans-serif; text-shadow: 0 0 5px rgba(255,255,255,0.2);
         }
-        .nav-btn:hover { background: var(--neon-blue); color: black; }
+        .nav-btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 20px rgba(0,210,255,0.5); }
+
+        .content-proceed-btn {
+            margin-top: 50px; padding: 25px 60px; font-size: 32px; font-family: 'Orbitron', sans-serif;
+            background: none; border: 3px solid var(--neon-blue); color: var(--neon-blue);
+            border-radius: 15px; cursor: pointer; box-shadow: 0 0 20px rgba(0,210,255,0.3);
+            transition: 0.3s;
+        }
+        .content-proceed-btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 30px rgba(0,210,255,0.5); }
 
     </style>
 </head>
 <body>
 
     <div id="launch-overlay">
-        <button class="access-btn" onclick="initMission()">INITIALIZE MISSION</button>
+        <button class="access-btn" onclick="initMission()">MISSION START</button>
     </div>
 
     <canvas id="firework-canvas"></canvas>
@@ -82,17 +98,19 @@
             <span class="step-tag">STAGE 01. 생각 열기</span>
             <h1>이차함수의 <span class="highlight">최대와 최소</span></h1>
             <p class="description">
-                방금 쏘아 올린 불꽃이 <span class="highlight">최고 높이</span>에 도달하는 순간!<br>
+                방금 우리가 쏘아 올린 폭죽이 <span class="highlight">최고 높이</span>에 도달하는 순간!<br>
                 우리는 이차함수를 통해 그 비밀을 풀 수 있습니다.
             </p>
             <div class="function-box">
                 y = -x² + 12x
             </div>
+            <button class="content-proceed-btn" onclick="location.href='quadratic.html'">NEXT LAB <i class="fa-solid fa-arrow-right"></i></button>
         </div>
     </div>
 
-    <div class="controls" id="controls">
-        <button class="nav-btn" onclick="location.href='quadratic.html'"><i class="fa-solid fa-arrow-right"></i></button>
+    <div class="controls visible" id="controls">
+        <button class="nav-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> LAUNCH ROCKET</button>
+        <button class="nav-btn" id="next-step-btn" style="border-color: var(--neon-purple); color: var(--neon-purple); visibility: hidden; opacity: 0; transition: all 1s ease-out;" onclick="showContent()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
     </div>
 
     <script>
@@ -102,9 +120,10 @@
         canvas.height = window.innerHeight;
 
         // --- 사운드 엔진 (Web Audio API) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtx;
         
         function playWhiz() {
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
@@ -117,6 +136,7 @@
         }
 
         function playBoom() {
+            if (!audioCtx) return;
             const noise = audioCtx.createBufferSource();
             const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -131,16 +151,45 @@
             noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
             noise.start(); noise.stop(audioCtx.currentTime + 1.5);
         }
+        
+        function playSuccess() {
+            if (!audioCtx) return;
+            const osc1 = audioCtx.createOscillator(); osc1.type = 'sine'; osc1.frequency.setValueAtTime(500, audioCtx.currentTime);
+            const osc2 = audioCtx.createOscillator(); osc2.type = 'sine'; osc2.frequency.setValueAtTime(800, audioCtx.currentTime + 0.1);
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+            osc1.start(); osc1.stop(audioCtx.currentTime + 0.5);
+            osc2.start(); osc2.stop(audioCtx.currentTime + 0.5);
+        }
 
-        // --- 불꽃 애니메이션 엔진 ---
+        // --- 폭죽 애니메이션 엔진 ---
         let particles = [];
-        let rocket = { x: canvas.width / 2, y: canvas.height, vy: -15, vx: 2, alpha: 1, active: false };
+        let rocket = { x: canvas.width / 2, y: canvas.height, vy: 0, vx: 0, active: false };
+        let shotsFiredCounter = 0; // 몇 번 발사했는지 카운트
+        let gravity = 0.2; // 중력 세기
 
         function initMission() {
+            // 소리 환경 활성화
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             document.getElementById('launch-overlay').style.display = 'none';
+            // 애니메이션 루프 시작
+            animate();
+        }
+
+        function launchRocket() {
+            // 이미 발사 중이면 대기
+            if (rocket.active) return;
+
+            // 랜덤 높이와 각도 설정
+            rocket.x = canvas.width / 2;
+            rocket.y = canvas.height;
+            // vy는 올라가는 속도. -11 ~ -14.1 범위 (gravity가 0.2일 때 높이 300 ~ 500)
+            rocket.vy = -(11 + Math.random() * 3.1); 
+            // vx는 옆으로 가는 속도. -3 ~ 3 범위 (방향도 랜덤)
+            rocket.vx = (Math.random() - 0.5) * 6;
+            
             rocket.active = true;
             playWhiz();
-            animate();
         }
 
         function createExplosion(x, y) {
@@ -155,24 +204,42 @@
                 });
             }
             
-            // 폭발 후 글자 나타남
-            setTimeout(() => {
-                document.getElementById('main-content').style.opacity = '1';
-                document.getElementById('main-content').style.transform = 'translateY(0)';
-                document.getElementById('controls').style.opacity = '1';
-            }, 500);
+            // 발사 횟수 증가
+            shotsFiredCounter++;
+            
+            // 3번 이상 발사하면 "다음 단계" 버튼 나타남
+            if (shotsFiredCounter >= 3) {
+                const nextBtn = document.getElementById('next-step-btn');
+                if (nextBtn.style.visibility === 'hidden') {
+                    nextBtn.style.visibility = 'visible';
+                    nextBtn.style.opacity = '1';
+                    playSuccess(); // 버튼 나타날 때 소리
+                }
+            }
+        }
+
+        function showContent() {
+            // 발사 인터페이스 숨기기
+            document.getElementById('controls').classList.remove('visible');
+            // 폭죽 애니메이션 중단 (루프는 돌지만 캔버스 클리어 안함)
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 교과서 내용 화면 중앙에 아주 크게 등장
+            const mainContent = document.getElementById('main-content');
+            mainContent.classList.add('visible');
         }
 
         function animate() {
-            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)';
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)'; // 잔상 효과
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             if (rocket.active) {
-                // 포물선 궤적 운동 (중력 가속도 시뮬레이션)
-                rocket.vy += 0.15; 
+                // 포물선 궤적 운동 (중력 적용)
+                rocket.vy += gravity; 
                 rocket.x += rocket.vx;
                 rocket.y += rocket.vy;
 
+                // 폭죽 발사 점 그리기
                 ctx.beginPath();
                 ctx.arc(rocket.x, rocket.y, 4, 0, Math.PI * 2);
                 ctx.fillStyle = varColor('--neon-blue');
@@ -188,8 +255,8 @@
             particles.forEach((p, index) => {
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.1;
-                p.life -= 0.015;
+                p.vy += 0.1; // 입자에도 중력 적용
+                p.life -= 0.015; // 서서히 사라짐
                 ctx.globalAlpha = p.life;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
@@ -197,6 +264,8 @@
                 ctx.fill();
                 if (p.life <= 0) particles.splice(index, 1);
             });
+            
+            ctx.globalAlpha = 1; // 투명도 초기화
 
             requestAnimationFrame(animate);
         }
@@ -204,6 +273,12 @@
         function varColor(name) {
             return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
         }
+
+        // 창 크기 변경 시 캔버스 크기 재조정
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>

@@ -3,205 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Mission: 이차함수 최대최소</title>
+    <title>비밀 요원 훈련 - Stage 01</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00d2ff;
             --neon-purple: #92fe9d;
-            --dark-bg: #0a0b10;
-            --glass: rgba(255, 255, 255, 0.1);
+            --dark-bg: #050505;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; }
 
-        /* 🚪 INTRO: 문 애니메이션 */
-        #intro-screen {
+        /* 🚪 초기 접속 버튼 */
+        #launch-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: 1000; perspective: 1500px; display: flex;
+            background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center;
         }
-        .door {
-            width: 50%; height: 100%; background: #1a1a1a;
-            border: 1px solid #333; position: relative;
-            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
-            display: flex; align-items: center; justify-content: center;
+        .access-btn {
+            padding: 25px 60px; font-size: 30px; font-family: 'Orbitron'; background: none;
+            border: 3px solid var(--neon-blue); color: var(--neon-blue); cursor: pointer;
+            border-radius: 10px; box-shadow: 0 0 30px rgba(0,210,255,0.4); transition: 0.3s;
         }
-        .door.left { transform-origin: left; border-right: 2px solid var(--neon-blue); }
-        .door.right { transform-origin: right; border-left: 2px solid var(--neon-blue); }
-        .door.open.left { transform: rotateY(-110deg); }
-        .door.open.right { transform: rotateY(110deg); }
+        .access-btn:hover { background: var(--neon-blue); color: #000; }
 
-        .scan-line {
-            position: absolute; width: 100%; height: 2px; background: var(--neon-blue);
-            box-shadow: 0 0 15px var(--neon-blue); top: 0; animation: scan 3s infinite;
-        }
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        /* 🎆 애니메이션 캔버스 */
+        #firework-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1000; pointer-events: none; }
 
-        .intro-btn {
-            position: absolute; z-index: 1001; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 20px 50px; background: none; border: 2px solid var(--neon-blue);
-            color: var(--neon-blue); font-family: 'Orbitron', sans-serif; font-size: 24px;
-            cursor: pointer; border-radius: 5px; box-shadow: 0 0 20px rgba(0,210,255,0.4);
-            transition: 0.3s;
-        }
-        .intro-btn:hover { background: var(--neon-blue); color: black; }
-
-        /* 📊 SLIDE SYSTEM */
-        .slide-container { width: 100vw; height: 100vh; display: flex; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); }
-        .slide { 
-            min-width: 100vw; height: 100vh; padding: 60px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+        /* 📄 수업 콘텐츠 (처음엔 숨김) */
+        #main-content {
+            width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: translateY(50px); transition: all 1.5s ease-out;
         }
 
-        .content-card {
-            background: var(--glass); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 40px; width: 80%; max-width: 1100px;
-            border: 1px solid rgba(255,255,255,0.1); position: relative;
+        .mission-card {
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px);
+            border: 2px solid var(--neon-blue); border-radius: 30px;
+            padding: 80px; width: 85%; max-width: 1300px; text-align: center;
         }
 
-        .step-tag { font-family: 'Orbitron', sans-serif; color: var(--neon-blue); margin-bottom: 10px; display: block; }
-        h1 { font-size: 3rem; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: 28px; margin-bottom: 20px; display: block; }
         
-        /* 교과서 스타일 레이아웃 */
-        .textbook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
-        .image-box { border-radius: 15px; overflow: hidden; border: 2px solid #444; }
-        .image-box img { width: 100%; display: block; filter: brightness(0.9); }
+        /* 글자 크기 대폭 조절 */
+        h1 { font-size: 5rem; font-weight: 900; margin-bottom: 40px; word-break: keep-all; }
+        .description { font-size: 2.8rem; line-height: 1.4; color: #ccc; margin-bottom: 50px; }
+        .highlight { color: var(--neon-purple); text-shadow: 0 0 10px rgba(146, 254, 157, 0.5); }
 
-        /* 인터랙티브 요소 */
-        .highlight { color: var(--neon-purple); font-weight: bold; }
-        .mission-box { border-left: 5px solid var(--neon-blue); background: rgba(0,210,255,0.05); padding: 20px; margin: 20px 0; }
+        .function-box {
+            display: inline-block; background: rgba(0, 210, 255, 0.1);
+            padding: 30px 60px; border-radius: 20px; border: 1px solid var(--neon-blue);
+            font-size: 3.5rem; font-family: 'Orbitron', serif; margin-top: 30px;
+        }
 
-        /* 하단 컨트롤 */
+        /* 컨트롤 버튼 */
         .controls {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 20px; z-index: 500;
+            position: fixed; bottom: 40px; right: 40px; display: flex; gap: 20px; z-index: 1500;
+            opacity: 0; transition: 1s;
         }
         .nav-btn {
-            background: var(--glass); border: 1px solid var(--neon-blue); color: white;
-            width: 60px; height: 60px; border-radius: 50%; cursor: pointer; transition: 0.3s;
+            background: rgba(255,255,255,0.1); border: 2px solid var(--neon-blue); color: white;
+            width: 80px; height: 80px; border-radius: 50%; cursor: pointer; font-size: 30px;
         }
         .nav-btn:hover { background: var(--neon-blue); color: black; }
 
-        iframe { width: 100%; height: 500px; border: none; border-radius: 10px; background: white; }
     </style>
 </head>
 <body>
 
-    <div id="intro-screen">
-        <div class="door left"><div class="scan-line"></div></div>
-        <div class="door right"><div class="scan-line"></div></div>
-        <button class="intro-btn" onclick="openDoor()">SYSTEM ACCESS</button>
+    <div id="launch-overlay">
+        <button class="access-btn" onclick="initMission()">INITIALIZE MISSION</button>
     </div>
 
-    <div class="slide-container" id="slider">
-        
-        <section class="slide">
-            <div class="content-card">
-                <span class="step-tag">STAGE 01. 생각 열기</span>
-                <h1>이차함수의 최대, 최소</h1>
-                <div class="textbook-grid">
-                    <div>
-                        <p>불꽃 축제에서 쏘아 올린 불꽃의 최고 높이는 어떻게 구할까요?</p>
-                        <div class="mission-box">
-                            이차함수의 그래프가 <span class="highlight">꼭짓점</span>에서 가장 높거나 낮은 이유를 찾아보세요.
-                        </div>
-                    </div>
-                    <div class="image-box">
-                        <div style="background: #333; height: 250px; display: flex; align-items: center; justify-content: center; font-size: 50px;">🎆</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+    <canvas id="firework-canvas"></canvas>
 
-        <section class="slide">
-            <div class="content-card">
-                <span class="step-tag">STAGE 02. 범위의 제한</span>
-                <h1>제한된 범위에서의 탐구</h1>
-                <div class="textbook-grid">
-                    <div class="image-box">
-                        <div style="background: white; color: black; padding: 20px; text-align: center;">
-                            <strong>α ≤ x ≤ β</strong><br>
-                            <small>범위가 주어지면 양 끝값도 확인해야 합니다!</small>
-                        </div>
-                    </div>
-                    <div>
-                        <p>꼭짓점이 범위 안에 포함되는가? <br><span class="highlight">Yes</span> → 꼭짓점과 양 끝값 비교 <br><span class="highlight">No</span> → 양 끝값만 비교</p>
-                    </div>
-                </div>
+    <div id="main-content">
+        <div class="mission-card">
+            <span class="step-tag">STAGE 01. 생각 열기</span>
+            <h1>이차함수의 <span class="highlight">최대와 최소</span></h1>
+            <p class="description">
+                방금 쏘아 올린 불꽃이 <span class="highlight">최고 높이</span>에 도달하는 순간!<br>
+                우리는 이차함수를 통해 그 비밀을 풀 수 있습니다.
+            </p>
+            <div class="function-box">
+                y = -x² + 12x
             </div>
-        </section>
-
-        <section class="slide">
-            <div class="content-card" style="width: 90%; max-width: 1200px;">
-                <span class="step-tag">STAGE 03. LAB EXPERIMENT</span>
-                <h1>그래프 동적 시뮬레이션</h1>
-                <p>구간을 마우스로 드래그하여 최댓값과 최솟값이 어떻게 바뀌는지 관찰하세요.</p>
-                <iframe src="quadratic.html"></iframe>
-            </div>
-        </section>
-
-        <section class="slide">
-            <div class="content-card">
-                <span class="step-tag">STAGE 04. FIELD MISSION</span>
-                <h1>울타리 최대 넓이 구하기</h1>
-                <div class="textbook-grid">
-                    <div>
-                        <p>길이가 12m인 울타리로 직사각형 꽃밭을 만듭니다.</p>
-                        <div class="mission-box" style="font-size: 1.5rem; font-family: 'Orbitron';">
-                            f(x) = x(12 - x) = -x² + 12x
-                        </div>
-                        <p>최대 넓이가 되는 순간의 가로 길이는?</p>
-                    </div>
-                    <div class="image-box" style="background: #222; text-align: center; padding: 20px;">
-                        🌻🌻🌻🌻🌻<br>🌻 요원 미션 🌻<br>🌻🌻🌻🌻🌻
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="slide" style="background: #000;">
-            <div class="content-card" style="border: 2px solid var(--neon-blue); text-align: center;">
-                <span class="step-tag">FINAL STAGE</span>
-                <h1>암호 해독 및 탈출</h1>
-                <p>지금 바로 각자의 단말기에서 자물쇠를 해제하세요!</p>
-                <div style="font-size: 5rem; margin: 20px;">🔐</div>
-                <button class="intro-btn" onclick="window.open('lock.html', '_blank')">LOCK SYSTEM ACCESS</button>
-            </div>
-        </section>
+        </div>
     </div>
 
-    <div class="controls">
-        <button class="nav-btn" onclick="moveSlide(-1)"><i class="fa-solid fa-arrow-left"></i></button>
-        <button class="nav-btn" onclick="moveSlide(1)"><i class="fa-solid fa-arrow-right"></i></button>
+    <div class="controls" id="controls">
+        <button class="nav-btn" onclick="location.href='quadratic.html'"><i class="fa-solid fa-arrow-right"></i></button>
     </div>
 
     <script>
-        let currentSlide = 0;
-        const slider = document.getElementById('slider');
-        const slides = document.querySelectorAll('.slide');
+        const canvas = document.getElementById('firework-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        function openDoor() {
-            document.querySelector('.door.left').classList.add('open');
-            document.querySelector('.door.right').classList.add('open');
-            document.querySelector('.intro-btn').style.opacity = '0';
+        // --- 사운드 엔진 (Web Audio API) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playWhiz() {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+        }
+
+        function playBoom() {
+            const noise = audioCtx.createBufferSource();
+            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            noise.start(); noise.stop(audioCtx.currentTime + 1.5);
+        }
+
+        // --- 불꽃 애니메이션 엔진 ---
+        let particles = [];
+        let rocket = { x: canvas.width / 2, y: canvas.height, vy: -15, vx: 2, alpha: 1, active: false };
+
+        function initMission() {
+            document.getElementById('launch-overlay').style.display = 'none';
+            rocket.active = true;
+            playWhiz();
+            animate();
+        }
+
+        function createExplosion(x, y) {
+            playBoom();
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 12,
+                    vy: (Math.random() - 0.5) * 12,
+                    color: `hsl(${Math.random() * 360}, 100%, 60%)`,
+                    life: 1.0
+                });
+            }
+            
+            // 폭발 후 글자 나타남
             setTimeout(() => {
-                document.getElementById('intro-screen').style.visibility = 'hidden';
-            }, 1500);
+                document.getElementById('main-content').style.opacity = '1';
+                document.getElementById('main-content').style.transform = 'translateY(0)';
+                document.getElementById('controls').style.opacity = '1';
+            }, 500);
         }
 
-        function moveSlide(dir) {
-            currentSlide = Math.max(0, Math.min(currentSlide + dir, slides.length - 1));
-            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+        function animate() {
+            ctx.fillStyle = 'rgba(5, 5, 16, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (rocket.active) {
+                // 포물선 궤적 운동 (중력 가속도 시뮬레이션)
+                rocket.vy += 0.15; 
+                rocket.x += rocket.vx;
+                rocket.y += rocket.vy;
+
+                ctx.beginPath();
+                ctx.arc(rocket.x, rocket.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = varColor('--neon-blue');
+                ctx.fill();
+
+                // 정점에 도달했을 때 (속도가 0에 가까워질 때) 터뜨림
+                if (rocket.vy >= 0) {
+                    createExplosion(rocket.x, rocket.y);
+                    rocket.active = false;
+                }
+            }
+
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.life -= 0.015;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                if (p.life <= 0) particles.splice(index, 1);
+            });
+
+            requestAnimationFrame(animate);
         }
 
-        // 키보드 조작 추가
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight') moveSlide(1);
-            if (e.key === 'ArrowLeft') moveSlide(-1);
-        });
+        function varColor(name) {
+            return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        }
     </script>
 </body>
 </html>

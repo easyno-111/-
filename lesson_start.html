@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v5)</title>
-    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css)">
-    <link href="[https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap](https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap)" rel="stylesheet">
-    <script src="[https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"></script>
+    <title>비밀 요원 훈련 - 이차함수 탐구</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         :root {
-            /* 밝은 테마 색상 변수 */
             --bg-color: #f2f2f7; 
             --card-bg: #ffffff;
             --text-main: #1d1d1f;
@@ -20,7 +19,6 @@
             --secondary: #34c759; 
             --accent: #ff2d55; 
             --border-color: #d1d1d6;
-            /* 폭죽 화면 전용 */
             --dark-bg: #050505; 
             --neon-blue: #00d2ff;
         }
@@ -32,7 +30,7 @@
         /* ==================== 🚪 초기 폭죽 화면 ==================== */
         #launch-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--dark-bg); z-index: 4000; display: flex; align-items: center; justify-content: center;
+            background: var(--dark-bg); z-index: 5000; display: flex; align-items: center; justify-content: center;
         }
         .access-btn {
             padding: clamp(15px, 3vw, 25px) clamp(30px, 5vw, 60px); 
@@ -41,7 +39,9 @@
             border-radius: 10px; box-shadow: 0 0 30px rgba(0,210,255,0.4); transition: 0.3s;
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
-        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3500; background: var(--dark-bg); transition: opacity 1s; }
+        
+        /* z-index 수정: 바텀 네비게이션(3000)보다 아래(2000)에 배치하여 버튼 클릭을 방해하지 않음 */
+        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); transition: opacity 1s; }
         #firework-canvas { width: 100%; height: 100%; pointer-events: none; }
 
         /* ==================== 🛠 통합 플로팅 도구 모음 ==================== */
@@ -49,8 +49,8 @@
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
             padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            display: flex; gap: 10px; z-index: 3000; visibility: hidden; opacity: 0; transition: 0.5s;
-            border: 1px solid var(--border-color); align-items: center; flex-wrap: wrap; justify-content: center;
+            display: flex; gap: 10px; z-index: 4000; visibility: hidden; opacity: 0; transition: 0.5s;
+            border: 1px solid var(--border-color); align-items: center; flex-wrap: wrap; justify-content: center; width: max-content; max-width: 95vw;
         }
         #global-tools.visible { visibility: visible; opacity: 1; }
         .tool-btn { 
@@ -70,7 +70,8 @@
             background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);
             border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             display: flex; justify-content: center; align-items: center; gap: 20px;
-            z-index: 2500; opacity: 0; visibility: hidden; transition: 1s;
+            z-index: 3000; /* 폭죽 래퍼(2000)보다 높게 설정 */
+            opacity: 0; visibility: hidden; transition: 1s;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
         
@@ -85,10 +86,11 @@
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
-        /* ==================== 📄 스테이지 레이아웃 및 방 이동 애니메이션 ==================== */
+        /* ==================== 📄 스테이지 레이아웃 (3D 애니메이션) ==================== */
         #stages-perspective {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
             perspective: 1200px; visibility: hidden; opacity: 0; transition: opacity 0.5s;
+            z-index: 1000;
         }
         #stages-perspective.visible { visibility: visible; opacity: 1; }
 
@@ -101,7 +103,6 @@
         .stage {
             min-width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
-            transition: opacity 0.5s, transform 0.8s;
         }
 
         .activity-card {
@@ -329,7 +330,7 @@
 
         </div> </div> <script>
         // ==========================================
-        // 1. 폭죽 애니메이션 시스템 (어두운 화면)
+        // 1. 폭죽 애니메이션 시스템
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
@@ -412,7 +413,6 @@
             document.getElementById('global-tools').classList.add('visible');
             
             initStage1Graph();
-            setTimeout(resizeAllCanvases, 500); 
         }
 
         let currentStage = 0;
@@ -424,7 +424,7 @@
             if(currentStage < 0) currentStage = 0;
             if(currentStage >= totalStages) currentStage = totalStages - 1;
 
-            // 방 이동 3D 효과 (작아졌다 옆으로 이동하고 다시 커짐)
+            // 방 이동 3D 효과
             stagesWrapper.style.transform = `scale(0.9) translateX(-${currentStage * 100}vw)`;
             setTimeout(() => {
                 stagesWrapper.style.transform = `scale(1) translateX(-${currentStage * 100}vw)`;
@@ -433,10 +433,12 @@
             document.getElementById('prev-btn').disabled = (currentStage === 0);
             document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
             
-            // 그리기 도구 패널 관리 (특정 스테이지에서 리사이즈 및 활성화)
-            const tools = document.getElementById('global-tools');
+            // 캔버스 초기화 연동 (새 뷰포트 노출 시 사이즈를 맞추기 위해 지연 호출)
             if ([1, 3, 4, 5].includes(currentStage)) {
-                setTimeout(() => initCanvasOverlay(`canvas-s${currentStage + 1}`), 400);
+                setTimeout(() => {
+                    const canvasId = `canvas-s${currentStage + 1}`;
+                    initCanvasOverlay(canvasId);
+                }, 400);
             }
         }
 
@@ -467,14 +469,14 @@
             }
         }
 
-        // 캔버스 초기화 및 이벤트 바인딩
+        // 캔버스 초기화 (크기 계산 및 이벤트 연결)
         function initCanvasOverlay(canvasId) {
-            if(!canvasId) return;
             const cvs = document.getElementById(canvasId);
             if(!cvs) return;
             const rect = cvs.parentElement.getBoundingClientRect();
+            if(rect.width === 0) return; // 화면에 안보이면 스킵
             
-            // 기존 그림 유지 로직 (리사이즈 시)
+            // 리사이즈 시 기존에 그린 그림을 백업했다가 다시 복원
             const ctx = cvs.getContext('2d');
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
@@ -486,9 +488,10 @@
             cvs.width = rect.width;
             cvs.height = rect.height;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            
             if(tempCanvas.width > 0) ctx.drawImage(tempCanvas, 0, 0);
 
-            // 이벤트 바인딩 덮어쓰기 방지
+            // 이벤트 바인딩
             cvs.onmousedown = (e) => startDraw(e, cvs);
             cvs.onmousemove = (e) => doDraw(e, cvs);
             cvs.onmouseup = () => stopDraw(cvs);
@@ -541,20 +544,14 @@
             cvs.getContext('2d').beginPath();
         }
 
-        function resizeAllCanvases() {
-            initCanvasOverlay('canvas-s2');
-            initCanvasOverlay('canvas-s4');
-            initCanvasOverlay('canvas-s5');
-            initCanvasOverlay('canvas-s6');
-        }
-
         function handleResize() {
             if(contentRevealed && currentStage === 0) initStage1Graph();
-            resizeAllCanvases();
+            const activeCanvasId = getCurrentCanvasId();
+            if(activeCanvasId) initCanvasOverlay(activeCanvasId);
         }
 
         // ==========================================
-        // 4. 화면 캡쳐 기능 (html2canvas 사용)
+        // 4. 화면 캡쳐 기능 (html2canvas)
         // ==========================================
         function captureScreen() {
             const activeStage = document.querySelectorAll('.stage')[currentStage];
@@ -579,7 +576,7 @@
         }
 
         // ==========================================
-        // Stage 1 퀴즈 및 그래프 기능
+        // Stage 1 (기존) 퀴즈 및 그래프 기능
         // ==========================================
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;

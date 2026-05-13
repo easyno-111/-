@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AGENT DASHBOARD - 수학 훈련소</title>
+    <title>AGENT DASHBOARD - 수학 실험실</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
@@ -17,7 +17,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--dark-bg); color: white; }
 
-        /* 터미널 상단 바 */
         .top-bar {
             width: 100%; height: 60px; background-color: rgba(0, 0, 0, 0.8);
             border-bottom: 1px solid var(--neon-blue);
@@ -39,7 +38,6 @@
             text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
         }
 
-        /* 사이드바 메뉴 */
         .sidebar {
             position: fixed; top: 0; left: -320px; width: 320px; height: 100%;
             background-color: var(--panel-bg); border-right: 1px solid var(--neon-blue);
@@ -100,7 +98,7 @@
 
     <div class="top-bar">
         <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
-        <div class="header-title" onclick="loadApp('lesson.html')">SYSTEM OVERRIDE</div>
+        <div class="header-title" onclick="loadApp('home.html')">SYSTEM OVERRIDE</div>
     </div>
 
     <div class="sidebar" id="sidebar">
@@ -110,23 +108,33 @@
         </div>
         
         <div class="menu-list">
-            <button class="menu-item" onclick="loadApp('lesson_start.html')" style="background: rgba(0,210,255,0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); margin-bottom: 20px;">
-                <span class="menu-icon"><i class="fa-solid fa-chalkboard-user"></i></span> 요원 브리핑 (메인)
+            <button class="menu-item" onclick="loadApp('home.html')" style="background: rgba(0,210,255,0.15); color: var(--neon-blue); border: 1px solid var(--neon-blue); margin-bottom: 20px;">
+                <span class="menu-icon"><i class="fa-solid fa-house-chimney-crack"></i></span> 메인 화면으로
+            </button>
+
+            <button class="menu-item" onclick="loadApp('lesson_start.html')" style="margin-bottom: 20px; border-left: 3px solid var(--neon-purple);">
+                <span class="menu-icon"><i class="fa-solid fa-chalkboard-user"></i></span> 요원 브리핑 (수업)
             </button>
 
             <div class="menu-group">
-                <div class="menu-label">TRAINING TOOLS</div>
-                <button class="menu-item" onclick="loadApp('quadratic.html')"><span class="menu-icon"><i class="fa-solid fa-chart-line"></i></span> 데이터 시뮬레이터</button>
-                <button class="menu-item" onclick="loadApp('lock.html')"><span class="menu-icon"><i class="fa-solid fa-unlock-keyhole"></i></span> 암호 해독 (방탈출)</button>
-                <button class="menu-item" onclick="loadApp('fence.html')"><span class="menu-icon"><i class="fa-solid fa-vector-square"></i></span> 필드 테스트 (울타리)</button>
+                <div class="menu-label">수업 도구 (TRAINING)</div>
+                <button class="menu-item" onclick="loadApp('quadratic.html')"><span class="menu-icon">📈</span> 데이터 시뮬레이터</button>
+                <button class="menu-item" onclick="loadApp('lock.html')"><span class="menu-icon">🔐</span> 암호 해독 (방탈출)</button>
+                <button class="menu-item" onclick="loadApp('fence.html')"><span class="menu-icon">🏠</span> 필드 테스트 (울타리)</button>
             </div>
 
             <div class="menu-group">
-                <div class="menu-label">SIMULATION GAMES</div>
+                <div class="menu-label">수학 게임 (SIMULATION)</div>
                 <button class="menu-item" onclick="loadApp('pig.html')"><span class="menu-icon">🐷</span> PIG 프로젝트 (기본)</button>
                 <button class="menu-item" onclick="loadApp('pig2.html')"><span class="menu-icon">🐽</span> PIG 프로젝트 (심화)</button>
                 <button class="menu-item" onclick="loadApp('nunchi.html')"><span class="menu-icon">👀</span> 심리전 시뮬레이터</button>
                 <button class="menu-item" onclick="loadApp('auction.html')"><span class="menu-icon">🔨</span> 마이너스 옥션</button>
+            </div>
+
+            <div class="menu-group">
+                <div class="menu-label">코딩 실습 (CODING LAB)</div>
+                <button class="menu-item" onclick="loadApp('editor.html')"><span class="menu-icon">⌨️</span> 라이브 코드 에디터</button>
+                <button class="menu-item" onclick="loadApp('shooter.html')"><span class="menu-icon">🚀</span> 화력 슈팅 서바이버</button>
             </div>
         </div>
         
@@ -137,7 +145,7 @@
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-    <iframe id="app-frame" src="lesson_start.html"></iframe>
+    <iframe id="app-frame" src="home.html"></iframe>
 
     <script>
         const sidebar = document.getElementById('sidebar');

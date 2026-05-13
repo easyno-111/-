@@ -624,7 +624,7 @@
                             if(sk.splitLevel < p.lvl_punch_split) { 
                                 for(let j=0; j<2; j++) { 
                                     // 분열 시 30프레임(0.5초) 관통 무적 부여
-                                    activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 30}); 
+                                    activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 10}); 
                                 } 
                             }
                             sk.state='done';

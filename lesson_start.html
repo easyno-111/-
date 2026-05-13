@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Mission: 이차함수 최대최소</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00d2ff;
+            --neon-purple: #92fe9d;
+            --dark-bg: #0a0b10;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; }
+
+        /* 🚪 INTRO: 문 애니메이션 */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1000; perspective: 1500px; display: flex;
+        }
+        .door {
+            width: 50%; height: 100%; background: #1a1a1a;
+            border: 1px solid #333; position: relative;
+            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .door.left { transform-origin: left; border-right: 2px solid var(--neon-blue); }
+        .door.right { transform-origin: right; border-left: 2px solid var(--neon-blue); }
+        .door.open.left { transform: rotateY(-110deg); }
+        .door.open.right { transform: rotateY(110deg); }
+
+        .scan-line {
+            position: absolute; width: 100%; height: 2px; background: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue); top: 0; animation: scan 3s infinite;
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        .intro-btn {
+            position: absolute; z-index: 1001; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 20px 50px; background: none; border: 2px solid var(--neon-blue);
+            color: var(--neon-blue); font-family: 'Orbitron', sans-serif; font-size: 24px;
+            cursor: pointer; border-radius: 5px; box-shadow: 0 0 20px rgba(0,210,255,0.4);
+            transition: 0.3s;
+        }
+        .intro-btn:hover { background: var(--neon-blue); color: black; }
+
+        /* 📊 SLIDE SYSTEM */
+        .slide-container { width: 100vw; height: 100vh; display: flex; transition: 0.8s cubic-bezier(0.65, 0, 0.35, 1); }
+        .slide { 
+            min-width: 100vw; height: 100vh; padding: 60px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
+        }
+
+        .content-card {
+            background: var(--glass); backdrop-filter: blur(10px);
+            border-radius: 20px; padding: 40px; width: 80%; max-width: 1100px;
+            border: 1px solid rgba(255,255,255,0.1); position: relative;
+        }
+
+        .step-tag { font-family: 'Orbitron', sans-serif; color: var(--neon-blue); margin-bottom: 10px; display: block; }
+        h1 { font-size: 3rem; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        
+        /* 교과서 스타일 레이아웃 */
+        .textbook-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+        .image-box { border-radius: 15px; overflow: hidden; border: 2px solid #444; }
+        .image-box img { width: 100%; display: block; filter: brightness(0.9); }
+
+        /* 인터랙티브 요소 */
+        .highlight { color: var(--neon-purple); font-weight: bold; }
+        .mission-box { border-left: 5px solid var(--neon-blue); background: rgba(0,210,255,0.05); padding: 20px; margin: 20px 0; }
+
+        /* 하단 컨트롤 */
+        .controls {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; z-index: 500;
+        }
+        .nav-btn {
+            background: var(--glass); border: 1px solid var(--neon-blue); color: white;
+            width: 60px; height: 60px; border-radius: 50%; cursor: pointer; transition: 0.3s;
+        }
+        .nav-btn:hover { background: var(--neon-blue); color: black; }
+
+        iframe { width: 100%; height: 500px; border: none; border-radius: 10px; background: white; }
+    </style>
+</head>
+<body>
+
+    <div id="intro-screen">
+        <div class="door left"><div class="scan-line"></div></div>
+        <div class="door right"><div class="scan-line"></div></div>
+        <button class="intro-btn" onclick="openDoor()">SYSTEM ACCESS</button>
+    </div>
+
+    <div class="slide-container" id="slider">
+        
+        <section class="slide">
+            <div class="content-card">
+                <span class="step-tag">STAGE 01. 생각 열기</span>
+                <h1>이차함수의 최대, 최소</h1>
+                <div class="textbook-grid">
+                    <div>
+                        <p>불꽃 축제에서 쏘아 올린 불꽃의 최고 높이는 어떻게 구할까요?</p>
+                        <div class="mission-box">
+                            이차함수의 그래프가 <span class="highlight">꼭짓점</span>에서 가장 높거나 낮은 이유를 찾아보세요.
+                        </div>
+                    </div>
+                    <div class="image-box">
+                        <div style="background: #333; height: 250px; display: flex; align-items: center; justify-content: center; font-size: 50px;">🎆</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content-card">
+                <span class="step-tag">STAGE 02. 범위의 제한</span>
+                <h1>제한된 범위에서의 탐구</h1>
+                <div class="textbook-grid">
+                    <div class="image-box">
+                        <div style="background: white; color: black; padding: 20px; text-align: center;">
+                            <strong>α ≤ x ≤ β</strong><br>
+                            <small>범위가 주어지면 양 끝값도 확인해야 합니다!</small>
+                        </div>
+                    </div>
+                    <div>
+                        <p>꼭짓점이 범위 안에 포함되는가? <br><span class="highlight">Yes</span> → 꼭짓점과 양 끝값 비교 <br><span class="highlight">No</span> → 양 끝값만 비교</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content-card" style="width: 90%; max-width: 1200px;">
+                <span class="step-tag">STAGE 03. LAB EXPERIMENT</span>
+                <h1>그래프 동적 시뮬레이션</h1>
+                <p>구간을 마우스로 드래그하여 최댓값과 최솟값이 어떻게 바뀌는지 관찰하세요.</p>
+                <iframe src="quadratic.html"></iframe>
+            </div>
+        </section>
+
+        <section class="slide">
+            <div class="content-card">
+                <span class="step-tag">STAGE 04. FIELD MISSION</span>
+                <h1>울타리 최대 넓이 구하기</h1>
+                <div class="textbook-grid">
+                    <div>
+                        <p>길이가 12m인 울타리로 직사각형 꽃밭을 만듭니다.</p>
+                        <div class="mission-box" style="font-size: 1.5rem; font-family: 'Orbitron';">
+                            f(x) = x(12 - x) = -x² + 12x
+                        </div>
+                        <p>최대 넓이가 되는 순간의 가로 길이는?</p>
+                    </div>
+                    <div class="image-box" style="background: #222; text-align: center; padding: 20px;">
+                        🌻🌻🌻🌻🌻<br>🌻 요원 미션 🌻<br>🌻🌻🌻🌻🌻
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide" style="background: #000;">
+            <div class="content-card" style="border: 2px solid var(--neon-blue); text-align: center;">
+                <span class="step-tag">FINAL STAGE</span>
+                <h1>암호 해독 및 탈출</h1>
+                <p>지금 바로 각자의 단말기에서 자물쇠를 해제하세요!</p>
+                <div style="font-size: 5rem; margin: 20px;">🔐</div>
+                <button class="intro-btn" onclick="window.open('lock.html', '_blank')">LOCK SYSTEM ACCESS</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="controls">
+        <button class="nav-btn" onclick="moveSlide(-1)"><i class="fa-solid fa-arrow-left"></i></button>
+        <button class="nav-btn" onclick="moveSlide(1)"><i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slider = document.getElementById('slider');
+        const slides = document.querySelectorAll('.slide');
+
+        function openDoor() {
+            document.querySelector('.door.left').classList.add('open');
+            document.querySelector('.door.right').classList.add('open');
+            document.querySelector('.intro-btn').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('intro-screen').style.visibility = 'hidden';
+            }, 1500);
+        }
+
+        function moveSlide(dir) {
+            currentSlide = Math.max(0, Math.min(currentSlide + dir, slides.length - 1));
+            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+        }
+
+        // 키보드 조작 추가
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') moveSlide(1);
+            if (e.key === 'ArrowLeft') moveSlide(-1);
+        });
+    </script>
+</body>
+</html>

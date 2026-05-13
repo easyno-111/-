@@ -27,7 +27,26 @@
         body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
         .math { font-style: italic; font-family: "Times New Roman", Times, serif; }
 
-        /* ==================== 🚪 초기 폭죽 화면 ==================== */
+        /* ==================== 🚪 방탈출 문 애니메이션 (전환 효과용) ==================== */
+        #door-transition {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 9999; perspective: 1200px; display: flex; visibility: hidden; pointer-events: none;
+        }
+        .trans-door {
+            width: 50%; height: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            border: 2px solid #333; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            position: relative; pointer-events: auto;
+        }
+        .trans-door.left { transform-origin: left; border-right: 5px solid #111; transform: rotateY(0deg); }
+        .trans-door.right { transform-origin: right; border-left: 5px solid #111; transform: rotateY(0deg); }
+        /* 문이 열린 상태 */
+        .trans-door.left.open { transform: rotateY(-105deg); }
+        .trans-door.right.open { transform: rotateY(105deg); }
+
+
+        /* ==================== 🎆 초기 폭죽 화면 ==================== */
         #launch-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--dark-bg); z-index: 5000; display: flex; align-items: center; justify-content: center;
@@ -40,8 +59,7 @@
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
         
-        /* z-index 수정: 바텀 네비게이션(3000)보다 아래(2000)에 배치하여 버튼 클릭을 방해하지 않음 */
-        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); transition: opacity 1s; }
+        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); }
         #firework-canvas { width: 100%; height: 100%; pointer-events: none; }
 
         /* ==================== 🛠 통합 플로팅 도구 모음 ==================== */
@@ -70,8 +88,7 @@
             background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);
             border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
             display: flex; justify-content: center; align-items: center; gap: 20px;
-            z-index: 3000; /* 폭죽 래퍼(2000)보다 높게 설정 */
-            opacity: 0; visibility: hidden; transition: 1s;
+            z-index: 3000; opacity: 0; visibility: hidden; transition: 1s;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
         
@@ -86,32 +103,28 @@
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
-        /* ==================== 📄 스테이지 레이아웃 (3D 애니메이션) ==================== */
+        /* ==================== 📄 스테이지 레이아웃 ==================== */
         #stages-perspective {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
-            perspective: 1200px; visibility: hidden; opacity: 0; transition: opacity 0.5s;
-            z-index: 1000;
+            visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1000;
         }
         #stages-perspective.visible { visibility: visible; opacity: 1; }
 
         #stages-wrapper {
-            width: 100%; height: 100%; display: flex; 
-            transition: transform 0.8s cubic-bezier(0.65, 0, 0.35, 1);
-            transform-style: preserve-3d;
+            width: 100%; height: 100%; display: flex; flex-wrap: nowrap;
+            transition: transform 0.1s; /* 실제 애니메이션은 문이 가려줄 때 처리됨 */
         }
 
         .stage {
-            min-width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
+            flex: 0 0 100vw; /* 뷰포트 너비 고정으로 랜덤 레이아웃 깨짐 완벽 방지 */
+            width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
 
         .activity-card {
-            background: var(--card-bg); 
-            border: 1px solid var(--border-color); border-radius: 24px;
-            width: 100%; max-width: 1300px; max-height: 100%;
-            display: flex; flex-direction: column; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: auto;
-            overflow-y: auto; overflow-x: hidden; position: relative;
+            background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px;
+            width: 100%; max-width: 1300px; max-height: 100%; display: flex; flex-direction: column; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: auto; overflow-y: auto; overflow-x: hidden; position: relative;
         }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid var(--border-color); text-align: center; background: #fafafa; border-radius: 24px 24px 0 0; }
@@ -120,7 +133,6 @@
 
         .card-body { padding: clamp(15px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; flex: 1; align-items: center; }
         .flex-row { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
-        
         .panel { flex: 1; min-width: 300px; background: #f9f9f9; border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid var(--border-color); }
 
         /* ==================== 🖌 그리기 캔버스 오버레이 ==================== */
@@ -133,14 +145,13 @@
         .whiteboard-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
         .scroll-tip { width: 100%; text-align: center; color: var(--accent); font-size: 14px; font-weight: bold; margin-bottom: 5px; }
 
-        /* ==================== 요소 스타일링 ==================== */
+        /* ==================== 폼 요소 ==================== */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--primary); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(15px, 2vw, 18px); color: var(--text-sub); margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
         select, input[type="number"], input[type="text"] {
             padding: 10px; font-size: clamp(16px, 2.5vw, 20px); background: white; color: var(--text-main);
-            border: 2px solid var(--border-color); border-radius: 8px; outline: none; text-align: center; font-weight: bold;
-            transition: 0.3s;
+            border: 2px solid var(--border-color); border-radius: 8px; outline: none; text-align: center; font-weight: bold; transition: 0.3s;
         }
         select:focus, input[type="number"]:focus { border-color: var(--primary); box-shadow: 0 0 8px var(--primary-light); }
         
@@ -165,6 +176,11 @@
 </head>
 <body>
 
+    <div id="door-transition">
+        <div class="trans-door left open" id="trans-door-left"></div>
+        <div class="trans-door right open" id="trans-door-right"></div>
+    </div>
+
     <div id="launch-overlay">
         <button class="access-btn" onclick="initMission()">MISSION START</button>
     </div>
@@ -182,10 +198,9 @@
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
-        <button class="nav-btn" id="prev-btn" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전 방으로</button>
+        <button class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전 방으로</button>
         <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
-        <button class="nav-btn" id="show-content-btn" style="display: none; border-color: var(--secondary); color: var(--secondary);" onclick="revealContent()">훈련 입장하기 <i class="fa-solid fa-door-open"></i></button>
-        <button class="nav-btn" id="next-btn" onclick="moveStage(1)">다음 방으로 <i class="fa-solid fa-chevron-right"></i></button>
+        <button class="nav-btn" id="next-btn" style="display: none;" onclick="moveStage(1)">다음 방으로 <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <div id="stages-perspective">
@@ -310,7 +325,8 @@
                     <div class="card-body" style="height: 100%;">
                         <img src="step6_image.png" alt="추가 미션" class="textbook-img" style="max-width: 800px; margin: 0 auto 10px; pointer-events: auto;">
                         <p class="scroll-tip">※ 캔버스 밖 영역이나 두 손가락을 사용해 스크롤 할 수 있습니다.</p>
-                        <div class="whiteboard-container" style="height: 800px;"> <canvas id="canvas-s6" class="whiteboard-canvas"></canvas>
+                        <div class="whiteboard-container" style="height: 800px;"> 
+                            <canvas id="canvas-s6" class="whiteboard-canvas"></canvas>
                         </div>
                     </div>
                 </div>
@@ -374,13 +390,16 @@
             playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             shotsFired++;
+            
+            // 폭죽 3번 쏘면 1초 대기 후 자동으로 방 문이 닫히며 훈련장 이동 (버그 수정 완료)
             if (shotsFired >= 3 && !contentRevealed) {
-                document.getElementById('show-content-btn').style.display = 'block';
+                contentRevealed = true;
+                setTimeout(revealContent, 1000);
             }
         }
 
         function animateFw() {
-            if(contentRevealed) return; 
+            if(contentRevealed && !rocket.active && particles.length === 0) return; // 멈춤
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
@@ -396,50 +415,80 @@
         }
 
         // ==========================================
-        // 2. 방 이동 애니메이션 & 밝은 테마 전환
+        // 2. 문 열고 닫히는 3D 방 이동 시스템
         // ==========================================
+        const doorOverlay = document.getElementById('door-transition');
+        const leftDoor = document.getElementById('trans-door-left');
+        const rightDoor = document.getElementById('trans-door-right');
+        const stagesWrapper = document.getElementById('stages-wrapper');
+
         function revealContent() {
-            contentRevealed = true;
-            const fwWrapper = document.getElementById('firework-wrapper');
-            fwWrapper.style.opacity = '0';
-            setTimeout(() => fwWrapper.style.display = 'none', 1000);
+            // 문 활성화 및 닫기
+            doorOverlay.style.visibility = 'visible';
+            leftDoor.classList.remove('open');
+            rightDoor.classList.remove('open');
             
-            document.getElementById('fw-btn').style.display = 'none';
-            document.getElementById('show-content-btn').style.display = 'none';
-            document.getElementById('prev-btn').style.display = 'block';
-            document.getElementById('next-btn').style.display = 'block';
-            
-            document.getElementById('stages-perspective').classList.add('visible');
-            document.getElementById('global-tools').classList.add('visible');
-            
-            initStage1Graph();
+            // 문이 닫히는 동안(0.8s) 뒤 배경(폭죽) 날리고 스테이지 1 준비
+            setTimeout(() => {
+                document.getElementById('firework-wrapper').style.display = 'none';
+                document.getElementById('fw-btn').style.display = 'none';
+                document.getElementById('prev-btn').style.display = 'block';
+                document.getElementById('next-btn').style.display = 'block';
+                
+                document.getElementById('stages-perspective').classList.add('visible');
+                document.getElementById('global-tools').classList.add('visible');
+                
+                initStage1Graph();
+                
+                // 0.2초 후 문 다시 열기
+                setTimeout(() => {
+                    leftDoor.classList.add('open');
+                    rightDoor.classList.add('open');
+                    setTimeout(() => { doorOverlay.style.visibility = 'hidden'; }, 1000);
+                }, 200);
+            }, 800);
         }
 
         let currentStage = 0;
         const totalStages = 7; 
-        const stagesWrapper = document.getElementById('stages-wrapper');
+        let isTransitioning = false;
 
         function moveStage(dir) {
-            currentStage += dir;
-            if(currentStage < 0) currentStage = 0;
-            if(currentStage >= totalStages) currentStage = totalStages - 1;
+            if(isTransitioning) return;
+            let nextStage = currentStage + dir;
+            if(nextStage < 0 || nextStage >= totalStages) return;
+            
+            isTransitioning = true;
+            
+            // 문 닫기 애니메이션 시작
+            doorOverlay.style.visibility = 'visible';
+            leftDoor.classList.remove('open');
+            rightDoor.classList.remove('open');
 
-            // 방 이동 3D 효과
-            stagesWrapper.style.transform = `scale(0.9) translateX(-${currentStage * 100}vw)`;
+            // 문이 닫힌 시점(0.8초 후)에 실제로 방(스테이지) 화면 전환
             setTimeout(() => {
-                stagesWrapper.style.transform = `scale(1) translateX(-${currentStage * 100}vw)`;
-            }, 300);
-            
-            document.getElementById('prev-btn').disabled = (currentStage === 0);
-            document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
-            
-            // 캔버스 초기화 연동 (새 뷰포트 노출 시 사이즈를 맞추기 위해 지연 호출)
-            if ([1, 3, 4, 5].includes(currentStage)) {
+                currentStage = nextStage;
+                stagesWrapper.style.transform = `translateX(-${currentStage * 100}vw)`;
+                
+                document.getElementById('prev-btn').disabled = (currentStage === 0);
+                document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
+                
+                // 이동 후 해당 방의 캔버스가 존재하면 즉시 리사이징
+                if ([1, 3, 4, 5].includes(currentStage)) {
+                    initCanvasOverlay(`canvas-s${currentStage + 1}`);
+                }
+
+                // 방이 바뀐 후 0.2초 뒤에 다시 문 열기
                 setTimeout(() => {
-                    const canvasId = `canvas-s${currentStage + 1}`;
-                    initCanvasOverlay(canvasId);
-                }, 400);
-            }
+                    leftDoor.classList.add('open');
+                    rightDoor.classList.add('open');
+                    // 애니메이션 완전히 종료 후 정리
+                    setTimeout(() => { 
+                        doorOverlay.style.visibility = 'hidden'; 
+                        isTransitioning = false;
+                    }, 1000);
+                }, 200);
+            }, 800);
         }
 
         // ==========================================
@@ -469,14 +518,12 @@
             }
         }
 
-        // 캔버스 초기화 (크기 계산 및 이벤트 연결)
         function initCanvasOverlay(canvasId) {
             const cvs = document.getElementById(canvasId);
             if(!cvs) return;
             const rect = cvs.parentElement.getBoundingClientRect();
-            if(rect.width === 0) return; // 화면에 안보이면 스킵
+            if(rect.width === 0) return; 
             
-            // 리사이즈 시 기존에 그린 그림을 백업했다가 다시 복원
             const ctx = cvs.getContext('2d');
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
@@ -485,13 +532,11 @@
                 tempCtx.drawImage(cvs, 0, 0);
             }
 
-            cvs.width = rect.width;
-            cvs.height = rect.height;
+            cvs.width = rect.width; cvs.height = rect.height;
             ctx.lineCap = 'round'; ctx.lineJoin = 'round';
             
             if(tempCanvas.width > 0) ctx.drawImage(tempCanvas, 0, 0);
 
-            // 이벤트 바인딩
             cvs.onmousedown = (e) => startDraw(e, cvs);
             cvs.onmousemove = (e) => doDraw(e, cvs);
             cvs.onmouseup = () => stopDraw(cvs);
@@ -503,8 +548,7 @@
         }
 
         function startDraw(e, cvs) {
-            if (e.touches && e.touches.length > 1) return; // 두 손가락 터치(스크롤) 시 무시
-            
+            if (e.touches && e.touches.length > 1) return; 
             drawState.isDrawing = true;
             const rect = cvs.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -512,7 +556,6 @@
             const ctx = cvs.getContext('2d');
             ctx.beginPath();
             ctx.moveTo(clientX - rect.left, clientY - rect.top);
-            
             if(e.cancelable) e.preventDefault(); 
         }
 
@@ -539,15 +582,13 @@
             ctx.moveTo(clientX - rect.left, clientY - rect.top);
         }
 
-        function stopDraw(cvs) {
-            drawState.isDrawing = false;
-            cvs.getContext('2d').beginPath();
-        }
+        function stopDraw(cvs) { drawState.isDrawing = false; cvs.getContext('2d').beginPath(); }
 
         function handleResize() {
             if(contentRevealed && currentStage === 0) initStage1Graph();
-            const activeCanvasId = getCurrentCanvasId();
-            if(activeCanvasId) initCanvasOverlay(activeCanvasId);
+            if([1, 3, 4, 5].includes(currentStage)) {
+                initCanvasOverlay(`canvas-s${currentStage + 1}`);
+            }
         }
 
         // ==========================================
@@ -559,12 +600,8 @@
             
             if(!targetElement) { alert("캡쳐할 화면이 없습니다."); return; }
 
-            // 캡쳐 UI 방해 방지를 위해 html2canvas 실행
-            html2canvas(targetElement, { 
-                scale: 2, 
-                useCORS: true, 
-                backgroundColor: "#ffffff"
-            }).then(canvas => {
+            html2canvas(targetElement, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+            .then(canvas => {
                 const link = document.createElement('a');
                 link.download = `요원훈련_Stage${currentStage + 1}_인증샷.png`;
                 link.href = canvas.toDataURL("image/png");

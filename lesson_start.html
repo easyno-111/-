@@ -18,7 +18,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
 
-        /* 수학 문자 이텔릭체 공통 스타일 */
         .math { font-style: italic; font-family: "Times New Roman", Times, serif; }
 
         /* 🚪 초기 접속 및 폭죽 */
@@ -39,7 +38,7 @@
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
             background: rgba(0,0,0,0.9); border-top: 1px solid var(--neon-blue);
-            display: flex; justify-content: space-between; align-items: center; padding: 0 clamp(10px, 5vw, 40px);
+            display: flex; justify-content: center; align-items: center; gap: 20px;
             z-index: 2500; opacity: 0; visibility: hidden; transition: 1s;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
@@ -50,16 +49,21 @@
             transition: 0.3s; font-family: 'Orbitron'; text-transform: uppercase;
         }
         .nav-btn:hover:not(:disabled) { background: var(--neon-blue); color: black; box-shadow: 0 0 15px rgba(0,210,255,0.5); }
-        .nav-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; }
+        .nav-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; display: none; }
 
         .fw-btn { background: var(--neon-pink); color: white; border: none; font-size: clamp(18px, 3vw, 24px); box-shadow: 0 0 20px rgba(255,0,85,0.5); }
         .fw-btn:hover { transform: scale(1.05); }
 
-        /* 📄 스테이지 컨테이너 (SPA 로직) */
+        .content-btn { border-color: var(--neon-purple); color: var(--neon-purple); display: none; }
+        .content-btn:hover { background: var(--neon-purple); color: black; }
+
+        /* 📄 스테이지 컨테이너 */
         #stages-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
             display: flex; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            visibility: hidden; opacity: 0; /* 처음엔 폭죽 화면이므로 숨김 */
         }
+        #stages-wrapper.visible { visibility: visible; opacity: 1; }
 
         .stage {
             min-width: 100vw; height: 100%; padding: clamp(15px, 2vw, 40px);
@@ -69,26 +73,29 @@
         .activity-card {
             background: var(--glass-bg); backdrop-filter: blur(15px);
             border: 2px solid var(--neon-blue); border-radius: 20px;
-            width: 100%; max-width: 1300px; max-height: 90vh; /* 아이패드 꽉 차게 */
+            width: 100%; max-width: 1300px; max-height: 90vh;
             display: flex; flex-direction: column; 
             box-shadow: 0 0 40px rgba(0,210,255,0.15); margin: auto;
-            overflow-y: auto; /* 내용 넘치면 스크롤 */
+            overflow-y: auto;
         }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid rgba(0,210,255,0.3); text-align: center; }
         .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: clamp(16px, 2vw, 22px); font-weight: bold; }
         .card-title { font-size: clamp(22px, 3.5vw, 32px); font-weight: 900; margin-top: 5px; }
 
-        .card-body { padding: clamp(15px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; flex: 1; }
-        .flex-row { display: flex; flex-wrap: wrap; gap: 20px; }
-        .panel { flex: 1; min-width: 300px; rgba(0,0,0,0.6); border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid #333; }
+        .card-body { padding: clamp(15px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; flex: 1; align-items: center; }
+        .flex-row { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
+        .panel { flex: 1; min-width: 300px; background: rgba(0,0,0,0.6); border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid #333; }
+
+        /* 이미지 스타일 */
+        .textbook-img { max-width: 100%; height: auto; border-radius: 10px; border: 2px solid #555; box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 20px; }
 
         /* 공통 퀴즈/입력 스타일 */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--neon-purple); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(16px, 2vw, 20px); color: #ccc; margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
         select, input[type="text"], input[type="number"] {
-            padding: 10px; font-size: clamp(16px, 2.5vw, 22px); background: #111; color: white;
+            padding: 10px; font-size: clamp(16px, 2.5vw, 20px); background: #111; color: white;
             border: 1px solid var(--neon-blue); border-radius: 8px; outline: none; text-align: center; font-weight: bold;
         }
         select { cursor: pointer; background: #222; }
@@ -99,22 +106,18 @@
         }
         .check-btn:hover { background: var(--neon-blue); color: black; }
         .feedback { font-size: clamp(16px, 2vw, 20px); font-weight: bold; margin-top: 10px; min-height: 25px; }
-
-        /* SVG 그래픽 요소 (가는 선, 축, 화살표 추가) */
-        .svg-graph { width: 100%; max-height: 250px; display: block; margin: 10px auto; border: 1px solid #222; background: #fff; border-radius: 10px; }
         
         /* Stage 3 (시뮬레이터) */
         iframe { width: 100%; height: 65vh; border: none; border-radius: 10px; }
 
-        /* Stage 4 (테이블 전면 개편) */
-        .math-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: center; font-size: clamp(14px, 2.2vw, 19px); min-width: 900px;}
-        .math-table th, .math-table td { border: 1px solid #444; padding: clamp(10px, 1.5vw, 15px); }
-        .math-table th { background: rgba(0, 210, 255, 0.1); color: var(--neon-blue); font-family: 'Orbitron'; font-weight: 700; }
-        .math-table .highlight-row { background: rgba(146, 254, 157, 0.05); }
-
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 10px; }
+
+        /* 스테이지 4 퀴즈 그리드 */
+        .quiz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; text-align: center; margin-top: 10px; }
+        .quiz-col { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; border: 1px solid #444; }
+        @media (max-width: 800px) { .quiz-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -126,15 +129,18 @@
     <canvas id="firework-canvas"></canvas>
 
     <div class="bottom-nav" id="bottom-nav">
-        <button class="nav-btn" id="prev-btn" onclick="moveStage(-1)" disabled><i class="fa-solid fa-chevron-left"></i> PREV</button>
+        <button class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> PREV</button>
+        
         <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
-        <button class="nav-btn" id="next-btn" onclick="moveStage(1)">NEXT <i class="fa-solid fa-chevron-right"></i></button>
+        <button class="nav-btn content-btn" id="show-content-btn" onclick="revealContent()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
+
+        <button class="nav-btn" id="next-btn" style="display: none;" onclick="moveStage(1)">NEXT <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <div id="stages-wrapper">
         
         <div class="stage" id="stage-0">
-            <div class="activity-card" style="opacity: 0; transform: translateY(50px); transition: all 1.2s ease-out; background: var(--glass-bg); border-color: var(--neon-blue);" id="stage-0-card">
+            <div class="activity-card" id="stage-0-card">
                 <div class="card-header">
                     <div class="step-tag">STAGE 01. 생각 열기</div>
                     <div class="card-title">이차함수 <span class="math">y = x² - 6x + 10</span> 탐구</div>
@@ -142,7 +148,7 @@
                 <div class="card-body flex-row">
                     <div class="panel" style="flex: 1.2;">
                         <h3>1️⃣ 실수 전체 범위일 때, 이차함수의 최댓값과 최솟값을 선택하세요.</h3>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
                             최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
                             최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
                             <button class="check-btn" onclick="checkQ1()">확인</button>
@@ -151,14 +157,14 @@
 
                         <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
                         <p class="desc">(우측의 '직선 긋기' 버튼을 먼저 누르세요)</p>
-                        <div style="display: flex; gap: 10px; align-items: center;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
                             <button class="check-btn" onclick="checkQ2()">확인</button>
                         </div>
                         <div class="feedback" id="fb-q2"></div>
                     </div>
                     <div class="panel" style="display: flex; flex-direction: column;">
-                        <canvas id="math-canvas" style="width:100%; flex:1; background:white; border-radius:10px; border:2px solid #555;"></canvas>
+                        <canvas id="math-canvas" style="width:100%; flex:1; min-height:250px; background:white; border-radius:10px; border:2px solid #555;"></canvas>
                         <button class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                     </div>
                 </div>
@@ -171,41 +177,19 @@
                     <div class="step-tag">STAGE 02. 개념 다지기</div>
                     <div class="card-title">실수 전체 범위일 때의 최대·최소</div>
                 </div>
-                <div class="card-body flex-row">
-                    <div class="panel" style="text-align: center;">
-                        <h3 style="color: var(--neon-blue); font-family: 'Times New Roman', serif;"><i>a > 0</i> (아래로 볼록)</h3>
-                        <svg class="svg-graph" viewBox="0 0 200 160">
-                            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#444" /></marker></defs>
-                            <line x1="20" y1="130" x2="180" y2="130" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="150" x2="100" y2="30" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="30" x2="100" y2="140" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/> <path d="M 40 30 Q 100 200 160 30" fill="transparent" stroke="#00d2ff" stroke-width="2.5"/>
-                            
-                            <circle cx="100" cy="115" r="4" fill="#ff0055"/>
-                            <text x="105" y="125" fill="#333" font-size="14" font-style="italic">q</text>
-                            <text x="185" y="135" fill="#333" font-size="14" font-style="italic">x</text>
-                            <text x="90" y="25" fill="#333" font-size="14" font-style="italic">y</text>
-                            <text x="105" y="145" fill="#333" font-size="14" font-style="italic">p</text>
-                        </svg>
-                        <p class="desc">대칭축 <span class="math">x=p</span> 에서 꼭짓점 <span class="math">(p, q)</span>를 가집니다.</p>
-                        <div style="margin-top: 15px; font-size: 20px; color: var(--neon-purple);">
-                            이때, 최댓값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
-                            / 최솟값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                <div class="card-body">
+                    <img src="step2_image.png" alt="실수 전체 범위 최대 최소" class="textbook-img">
+                    
+                    <div class="flex-row">
+                        <div class="panel" style="text-align: center;">
+                            <h3 style="color: var(--neon-blue);"><i>a > 0</i> (아래로 볼록)</h3>
+                            최댓값: <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                            최솟값: <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
                         </div>
-                    </div>
-                    <div class="panel" style="text-align: center;">
-                        <h3 style="color: var(--neon-purple); font-family: 'Times New Roman', serif;"><i>a < 0</i> (위로 볼록)</h3>
-                        <svg class="svg-graph" viewBox="0 0 200 160">
-                            <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#444" /></marker></defs>
-                            <line x1="20" y1="130" x2="180" y2="130" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="150" x2="100" y2="30" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/> <line x1="100" y1="20" x2="100" y2="140" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/> <path d="M 40 140 Q 100 -50 160 140" fill="transparent" stroke="#92fe9d" stroke-width="2.5"/>
-                            
-                            <circle cx="100" cy="45" r="4" fill="#ff0055"/>
-                            <text x="105" y="55" fill="#333" font-size="14" font-style="italic">q</text>
-                            <text x="185" y="135" fill="#333" font-size="14" font-style="italic">x</text>
-                            <text x="90" y="25" fill="#333" font-size="14" font-style="italic">y</text>
-                            <text x="105" y="145" fill="#333" font-size="14" font-style="italic">p</text>
-                        </svg>
-                        <p class="desc">대칭축 <span class="math">x=p</span> 에서 꼭짓점 <span class="math">(p, q)</span>를 가집니다.</p>
-                        <div style="margin-top: 15px; font-size: 20px; color: var(--neon-blue);">
-                            이때, 최댓값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
-                            / 최솟값은? <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                        <div class="panel" style="text-align: center;">
+                            <h3 style="color: var(--neon-purple);"><i>a < 0</i> (위로 볼록)</h3>
+                            최댓값: <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
+                            최솟값: <select><option value="">선택</option><option value="q">q</option><option value="x">없다</option></select>
                         </div>
                     </div>
                 </div>
@@ -213,7 +197,7 @@
         </div>
 
         <div class="stage" id="stage-2">
-            <div class="activity-card" style="height: 90%;">
+            <div class="activity-card">
                 <div class="card-header">
                     <div class="step-tag">STAGE 03. 시뮬레이터 조작</div>
                     <div class="card-title">제한된 범위 직접 조작해보기</div>
@@ -230,79 +214,34 @@
                     <div class="step-tag">STAGE 04. 최종 미션</div>
                     <div class="card-title">제한된 범위의 최대/최소 규칙 찾기 (<span class="math">α ≤ x ≤ β</span>)</div>
                 </div>
-                <div class="card-body" style="overflow-x: auto;">
-                    <table class="math-table">
-                        <tr>
-                            <th>꼭짓점의 위치</th>
-                            <th>(1) 꼭짓점 포함 (<span class="math">α ≤ p ≤ β</span>)</th>
-                            <th>(2) 범위 왼쪽 (<span class="math">p < α</span>)</th>
-                            <th>(3) 범위 오른쪽 (<span class="math">p > β</span>)</th>
-                        </tr>
-                        <tr>
-                            <td class="math" style="color: var(--neon-blue); font-size: 26px;">a > 0</td>
-                            <td style="background: rgba(0,210,255,0.02);">
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="80" y1="20" x2="80" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 20 20 Q 80 200 140 20" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 70 Q 80 140 120 40" fill="none" stroke="#e84393" stroke-width="3"/><line x1="40" y1="70" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="80" y1="110" x2="80" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="40" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="77" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
-                                최댓값: <span class="math">f(α)</span> 또는 <span class="math">f(β)</span><br>
-                                최솟값: <span class="math">f(p)</span>
-                            </td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="30" y1="20" x2="30" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 0 30 Q 30 180 80 20" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 100 L 70 30" fill="none" stroke="#e84393" stroke-width="3"/><line x1="30" y1="105" x2="30" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="40" y1="100" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="70" y1="30" x2="70" y2="120" stroke="#444" stroke-dasharray="2"/><text x="27" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="67" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
-                                최댓값: <span class="math">f(β)</span><br>
-                                최솟값: <span class="math">f(α)</span>
-                            </td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="130" y1="20" x2="130" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 80 20 Q 130 180 160 30" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 90 30 L 120 100" fill="none" stroke="#e84393" stroke-width="3"/><line x1="90" y1="30" x2="90" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="100" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="130" y1="105" x2="130" y2="120" stroke="#444" stroke-dasharray="2"/><text x="85" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text><text x="127" y="132" fill="#333" font-size="12" font-style="italic">p</text></svg>
-                                최댓값: <span class="math">f(α)</span><br>
-                                최솟값: <span class="math">f(β)</span>
-                            </td>
-                        </tr>
-                        <tr class="highlight-row">
-                            <td class="math" style="color: var(--neon-purple); font-size: 26px;">a < 0</td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="80" y1="10" x2="80" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 20 120 Q 80 -40 140 120" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 50 Q 80 -20 120 100" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="40" y1="50" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="80" y1="10" x2="80" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="100" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="77" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
-                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
-                            </td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="30" y1="10" x2="30" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 10 70 Q 30 -40 80 120" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 40 25 Q 55 60 70 120" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="30" y1="15" x2="30" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="40" y1="25" x2="40" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="70" y1="120" x2="70" y2="120" stroke="#444" stroke-dasharray="2"/><text x="27" y="132" fill="#333" font-size="12" font-style="italic">p</text><text x="35" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="67" y="132" fill="#333" font-size="12" font-style="italic">β</text></svg>
-                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
-                            </td>
-                            <td>
-                                <svg class="svg-graph" viewBox="0 0 160 140"><line x1="10" y1="120" x2="150" y2="120" stroke="#444" stroke-width="1"/><line x1="130" y1="10" x2="130" y2="130" stroke="#aaa" stroke-dasharray="3"/><path d="M 80 120 Q 130 -40 160 70" fill="none" stroke="#ccc" stroke-dasharray="3"/><path d="M 90 120 Q 105 60 120 25" fill="none" stroke="#92fe9d" stroke-width="3"/><line x1="90" y1="120" x2="90" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="120" y1="25" x2="120" y2="120" stroke="#444" stroke-dasharray="2"/><line x1="130" y1="15" x2="130" y2="120" stroke="#444" stroke-dasharray="2"/><text x="85" y="132" fill="#333" font-size="12" font-style="italic">α</text><text x="117" y="132" fill="#333" font-size="12" font-style="italic">β</text><text x="127" y="132" fill="#333" font-size="12" font-style="italic">p</text></svg>
-                                최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
-                                최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
-                            </td>
-                        </tr>
-                    </table>
+                <div class="card-body">
+                    <img src="step4_image.png" alt="제한된 범위 최대 최소" class="textbook-img">
+                    
+                    <h3 style="margin-top: 10px; width: 100%; text-align: center;">💡 <span class="math">a < 0</span> 일 때의 빈칸을 채워보세요.</h3>
+                    <div class="quiz-grid">
+                        <div class="quiz-col">
+                            <p style="color: #aaa; margin-bottom: 10px;">(1) 꼭짓점 포함</p>
+                            최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br><br>
+                            최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                        </div>
+                        <div class="quiz-col">
+                            <p style="color: #aaa; margin-bottom: 10px;">(2) 범위 왼쪽</p>
+                            최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br><br>
+                            최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                        </div>
+                        <div class="quiz-col">
+                            <p style="color: #aaa; margin-bottom: 10px;">(3) 범위 오른쪽</p>
+                            최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br><br>
+                            최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
     </div> <script>
         // ==========================================
-        // SPA 네비게이션 로직
-        // ==========================================
-        let currentStage = 0;
-        const totalStages = 4;
-
-        function moveStage(dir) {
-            currentStage += dir;
-            if(currentStage < 0) currentStage = 0;
-            if(currentStage >= totalStages) currentStage = totalStages - 1;
-
-            document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
-            
-            // 버튼 활성화/비활성화
-            document.getElementById('prev-btn').disabled = (currentStage === 0);
-            document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
-
-            // 폭죽 버튼은 1페이지(stage-0)에서만 보이도록
-            document.getElementById('fw-btn').style.display = (currentStage === 0) ? 'flex' : 'none';
-        }
-
-        // ==========================================
-        // 폭죽 시스템 (Stage 1)
+        // 폭죽 시스템 (수정됨: 3번 발사 후 버튼 등장)
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
@@ -314,12 +253,10 @@
             document.getElementById('bottom-nav').classList.add('visible');
             fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight;
             
-            // 폭죽 캔버스 리사이즈 및 1단계 그래프 캔버스 초기화
             window.addEventListener('resize', () => { 
                 fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; 
-                if(currentStage === 0) initStage1Graph(); 
+                if(contentRevealed && currentStage === 0) initStage1Graph(); 
             });
-            initStage1Graph();
             animateFw();
         }
 
@@ -338,26 +275,28 @@
             noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); noise.stop(audioCtx.currentTime + 1.5);
         }
 
-        let particles = []; let rocket = { active: false }; let shotsFired = 0;
+        let particles = []; let rocket = { active: false }; let shotsFired = 0; let contentRevealed = false;
+
         function launchRocket() {
             if (rocket.active) return;
             rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
             rocket.vy = -(12 + Math.random() * 3); rocket.vx = (Math.random() - 0.5) * 5;
             rocket.active = true; playWhiz();
         }
+
         function createExplosion(x, y) {
             playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             shotsFired++;
-            if (shotsFired >= 3) {
-                // 폭죽 3번 후 콘텐츠 등장 로직 수정 (제대로 작동하게)
-                const stage0Card = document.getElementById('stage-0-card');
-                stage0Card.style.opacity = '1';
-                stage0Card.style.transform = 'translateY(0)';
+            
+            // 폭죽 3번 쏘면 'NEXT STEP' 버튼 보이기
+            if (shotsFired >= 3 && !contentRevealed) {
+                document.getElementById('show-content-btn').style.display = 'block';
             }
         }
+
         function animateFw() {
-            if(currentStage !== 0) { fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height); requestAnimationFrame(animateFw); return; }
+            if(contentRevealed) return; // 내용 나오면 폭죽 중단
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
@@ -373,7 +312,42 @@
         }
 
         // ==========================================
-        // Stage 1: 그래프 및 퀴즈 로직
+        // 스테이지 트랜지션 (폭죽 -> Stage 0)
+        // ==========================================
+        function revealContent() {
+            contentRevealed = true;
+            fwCanvas.style.display = 'none'; // 캔버스 숨김
+            
+            // 버튼 교체
+            document.getElementById('fw-btn').style.display = 'none';
+            document.getElementById('show-content-btn').style.display = 'none';
+            document.getElementById('prev-btn').style.display = 'block';
+            document.getElementById('next-btn').style.display = 'block';
+
+            // 콘텐츠 컨테이너 보이기
+            document.getElementById('stages-wrapper').classList.add('visible');
+            initStage1Graph();
+        }
+
+        // ==========================================
+        // SPA 슬라이드 로직
+        // ==========================================
+        let currentStage = 0;
+        const totalStages = 4;
+
+        function moveStage(dir) {
+            currentStage += dir;
+            if(currentStage < 0) currentStage = 0;
+            if(currentStage >= totalStages) currentStage = totalStages - 1;
+
+            document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
+            
+            document.getElementById('prev-btn').disabled = (currentStage === 0);
+            document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
+        }
+
+        // ==========================================
+        // Stage 1: 퀴즈 및 캔버스 로직
         // ==========================================
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;
@@ -427,7 +401,7 @@
         }
         function drawLimitLines() { linesDrawn = true; drawGraph(); }
 
-        // select 박스 변경 시 자동 스타일 적용
+        // select 박스 변경 시 테두리 색상 변경
         document.querySelectorAll('select').forEach(sel => {
             sel.addEventListener('change', function() {
                 if(this.value !== "") this.style.borderColor = "var(--neon-purple)";

@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - Stage 01</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon-blue: #00d2ff;
             --neon-purple: #92fe9d;
+            --neon-pink: #ff0055;
             --dark-bg: #050505;
             --glass-bg: rgba(20, 20, 30, 0.85);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        /* 터치 시 스크롤 방지 및 화면 꽉 차게 설정 */
-        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; display: flex; flex-direction: column;}
+        body { background-color: var(--dark-bg); color: white; font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
 
-        /* 🚪 초기 접속 버튼 */
+        /* 🚪 초기 접속 및 폭죽 */
         #launch-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2000; display: flex; align-items: center; justify-content: center;
+            background: #000; z-index: 3000; display: flex; align-items: center; justify-content: center;
         }
         .access-btn {
             padding: clamp(15px, 3vw, 25px) clamp(30px, 5vw, 60px); 
@@ -30,84 +30,83 @@
             border-radius: 10px; box-shadow: 0 0 30px rgba(0,210,255,0.4); transition: 0.3s;
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
-
-        /* 🎆 폭죽 캔버스 */
         #firework-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; pointer-events: none; }
 
-        /* 🚀 폭죽 컨트롤 버튼 */
-        .controls {
-            position: fixed; bottom: clamp(20px, 5vh, 40px); left: 50%; transform: translateX(-50%);
-            display: flex; gap: clamp(10px, 2vw, 30px); z-index: 1500;
-            opacity: 0; visibility: hidden; transition: 1s; width: 100%; justify-content: center; padding: 0 10px;
+        /* 하단 네비게이션바 */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+            background: rgba(0,0,0,0.8); border-top: 1px solid var(--neon-blue);
+            display: flex; justify-content: space-between; align-items: center; padding: 0 clamp(10px, 5vw, 40px);
+            z-index: 2500; opacity: 0; visibility: hidden; transition: 1s;
         }
-        .controls.visible { opacity: 1; visibility: visible; }
+        .bottom-nav.visible { opacity: 1; visibility: visible; }
         
         .nav-btn {
             background: rgba(255,255,255,0.1); border: 2px solid var(--neon-blue); color: white;
-            padding: clamp(10px, 2vh, 20px) clamp(20px, 4vw, 50px); 
-            border-radius: 50px; cursor: pointer; font-size: clamp(16px, 3vw, 24px); font-weight: bold;
-            display: flex; align-items: center; gap: 10px; transition: 0.3s; white-space: nowrap;
+            padding: 10px 25px; border-radius: 30px; cursor: pointer; font-size: clamp(16px, 2.5vw, 22px); font-weight: bold;
+            transition: 0.3s; font-family: 'Orbitron'; text-transform: uppercase;
         }
-        .nav-btn:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 20px rgba(0,210,255,0.5); }
+        .nav-btn:hover:not(:disabled) { background: var(--neon-blue); color: black; box-shadow: 0 0 15px rgba(0,210,255,0.5); }
+        .nav-btn:disabled { border-color: #444; color: #666; cursor: not-allowed; }
 
-        /* 📄 인터랙티브 학습 콘텐츠 (아이패드 맞춤형 반응형 레이아웃) */
-        #main-content {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center; padding: clamp(10px, 3vw, 40px);
-            opacity: 0; visibility: hidden; transition: all 1s ease-out; z-index: 1800;
+        .fw-btn { background: var(--neon-pink); color: white; border: none; font-size: clamp(18px, 3vw, 24px); box-shadow: 0 0 20px rgba(255,0,85,0.5); }
+        .fw-btn:hover { transform: scale(1.05); }
+
+        /* 📄 스테이지 컨테이너 (SPA 로직) */
+        #stages-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
+            display: flex; transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
-        #main-content.visible { opacity: 1; visibility: visible; }
+
+        .stage {
+            min-width: 100vw; height: 100%; padding: clamp(15px, 3vw, 40px);
+            display: flex; justify-content: center; align-items: center; overflow-y: auto;
+        }
 
         .activity-card {
             background: var(--glass-bg); backdrop-filter: blur(15px);
             border: 2px solid var(--neon-blue); border-radius: 20px;
-            width: 100%; max-width: 1200px; max-height: 100%; overflow-y: auto;
-            display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,210,255,0.2);
+            width: 100%; max-width: 1300px; display: flex; flex-direction: column; 
+            box-shadow: 0 0 40px rgba(0,210,255,0.15); margin: auto;
         }
 
-        /* 내부 상단 헤더 */
-        .card-header { padding: clamp(15px, 3vw, 25px); border-bottom: 1px solid rgba(0,210,255,0.3); text-align: center; }
-        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: clamp(18px, 2.5vw, 24px); font-weight: bold; }
-        .card-title { font-size: clamp(24px, 4vw, 36px); font-weight: 900; margin-top: 10px; }
+        .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid rgba(0,210,255,0.3); text-align: center; }
+        .step-tag { font-family: 'Orbitron'; color: var(--neon-blue); font-size: clamp(16px, 2vw, 22px); font-weight: bold; }
+        .card-title { font-size: clamp(22px, 3.5vw, 32px); font-weight: 900; margin-top: 5px; }
 
-        /* 내부 그리드 (문제 영역 / 그래프 영역) */
-        .card-body {
-            display: flex; flex-direction: row; flex-wrap: wrap; flex: 1;
-            padding: clamp(15px, 3vw, 30px); gap: 20px;
-        }
-        .left-panel, .right-panel { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 20px; }
+        .card-body { padding: clamp(15px, 3vw, 30px); display: flex; flex-direction: column; gap: 20px; flex: 1; }
+        .flex-row { display: flex; flex-wrap: wrap; gap: 20px; }
+        .panel { flex: 1; min-width: 300px; background: rgba(0,0,0,0.4); border-radius: 15px; padding: 20px; border: 1px solid #333; }
 
-        /* 퀴즈 박스 스타일 */
-        .quiz-box { background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 15px; padding: 20px; }
-        .quiz-box h3 { font-size: clamp(18px, 2.5vw, 22px); color: var(--neon-purple); margin-bottom: 15px; line-height: 1.4; }
+        /* 공통 퀴즈/입력 스타일 */
+        h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--neon-purple); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
+        p.desc { font-size: clamp(16px, 2vw, 20px); color: #ccc; margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
-        .input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; font-size: clamp(16px, 2vw, 20px); }
-        .input-row input {
-            width: 80px; padding: 8px; font-size: clamp(16px, 2vw, 20px); text-align: center;
-            background: #111; color: white; border: 1px solid var(--neon-blue); border-radius: 8px; outline: none;
+        select, input[type="text"], input[type="number"] {
+            padding: 10px; font-size: clamp(16px, 2.5vw, 22px); background: #111; color: white;
+            border: 1px solid var(--neon-blue); border-radius: 8px; outline: none; text-align: center; font-weight: bold;
         }
+        select { cursor: pointer; background: #222; }
+        
         .check-btn {
             background: rgba(0, 210, 255, 0.2); border: 1px solid var(--neon-blue); color: white;
-            padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: clamp(16px, 2.5vw, 20px); transition: 0.2s;
         }
         .check-btn:hover { background: var(--neon-blue); color: black; }
-        .feedback { font-size: 14px; font-weight: bold; margin-top: 5px; min-height: 20px; }
+        .feedback { font-size: clamp(16px, 2vw, 20px); font-weight: bold; margin-top: 10px; min-height: 25px; }
 
-        /* 우측 그래프 캔버스 구역 */
-        .graph-container {
-            background: #fff; border-radius: 15px; overflow: hidden; position: relative;
-            flex: 1; min-height: 300px; border: 2px solid #555; display: flex; justify-content: center; align-items: center;
-        }
-        #math-canvas { width: 100%; height: 100%; touch-action: none; }
+        /* SVG 그래픽 요소 */
+        .svg-graph { width: 100%; max-height: 200px; display: block; margin: 10px auto; }
+        
+        /* Stage 3 (시뮬레이터) */
+        iframe { width: 100%; height: 60vh; min-height: 400px; border: none; border-radius: 10px; }
 
-        .draw-line-btn {
-            width: 100%; padding: 15px; margin-top: 10px; font-size: 18px; font-weight: bold;
-            background: var(--neon-purple); color: black; border: none; border-radius: 10px; cursor: pointer;
-            box-shadow: 0 0 15px rgba(146, 254, 157, 0.4); transition: 0.3s;
-        }
-        .draw-line-btn:hover { transform: scale(0.98); }
+        /* Stage 4 (테이블) */
+        .math-table { width: 100%; border-collapse: collapse; margin-top: 10px; text-align: center; font-size: clamp(14px, 2vw, 18px); }
+        .math-table th, .math-table td { border: 1px solid #444; padding: clamp(10px, 1.5vw, 15px); }
+        .math-table th { background: rgba(0, 210, 255, 0.1); color: var(--neon-blue); font-family: 'Orbitron'; }
+        .math-table .highlight-row { background: rgba(146, 254, 157, 0.05); }
 
-        /* 스크롤바 커스텀 (아이패드 고려) */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         ::-webkit-scrollbar-thumb { background: var(--neon-blue); border-radius: 10px; }
@@ -121,119 +120,231 @@
 
     <canvas id="firework-canvas"></canvas>
 
-    <div class="controls visible" id="controls">
-        <button class="nav-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
-        <button class="nav-btn" id="next-step-btn" style="border-color: var(--neon-purple); color: var(--neon-purple); visibility: hidden; opacity: 0; transition: all 1s ease-out;" onclick="showInteractiveLab()">NEXT STEP <i class="fa-solid fa-arrow-right"></i></button>
+    <div class="bottom-nav" id="bottom-nav">
+        <button class="nav-btn" id="prev-btn" onclick="moveStage(-1)" disabled><i class="fa-solid fa-chevron-left"></i> PREV</button>
+        <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> ROCKET</button>
+        <button class="nav-btn" id="next-btn" onclick="moveStage(1)">NEXT <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
-    <div id="main-content">
-        <div class="activity-card">
-            <div class="card-header">
-                <div class="step-tag">STAGE 01. 생각 열기</div>
-                <div class="card-title">이차함수 y = x² - 6x + 10 탐구</div>
-            </div>
-            
-            <div class="card-body">
-                <div class="left-panel">
-                    <div class="quiz-box">
+    <div id="stages-wrapper">
+        
+        <div class="stage" id="stage-0">
+            <div class="activity-card" style="opacity: 0; transition: 1s;" id="stage-1-card">
+                <div class="card-header">
+                    <div class="step-tag">STAGE 01. 생각 열기</div>
+                    <div class="card-title">이차함수 y = x² - 6x + 10 탐구</div>
+                </div>
+                <div class="card-body flex-row">
+                    <div class="panel">
                         <h3>1️⃣ 그래프를 보고 이차함수의 최댓값과 최솟값을 찾아보세요.</h3>
-                        <div class="input-row">
-                            최댓값: <input type="text" id="q1-max" placeholder="없음?"> 
-                            최솟값: <input type="number" id="q1-min">
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px;">
+                            최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
+                            최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
                             <button class="check-btn" onclick="checkQ1()">확인</button>
                         </div>
                         <div class="feedback" id="fb-q1"></div>
-                    </div>
 
-                    <div class="quiz-box">
-                        <h3>2️⃣ x=1과 x=4 직선을 긋고, 1 ≤ x ≤ 4 일 때 y의 값의 범위를 구해보세요.</h3>
-                        <div style="font-size: 14px; color: #aaa; margin-bottom: 10px;">(먼저 우측의 '직선 긋기' 버튼을 눌러보세요!)</div>
-                        <div class="input-row">
-                            <input type="number" id="q2-min"> ≤ y ≤ <input type="number" id="q2-max">
+                        <h3 style="margin-top: 30px;">2️⃣ x=1과 x=4 직선을 긋고, 1 ≤ x ≤ 4 일 때 y의 값의 범위를 구해보세요.</h3>
+                        <p class="desc">(우측의 '직선 긋기' 버튼을 먼저 누르세요)</p>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="q2-min" style="width: 70px;"> ≤ y ≤ <input type="number" id="q2-max" style="width: 70px;">
                             <button class="check-btn" onclick="checkQ2()">확인</button>
                         </div>
                         <div class="feedback" id="fb-q2"></div>
                     </div>
-                </div>
-
-                <div class="right-panel">
-                    <div class="graph-container">
-                        <canvas id="math-canvas" width="400" height="300"></canvas>
+                    <div class="panel" style="display: flex; flex-direction: column;">
+                        <canvas id="math-canvas" style="width:100%; height:250px; background:white; border-radius:10px;"></canvas>
+                        <button class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                     </div>
-                    <button class="draw-line-btn" onclick="drawLimitLines()"><i class="fa-solid fa-pen-ruler"></i> x=1, x=4 직선 긋기</button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
+        <div class="stage" id="stage-1">
+            <div class="activity-card">
+                <div class="card-header">
+                    <div class="step-tag">STAGE 02. 개념 다지기</div>
+                    <div class="card-title">실수 전체 범위일 때의 최대·최소</div>
+                </div>
+                <div class="card-body flex-row">
+                    <div class="panel" style="text-align: center;">
+                        <h3 style="color: var(--neon-blue);">a > 0 (아래로 볼록)</h3>
+                        <svg class="svg-graph" viewBox="0 0 200 150">
+                            <line x1="20" y1="130" x2="180" y2="130" stroke="#666" stroke-width="2"/>
+                            <line x1="100" y1="20" x2="100" y2="140" stroke="#666" stroke-width="2" stroke-dasharray="4"/>
+                            <path d="M 40 30 Q 100 180 160 30" fill="transparent" stroke="#00d2ff" stroke-width="4"/>
+                            <circle cx="100" cy="105" r="5" fill="#ff0055"/>
+                            <text x="110" y="110" fill="white" font-size="16">p</text>
+                        </svg>
+                        <p class="desc">x = p 에서 최솟값 q를 갖는다.</p>
+                        <div style="margin-top: 15px; font-size: 20px;">
+                            그렇다면 최댓값은? 
+                            <select id="s2-q1">
+                                <option value="">선택</option><option value="q">q</option><option value="x">없다</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panel" style="text-align: center;">
+                        <h3 style="color: var(--neon-purple);">a < 0 (위로 볼록)</h3>
+                        <svg class="svg-graph" viewBox="0 0 200 150">
+                            <line x1="20" y1="130" x2="180" y2="130" stroke="#666" stroke-width="2"/>
+                            <line x1="100" y1="20" x2="100" y2="140" stroke="#666" stroke-width="2" stroke-dasharray="4"/>
+                            <path d="M 40 140 Q 100 -10 160 140" fill="transparent" stroke="#92fe9d" stroke-width="4"/>
+                            <circle cx="100" cy="55" r="5" fill="#ff0055"/>
+                            <text x="110" y="50" fill="white" font-size="16">p</text>
+                        </svg>
+                        <p class="desc">x = p 에서 최댓값 q를 갖는다.</p>
+                        <div style="margin-top: 15px; font-size: 20px;">
+                            그렇다면 최솟값은? 
+                            <select id="s2-q2">
+                                <option value="">선택</option><option value="q">q</option><option value="x">없다</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage" id="stage-2">
+            <div class="activity-card" style="height: 90%;">
+                <div class="card-header">
+                    <div class="step-tag">STAGE 03. 시뮬레이터 조작</div>
+                    <div class="card-title">제한된 범위 직접 조작해보기</div>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <iframe src="quadratic.html"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="stage" id="stage-3">
+            <div class="activity-card">
+                <div class="card-header">
+                    <div class="step-tag">STAGE 04. 최종 미션</div>
+                    <div class="card-title">제한된 범위의 최대/최소 규칙 찾기</div>
+                </div>
+                <div class="card-body" style="overflow-x: auto;">
+                    <table class="math-table">
+                        <tr>
+                            <th>a의 부호</th>
+                            <th>α ≤ p ≤ β (꼭짓점 포함)</th>
+                            <th>p < α (꼭짓점 왼쪽에 존재)</th>
+                            <th>p > β (꼭짓점 오른쪽에 존재)</th>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--neon-blue); font-weight: bold; font-size: 24px;">a > 0</td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 10 20 Q 50 120 90 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 55 Q 50 120 80 40" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="55" x2="30" y2="80" stroke="#666"/><line x1="50" y1="75" x2="50" y2="80" stroke="#666"/><line x1="80" y1="40" x2="80" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="47" y="75" fill="white" font-size="10">p</text><text x="75" y="75" fill="white" font-size="10">β</text></svg>
+                                최댓값 f(β)<br>최솟값 f(p)
+                            </td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M -10 20 Q 30 120 70 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 40 95 Q 55 60 70 20" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="75" x2="30" y2="80" stroke="#666"/><line x1="40" y1="95" x2="40" y2="80" stroke="#666"/><line x1="70" y1="20" x2="70" y2="80" stroke="#666"/><text x="27" y="75" fill="white" font-size="10">p</text><text x="35" y="75" fill="white" font-size="10">α</text><text x="72" y="75" fill="white" font-size="10">β</text></svg>
+                                최댓값 f(β)<br>최솟값 f(α)
+                            </td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 30 20 Q 70 120 110 20" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 20 Q 45 60 60 95" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="20" x2="30" y2="80" stroke="#666"/><line x1="60" y1="95" x2="60" y2="80" stroke="#666"/><line x1="70" y1="75" x2="70" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="62" y="75" fill="white" font-size="10">β</text><text x="72" y="75" fill="white" font-size="10">p</text></svg>
+                                최댓값 f(α)<br>최솟값 f(β)
+                            </td>
+                        </tr>
+                        <tr class="highlight-row">
+                            <td style="color: var(--neon-purple); font-weight: bold; font-size: 24px;">a < 0</td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 10 80 Q 50 -20 90 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 45 Q 50 -20 80 60" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="45" x2="30" y2="80" stroke="#666"/><line x1="50" y1="25" x2="50" y2="80" stroke="#666"/><line x1="80" y1="60" x2="80" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="47" y="75" fill="white" font-size="10">p</text><text x="75" y="75" fill="white" font-size="10">β</text></svg>
+                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                            </td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M -10 80 Q 30 -20 70 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 40 5 Q 55 40 70 80" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="25" x2="30" y2="80" stroke="#666"/><line x1="40" y1="5" x2="40" y2="80" stroke="#666"/><line x1="70" y1="80" x2="70" y2="80" stroke="#666"/><text x="27" y="75" fill="white" font-size="10">p</text><text x="35" y="75" fill="white" font-size="10">α</text><text x="72" y="75" fill="white" font-size="10">β</text></svg>
+                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                            </td>
+                            <td>
+                                <svg class="svg-graph" viewBox="0 0 100 80"><path d="M 30 80 Q 70 -20 110 80" fill="none" stroke="#666" stroke-width="2" stroke-dasharray="3"/><path d="M 30 80 Q 45 40 60 5" fill="none" stroke="#ff7675" stroke-width="4"/><line x1="30" y1="80" x2="30" y2="80" stroke="#666"/><line x1="60" y1="5" x2="60" y2="80" stroke="#666"/><line x1="70" y1="25" x2="70" y2="80" stroke="#666"/><text x="25" y="75" fill="white" font-size="10">α</text><text x="62" y="75" fill="white" font-size="10">β</text><text x="72" y="75" fill="white" font-size="10">p</text></svg>
+                                최댓값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br>
+                                최솟값 <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div> <script>
         // ==========================================
-        // 1. 폭죽 시스템 (Web Audio & Canvas)
+        // SPA 네비게이션 로직
+        // ==========================================
+        let currentStage = 0;
+        const totalStages = 4;
+
+        function moveStage(dir) {
+            currentStage += dir;
+            if(currentStage < 0) currentStage = 0;
+            if(currentStage >= totalStages) currentStage = totalStages - 1;
+
+            document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
+            
+            // 버튼 활성화/비활성화
+            document.getElementById('prev-btn').disabled = (currentStage === 0);
+            document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
+
+            // 폭죽 버튼은 1페이지(stage-0)에서만 보이도록
+            document.getElementById('fw-btn').style.display = (currentStage === 0) ? 'block' : 'none';
+        }
+
+        // ==========================================
+        // 폭죽 시스템 (Stage 1)
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
-        fwCanvas.width = window.innerWidth;
-        fwCanvas.height = window.innerHeight;
-
         let audioCtx;
-        function playWhiz() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'triangle'; osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 1.2);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 1.2);
-        }
-        function playBoom() {
-            if (!audioCtx) return;
-            const noise = audioCtx.createBufferSource();
-            const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-            noise.buffer = buffer;
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
-            filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
-            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
-            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-            noise.start(); noise.stop(audioCtx.currentTime + 1.5);
-        }
-
-        let particles = [];
-        let rocket = { active: false };
-        let shotsFired = 0;
-
+        
         function initMission() {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             document.getElementById('launch-overlay').style.display = 'none';
+            document.getElementById('bottom-nav').classList.add('visible');
+            fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight;
+            
+            // 폭죽 캔버스 리사이즈 및 1단계 그래프 캔버스 초기화
+            window.addEventListener('resize', () => { 
+                fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; 
+                initStage1Graph(); 
+            });
+            initStage1Graph();
             animateFw();
         }
 
+        function playWhiz() {
+            if(!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 1.2);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+        }
+        function playBoom() {
+            if(!audioCtx) return; const noise = audioCtx.createBufferSource(); const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            noise.buffer = buffer; const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
+            const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); noise.stop(audioCtx.currentTime + 1.5);
+        }
+
+        let particles = []; let rocket = { active: false }; let shotsFired = 0;
         function launchRocket() {
             if (rocket.active) return;
-            rocket.x = fwCanvas.width / 2;
-            rocket.y = fwCanvas.height;
-            rocket.vy = -(12 + Math.random() * 3);
-            rocket.vx = (Math.random() - 0.5) * 5;
-            rocket.active = true;
-            playWhiz();
+            rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
+            rocket.vy = -(12 + Math.random() * 3); rocket.vx = (Math.random() - 0.5) * 5;
+            rocket.active = true; playWhiz();
         }
-
         function createExplosion(x, y) {
             playBoom();
-            for (let i = 0; i < 100; i++) {
-                particles.push({ x: x, y: y, vx: (Math.random()-0.5)*12, vy: (Math.random()-0.5)*12, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
-            }
+            for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             shotsFired++;
             if (shotsFired >= 3) {
-                const nextBtn = document.getElementById('next-step-btn');
-                nextBtn.style.visibility = 'visible'; nextBtn.style.opacity = '1';
+                document.getElementById('stage-1-card').style.opacity = '1'; // 폭죽 3번 후 콘텐츠 등장
             }
         }
-
         function animateFw() {
+            if(currentStage !== 0) { fwCtx.clearRect(0,0,fwCanvas.width,fwCanvas.height); requestAnimationFrame(animateFw); return; }
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
@@ -245,140 +356,71 @@
                 fwCtx.globalAlpha = p.life; fwCtx.beginPath(); fwCtx.arc(p.x, p.y, 3, 0, Math.PI*2); fwCtx.fillStyle = p.color; fwCtx.fill();
                 if (p.life <= 0) particles.splice(index, 1);
             });
-            fwCtx.globalAlpha = 1;
-            requestAnimationFrame(animateFw);
+            fwCtx.globalAlpha = 1; requestAnimationFrame(animateFw);
         }
 
-        window.addEventListener('resize', () => { fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight; drawGraph(); });
-
         // ==========================================
-        // 2. 인터랙티브 학습 모듈 시스템
+        // Stage 1: 그래프 및 퀴즈 로직
         // ==========================================
-        function showInteractiveLab() {
-            document.getElementById('controls').classList.remove('visible');
-            setTimeout(() => { document.getElementById('main-content').classList.add('visible'); drawGraph(); }, 500);
-        }
-
-        // 정답 체크 로직
         function checkQ1() {
-            const maxVal = document.getElementById('q1-max').value.replace(/\s/g, ''); // 공백제거
+            const maxVal = document.getElementById('q1-max').value;
             const minVal = document.getElementById('q1-min').value;
             const fb = document.getElementById('fb-q1');
-            
-            if ((maxVal === "없다" || maxVal === "없음" || maxVal === "X" || maxVal === "x") && minVal == "1") {
-                fb.style.color = "var(--neon-purple)"; fb.innerText = "정답입니다! 아래로 볼록한 그래프는 최댓값이 없죠.";
-            } else {
-                fb.style.color = "#ff4757"; fb.innerText = "다시 생각해보세요. 그래프의 가장 낮은 곳은 어디일까요?";
-            }
+            if (maxVal === "x" && minVal === "1") { fb.style.color = "var(--neon-purple)"; fb.innerText = "정답입니다! 아래로 볼록한 그래프는 최댓값이 없죠."; }
+            else { fb.style.color = "#ff4757"; fb.innerText = "다시 생각해보세요. 그래프의 가장 낮은 곳은 어디일까요?"; }
         }
-
         function checkQ2() {
             const minVal = document.getElementById('q2-min').value;
             const maxVal = document.getElementById('q2-max').value;
             const fb = document.getElementById('fb-q2');
-            
-            if (minVal == "1" && maxVal == "5") {
-                fb.style.color = "var(--neon-purple)"; fb.innerText = "완벽합니다! 제한된 범위 안에서 가장 높고 낮은 값을 잘 찾았네요.";
-            } else {
-                fb.style.color = "#ff4757"; fb.innerText = "x가 1부터 4까지일 때, y값(높이)이 어디부터 어디까지 변하는지 그래프를 다시 확인해보세요!";
-            }
+            if (minVal == "1" && maxVal == "5") { fb.style.color = "var(--neon-purple)"; fb.innerText = "완벽합니다! 제한된 범위 안에서 가장 높고 낮은 값을 잘 찾았네요."; } 
+            else { fb.style.color = "#ff4757"; fb.innerText = "x가 1부터 4까지일 때, y값(높이)이 어디부터 어디까지 변하는지 그래프를 다시 확인해보세요!"; }
         }
 
-        // ==========================================
-        // 3. 그래프 그리기 (HTML5 Canvas)
-        // ==========================================
-        const mathCanvas = document.getElementById('math-canvas');
-        const mCtx = mathCanvas.getContext('2d');
-        let linesDrawn = false;
-
+        let mCtx; let mathCanvas; let linesDrawn = false;
+        function initStage1Graph() {
+            mathCanvas = document.getElementById('math-canvas'); mCtx = mathCanvas.getContext('2d');
+            const container = mathCanvas.parentElement; mathCanvas.width = container.clientWidth; mathCanvas.height = 250;
+            drawGraph();
+        }
         function drawGraph() {
-            // 반응형 캔버스 크기 조정
-            const container = mathCanvas.parentElement;
-            mathCanvas.width = container.clientWidth;
-            mathCanvas.height = container.clientHeight;
-            
-            const w = mathCanvas.width;
-            const h = mathCanvas.height;
-            const scale = w > 500 ? 40 : 30; // 모바일에선 스케일 축소
-            const ox = w / 2 - 3*scale; // y축을 살짝 왼쪽으로 이동
-            const oy = h - 2*scale; // x축을 바닥 쪽에
-
+            if(!mCtx) return;
+            const w = mathCanvas.width; const h = mathCanvas.height; const scale = 30; const ox = w / 2 - 2*scale; const oy = h - 2*scale;
             mCtx.clearRect(0, 0, w, h);
-
-            // 격자 그리기
             mCtx.strokeStyle = "#eee"; mCtx.lineWidth = 1;
             for(let i = -10; i <= 10; i++) {
                 mCtx.beginPath(); mCtx.moveTo(ox + i*scale, 0); mCtx.lineTo(ox + i*scale, h); mCtx.stroke();
                 mCtx.beginPath(); mCtx.moveTo(0, oy - i*scale); mCtx.lineTo(w, oy - i*scale); mCtx.stroke();
             }
-
-            // 축 그리기
             mCtx.strokeStyle = "#333"; mCtx.lineWidth = 2;
-            mCtx.beginPath(); mCtx.moveTo(ox, 0); mCtx.lineTo(ox, h); mCtx.stroke(); // y축
-            mCtx.beginPath(); mCtx.moveTo(0, oy); mCtx.lineTo(w, oy); mCtx.stroke(); // x축
-
-            // 숫자 표시
-            mCtx.fillStyle = "#333"; mCtx.font = "14px Arial";
-            mCtx.fillText("O", ox - 15, oy + 15);
-            mCtx.fillText("2", ox + 2*scale - 5, oy + 15);
-            mCtx.fillText("4", ox + 4*scale - 5, oy + 15);
-            mCtx.fillText("6", ox + 6*scale - 5, oy + 15);
-            mCtx.fillText("x", w - 15, oy + 15);
-            mCtx.fillText("2", ox - 15, oy - 2*scale + 5);
-            mCtx.fillText("4", ox - 15, oy - 4*scale + 5);
-            mCtx.fillText("6", ox - 15, oy - 6*scale + 5);
-            mCtx.fillText("y", ox + 5, 15);
-
-            // 포물선 그리기 y = x^2 - 6x + 10
-            mCtx.strokeStyle = "#e84393"; mCtx.lineWidth = 3;
-            mCtx.beginPath();
-            for(let px = 0; px <= w; px++) {
-                let x = (px - ox) / scale;
-                let y = (x*x) - 6*x + 10;
-                let py = oy - y*scale;
-                if(px === 0) mCtx.moveTo(px, py); else mCtx.lineTo(px, py);
-            }
+            mCtx.beginPath(); mCtx.moveTo(ox, 0); mCtx.lineTo(ox, h); mCtx.stroke(); mCtx.beginPath(); mCtx.moveTo(0, oy); mCtx.lineTo(w, oy); mCtx.stroke();
+            
+            mCtx.strokeStyle = "#e84393"; mCtx.lineWidth = 3; mCtx.beginPath();
+            for(let px = 0; px <= w; px++) { let x = (px - ox) / scale; let y = (x*x) - 6*x + 10; let py = oy - y*scale; if(px === 0) mCtx.moveTo(px, py); else mCtx.lineTo(px, py); }
             mCtx.stroke();
 
-            // x=1, x=4 제한선 및 영역 표시 (버튼 눌렀을 때만)
             if (linesDrawn) {
-                const px1 = ox + 1*scale;
-                const px4 = ox + 4*scale;
-
-                // 영역 색칠
-                mCtx.fillStyle = "rgba(0, 210, 255, 0.2)";
-                mCtx.fillRect(px1, 0, px4 - px1, h);
-
-                // 파란 점선 긋기
+                const px1 = ox + 1*scale; const px4 = ox + 4*scale;
+                mCtx.fillStyle = "rgba(0, 210, 255, 0.2)"; mCtx.fillRect(px1, 0, px4 - px1, h);
                 mCtx.strokeStyle = "#0984e3"; mCtx.lineWidth = 2; mCtx.setLineDash([5, 5]);
-                mCtx.beginPath(); mCtx.moveTo(px1, 0); mCtx.lineTo(px1, h); mCtx.stroke();
-                mCtx.beginPath(); mCtx.moveTo(px4, 0); mCtx.lineTo(px4, h); mCtx.stroke();
-                mCtx.setLineDash([]); // 점선 초기화
-
-                // 포물선 굵게 표시 (구간 내)
-                mCtx.strokeStyle = "#00d2ff"; mCtx.lineWidth = 5;
-                mCtx.beginPath();
-                for(let px = px1; px <= px4; px++) {
-                    let x = (px - ox) / scale;
-                    let y = (x*x) - 6*x + 10;
-                    let py = oy - y*scale;
-                    if(px === px1) mCtx.moveTo(px, py); else mCtx.lineTo(px, py);
-                }
+                mCtx.beginPath(); mCtx.moveTo(px1, 0); mCtx.lineTo(px1, h); mCtx.stroke(); mCtx.beginPath(); mCtx.moveTo(px4, 0); mCtx.lineTo(px4, h); mCtx.stroke();
+                mCtx.setLineDash([]);
+                mCtx.strokeStyle = "#00d2ff"; mCtx.lineWidth = 5; mCtx.beginPath();
+                for(let px = px1; px <= px4; px++) { let x = (px - ox) / scale; let y = (x*x) - 6*x + 10; let py = oy - y*scale; if(px === px1) mCtx.moveTo(px, py); else mCtx.lineTo(px, py); }
                 mCtx.stroke();
-
-                // 최댓값, 최솟값 점 찍기
-                const pMinX = ox + 3*scale; const pMinY = oy - 1*scale; // (3, 1)
-                const pMaxX = ox + 1*scale; const pMaxY = oy - 5*scale; // (1, 5)
-
-                mCtx.fillStyle = "#00d2ff"; mCtx.beginPath(); mCtx.arc(pMinX, pMinY, 6, 0, Math.PI*2); mCtx.fill();
-                mCtx.fillStyle = "#ff7675"; mCtx.beginPath(); mCtx.arc(pMaxX, pMaxY, 6, 0, Math.PI*2); mCtx.fill();
+                mCtx.fillStyle = "#00d2ff"; mCtx.beginPath(); mCtx.arc(ox + 3*scale, oy - 1*scale, 6, 0, Math.PI*2); mCtx.fill(); // Min
+                mCtx.fillStyle = "#ff7675"; mCtx.beginPath(); mCtx.arc(ox + 1*scale, oy - 5*scale, 6, 0, Math.PI*2); mCtx.fill(); // Max
             }
         }
+        function drawLimitLines() { linesDrawn = true; drawGraph(); }
 
-        function drawLimitLines() {
-            linesDrawn = true;
-            drawGraph(); // 캔버스 다시 그리기
-        }
+        // select 박스 변경 시 자동 피드백 (Stage 2 & 4 용도 - 선생님이 순회하며 지도하실 때 편리함)
+        document.querySelectorAll('select').forEach(sel => {
+            sel.addEventListener('change', function() {
+                if(this.value !== "") this.style.borderColor = "var(--neon-purple)";
+                else this.style.borderColor = "var(--neon-blue)";
+            });
+        });
     </script>
 </body>
 </html>

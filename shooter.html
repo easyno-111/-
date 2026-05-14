@@ -328,7 +328,7 @@
         }
 
         function recalculateStats() {
-            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
+            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.09; 
             p.base_dmg *= p.cheat_dmg_mult; 
             
             p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.09; 

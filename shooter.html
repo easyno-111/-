@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V35 레이저 트래킹 완벽화)</title>
+    <title>로그라이트 화력 슈팅 (V36 극강 엔진 최적화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -328,7 +328,7 @@
         }
 
         function recalculateStats() {
-            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.09; 
+            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
             p.base_dmg *= p.cheat_dmg_mult; 
             
             p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.09; 
@@ -396,7 +396,7 @@
             if (p.activeSkillType === 'boomerang') {
                 add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
-                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
+                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
                 add('lvl_punch_split', 5, '💥 냥냥펀치 연쇄폭발', '주먹이 적에 닿자마자 즉시 분열하며 연쇄 폭발을 일으킵니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
@@ -541,8 +541,9 @@
             if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
         }
 
+        // 🗑️ GC 및 렌더링 최적화 캡 (Max 150 파티클)
         function spawnParticles(x, y, color, count, speedMult = 1) {
-            if (particles.length > 200) return; 
+            if (particles.length > 150) return; 
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
         }
         
@@ -583,7 +584,8 @@
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else {
-                    if (isSwarm && swarmWarningTimer <= 0) {
+                    // 🛡️ 적 스폰 캡 300마리 적용 (최적화)
+                    if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 300) {
                         let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(2, Math.floor(12 * Math.pow(0.85, bossKills)));
                         if (frameCount % swarmSpawnRate === 0) {
                             let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
@@ -654,9 +656,12 @@
                 ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
                 ctx.beginPath(); ctx.arc(0, 0, bh.r * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill(); ctx.restore();
                 
+                // 🧮 수학 최적화 적용 (거리 제곱합 연산)
+                let rSq = (bh.r * 2.5) * (bh.r * 2.5);
                 enemies.forEach(e => {
-                    let dx = bh.x - e.x; let dy = bh.y - e.y; let dist = Math.hypot(dx, dy);
-                    if (dist < bh.r * 2.5 && !e.isBoss) {
+                    let dx = bh.x - e.x; let dy = bh.y - e.y; 
+                    if (dx*dx + dy*dy < rSq && !e.isBoss) {
+                        let dist = Math.hypot(dx, dy) || 1;
                         e.x += (dx / dist) * 7; e.y += (dy / dist) * 7;
                         if (dist < bh.r * 0.5) { e.x += Math.cos(frameCount*0.2)*5; e.y += Math.sin(frameCount*0.2)*5; }
                     }
@@ -695,10 +700,9 @@
                     });
                     if (hitAny && frameCount % 6 === 0) playSound('hit');
                 } else if(sk.type==='laser') {
-                    // 🔱 픽스: 레이저 트래킹
                     sk.life--; 
-                    sk.x = p.x; 
-                    sk.y = p.y - 20;
+                    // 🔱 레이저 위치 실시간 동기화 (트래킹 픽스)
+                    sk.x = p.x; sk.y = p.y - 20;
                     
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angleOffset); 
                     ctx.globalAlpha=0.7; ctx.fillStyle=c_laser; 
@@ -711,7 +715,7 @@
                         let dot = dx * dirX + dy * dirY;
                         if (dot > 0) {
                             let px = dirX * dot; let py = dirY * dot;
-                            let dist = Math.hypot(dx - px, dy - py);
+                            let dist = Math.hypot(dx - px, dy - py); // 이건 몇 개 안되니 유지
                             if (dist < sk.w/2 + e.w/2) { e.hp -= sk.dmg; }
                         }
                     });
@@ -736,7 +740,8 @@
                         sk.hitTimer--; 
                         if(sk.hitTimer%10===0){
                             playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
-                            enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss && !e.isDevTest) e.iframe=4; } });
+                            let aoeSq = aoe * aoe;
+                            enemies.forEach(e=>{ if((e.x-sk.x)*(e.x-sk.x) + (e.y-sk.y)*(e.y-sk.y) < aoeSq){ e.hp -= sk.dmg*0.4; if(e.isBoss && !e.isDevTest) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
                             if(sk.splitLevel < p.lvl_punch_split) { 
@@ -776,8 +781,11 @@
             for (let i = swords.length - 1; i >= 0; i--) {
                 let s = swords[i];
                 if (!s.target || s.target.hp <= 0 || !enemies.includes(s.target)) {
-                    let closestDist = Infinity; let closestE = null;
-                    for(let j=0; j<enemies.length; j++) { let dist = Math.hypot(enemies[j].x - s.x, enemies[j].y - s.y); if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } }
+                    let closestDistSq = Infinity; let closestE = null;
+                    for(let j=0; j<enemies.length; j++) { 
+                        let dSq = (enemies[j].x - s.x)*(enemies[j].x - s.x) + (enemies[j].y - s.y)*(enemies[j].y - s.y); 
+                        if (dSq < closestDistSq) { closestDistSq = dSq; closestE = enemies[j]; } 
+                    }
                     s.target = closestE;
                     if (!s.target) s.state = 'strike'; 
                 }
@@ -794,9 +802,9 @@
                 } 
                 else if (s.state === 'strike') {
                     if (s.target) {
-                        let dx = s.target.x - s.x; let dy = s.target.y - s.y; let dist = Math.hypot(dx, dy); angleToTarget = Math.atan2(dy, dx);
+                        let dx = s.target.x - s.x; let dy = s.target.y - s.y; angleToTarget = Math.atan2(dy, dx);
                         s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
-                        if (dist < s.target.w/2 + 20) {
+                        if (dx*dx + dy*dy < (s.target.w/2 + 20)*(s.target.w/2 + 20)) {
                             s.target.hp -= s.dmg; s.hit = true; playSound('hit'); spawnParticles(s.x, s.y, c_sword, 15, 2);
                             if(s.target.isBoss && !s.target.isDevTest) s.target.iframe = 2;
                         }
@@ -855,8 +863,9 @@
                     
                     if(o.timer <= 0) {
                         o.state = 'explode'; o.timer = 30; globalShakeTimer = 40; playSound('skill');
+                        let rSq = o.r * o.r;
                         enemies.forEach(e => { 
-                            if(Math.hypot(e.x - o.x, e.y - o.y) < o.r + e.w/2) {
+                            if((e.x - o.x)*(e.x - o.x) + (e.y - o.y)*(e.y - o.y) < rSq) {
                                 e.hp -= o.dmg; if(e.isBoss && !e.isDevTest) e.iframe = 4;
                             }
                         });
@@ -940,7 +949,7 @@
 
                     bullets.push({ 
                         x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: new Map(), isBhSeed: isBhSeed
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed // 🗑️ Map 대신 배열 사용
                     });
                 }
             }
@@ -966,7 +975,8 @@
                 let removed = false;
                 for(let j=0; j<enemies.length; j++){
                     let e = enemies[j];
-                    if(!b.hitLog.has(e) && Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
+                    // 🗑️ 충돌 확인을 Array.includes 로 최적화
+                    if(!b.hitLog.includes(e) && Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         
                         if (b.isBhSeed) {
                             let bh_radius = 120 + p.lvl_blackhole * 30; 
@@ -976,14 +986,14 @@
                             bullets.splice(i, 1); removed = true; break;
                         }
 
-                        e.hp -= b.dmg; b.hitLog.set(e, true); playSound('hit');
+                        e.hp -= b.dmg; b.hitLog.push(e); playSound('hit');
                         
                         if (b.enhanced && homingBullets.length < 150) {
                             playSound('zap');
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
-                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
+                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: [] });
                             }
                         }
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 100) {
@@ -1013,8 +1023,13 @@
                 let hb = homingBullets[i]; hb.life--;
                 
                 if (!hb.target || hb.target.hp <= 0 || !enemies.includes(hb.target)) {
-                    let closestDist = Infinity; let closestE = null;
-                    for(let j=0; j<enemies.length; j++) { if (enemies[j] !== hb.ignore && !hb.hitLog.has(enemies[j])) { let dist = Math.hypot(enemies[j].x - hb.x, enemies[j].y - hb.y); if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } } }
+                    let closestDistSq = Infinity; let closestE = null;
+                    for(let j=0; j<enemies.length; j++) { 
+                        if (enemies[j] !== hb.ignore && !hb.hitLog.includes(enemies[j])) { 
+                            let dSq = (enemies[j].x - hb.x)*(enemies[j].x - hb.x) + (enemies[j].y - hb.y)*(enemies[j].y - hb.y); 
+                            if (dSq < closestDistSq) { closestDistSq = dSq; closestE = enemies[j]; } 
+                        } 
+                    }
                     hb.target = closestE;
                 }
                 if (hb.target) {
@@ -1029,8 +1044,8 @@
                 
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
-                    if (e !== hb.ignore && !hb.hitLog.has(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
-                        e.hp -= hb.dmg; hb.hitLog.set(e, true); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 3); 
+                    if (e !== hb.ignore && !hb.hitLog.includes(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
+                        e.hp -= hb.dmg; hb.hitLog.push(e); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 3); 
                     }
                 }
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
@@ -1058,6 +1073,7 @@
                 if (l.life <= 0) lightnings.splice(i, 1);
             }
 
+            let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];
             if (p.lvl_storm > 0) {
                 let sk_r = 60 + p.lvl_storm * 20; 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
@@ -1118,7 +1134,8 @@
                             ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${e.maxHp}`, e.x, e.y + e.h/2 + 35);
                         }
                     } else {
-                        ctx.save(); let grad = ctx.createLinearGradient(e.x, e.y-e.h/2, e.x, e.y+e.h/2); grad.addColorStop(0, e.color || '#ff4757'); grad.addColorStop(1, '#111'); ctx.fillStyle = grad;
+                        // 🎨 일반 몹 렌더링 최적화 (단일 색상으로 교체)
+                        ctx.save(); ctx.fillStyle = e.color || '#ff4757'; 
                         ctx.beginPath(); ctx.roundRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h, 6); ctx.fill();
                         ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.roundRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h*0.2, [6, 6, 0, 0]); ctx.fill();
                         ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(Math.ceil(e.hp), e.x, e.y); ctx.restore();

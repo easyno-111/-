@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V28 상자 시스템 개편 & 관통 시각화)</title>
+    <title>로그라이트 화력 슈팅 (V29 궁극의 최적화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -150,6 +150,9 @@
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx; let isSoundOn = true; let bgmInterval = null; let bgmStep = 0;
         
+        // 🚀 사운드 스로틀링(최적화) 변수
+        let lastSoundTime = {};
+
         function initAudio() { 
             if (!audioCtx) audioCtx = new AudioContext(); 
             if (audioCtx.state === 'suspended') audioCtx.resume(); 
@@ -178,7 +181,16 @@
         }
         
         function playSound(type) {
-            if(!isSoundOn || !audioCtx) return; const t = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            if(!isSoundOn || !audioCtx) return; 
+            const t = audioCtx.currentTime; 
+            
+            // 🚨 오디오 최적화: 너무 짧은 시간에 겹치는 동일한 소리 방지
+            if(type === 'hit' && t - (lastSoundTime.hit || 0) < 0.05) return;
+            if(type === 'shoot' && t - (lastSoundTime.shoot || 0) < 0.05) return;
+            if(type === 'zap' && t - (lastSoundTime.zap || 0) < 0.05) return;
+            lastSoundTime[type] = t;
+
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             if(type === 'shoot') { osc.type = 'square'; osc.frequency.setValueAtTime(600, t); gain.gain.setValueAtTime(0.005, t); osc.start(t); osc.stop(t+0.1); }
             else if(type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, t); gain.gain.setValueAtTime(0.015, t); osc.start(t); osc.stop(t+0.05); }
@@ -281,16 +293,10 @@
         container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
         container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; }, {passive: true});
 
-        // 📦 스킬 풀(Pool) 로직 전면 개편 (가중치 & 리얼 랜덤 셔플 적용)
         function getAvailableAbilities(isDev = false) {
             let pool = [];
-            
-            // Helper function: 확률(chance)에 따라 풀에 추가
-            const add = (skill, chance = 1.0) => {
-                if (isDev || Math.random() < chance) pool.push(skill);
-            };
+            const add = (skill, chance = 1.0) => { if (isDev || Math.random() < chance) pool.push(skill); };
 
-            // 1) 기본 패시브 스킬 (높은 확률로 등장, 상자 풀을 다채롭게 만듦)
             add({ name: '🔫 연사 속도 UP (평타 기관총)', apply: () => { p.lvl_firespeed++; recalculateStats(); } }, 0.8);
             add({ name: '⚔️ 공격력 UP (데미지 대폭 상승)', apply: () => { p.lvl_atk++; recalculateStats(); } }, 0.8);
             add({ name: '🏹 기본 공격 관통 횟수 UP', apply: () => { p.lvl_pierce++; recalculateStats(); } }, 0.8);
@@ -300,7 +306,6 @@
             add({ name: '🧛 처치 시 흡혈', apply: () => { p.lvl_vampire++; recalculateStats(); } }, 0.5);
             add({ name: '💖 초당 자연 회복', apply: () => { p.lvl_regen++; recalculateStats(); } }, 0.5);
 
-            // 2) 레어/전설 무기 및 스킬 (보유 중이면 등장 확률 대폭 UP)
             if (p.lvl_shotgun === 0) add({ isLegendary: true, name: '💠 [초희귀] 샷건 (탄환 x2)', apply: () => { p.lvl_shotgun++; recalculateStats(); } }, 0.03);
             
             add({ isRare: p.lvl_lightning === 0, name: p.lvl_lightning === 0 ? '⚡ [레어] 연쇄 번개 (관통 레이저)' : '⚡ 번개 확률 & 갯수 UP', apply: () => { p.lvl_lightning++; recalculateStats(); } }, p.lvl_lightning > 0 ? 0.6 : 0.2);
@@ -312,7 +317,6 @@
             add({ isLegendary: p.lvl_orbital === 0, name: p.lvl_orbital === 0 ? '☄️ [전설] 위성 폭격' : '☄️ 위성 폭격 주기 & 범위 증가', apply: () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); } }, p.lvl_orbital > 0 ? 0.4 : 0.02);
             add({ isRare: p.lvl_shuriken === 0, name: p.lvl_shuriken === 0 ? '🌟 [레어] 수호 표창' : '🌟 수호 표창 개수 UP', apply: () => { p.lvl_shuriken++; recalculateStats(); } }, p.lvl_shuriken > 0 ? 0.6 : 0.2);
 
-            // 3) 액티브 스킬 업그레이드 (무조건 뜨는 현상 방지 -> 확률 조정)
             if (p.activeSkillType === 'boomerang') {
                 add({ name: '🎇 부메랑 분열 UP', apply: () => { p.lvl_boom_split++; recalculateStats(); } }, 0.6);
             } else if (p.activeSkillType === 'laser') {
@@ -322,14 +326,11 @@
                 add({ name: '💥 냥냥펀치 분열 UP', apply: () => { p.lvl_punch_split++; recalculateStats(); } }, 0.5);
             }
 
-            // 4) 액티브 스킬 교체권 (매우 낮은 확률)
             if (p.activeSkillType !== 'boomerang') add({ name: '🔄 스킬 교체: 🪃 부메랑', apply: () => { p.activeSkillType = 'boomerang'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
             if (p.activeSkillType !== 'laser') add({ name: '🔄 스킬 교체: 🔱 레이저', apply: () => { p.activeSkillType = 'laser'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
             if (p.activeSkillType !== 'punch') add({ name: '🔄 스킬 교체: 🐾 냥냥펀치', apply: () => { p.activeSkillType = 'punch'; p.skillCooldownMax = 600; p.skillTimer = 0; updateUI(); } }, 0.08);
 
-            // 풀이 너무 적을 경우를 대비한 기본 보상
             if (pool.length < 5) pool.push({ name: '💖 체력 50% 즉시 회복', apply: () => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.5); updateUI(); } });
-
             return pool;
         }
 
@@ -396,8 +397,6 @@
             };
 
             let pool = getAvailableAbilities();
-            
-            // 📦 완벽한 무작위 셔플 (Fisher-Yates 알고리즘) 적용!
             for (let i = pool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [pool[i], pool[j]] = [pool[j], pool[i]];
@@ -445,7 +444,9 @@
             if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
         }
 
+        // 🚀 파티클 캡 제한 (렉 방지)
         function spawnParticles(x, y, color, count, speedMult = 1) {
+            if (particles.length > 200) return; 
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
         }
         
@@ -523,8 +524,10 @@
                 ctx.fillStyle = 'red'; ctx.font = "900 60px Arial"; ctx.textAlign = "center"; ctx.globalAlpha = Math.abs(Math.sin(frameCount*0.15));
                 ctx.fillText("WARNING", canvas.width/2, canvas.height/2); ctx.globalAlpha = 1;
                 let portalAlpha = Math.max(0, (120 - bossWarningTimer) / 120);
-                ctx.shadowColor = 'red'; ctx.shadowBlur = 20; ctx.fillStyle = `rgba(150, 0, 0, ${portalAlpha})`;
-                ctx.beginPath(); ctx.arc(canvas.width/2, 160, 80 * portalAlpha, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                
+                // 그림자 효과 최적화: fillStyle 직접 사용
+                ctx.fillStyle = `rgba(150, 0, 0, ${portalAlpha})`;
+                ctx.beginPath(); ctx.arc(canvas.width/2, 160, 80 * portalAlpha, 0, Math.PI*2); ctx.fill();
 
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
@@ -543,39 +546,28 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🕳️ 리얼 블랙홀: 날아가는 검은 구체 & 빨아들이기 (데미지 0)
             for (let i = blackholes.length - 1; i >= 0; i--) {
                 let bh = blackholes[i]; 
-                bh.life--;
-                bh.y += bh.vy; 
+                bh.life--; bh.y += bh.vy; 
                 
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(frameCount * 0.1);
                 let grad = ctx.createRadialGradient(0,0, bh.r*0.2, 0,0, bh.r);
-                grad.addColorStop(0, 'rgba(0,0,0,1)');
-                grad.addColorStop(0.5, 'rgba(100,0,200,0.5)');
-                grad.addColorStop(1, 'rgba(0,0,0,0)');
-                
-                ctx.fillStyle = grad;
-                ctx.beginPath(); ctx.arc(0, 0, bh.r, 0, Math.PI * 2); ctx.fill();
-                
+                grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(0.5, 'rgba(100,0,200,0.5)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, bh.r, 0, Math.PI * 2); ctx.fill();
                 ctx.beginPath(); ctx.ellipse(0, 0, bh.r*0.6, bh.r*0.2, frameCount*0.05, 0, Math.PI*2);
                 ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
-                
-                ctx.beginPath(); ctx.arc(0, 0, bh.r * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill();
-                ctx.restore();
+                ctx.beginPath(); ctx.arc(0, 0, bh.r * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill(); ctx.restore();
                 
                 enemies.forEach(e => {
                     let dx = bh.x - e.x; let dy = bh.y - e.y; let dist = Math.hypot(dx, dy);
                     if (dist < bh.r * 2.5 && !e.isBoss) {
-                        e.x += (dx / dist) * 7; 
-                        e.y += (dy / dist) * 7;
+                        e.x += (dx / dist) * 7; e.y += (dy / dist) * 7;
                         if (dist < bh.r * 0.5) { e.x += Math.cos(frameCount*0.2)*5; e.y += Math.sin(frameCount*0.2)*5; }
                     }
                 });
                 if (bh.life <= 0 || bh.y < -300) blackholes.splice(i, 1);
             }
 
-            // 🐾 액티브 스킬
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -610,24 +602,17 @@
                     if(sk.state==='flying') { 
                         sk.x+=sk.vx; sk.y+=sk.vy; 
                         if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
-                        
                         if (sk.pierceTimer > 0) sk.pierceTimer--;
 
                         if (sk.pierceTimer <= 0) {
-                            let hitAny = false; 
-                            enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ hitAny=true; } });
+                            let hitAny = false; enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ hitAny=true; } });
                             if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
                         } else {
-                            if (frameCount % 5 === 0) { 
-                                enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ e.hp -= sk.dmg*0.2; } });
-                            }
+                            if (frameCount % 5 === 0) { enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ e.hp -= sk.dmg*0.2; } }); }
                         }
                         
                         if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100 || sk.y>canvas.height+100) sk.state='done'; 
-                        
-                        if(sk.state === 'flying') {
-                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); drawPaw(sk.w * 0.8); ctx.restore(); 
-                        }
+                        if(sk.state === 'flying') { ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); drawPaw(sk.w * 0.8); ctx.restore(); }
                     }
                     else if (sk.state==='punching') { 
                         sk.hitTimer--; 
@@ -637,17 +622,12 @@
                         }
                         if(sk.hitTimer<=0){
                             if(sk.splitLevel < p.lvl_punch_split) { 
-                                for(let j=0; j<2; j++) { 
-                                    activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 30}); 
-                                } 
+                                for(let j=0; j<2; j++) { activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 30}); } 
                             }
                             sk.state='done';
                         }
                         if (sk.state !== 'done') {
-                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); 
-                            ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); 
-                            drawPaw(sk.w); 
-                            ctx.restore(); 
+                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); drawPaw(sk.w); ctx.restore(); 
                         }
                     }
                     if (sk.state === 'done') { activeSkills.splice(i, 1); }
@@ -665,15 +645,8 @@
                             let swordDmg = p.dmg * 20 * (1 + (p.lvl_skill_dmg||0)); 
                             for (let k = 0; k < swordCount; k++) {
                                 swords.push({
-                                    target: target,
-                                    angle: (Math.PI * 2 / swordCount) * k,
-                                    orbitRadius: 80,
-                                    delay: 30 + k * 8, 
-                                    state: 'orbit',
-                                    dmg: swordDmg,
-                                    x: target.x + Math.cos((Math.PI * 2 / swordCount) * k) * 80,
-                                    y: target.y + Math.sin((Math.PI * 2 / swordCount) * k) * 80,
-                                    hit: false
+                                    target: target, angle: (Math.PI * 2 / swordCount) * k, orbitRadius: 80, delay: 30 + k * 8, state: 'orbit', dmg: swordDmg,
+                                    x: target.x + Math.cos((Math.PI * 2 / swordCount) * k) * 80, y: target.y + Math.sin((Math.PI * 2 / swordCount) * k) * 80, hit: false
                                 });
                             }
                             playSound('skill');
@@ -681,42 +654,31 @@
                     }
                 }
             }
-
             for (let i = swords.length - 1; i >= 0; i--) {
                 let s = swords[i];
                 if (!s.target || s.target.hp <= 0 || !enemies.includes(s.target)) {
                     let closestDist = Infinity; let closestE = null;
-                    for(let j=0; j<enemies.length; j++) { 
-                        let dist = Math.hypot(enemies[j].x - s.x, enemies[j].y - s.y); 
-                        if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } 
-                    }
+                    for(let j=0; j<enemies.length; j++) { let dist = Math.hypot(enemies[j].x - s.x, enemies[j].y - s.y); if (dist < closestDist) { closestDist = dist; closestE = enemies[j]; } }
                     s.target = closestE;
                     if (!s.target) s.state = 'strike'; 
                 }
 
                 let angleToTarget = s.angle;
-
                 if (s.state === 'orbit') {
                     if (s.target) {
                         s.angle += 0.1; 
-                        let targetX = s.target.x + Math.cos(s.angle) * s.orbitRadius;
-                        let targetY = s.target.y + Math.sin(s.angle) * s.orbitRadius;
-                        s.x += (targetX - s.x) * 0.3; 
-                        s.y += (targetY - s.y) * 0.3;
+                        let targetX = s.target.x + Math.cos(s.angle) * s.orbitRadius; let targetY = s.target.y + Math.sin(s.angle) * s.orbitRadius;
+                        s.x += (targetX - s.x) * 0.3; s.y += (targetY - s.y) * 0.3;
                         angleToTarget = Math.atan2(s.target.y - s.y, s.target.x - s.x);
                     }
-                    s.delay--;
-                    if (s.delay <= 0) s.state = 'strike';
+                    s.delay--; if (s.delay <= 0) s.state = 'strike';
                 } 
                 else if (s.state === 'strike') {
                     if (s.target) {
-                        let dx = s.target.x - s.x; let dy = s.target.y - s.y;
-                        let dist = Math.hypot(dx, dy);
-                        angleToTarget = Math.atan2(dy, dx);
+                        let dx = s.target.x - s.x; let dy = s.target.y - s.y; let dist = Math.hypot(dx, dy); angleToTarget = Math.atan2(dy, dx);
                         s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
                         if (dist < s.target.w/2 + 20) {
-                            s.target.hp -= s.dmg; s.hit = true; playSound('hit');
-                            spawnParticles(s.x, s.y, '#f39c12', 15, 2);
+                            s.target.hp -= s.dmg; s.hit = true; playSound('hit'); spawnParticles(s.x, s.y, '#f39c12', 15, 2);
                             if(s.target.isBoss) s.target.iframe = 2;
                         }
                     } else {
@@ -727,7 +689,12 @@
 
                 if (!s.hit) {
                     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); 
-                    ctx.shadowColor = '#f39c12'; ctx.shadowBlur = 10; ctx.fillStyle = '#fff';
+                    
+                    // 💡 그림자 최적화 (shadowBlur 제거, 글로우 레이어 추가)
+                    ctx.fillStyle = 'rgba(243, 156, 18, 0.4)';
+                    ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(10, 15); ctx.lineTo(-10, 15); ctx.closePath(); ctx.fill();
+                    
+                    ctx.fillStyle = '#fff';
                     ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(4, 10); ctx.lineTo(-4, 10); ctx.closePath(); ctx.fill();
                     ctx.fillStyle = '#f39c12'; ctx.fillRect(-8, 10, 16, 3); ctx.fillRect(-2, 13, 4, 8);
                     ctx.restore();
@@ -796,7 +763,6 @@
             let targetX = Math.max(20, Math.min(canvas.width-20, window.mouseX_val));
             p.vx = (targetX - p.x)*0.25; p.x += p.vx;
             
-            // 🔫 샷건 발사 (부채꼴 확산 상향)
             if(frameCount%p.fireDelay === 0) {
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
@@ -816,12 +782,8 @@
                     let bRadius = isBhSeed ? 10 : (isEnhanced ? 8 : 6);
 
                     bullets.push({ 
-                        x: p.x, y: p.y - 20, 
-                        vx: bvx, vy: bvy,
-                        dmg: isEnhanced ? enhancedDmg : p.dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius,
-                        pierce: p.lvl_pierce || 0, hitLog: new Map(),
-                        isBhSeed: isBhSeed
+                        x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? enhancedDmg : p.dmg, 
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: new Map(), isBhSeed: isBhSeed
                     });
                 }
             }
@@ -830,16 +792,19 @@
                 let b = bullets[i]; b.x+=b.vx; b.y+=b.vy; 
                 
                 if(b.isBhSeed) {
-                    ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = 'purple';
+                    ctx.save();
+                    // 💡 그림자 효과 대신 부드러운 외곽선 렌더링으로 렉 해결
+                    ctx.fillStyle = 'rgba(128, 0, 128, 0.5)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.restore();
                 } else {
-                    // 🏹 관통 총알 시각화 (에너지 화살 형태)
                     ctx.fillStyle=b.color; 
-                    if (b.pierce > 0) {
+                    if (b.pierce > 0 && !b.enhanced) {
                         ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
-                        ctx.shadowBlur = 10; ctx.shadowColor = b.color;
-                        ctx.beginPath(); ctx.moveTo(b.r * 2.5, 0); ctx.lineTo(-b.r, b.r * 0.8); ctx.lineTo(-b.r, -b.r * 0.8); ctx.closePath(); ctx.fill(); ctx.restore();
+                        // 💡 화살 렌더링 렉 최적화 적용
+                        ctx.fillStyle = 'rgba(241, 196, 15, 0.4)'; ctx.beginPath(); ctx.moveTo(b.r*3.5, 0); ctx.lineTo(-b.r*1.5, b.r*1.5); ctx.lineTo(-b.r*1.5, -b.r*1.5); ctx.fill();
+                        ctx.fillStyle = b.color; ctx.beginPath(); ctx.moveTo(b.r * 2.5, 0); ctx.lineTo(-b.r, b.r * 0.8); ctx.lineTo(-b.r, -b.r * 0.8); ctx.closePath(); ctx.fill(); ctx.restore();
                     } else {
                         ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     }
@@ -860,7 +825,7 @@
 
                         e.hp -= b.dmg; b.hitLog.set(e, true); playSound('hit');
                         
-                        if (b.enhanced) {
+                        if (b.enhanced && homingBullets.length < 150) {
                             playSound('zap');
                             let homingDmg = p.dmg * (0.8 + p.lvl_homing * 0.5) * (1 + (p.lvl_skill_dmg||0) * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
@@ -868,7 +833,7 @@
                                 homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
                             }
                         }
-                        if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance) {
+                        if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 100) {
                             playSound('zap');
                             let ld = (p.dmg * 2.0) * (1 + (p.lvl_skill_dmg||0) * 0.5); 
                             let jumps = 1 + p.lvl_lightning; 
@@ -905,7 +870,11 @@
                     let speed = Math.hypot(hb.vx, hb.vy); if (speed > 8) { hb.vx = (hb.vx/speed)*8; hb.vy = (hb.vy/speed)*8; }
                 }
                 hb.x += hb.vx; hb.y += hb.vy;
-                ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 5; ctx.beginPath(); ctx.arc(hb.x, hb.y, 5, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                
+                // 💡 그림자 최적화 대체 
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.4)'; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
+                
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
                     if (e !== hb.ignore && !hb.hitLog.has(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
@@ -1021,8 +990,11 @@
 
             for (let i = bossBullets.length - 1; i >= 0; i--) {
                 let bb = bossBullets[i]; bb.x += bb.vx; bb.y += bb.vy;
-                ctx.fillStyle = bb.color; ctx.shadowColor = bb.color; ctx.shadowBlur = 10; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r/2, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+                
+                // 💡 그림자 최적화 대체 
+                ctx.fillStyle = 'rgba(255, 71, 87, 0.4)'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r + 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = bb.color; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r/2, 0, Math.PI*2); ctx.fill(); 
 
                 if (p.iframe <= 0 && Math.abs(bb.x - p.x) < p.w/2 && Math.abs(bb.y - p.y) < p.h/2) {
                     p.hp -= bb.dmg; p.iframe = 30; spawnParticles(p.x, p.y, '#ff0000', 15, 2); globalShakeTimer = 10; playSound('hit'); updateUI(); bossBullets.splice(i, 1);

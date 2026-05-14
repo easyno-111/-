@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V45 난이도 & 냥냥펀치 콤보)</title>
+    <title>로그라이트 화력 슈팅 (V46 밸런스 대격변 & 냥냥 콤보)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -48,10 +48,12 @@
         .type-skill { color: #55efc4; } 
         .type-util { color: #ffeaa7; }  
 
+        /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
+        /* ✨ 전설 상자 화면 섬광 효과 */
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
 
         @keyframes shake-small {
@@ -319,7 +321,6 @@
             else if(type === 'boss_shoot') { osc.type = 'square'; osc.frequency.setValueAtTime(150, t); gain.gain.setValueAtTime(0.01, t); osc.start(t); osc.stop(t+0.15); }
             else if(type === 'heal') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.linearRampToValueAtTime(1000, t+0.2); gain.gain.setValueAtTime(0.02, t); osc.start(t); osc.stop(t+0.2); }
             else if(type === 'bh_spawn') { osc.type = 'sine'; osc.frequency.setValueAtTime(100, t); osc.frequency.exponentialRampToValueAtTime(10, t+1.0); gain.gain.setValueAtTime(0.05, t); osc.start(t); osc.stop(t+1.0); }
-            // 🐾 냥냥펀치 콤보 뿅뿅 사운드!
             else if(type === 'pop') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(1200, t+0.1); gain.gain.setValueAtTime(0.015, t); osc.start(t); osc.stop(t+0.1); }
         }
 
@@ -365,7 +366,8 @@
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
-            let bh = 150 * Math.pow(p.cheat_boss_hp * p.diffScale, lvl - 1) * p.diffMult;
+            // ⚖️ 보스 체력 스케일링 픽스 적용
+            let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, Math.max(0, lvl - 1));
             enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true });
             globalShakeTimer = 40; playSound('kill');
             closeDevMode();
@@ -375,7 +377,9 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<250; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: p.base_dmg * 5 * p.diffMult * Math.pow(p.diffScale, bossKills), speed: spd, isBoss: false, color: '#e67e22' });
+                // ⚖️ 물량몹 체력 스케일링 픽스 적용 (기본체력 1 보존)
+                let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
             }
             playSound('levelup');
             closeDevMode();
@@ -503,7 +507,6 @@
             } else if (p.activeSkillType === 'laser') {
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
-                // 🐾 냥냥펀치 텍스트 수정
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 타겟팅 고양이 발바닥 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
                 add('lvl_punch_split', 5, '💥 메가 스탬프 강화', '마지막에 찍히는 메가 젤리의 크기와 파괴력이 증폭됩니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
@@ -528,8 +531,6 @@
 
             let startActive = document.getElementById('start-active').value;
             let startPassive = document.getElementById('start-passive').value;
-            
-            // 🔥 난이도 적용
             let diff = document.getElementById('start-difficulty').value;
 
             p = { 
@@ -542,8 +543,9 @@
                 
                 cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
-                diffMult: diff === 'hard' ? 2.5 : (diff === 'normal' ? 1.5 : 1),
-                diffScale: diff === 'hard' ? 1.15 : (diff === 'normal' ? 1.05 : 1),
+                // ⚖️ 합리적인 스케일링 배율 적용 (폭발 방지)
+                diffMult: diff === 'hard' ? 2.0 : (diff === 'normal' ? 1.5 : 1),
+                diffExpAdd: diff === 'hard' ? 0.08 : (diff === 'normal' ? 0.04 : 0),
 
                 base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
@@ -811,7 +813,9 @@
                             let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.2);
-                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: p.base_dmg * 5 * p.diffMult * Math.pow(p.diffScale, bossKills), speed: spd, isBoss: false, color: '#e67e22' });
+                                // ⚖️ 몹 스케일링 픽스 (베이스 1)
+                                let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
                             }
                         }
                     } else if (!isSwarm) {
@@ -824,7 +828,9 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 250) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.15);
-                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(p.diffScale, bossKills), speed: spd, isBoss: false });
+                                // ⚖️ 일반 몹 스케일링 픽스
+                                let normHp = Math.max(1, (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, speed: spd, isBoss: false });
                             }
                         }
                     }
@@ -850,7 +856,8 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    let bh = 150 * Math.pow(p.cheat_boss_hp * p.diffScale, bossKills) * p.diffMult;
+                    // ⚖️ 보스 체력 스케일링 픽스
+                    let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
@@ -977,7 +984,6 @@
                     if(sk.life<=0) activeSkills.splice(i, 1);
 
                 } else if(sk.type==='punch') {
-                    // 🐾 냥냥펀치 '스탬프 콤보' 리워크
                     if(sk.state==='flying') { 
                         sk.x+=sk.vx; sk.y+=sk.vy; 
                         if(Math.abs(sk.vx)>0) sk.angle=Math.atan2(sk.vy, sk.vx)+Math.PI/2; else sk.angle=0; 
@@ -997,7 +1003,7 @@
                             sk.targetX = hitEnemy.x;
                             sk.targetY = hitEnemy.y;
                             sk.comboStep = 0;
-                            sk.timer = 0; // 타격 즉시 콤보 시작
+                            sk.timer = 0; 
                         } else if(sk.state === 'flying') { 
                             ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); 
                             ctx.drawImage(getSprite('paw', c_punch, sk.w * 0.8), -sk.w*0.8, -sk.w*0.8);
@@ -1009,7 +1015,6 @@
                         if(sk.timer <= 0){
                             sk.comboStep++;
                             if (sk.comboStep <= 4) {
-                                // 좌우좌우 4타 뿅뿅!
                                 playSound('pop');
                                 let offsetX = (sk.comboStep % 2 === 1) ? -25 : 25;
                                 let offsetY = (sk.comboStep <= 2) ? -15 : 15;
@@ -1027,11 +1032,10 @@
                                         e.hp -= sk.dmg * 0.5; 
                                     } 
                                 });
-                                sk.timer = 6; // 콤보 간격 매우 빠름
+                                sk.timer = 6; 
                             } else {
-                                // 5타: 초거대 메가 스탬프!
                                 playSound('kill'); globalShakeTimer = 25;
-                                let megaAoe = sk.w * 3 * (1 + p.lvl_punch_split * 0.3); // 크기 뻥튀기
+                                let megaAoe = sk.w * 3 * (1 + p.lvl_punch_split * 0.3); 
                                 
                                 particles.push({
                                     x: sk.targetX, y: sk.targetY, vx:0, vy:0, 
@@ -1537,7 +1541,6 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 let pt = particles[i]; pt.life--; pt.x += pt.vx; pt.y += pt.vy; 
                 
-                // 🐾 냥냥펀치 콤보 마크 및 메가 젤리 렌더링 최적화
                 if (pt.type === 'paw_mark') {
                     ctx.save(); ctx.translate(pt.x, pt.y); ctx.rotate(pt.angle || 0);
                     let alpha = Math.min(1, pt.life / 10); 

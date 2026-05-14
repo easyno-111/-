@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v6)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         :root {
-            --bg-color: #f2f2f7; 
+            var(--bg-color): #f2f2f7; 
             --card-bg: #ffffff;
             --text-main: #1d1d1f;
             --text-sub: #86868b;
@@ -21,30 +21,28 @@
             --border-color: #d1d1d6;
             --dark-bg: #050505; 
             --neon-blue: #00d2ff;
+            --neon-purple: #92fe9d;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+        body { background-color: #f2f2f7; color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
         .math { font-style: italic; font-family: "Times New Roman", Times, serif; }
 
-        /* ==================== 🚪 방탈출 문 애니메이션 (전환 효과용) ==================== */
+        /* ==================== 🚪 방탈출 문 애니메이션 ==================== */
         #door-transition {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 9999; perspective: 1200px; display: flex; visibility: hidden; pointer-events: none;
         }
         .trans-door {
-            width: 50%; height: 100%;
-            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
+            width: 50%; height: 100%; background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%);
             border: 2px solid #333; box-shadow: inset 0 0 50px rgba(0,0,0,0.8);
             transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
             position: relative; pointer-events: auto;
         }
         .trans-door.left { transform-origin: left; border-right: 5px solid #111; transform: rotateY(0deg); }
         .trans-door.right { transform-origin: right; border-left: 5px solid #111; transform: rotateY(0deg); }
-        /* 문이 열린 상태 */
         .trans-door.left.open { transform: rotateY(-105deg); }
         .trans-door.right.open { transform: rotateY(105deg); }
-
 
         /* ==================== 🎆 초기 폭죽 화면 ==================== */
         #launch-overlay {
@@ -59,7 +57,7 @@
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
         
-        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); }
+        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); transition: opacity 1s; }
         #firework-canvas { width: 100%; height: 100%; pointer-events: none; }
 
         /* ==================== 🛠 통합 플로팅 도구 모음 ==================== */
@@ -103,21 +101,19 @@
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
-        /* ==================== 📄 스테이지 레이아웃 ==================== */
+        /* ==================== 📄 스테이지 레이아웃 (3D 애니메이션) ==================== */
         #stages-perspective {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
-            visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1000;
+            perspective: 1200px; visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1000;
         }
         #stages-perspective.visible { visibility: visible; opacity: 1; }
 
         #stages-wrapper {
-            width: 100%; height: 100%; display: flex; flex-wrap: nowrap;
-            transition: transform 0.1s; /* 실제 애니메이션은 문이 가려줄 때 처리됨 */
+            width: 100%; height: 100%; display: flex; flex-wrap: nowrap; transition: transform 0.1s;
         }
 
         .stage {
-            flex: 0 0 100vw; /* 뷰포트 너비 고정으로 랜덤 레이아웃 깨짐 완벽 방지 */
-            width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
+            flex: 0 0 100vw; width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
             display: flex; justify-content: center; align-items: center; overflow: hidden;
         }
 
@@ -140,12 +136,11 @@
         .textbook-img { width: 100%; display: block; border-radius: 10px; pointer-events: none; }
         .drawing-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none; cursor: crosshair; }
 
-        /* 대형 화이트보드 */
         .whiteboard-container { width: 100%; border: 2px solid var(--border-color); border-radius: 10px; background: white; overflow: hidden; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
         .whiteboard-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
         .scroll-tip { width: 100%; text-align: center; color: var(--accent); font-size: 14px; font-weight: bold; margin-bottom: 5px; }
 
-        /* ==================== 폼 요소 ==================== */
+        /* ==================== 요소 스타일링 ==================== */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--primary); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(15px, 2vw, 18px); color: var(--text-sub); margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
@@ -182,7 +177,7 @@
     </div>
 
     <div id="launch-overlay">
-        <button class="access-btn" onclick="initMission()">MISSION START</button>
+        <button type="button" class="access-btn" onclick="initMission()">MISSION START</button>
     </div>
 
     <div id="firework-wrapper">
@@ -190,17 +185,23 @@
     </div>
 
     <div id="global-tools">
-        <button class="tool-btn btn-pen-blue" onclick="setGlobalTool('pen', '#007aff')"><i class="fa-solid fa-pen"></i> 파란펜</button>
-        <button class="tool-btn btn-pen-red" onclick="setGlobalTool('pen', '#ff2d55')"><i class="fa-solid fa-pen"></i> 빨간펜</button>
-        <button class="tool-btn btn-eraser" onclick="setGlobalTool('eraser')"><i class="fa-solid fa-eraser"></i> 지우개</button>
-        <button class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 화면 지우기</button>
-        <button class="tool-btn btn-capture" onclick="captureScreen()"><i class="fa-solid fa-camera"></i> 화면 캡쳐 (패들렛 업로드용)</button>
+        <button type="button" class="tool-btn btn-pen-blue" onclick="setGlobalTool('pen', '#007aff')"><i class="fa-solid fa-pen"></i> 파란펜</button>
+        <button type="button" class="tool-btn btn-pen-red" onclick="setGlobalTool('pen', '#ff2d55')"><i class="fa-solid fa-pen"></i> 빨간펜</button>
+        <button type="button" class="tool-btn btn-eraser" onclick="setGlobalTool('eraser')"><i class="fa-solid fa-eraser"></i> 지우개</button>
+        <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 화면 지우기</button>
+        <button type="button" class="tool-btn btn-capture" onclick="captureScreen()"><i class="fa-solid fa-camera"></i> 화면 캡쳐 (패들렛 업로드용)</button>
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
-        <button class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전 방으로</button>
-        <button class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
-        <button class="nav-btn" id="next-btn" style="display: none;" onclick="moveStage(1)">다음 방으로 <i class="fa-solid fa-chevron-right"></i></button>
+        <button type="button" class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전 방으로</button>
+        
+        <button type="button" class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
+        
+        <button type="button" class="nav-btn" id="trajectory-btn" style="display: none; border-color: var(--neon-purple); color: var(--neon-purple); background: var(--dark-bg); font-family: 'Orbitron';" onclick="enableTrajectory()">궤도 확인하기 <i class="fa-solid fa-chart-line"></i></button>
+        
+        <button type="button" class="nav-btn" id="show-content-btn" style="display: none; border-color: var(--secondary); color: var(--secondary);" onclick="revealContent()">훈련 입장하기 <i class="fa-solid fa-door-open"></i></button>
+        
+        <button type="button" class="nav-btn" id="next-btn" style="display: none;" onclick="moveStage(1)">다음 방으로 <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <div id="stages-perspective">
@@ -218,7 +219,7 @@
                             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
                                 최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
                                 최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
-                                <button class="check-btn" onclick="checkQ1()">확인</button>
+                                <button type="button" class="check-btn" onclick="checkQ1()">확인</button>
                             </div>
                             <div class="feedback" id="fb-q1"></div>
 
@@ -226,13 +227,13 @@
                             <p class="desc">(우측의 '직선 긋기' 버튼을 먼저 누르세요)</p>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
-                                <button class="check-btn" onclick="checkQ2()">확인</button>
+                                <button type="button" class="check-btn" onclick="checkQ2()">확인</button>
                             </div>
                             <div class="feedback" id="fb-q2"></div>
                         </div>
                         <div class="panel" style="display: flex; flex-direction: column;">
                             <canvas id="math-canvas" style="width:100%; flex:1; min-height:280px; background:white; border-radius:10px; border:2px solid var(--border-color);"></canvas>
-                            <button class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
+                            <button type="button" class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                         </div>
                     </div>
                 </div>
@@ -346,7 +347,7 @@
 
         </div> </div> <script>
         // ==========================================
-        // 1. 폭죽 애니메이션 시스템
+        // 1. 폭죽 애니메이션 시스템 (무제한 및 궤도)
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
@@ -377,33 +378,61 @@
             noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); noise.stop(audioCtx.currentTime + 1.5);
         }
 
-        let particles = []; let rocket = { active: false }; let shotsFired = 0; let contentRevealed = false;
+        let particles = []; let rocket = { active: false, history: [] }; 
+        let shotsFired = 0; let contentRevealed = false; let trajectoryMode = false;
 
         function launchRocket() {
             if (rocket.active) return;
             rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
             rocket.vy = -(12 + Math.random() * 3); rocket.vx = (Math.random() - 0.5) * 5;
+            rocket.history = []; // 궤적 저장용 배열 초기화
             rocket.active = true; playWhiz();
         }
 
         function createExplosion(x, y) {
             playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
-            shotsFired++;
             
-            // 폭죽 3번 쏘면 1초 대기 후 자동으로 방 문이 닫히며 훈련장 이동 (버그 수정 완료)
-            if (shotsFired >= 3 && !contentRevealed) {
-                contentRevealed = true;
-                setTimeout(revealContent, 1000);
+            if (!trajectoryMode && !contentRevealed) {
+                shotsFired++;
+                // 5번 쏘면 궤도 확인하기 버튼 노출
+                if (shotsFired >= 5) {
+                    document.getElementById('trajectory-btn').style.display = 'block';
+                }
             }
         }
 
+        function enableTrajectory() {
+            trajectoryMode = true;
+            document.getElementById('trajectory-btn').style.display = 'none';
+            document.getElementById('show-content-btn').style.display = 'block';
+        }
+
         function animateFw() {
-            if(contentRevealed && !rocket.active && particles.length === 0) return; // 멈춤
+            if(contentRevealed) return; 
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
+            
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
+                rocket.history.push({x: rocket.x, y: rocket.y}); // 궤적 기록
+
+                // 궤도 모드 켜졌으면 점선 그리기
+                if (trajectoryMode) {
+                    fwCtx.beginPath();
+                    fwCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                    fwCtx.lineWidth = 2;
+                    fwCtx.setLineDash([5, 5]);
+                    for (let i = 0; i < rocket.history.length; i++) {
+                        if (i === 0) fwCtx.moveTo(rocket.history[i].x, rocket.history[i].y);
+                        else fwCtx.lineTo(rocket.history[i].x, rocket.history[i].y);
+                    }
+                    fwCtx.stroke();
+                    fwCtx.setLineDash([]);
+                }
+
                 fwCtx.beginPath(); fwCtx.arc(rocket.x, rocket.y, 4, 0, Math.PI*2); fwCtx.fillStyle = '#00d2ff'; fwCtx.fill();
+                
+                // 최고점에서 터짐
                 if (rocket.vy >= 0) { createExplosion(rocket.x, rocket.y); rocket.active = false; }
             }
             particles.forEach((p, index) => {
@@ -415,7 +444,7 @@
         }
 
         // ==========================================
-        // 2. 문 열고 닫히는 3D 방 이동 시스템
+        // 2. 방 이동 애니메이션 & 밝은 테마 전환
         // ==========================================
         const doorOverlay = document.getElementById('door-transition');
         const leftDoor = document.getElementById('trans-door-left');
@@ -423,15 +452,16 @@
         const stagesWrapper = document.getElementById('stages-wrapper');
 
         function revealContent() {
-            // 문 활성화 및 닫기
+            contentRevealed = true;
             doorOverlay.style.visibility = 'visible';
             leftDoor.classList.remove('open');
             rightDoor.classList.remove('open');
             
-            // 문이 닫히는 동안(0.8s) 뒤 배경(폭죽) 날리고 스테이지 1 준비
             setTimeout(() => {
                 document.getElementById('firework-wrapper').style.display = 'none';
                 document.getElementById('fw-btn').style.display = 'none';
+                document.getElementById('trajectory-btn').style.display = 'none';
+                document.getElementById('show-content-btn').style.display = 'none';
                 document.getElementById('prev-btn').style.display = 'block';
                 document.getElementById('next-btn').style.display = 'block';
                 
@@ -440,7 +470,6 @@
                 
                 initStage1Graph();
                 
-                // 0.2초 후 문 다시 열기
                 setTimeout(() => {
                     leftDoor.classList.add('open');
                     rightDoor.classList.add('open');
@@ -459,13 +488,10 @@
             if(nextStage < 0 || nextStage >= totalStages) return;
             
             isTransitioning = true;
-            
-            // 문 닫기 애니메이션 시작
             doorOverlay.style.visibility = 'visible';
             leftDoor.classList.remove('open');
             rightDoor.classList.remove('open');
 
-            // 문이 닫힌 시점(0.8초 후)에 실제로 방(스테이지) 화면 전환
             setTimeout(() => {
                 currentStage = nextStage;
                 stagesWrapper.style.transform = `translateX(-${currentStage * 100}vw)`;
@@ -473,16 +499,13 @@
                 document.getElementById('prev-btn').disabled = (currentStage === 0);
                 document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
                 
-                // 이동 후 해당 방의 캔버스가 존재하면 즉시 리사이징
                 if ([1, 3, 4, 5].includes(currentStage)) {
                     initCanvasOverlay(`canvas-s${currentStage + 1}`);
                 }
 
-                // 방이 바뀐 후 0.2초 뒤에 다시 문 열기
                 setTimeout(() => {
                     leftDoor.classList.add('open');
                     rightDoor.classList.add('open');
-                    // 애니메이션 완전히 종료 후 정리
                     setTimeout(() => { 
                         doorOverlay.style.visibility = 'hidden'; 
                         isTransitioning = false;
@@ -592,7 +615,7 @@
         }
 
         // ==========================================
-        // 4. 화면 캡쳐 기능 (html2canvas)
+        // 4. 화면 캡쳐 기능 (Blob 방식으로 아이패드 튕김 완벽 해결)
         // ==========================================
         function captureScreen() {
             const activeStage = document.querySelectorAll('.stage')[currentStage];
@@ -602,10 +625,17 @@
 
             html2canvas(targetElement, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
             .then(canvas => {
-                const link = document.createElement('a');
-                link.download = `요원훈련_Stage${currentStage + 1}_인증샷.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
+                // 아이패드 메모리 초과/새로고침 방지를 위해 Blob 객체 사용
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = `요원훈련_Stage${currentStage + 1}_인증샷.png`;
+                    link.href = url;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(url), 1000);
+                }, 'image/png');
             }).catch(err => {
                 console.error("캡쳐 실패:", err);
                 alert("화면 캡쳐 중 오류가 발생했습니다.");
@@ -613,7 +643,7 @@
         }
 
         // ==========================================
-        // Stage 1 (기존) 퀴즈 및 그래프 기능
+        // Stage 1 퀴즈 및 그래프 기능
         // ==========================================
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;

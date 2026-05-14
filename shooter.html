@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V36 극강 엔진 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V37 물량 테스트 & 냥냥펀치 버프)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -117,10 +117,11 @@
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
         <div style="display:flex; gap:10px; margin-bottom: 15px; align-items: center; background:#2f3542; padding:10px; border-radius:8px; justify-content: space-between;">
-            <label style="font-weight:bold;">보스 샌드백 (LV)</label>
+            <label style="font-weight:bold;">테스트 소환</label>
             <div style="display:flex; gap:5px;">
-                <input type="number" id="dev-boss-lvl" value="1" min="1" max="20" class="dev-input" style="color:white;">
-                <button class="dev-btn-small" onclick="spawnDevBoss()" style="width:auto; padding:0 10px; background:#8e44ad;">소환</button>
+                <input type="number" id="dev-boss-lvl" value="1" min="1" max="20" class="dev-input" style="color:white; width:45px;">
+                <button class="dev-btn-small" onclick="spawnDevBoss()" style="width:auto; padding:0 8px; background:#8e44ad;">보스</button>
+                <button class="dev-btn-small" onclick="spawnSwarmTest()" style="width:auto; padding:0 8px; background:#e67e22;">물량</button>
             </div>
         </div>
 
@@ -158,7 +159,6 @@
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
         let swords = []; let blackholes = []; 
 
-        // 🌈 시각적 진화 컬러맵 (수호 표창 추가됨)
         const colorLevels = {
             atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], 
             homing: ['#00ffff', '#00d2d3', '#48dbfb', '#0abde3', '#54a0ff', '#2e86de'], 
@@ -169,10 +169,10 @@
             laser: ['#ffffff', '#ffeaa7', '#fab1a0', '#ff7675', '#fd79a8', '#e84393'],
             punch: ['#ff9ff3', '#f368e0', '#ff6b6b', '#ee5253', '#0abde3', '#2e86de'],
             meteor: ['#e17055', '#d63031', '#c0392b', '#b33939', '#ff3f34', '#ff9f43'],
-            shuriken: ['#f1c40f', '#e67e22', '#e74c3c', '#fd79a8', '#9c88ff', '#00cec9'] // 🌟 수호표창 색상 추가
+            shuriken: ['#f1c40f', '#e67e22', '#e74c3c', '#fd79a8', '#9c88ff', '#00cec9'] 
         };
 
-        // ⚡ 사전 렌더링(Pre-render) 캐싱 엔진: 극한의 렌더링 최적화
+        // ⚡ 사전 렌더링(Pre-render) 캐싱 엔진: 극강의 렌더링 최적화
         const spriteCache = {};
         function getSprite(type, color, param) {
             let key = type + '_' + color + '_' + param;
@@ -180,11 +180,15 @@
                 let c = document.createElement('canvas');
                 let cx = c.getContext('2d');
                 if (type === 'enemy') {
-                    c.width = 40; c.height = 40;
+                    // 👻 최적화 + 귀여움을 위한 단순화 몬스터 렌더링 (슬라임 형태)
+                    let size = param || 30; c.width = size; c.height = size;
+                    let half = size / 2; cx.translate(half, half);
                     cx.fillStyle = color;
-                    cx.beginPath(); cx.roundRect(5, 5, 30, 30, 6); cx.fill();
-                    cx.fillStyle = 'rgba(255,255,255,0.2)'; 
-                    cx.beginPath(); cx.roundRect(5, 5, 30, 6, [6, 6, 0, 0]); cx.fill();
+                    cx.beginPath(); cx.arc(0, 0, half - 2, 0, Math.PI*2); cx.fill();
+                    // 귀여운 까만 눈 두개
+                    cx.fillStyle = 'rgba(0,0,0,0.6)';
+                    cx.beginPath(); cx.arc(-4, -2, 3, 0, Math.PI*2); cx.fill();
+                    cx.beginPath(); cx.arc(4, -2, 3, 0, Math.PI*2); cx.fill();
                 } else if (type === 'paw') {
                     let w = param; c.width = w*2; c.height = w*2; cx.translate(w, w);
                     cx.fillStyle='#fff'; cx.beginPath(); cx.ellipse(0,0,w*0.4,w*0.35,0,0,Math.PI*2); cx.fill(); 
@@ -195,7 +199,7 @@
                     cx.beginPath(); cx.arc(14,-10,w*0.08,0,Math.PI*2); cx.fill(); 
                 } else if (type === 'sword') {
                     c.width = 40; c.height = 80; cx.translate(20, 40);
-                    ctx.shadowColor = color; ctx.shadowBlur = 10;
+                    cx.shadowColor = color; cx.shadowBlur = 10;
                     cx.fillStyle = color; cx.globalAlpha = 0.4; cx.beginPath(); cx.moveTo(0, -35); cx.lineTo(10, 15); cx.lineTo(-10, 15); cx.closePath(); cx.fill();
                     cx.globalAlpha = 1; cx.fillStyle = '#fff'; cx.beginPath(); cx.moveTo(0, -25); cx.lineTo(4, 10); cx.lineTo(-4, 10); cx.closePath(); cx.fill();
                     cx.fillStyle = color; cx.fillRect(-8, 10, 16, 3); cx.fillRect(-2, 13, 4, 8);
@@ -313,6 +317,17 @@
             let bh = 150 * Math.pow(p.cheat_boss_hp, lvl - 1);
             enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true });
             globalShakeTimer = 40; playSound('kill');
+            closeDevMode();
+        }
+
+        // 🌊 개발자 기능: 물량 테스트 (한번에 250마리 스폰)
+        function spawnSwarmTest() {
+            if(gameState !== 'PLAYING') return;
+            for(let k=0; k<250; k++) {
+                let spd = 1.5 + Math.random()*2.0;
+                enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: p.base_dmg * 5, speed: spd, isBoss: false, color: '#e67e22' });
+            }
+            playSound('levelup');
             closeDevMode();
         }
 
@@ -436,8 +451,9 @@
             } else if (p.activeSkillType === 'laser') {
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
+                // 🐾 냥냥펀치 설명에 폭발 버프 반영
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
-                add('lvl_punch_split', 5, '💥 냥냥펀치 연쇄폭발', '주먹이 적에 닿자마자 즉시 분열하며 연쇄 폭발을 일으킵니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
+                add('lvl_punch_split', 5, '💥 냥냥펀치 연쇄폭발', '주먹이 적에 닿자마자 대형 연쇄 폭발을 일으키며 쪼개집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
 
             if (p.activeSkillType !== 'boomerang') {
@@ -560,10 +576,13 @@
                 let sd = 25 * p.skill_mult;
                 let count = (1 + p.lvl_punch_count) + p.cheat_extra_proj;
                 for(let i=0; i<count; i++) {
+                    // 🐾 각도 계산 픽스 (1개일 때 정면으로 나가도록 수정)
+                    let angleCalc = count > 1 ? (i - (count-1)/2) * 0.4 : 0;
                     activeSkills.push({ 
-                        type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 70, 
-                        vx: Math.cos(-Math.PI/2+(i-count/2)*0.4)*18 + p.vx*0.3, 
-                        vy: Math.sin(-Math.PI/2+(i-count/2)*0.4)*18, 
+                        // 🐾 크기 70 -> 90 버프 적용!
+                        type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 90, 
+                        vx: Math.cos(-Math.PI/2 + angleCalc)*18 + p.vx*0.3, 
+                        vy: Math.sin(-Math.PI/2 + angleCalc)*18, 
                         state: 'flying', hitTimer: 0, pierceTimer: 2, dmg: sd 
                     }); 
                 }
@@ -613,7 +632,6 @@
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else {
-                    // 🛡️ 몹 스폰 렌더링 캡 최적화 (300마리 제한)
                     if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 300) {
                         let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(2, Math.floor(12 * Math.pow(0.85, bossKills)));
                         if (frameCount % swarmSpawnRate === 0) {
@@ -723,8 +741,7 @@
                     enemies.forEach(e => { 
                         if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { 
                             if (frameCount % 6 === 0) { e.hp -= sk.dmg; hitAny = true; if(e.isBoss && !e.isDevTest) e.iframe = 2; }
-                            // 🪃 부메랑 호버링 시간 단축 (빠르게 분열)
-                            if(sk.state==='flying'){ sk.state='hovering'; sk.hoverTimer=15; } 
+                            if(sk.state==='flying'){ sk.state='hovering'; sk.hoverTimer=50; }
                         } 
                     });
                     if (hitAny && frameCount % 6 === 0) playSound('hit');
@@ -762,7 +779,6 @@
                         if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100 || sk.y>canvas.height+100) sk.state='done'; 
                         if(sk.state === 'flying') { 
                             ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); 
-                            // ⚡ 사전 렌더링 캐시 사용
                             ctx.drawImage(getSprite('paw', c_punch, sk.w * 0.8), -sk.w*0.8, -sk.w*0.8);
                             ctx.restore(); 
                         }
@@ -770,7 +786,10 @@
                     else if (sk.state==='punching') { 
                         sk.hitTimer--; 
                         if(sk.hitTimer%10===0){
-                            playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
+                            playSound('hit'); 
+                            // 🐾 냥냥펀치 광역 반경 대폭 버프 (1.5배 -> 1.8배)
+                            let aoe = sk.w * 1.8; 
+                            particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
                             let aoeSq = aoe * aoe;
                             enemies.forEach(e=>{ if((e.x-sk.x)*(e.x-sk.x) + (e.y-sk.y)*(e.y-sk.y) < aoeSq){ e.hp -= sk.dmg*0.4; if(e.isBoss && !e.isDevTest) e.iframe=4; } });
                         }
@@ -849,7 +868,6 @@
 
                 if (!s.hit) {
                     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); 
-                    // ⚡ 사전 렌더링 캐시 사용
                     ctx.drawImage(getSprite('sword', c_sword, 0), -20, -40);
                     ctx.restore();
                 } else { swords.splice(i, 1); }
@@ -920,7 +938,7 @@
             let c_shuri = colorLevels.shuriken[Math.min(5, p.lvl_shuriken||0)];
             if(p.lvl_shuriken_active) {
                 if(frameCount % 60 === 0 && shurikens.filter(s=>s.state==='orbit').length < p.shurikenLimit) {
-                    shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: [] });
+                    shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: [] }); // 무한관통 Array
                 }
                 let orb = shurikens.filter(s=>s.state==='orbit');
                 if(orb.length > 0 && orb.length >= p.shurikenLimit) orb.forEach(s => {
@@ -938,7 +956,6 @@
                     s.x += s.vx; s.y += s.vy; s.spin += 0.6;
                     let shuDmg = 5 * p.skill_mult * (1 + p.lvl_shuriken * 0.2);
                     
-                    // 🚀 수호 표창 무한 관통(멈춤 방지) 로직 적용
                     enemies.forEach(e => {
                         if(Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
                             if(!s.hitLog.includes(e)) {
@@ -983,7 +1000,7 @@
 
                     bullets.push({ 
                         x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed // 배열 메모리 최적화
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed
                     });
                 }
             }
@@ -1009,7 +1026,6 @@
                 let removed = false;
                 for(let j=0; j<enemies.length; j++){
                     let e = enemies[j];
-                    // 🚀 Array.includes 로 Collision 검색 최적화
                     if(!b.hitLog.includes(e) && Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         
                         if (b.isBhSeed) {
@@ -1107,6 +1123,7 @@
                 if (l.life <= 0) lightnings.splice(i, 1);
             }
 
+            let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];
             if (p.lvl_storm > 0) {
                 let sk_r = 60 + p.lvl_storm * 20; 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
@@ -1167,11 +1184,13 @@
                             ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${e.maxHp}`, e.x, e.y + e.h/2 + 35);
                         }
                     } else {
-                        // ⚡ 사전 렌더링 캐시를 활용한 극강의 잡몹 렌더링 (CPU 부담 80% 감소)
-                        let spr = getSprite('enemy', e.color || '#ff4757', 30);
-                        ctx.drawImage(spr, e.x - 20, e.y - 20);
-                        ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
-                        ctx.fillText(Math.ceil(e.hp), e.x, e.y);
+                        // 👻 최적화 + 귀여움을 동시에 잡은 새로운 몬스터 렌더링 적용 (캐싱)
+                        let spr = getSprite('enemy', e.color || '#ff4757', e.w);
+                        ctx.drawImage(spr, e.x - e.w/2, e.y - e.h/2);
+                        
+                        // 체력 숫자는 조금 작게 표시
+                        ctx.fillStyle = "white"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
+                        ctx.fillText(Math.ceil(e.hp), e.x, e.y + 4);
                     }
                 }
 
@@ -1211,11 +1230,9 @@
 
             for (let i = particles.length - 1; i >= 0; i--) {
                 let pt = particles[i]; pt.life--; pt.x += pt.vx; pt.y += pt.vy; let lifeRatio = Math.max(0, pt.life / (pt.maxLife || 25)); ctx.globalAlpha = lifeRatio;
-                if (pt.isAoE) { 
-                    ctx.strokeStyle = pt.color; ctx.lineWidth = 3; ctx.beginPath(); let r = Math.max(0.1, pt.size * (1 - lifeRatio)); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.stroke(); 
-                } 
+                if (pt.isAoE) { ctx.strokeStyle = pt.color; ctx.lineWidth = 3; ctx.beginPath(); let r = Math.max(0.1, pt.size * (1 - lifeRatio)); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.stroke(); } 
                 else { 
-                    // 🚀 파티클 렌더링을 매우 가벼운 사각형(fillRect)으로 교체하여 최적화
+                    // 🚀 가벼운 사각형 렌더링으로 GC 최적화
                     ctx.fillStyle = pt.color; 
                     let r = Math.max(0.1, pt.size * lifeRatio); 
                     ctx.fillRect(pt.x - r, pt.y - r, r*2, r*2); 

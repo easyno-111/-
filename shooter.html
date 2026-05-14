@@ -544,8 +544,8 @@
                 cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
                 // ⚖️ 합리적인 스케일링 배율 적용 (폭발 방지)
-                diffMult: diff === 'hard' ? 2.0 : (diff === 'normal' ? 1.5 : 1),
-                diffExpAdd: diff === 'hard' ? 0.08 : (diff === 'normal' ? 0.04 : 0),
+                diffMult: diff === 'hard' ? 1.5 : (diff === 'normal' ? 1.2 : 1),
+                diffExpAdd: diff === 'hard' ? 0.04 : (diff === 'normal' ? 0.015 : 0),
 
                 base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 

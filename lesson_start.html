@@ -384,7 +384,7 @@
         function launchRocket() {
             if (rocket.active) return;
             rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
-            rocket.vy = -(12 + Math.random() * 3); rocket.vx = (Math.random() - 0.5) * 5;
+            rocket.vy = -(12 + Math.random() * 5); rocket.vx = (Math.random() - 0.5) * 5;
             
             // 🚀 NEW: 발사 즉시 전체 포물선 궤도(내려가는 곳까지)를 물리 시뮬레이션으로 미리 계산
             rocket.fullTrajectory = [];

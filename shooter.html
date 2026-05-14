@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V49 마스터피스 최종)</title>
+    <title>로그라이트 화력 슈팅 (V49 마스터피스 복구본)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
         #game-container { position: relative; width: 100%; max-width: 480px; height: 100vh; background: #0b0b1a; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.8); border-left: 2px solid #2f3640; border-right: 2px solid #2f3640; z-index: 1; }
         canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; pointer-events: none; z-index: 10; }
         .bar-bg { width: 100%; height: 20px; background: rgba(0,0,0,0.5); border-radius: 10px; margin-bottom: 8px; border: 2px solid #2f3640; overflow: hidden; position: relative; }
         #hp-bar { height: 100%; background: #ff4757; width: 100%; transition: width 0.2s; }
@@ -16,33 +17,50 @@
         .bar-text { position: absolute; top: 0; left: 0; width: 100%; text-align: center; font-size: 14px; font-weight: bold; color: white; line-height: 16px; text-shadow: 1px 1px 2px black; }
         .top-stats { display: flex; flex-direction: column; gap: 5px; color: white; font-weight: bold; font-size: 16px; text-shadow: 1px 1px 2px black; margin-top: 5px; pointer-events: auto; max-width: 70%; }
         #boss-timer-display { display: none; color: #ff4757; font-size: 22px; font-weight: 900; text-align: center; margin-top: 25px; text-shadow: 0 0 15px #ff4757; animation: pulse 0.5s infinite alternate; }
+        
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+
+        /* 💡 투명 시너지 사전 UI 버튼 */
         #synergy-btn { position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.5); color: #a29bfe; padding: 10px 15px; border-radius: 8px; border: 1px solid #a29bfe; font-weight: bold; font-size: 14px; cursor: pointer; pointer-events: auto; z-index: 999; box-shadow: 0 0 10px rgba(162, 155, 254, 0.3); transition: 0.2s; }
         #synergy-btn:hover { background: rgba(162, 155, 254, 0.2); }
+
         #sound-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.8); border: 2px solid #57606f; border-radius: 50%; width: 50px; height: 50px; font-size: 22px; cursor: pointer; color: white; pointer-events: auto; display: flex; justify-content: center; align-items: center; z-index: 999; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
         #skill-btn { position: fixed; bottom: 20px; right: 20px; width: 85px; height: 85px; border-radius: 50%; background: rgba(0, 210, 211, 0.85); color: white; font-size: 18px; font-weight: bold; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 0 20px rgba(0, 210, 211, 0.6); pointer-events: auto; border: 4px solid #fff; z-index: 999; cursor: pointer; transition: 0.1s; }
         #skill-btn.cooldown { background: rgba(100, 100, 100, 0.7); border-color: #888; color: #ccc; pointer-events: none; }
-        @media (min-width: 700px) { #sound-btn { top: 40px; right: calc(50% - 240px - 80px); } #synergy-btn { top: 40px; left: calc(50% - 240px - 140px); } #skill-btn { bottom: 60px; right: calc(50% - 240px - 110px); width: 100px; height: 100px; } }
+
+        @media (min-width: 700px) {
+            #sound-btn { top: 40px; right: calc(50% - 240px - 80px); }
+            #synergy-btn { top: 40px; left: calc(50% - 240px - 140px); }
+            #skill-btn { bottom: 60px; right: calc(50% - 240px - 110px); width: 100px; height: 100px; }
+        }
+
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 20, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
         .title-text { font-size: 40px; font-weight: 900; color: #00a8ff; text-shadow: 0 0 20px rgba(0, 168, 255, 0.5); margin-bottom: 20px; text-align: center; }
         .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; pointer-events: auto; transition: 0.2s; }
         .start-btn:hover { background: #0082c8; transform: scale(1.05); }
+
         #levelup-screen { display: none; pointer-events: auto; }
         .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; color: white; transition: 0.2s; }
         .ability-card.rare { border-color: #00a8ff; background: #0b1a2b; box-shadow: 0 0 10px rgba(0, 168, 255, 0.3); }
         .ability-card.legendary { border-color: #00ffff; background: #002233; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+        /* 🌋 1% 신화 등급 카드 스타일 */
         .ability-card.mythic { border-color: #ff4757; background: #3b0a0a; box-shadow: 0 0 25px rgba(255, 71, 87, 0.6); animation: mythic-pulse 1s infinite alternate; }
         @keyframes mythic-pulse { from { box-shadow: 0 0 15px rgba(255, 71, 87, 0.4); } to { box-shadow: 0 0 35px rgba(255, 71, 87, 0.9); } }
         .ability-card:hover { transform: scale(1.03); filter: brightness(1.2); }
+        
         .ab-name { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
         .ab-desc { font-size: 13px; color: #dfe6e9; line-height: 1.4; word-break: keep-all; opacity: 0.9;}
+
         .type-basic { color: #74b9ff; } .type-skill { color: #55efc4; } .type-util { color: #ffeaa7; }  
+
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
+
         @keyframes shake-small { 0%, 100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(-8px) rotate(-8deg); } 75% { transform: translateX(8px) rotate(8deg); } }
         @keyframes shake-crazy { 0%, 100% { transform: translate(0, 0) rotate(0); } 10% { transform: translate(-12px, -8px) rotate(-15deg) scale(1.1); } 30% { transform: translate(12px, 8px) rotate(15deg) scale(1.15); } 50% { transform: translate(-12px, 8px) rotate(-15deg) scale(1.1); } 70% { transform: translate(12px, -8px) rotate(15deg) scale(1.2); } 90% { transform: translate(0px, 0px) rotate(0deg) scale(1.25); filter: brightness(1.5); } }
+
         #dev-panel, #synergy-dict-panel { display: none; position: fixed; top: 5%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(10, 15, 25, 0.95); border: 2px solid #00a8ff; border-radius: 15px; padding: 20px; color: white; z-index: 1000; max-height: 90vh; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 30px rgba(0, 168, 255, 0.4); }
         #synergy-dict-panel { border-color: #a29bfe; box-shadow: 0 0 30px rgba(162, 155, 254, 0.4); }
         .dev-skill-row { display: flex; justify-content: space-between; align-items: center; background: #2f3542; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
@@ -51,6 +69,7 @@
         .dev-btn { background: #57606f; color: white; border: none; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
         .dev-input { width: 60px; text-align: center; border-radius: 5px; border: 1px solid #00a8ff; outline: none; background: #111; color: white; font-weight: bold; padding: 4px; }
+        
         .syn-box { background: rgba(45, 52, 54, 0.8); border-left: 4px solid #a29bfe; padding: 12px; margin-bottom: 12px; border-radius: 4px; }
         .syn-title { font-weight: 900; color: #a29bfe; font-size: 16px; margin-bottom: 4px; }
         .syn-req { font-size: 12px; color: #f1c40f; margin-bottom: 4px; }
@@ -61,8 +80,10 @@
     <div id="flash-overlay"></div>
     <div id="synergy-btn" onclick="document.getElementById('synergy-dict-panel').style.display='block'">💡 시너지 사전</div>
     <button id="sound-btn" onclick="toggleSound()">🔊</button>
+    
     <div id="skill-btn" onmousedown="fireSkill(event)" ontouchstart="fireSkill(event)">
-        <div id="skill-name">스킬(A)</div><div id="skill-cool" style="font-size:32px; font-weight:900;"></div>
+        <div id="skill-name">스킬(A)</div>
+        <div id="skill-cool" style="font-size:32px; font-weight:900;"></div>
     </div>
 
     <!-- 📖 시너지 사전 모달 -->
@@ -71,10 +92,10 @@
         <p style="text-align:center; font-size:12px; color:#aaa; margin-bottom:15px;">조건 스킬을 모두 MAX 달성 시 자동 개화</p>
         <div class="syn-box"><div class="syn-title">✨ 무한의 초신성</div><div class="syn-req">조건: 탄환 확산 MAX + 유도 분열탄 MAX</div><div class="syn-desc">평타가 초신성으로 변이하여, 타격한 보스를 끝까지 재추적하여 꽂히는 극딜 유도탄으로 분열합니다.</div></div>
         <div class="syn-box"><div class="syn-title">💥 절멸의 광선</div><div class="syn-req">조건: 액티브(레이저) + 레이저 갈래 MAX + 평타 관통 MAX</div><div class="syn-desc">부채꼴 레이저가 10배 데미지의 단일 데스빔으로 융합되어 보스를 자동 추적합니다.</div></div>
-        <div class="syn-box"><div class="syn-title">🪐 행성 붕괴</div><div class="syn-req">조건: 액티브(냥냥펀치) + 냥냥펀치 메가스탬프 MAX + 유성 폭격 MAX</div><div class="syn-desc">메가 스탬프 타격 지점에 4배 파괴력의 거대 운석 3발이 확정적으로 꽂힙니다.</div></div>
+        <div class="syn-box"><div class="syn-title">🪐 행성 붕괴</div><div class="syn-req">조건: 액티브(냥냥펀치) + 메가스탬프 MAX + 유성 폭격 MAX</div><div class="syn-desc">메가 스탬프 타격 지점에 4배 파괴력의 거대 운석 3발이 확정적으로 연속 폭격됩니다.</div></div>
         <div class="syn-box"><div class="syn-title">🌀 톱날 분쇄기</div><div class="syn-req">조건: 액티브(부메랑) + 부메랑 분열 MAX + 칼날 돌풍 MAX</div><div class="syn-desc">서브 부메랑들이 보스에게 꽂힌 채 1.5초간 제자리에서 초고속 드릴링 회전을 일으킵니다.</div></div>
-        <div class="syn-box"><div class="syn-title">🌌 사상의 지평선</div><div class="syn-req">조건: 수호 표창 MAX + 블랙홀 탄환 MAX</div><div class="syn-desc">수호 표창이 보스를 타격할 때마다 보스 몸에 강력한 도트딜을 넣는 미니 블랙홀을 심어버립니다.</div></div>
-        <div class="syn-box"><div class="syn-title">🗡️ 진·천극검 (Excalibur)</div><div class="syn-req">조건: 환영검 진형 MAX + 스킬 파괴력 MAX</div><div class="syn-desc">환영검 대신, 화면을 가르는 거대한 단일 대검이 떨어져 30배의 데미지를 꽂습니다.</div></div>
+        <div class="syn-box"><div class="syn-title">🌌 사상의 지평선</div><div class="syn-req">조건: 수호 표창 MAX + 블랙홀 탄환 MAX</div><div class="syn-desc">수호 표창이 보스를 타격할 때마다 보스 몸에 강력한 도트딜을 넣는 미니 블랙홀을 부착시킵니다.</div></div>
+        <div class="syn-box"><div class="syn-title">🗡️ 진·천극검 (Excalibur)</div><div class="syn-req">조건: 환영검 진형 MAX + 스킬 파괴력 MAX</div><div class="syn-desc">환영검 대신, 조준선과 함께 화면을 가르는 거대한 단일 대검이 떨어져 30배의 데미지를 꽂습니다.</div></div>
         <button class="dev-btn" style="background:#a29bfe; color:#111;" onclick="document.getElementById('synergy-dict-panel').style.display='none'">닫기</button>
     </div>
 
@@ -94,17 +115,26 @@
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px;">
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
                 <select id="start-difficulty" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #ff7675; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
-                    <option value="easy">🟢 Easy (오리지널)</option><option value="normal">🟡 Normal (스케일링 증가)</option><option value="hard">🔴 Hard (지옥의 밸런스)</option>
+                    <option value="easy">🟢 Easy (오리지널)</option>
+                    <option value="normal">🟡 Normal (스케일링 증가)</option>
+                    <option value="hard">🔴 Hard (지옥의 밸런스)</option>
                 </select>
                 <label style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🎯 기본 액티브 스킬</label>
                 <select id="start-active" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #f1c40f; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
-                    <option value="boomerang">🪃 부메랑</option><option value="laser">🔱 레이저</option><option value="punch">🐾 냥냥펀치</option>
+                    <option value="boomerang">🪃 부메랑</option>
+                    <option value="laser">🔱 레이저</option>
+                    <option value="punch">🐾 냥냥펀치</option>
                 </select>
                 <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 (1Lv 지급)</label>
                 <select id="start-passive" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #00ffff; border-radius: 5px; font-weight: bold; outline: none;">
-                    <option value="lvl_atk">⚔️ 공격력 UP</option><option value="lvl_firespeed">🔫 연사 속도 UP</option><option value="lvl_pierce">🏹 평타 관통</option>
-                    <option value="lvl_bullet">💥 탄환 확산</option><option value="lvl_skill_dmg">🪄 스킬 파괴력 UP</option><option value="lvl_skill_cd">⏳ 스킬 쿨타임 감소</option>
-                    <option value="lvl_regen">💖 자연 회복</option><option value="lvl_vampire">🧛 흡혈</option>
+                    <option value="lvl_atk">⚔️ 공격력 UP</option>
+                    <option value="lvl_firespeed">🔫 연사 속도 UP</option>
+                    <option value="lvl_pierce">🏹 평타 관통</option>
+                    <option value="lvl_bullet">💥 탄환 확산</option>
+                    <option value="lvl_skill_dmg">🪄 스킬 파괴력 UP</option>
+                    <option value="lvl_skill_cd">⏳ 스킬 쿨타임 감소</option>
+                    <option value="lvl_regen">💖 자연 회복</option>
+                    <option value="lvl_vampire">🧛 흡혈</option>
                 </select>
             </div>
             <div class="skin-btn-group" style="display:flex; gap:10px; margin-bottom:20px;">
@@ -233,6 +263,7 @@
 
         function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); if (audioCtx.state === 'suspended') audioCtx.resume(); startBGM(); }
         function toggleSound() { isSoundOn = !isSoundOn; document.getElementById('sound-btn').innerText = isSoundOn ? '🔊' : '🔇'; if(!isSoundOn && bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; } else if(isSoundOn) startBGM(); }
+        
         function startBGM() {
             if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; } bgmStep = 0;
             bgmInterval = setInterval(() => {
@@ -245,17 +276,19 @@
             }, 200);
         }
         
+        // 🔇 극한의 사운드 스로틀링 개편 (볼륨 감소 & 중복 방지 강화)
         function playSound(type) {
             if(!isSoundOn || !audioCtx) return; const t = audioCtx.currentTime; 
             if(type === 'hit' || type === 'pop' || type === 'zap') { if(t - (lastSoundTime[type] || 0) < 0.1) return; } 
             else if (type === 'shoot' && t - (lastSoundTime.shoot || 0) < 0.05) return;
             lastSoundTime[type] = t;
+
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination);
             if(type === 'shoot') { osc.type = 'square'; osc.frequency.setValueAtTime(600, t); gain.gain.setValueAtTime(0.003, t); osc.start(t); osc.stop(t+0.1); }
-            else if(type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, t); gain.gain.setValueAtTime(0.003, t); osc.start(t); osc.stop(t+0.05); }
+            else if(type === 'hit') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, t); gain.gain.setValueAtTime(0.005, t); osc.start(t); osc.stop(t+0.05); }
             else if(type === 'kill') { osc.type = 'sine'; osc.frequency.setValueAtTime(150, t); osc.frequency.exponentialRampToValueAtTime(50, t+0.15); gain.gain.setValueAtTime(0.005, t); osc.start(t); osc.stop(t+0.15); }
             else if(type === 'levelup') { osc.type = 'sine'; osc.frequency.setValueAtTime(500, t); gain.gain.setValueAtTime(0.05, t); osc.start(t); osc.stop(t+0.4); }
-            else if(type === 'zap') { osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t); gain.gain.setValueAtTime(0.003, t); osc.start(t); osc.stop(t+0.1); }
+            else if(type === 'zap') { osc.type = 'triangle'; osc.frequency.setValueAtTime(800, t); gain.gain.setValueAtTime(0.008, t); osc.start(t); osc.stop(t+0.1); }
             else if(type === 'boss_shoot') { osc.type = 'square'; osc.frequency.setValueAtTime(150, t); gain.gain.setValueAtTime(0.01, t); osc.start(t); osc.stop(t+0.15); }
             else if(type === 'heal') { osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.linearRampToValueAtTime(1000, t+0.2); gain.gain.setValueAtTime(0.02, t); osc.start(t); osc.stop(t+0.2); }
             else if(type === 'bh_spawn') { osc.type = 'sine'; osc.frequency.setValueAtTime(100, t); osc.frequency.exponentialRampToValueAtTime(10, t+1.0); gain.gain.setValueAtTime(0.05, t); osc.start(t); osc.stop(t+1.0); }
@@ -321,7 +354,7 @@
                 if (isDev || Math.random() < chance) { pool.push({ id: id, name: `<span class="${typeClass}">[${cur+1} / ${maxLvl}] ${title}</span>`, desc: desc, apply: applyFn, isRare: isRare, isLegendary: isLegendary }); }
             };
 
-            // 🌋 1% 신화 극악 확률 스킬
+            // 🌋 1% 신화 극악 확률 스킬 추가
             if (Math.random() < 0.01 || isDev || p.lvl_fire_boom > 0) {
                 let cur = p.lvl_fire_boom || 0;
                 if (cur < 5) pool.push({ id: 'lvl_fire_boom', name: `<span style="color:#ff4757; text-shadow: 0 0 5px red;">[신화] 지옥불 부메랑</span>`, desc: `거대한 불부메랑 ${cur+3}개를 쏩니다. 적 타격 시 느려지며 다단히트 화상(체력비례)을 줍니다.`, apply: () => { p.has_fire_boom = true; p.lvl_fire_boom = cur + 1; recalculateStats(); }, isMythic: true });
@@ -473,7 +506,8 @@
                     let count = 2 + p.lvl_fire_boom; let spread = 0.25; let targetX = Math.max(20, Math.min(canvas.width-20, window.mouseX_val));
                     let angleToMouse = Math.atan2(p.y - 300 - p.y, targetX - p.x); 
                     for (let j=0; j<count; j++) {
-                        activeSkills.push({ type: 'fire_boom', x: p.x, y: p.y, w: 90, vx: Math.cos(angleToMouse - spread*(count-1)/2 + j*spread)*14, vy: Math.sin(angleToMouse - spread*(count-1)/2 + j*spread)*14, life: 150, baseDmg: p.base_dmg * 5 * p.skill_mult, hitResetTimer: 15, hitLog: [] });
+                        let a = angleToMouse - spread*(count-1)/2 + j*spread;
+                        activeSkills.push({ type: 'fire_boom', x: p.x, y: p.y, w: 90, vx: Math.cos(a)*14, vy: Math.sin(a)*14, life: 150, baseDmg: p.base_dmg * 5 * p.skill_mult, hitResetTimer: 15, hitLog: [] });
                     }
                 }
             }
@@ -623,7 +657,6 @@
                     if (sk.state === 'done') activeSkills.splice(i, 1); 
 
                 } else if(sk.type==='fire_boom') {
-                    // 🌋 1% 신화 지옥불 부메랑 렌더링 및 메커니즘
                     sk.x += sk.vx; sk.y += sk.vy; sk.life--;
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount * 0.5); ctx.drawImage(getSprite('fire_boom', '', sk.w), -sk.w/2, -sk.w/2); ctx.restore();
                     

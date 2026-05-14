@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V32 시각적 진화 & 완벽 테스트)</title>
+    <title>로그라이트 화력 슈팅 (V33 실시간 수치 조작 & 밸런스 테스트)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -60,6 +60,7 @@
         .dev-btn-small:hover { background: #0082c8; }
         .dev-btn { background: #57606f; color: white; border: none; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
+        .dev-input { width: 60px; text-align: center; border-radius: 5px; border: 1px solid #00a8ff; outline: none; background: #111; color: white; font-weight: bold; padding: 4px; }
     </style>
 </head>
 <body>
@@ -116,15 +117,15 @@
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
         <div style="display:flex; gap:10px; margin-bottom: 15px; align-items: center; background:#2f3542; padding:10px; border-radius:8px; justify-content: space-between;">
-            <label style="font-weight:bold;">보스 소환 샌드백 (LV)</label>
+            <label style="font-weight:bold;">보스 샌드백 (LV)</label>
             <div style="display:flex; gap:5px;">
-                <input type="number" id="dev-boss-lvl" value="1" min="1" max="20" style="width: 50px; text-align:center; border-radius:5px; border:none; outline:none; font-weight:bold; color: black;">
+                <input type="number" id="dev-boss-lvl" value="1" min="1" max="20" class="dev-input" style="color:white;">
                 <button class="dev-btn-small" onclick="spawnDevBoss()" style="width:auto; padding:0 10px; background:#8e44ad;">소환</button>
             </div>
         </div>
 
         <div style="display:flex; gap:10px; margin-bottom: 15px;">
-            <button class="dev-btn" onclick="toggleSpawn()" style="margin:0; background:#eb4d4b;">소환 정지</button>
+            <button class="dev-btn" onclick="toggleSpawn()" style="margin:0; background:#eb4d4b;">소환/타이머 정지</button>
             <button class="dev-btn" onclick="clearAllEnemies()" style="margin:0; background:#f0932b;">몹 싹쓸이</button>
         </div>
         <div id="dev-skills-list"></div>
@@ -157,9 +158,8 @@
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
         let swords = []; let blackholes = []; 
 
-        // 🌈 시각적 진화를 위한 스킬별 고유 컬러 매핑 테이블
         const colorLevels = {
-            atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], // 0~10렙
+            atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], 
             homing: ['#00ffff', '#00d2d3', '#48dbfb', '#0abde3', '#54a0ff', '#2e86de'], 
             lightning: ['0,255,255', '129,236,236', '162,155,254', '108,92,231', '253,121,168', '232,67,147'],
             sword: ['#f39c12', '#e74c3c', '#8e44ad', '#2980b9', '#2ecc71', '#1abc9c'],
@@ -307,6 +307,28 @@
                 `;
                 cont.appendChild(row);
             });
+
+            // 🎛️ 실시간 수치 조작 패널 추가
+            cont.innerHTML += `
+                <hr style="border-color:#57606f; margin:15px 0;">
+                <h4 style="text-align:center; color:#f1c40f; margin-bottom:10px;">🎛️ 상세 수치 오버라이드</h4>
+                <div class="dev-skill-row">
+                    <label style="color:#74b9ff;">평타 데미지 배율 (x)</label>
+                    <input type="number" step="0.1" value="${p.cheat_dmg_mult}" onchange="p.cheat_dmg_mult = parseFloat(this.value); recalculateStats();" class="dev-input">
+                </div>
+                <div class="dev-skill-row">
+                    <label style="color:#55efc4;">스킬 데미지 배율 (x)</label>
+                    <input type="number" step="0.1" value="${p.cheat_skill_mult}" onchange="p.cheat_skill_mult = parseFloat(this.value); recalculateStats();" class="dev-input">
+                </div>
+                <div class="dev-skill-row">
+                    <label style="color:#fff;">보스 체력 스케일링 (배율)</label>
+                    <input type="number" step="0.05" value="${p.cheat_boss_hp}" onchange="p.cheat_boss_hp = parseFloat(this.value);" class="dev-input">
+                </div>
+                <div class="dev-skill-row">
+                    <label style="color:#ff9ff3;">강제 액티브 발사/갈래 추가</label>
+                    <input type="number" value="${p.cheat_extra_proj}" onchange="p.cheat_extra_proj = parseInt(this.value);" class="dev-input">
+                </div>
+            `;
         }
 
         function toggleDevSkill(id, checked) { p[id] = checked ? 1 : 0; recalculateStats(); renderDevSkills(); }
@@ -318,7 +340,10 @@
 
         function recalculateStats() {
             p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
+            p.base_dmg *= p.cheat_dmg_mult; // 🎛️ 치트 배율 적용
+            
             p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
+            p.skill_mult *= p.cheat_skill_mult; // 🎛️ 치트 배율 적용
 
             p.fireDelay = 15; for(let i=0; i<(p.lvl_firespeed||0); i++) p.fireDelay = Math.max(4, p.fireDelay - 2);
             p.skillCooldownMax = 600; for(let i=0; i<(p.lvl_skill_cd||0); i++) p.skillCooldownMax = Math.max(60, p.skillCooldownMax - 120);
@@ -351,7 +376,6 @@
                 }
             };
 
-            // 평타 관련 (파란색: type-basic)
             add('lvl_atk', 10, '⚔️ 공격력 UP', '기본 공격력 +2 및 위력 1.02배 상승 (평타 특화)', () => { p.lvl_atk++; recalculateStats(); }, 'type-basic', 0.8);
             add('lvl_firespeed', 5, '🔫 연사 속도 UP', '평타 발사 속도가 대폭 빨라집니다.', () => { p.lvl_firespeed++; recalculateStats(); }, 'type-basic', 0.8);
             add('lvl_pierce', 5, '🏹 평타 관통 UP', '기본 공격이 적을 관통합니다 (+1명)', () => { p.lvl_pierce++; recalculateStats(); }, 'type-basic', 0.8);
@@ -360,7 +384,6 @@
             let homingDesc = p.lvl_homing === 0 ? '평타 관통 시 유도 분열탄 33% 발동' : '유도탄 분열 개수 +1 및 위력 상향 (평타 계수)';
             add('lvl_homing', 5, '✨ 유도 분열탄', homingDesc, () => { p.lvl_homing++; recalculateStats(); }, 'type-basic', p.lvl_homing > 0 ? 0.6 : 0.2, true);
             
-            // 스킬 관련 (초록색: type-skill)
             add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 15% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
             add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
             let lightDesc = p.lvl_lightning === 0 ? '적중 시 튕기는 관통 번개 레이저 발사' : '번개 발동 확률 증가 및 튕기는 횟수 +1';
@@ -374,13 +397,11 @@
             let shuriDesc = p.lvl_shuriken === 0 ? '주위를 회전하며 적을 뚫는 수호 표창 생성' : '회전하는 수호 표창의 개수 최대치 증가';
             add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
 
-            // 유틸 관련 (노란색: type-util)
             add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
             add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
             let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
-            // 액티브
             if (p.activeSkillType === 'boomerang') {
                 add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
@@ -414,6 +435,8 @@
                 lvl_skill_dmg: 0, lvl_skill_cd: 0, lvl_vampire: 0, lvl_regen: 0,
                 lvl_lightning: 0, lvl_homing: 0, lvl_sword: 0, lvl_storm: 0, lvl_blackhole: 0, bh_chance: 0, lvl_orbital: 0, lvl_shuriken: 0,
                 activeSkillType: 'boomerang', lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
+                
+                cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
                 base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
@@ -497,15 +520,17 @@
             }
             else if(p.activeSkillType === 'laser') { 
                 let sd = 5 * p.skill_mult;
-                for(let i=0; i<(1+p.lvl_laser_split*2); i++) activeSkills.push({ type: 'laser', offsetX: (i-p.lvl_laser_split)*50, life: 180, w: 40, dmg: sd }); 
+                let splits = (1 + p.lvl_laser_split * 2) + p.cheat_extra_proj;
+                for(let i=0; i<splits; i++) activeSkills.push({ type: 'laser', offsetX: (i-Math.floor(splits/2))*50, life: 180, w: 40, dmg: sd }); 
             }
             else if(p.activeSkillType === 'punch') { 
                 let sd = 25 * p.skill_mult;
-                for(let i=0; i<(1+p.lvl_punch_count); i++) {
+                let count = (1 + p.lvl_punch_count) + p.cheat_extra_proj;
+                for(let i=0; i<count; i++) {
                     activeSkills.push({ 
                         type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 70, 
-                        vx: Math.cos(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18 + p.vx*0.3, 
-                        vy: Math.sin(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18, 
+                        vx: Math.cos(-Math.PI/2+(i-count/2)*0.4)*18 + p.vx*0.3, 
+                        vy: Math.sin(-Math.PI/2+(i-count/2)*0.4)*18, 
                         state: 'flying', hitTimer: 0, pierceTimer: 0, dmg: sd 
                     }); 
                 }
@@ -553,7 +578,6 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            // 🚫 타이머 수정: devStopSpawn 활성화 시 타이머 정지 (원래 보스 스폰 안됨)
             if (!isBossStage && !isBossWarning && !devStopSpawn) {
                 bossSpawnTimer--;
                 
@@ -609,7 +633,8 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    let bh = 150 * Math.pow(1.25, bossKills);
+                    // 🎛️ 보스 스폰 시 스케일링 배율 오버라이드 적용
+                    let bh = 150 * Math.pow(p.cheat_boss_hp, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
@@ -670,7 +695,7 @@
                     let hitAny = false;
                     enemies.forEach(e => { 
                         if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { 
-                            if (frameCount % 6 === 0) { e.hp -= sk.dmg; hitAny = true; if(e.isBoss) e.iframe = 2; }
+                            if (frameCount % 6 === 0) { e.hp -= sk.dmg; hitAny = true; if(e.isBoss && !e.isDevTest) e.iframe = 2; }
                             if(sk.state==='flying'){ sk.state='hovering'; sk.hoverTimer=50; }
                         } 
                     });
@@ -699,7 +724,7 @@
                         sk.hitTimer--; 
                         if(sk.hitTimer%10===0){
                             playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
-                            enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss) e.iframe=4; } });
+                            enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss && !e.isDevTest) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
                             if(sk.splitLevel < p.lvl_punch_split) { 
@@ -971,7 +996,7 @@
                             let t = Math.max(0, Math.min(1, (wx*vx + wy*vy) / len2)); 
                             let cx = l.x1 + t*vx; let cy = l.y1 + t*vy;
                             if (Math.hypot(en.x - cx, en.y - cy) < en.w/2 + 20) { 
-                                en.hp -= l.dmg; if(Math.random()<0.5) spawnParticles(en.x, en.y, '#00ffff', 1); // 번개 파티클은 청록 고정
+                                en.hp -= l.dmg; if(Math.random()<0.5) spawnParticles(en.x, en.y, `rgb(${c_light})`, 1);
                             }
                         });
                     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V31 보스 테스트 & 딜 구조 분리)</title>
+    <title>로그라이트 화력 슈팅 (V32 시각적 진화 & 완벽 테스트)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -44,10 +44,9 @@
         .ab-name { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
         .ab-desc { font-size: 13px; color: #dfe6e9; line-height: 1.4; word-break: keep-all; opacity: 0.9;}
 
-        /* 스킬 분류별 색상 */
-        .type-basic { color: #74b9ff; } /* 파란색: 평타 관련 */
-        .type-skill { color: #55efc4; } /* 초록색: 스킬 관련 */
-        .type-util { color: #ffeaa7; }  /* 노란색: 유틸 관련 */
+        .type-basic { color: #74b9ff; } 
+        .type-skill { color: #55efc4; } 
+        .type-util { color: #ffeaa7; }  
 
         .chest-box { font-size: 80px; cursor: pointer; transition: 0.2s; }
         .anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
@@ -60,7 +59,6 @@
         .dev-btn-small { background: #00a8ff; color: white; border: none; width: 28px; height: 28px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; }
         .dev-btn-small:hover { background: #0082c8; }
         .dev-btn { background: #57606f; color: white; border: none; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
-        
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
     </style>
 </head>
@@ -113,7 +111,7 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- 🛠️ 개발자 패널 (보스 샌드백 테스트 추가) -->
+    <!-- 🛠️ 개발자 패널 -->
     <div id="dev-panel">
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
@@ -158,6 +156,18 @@
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
         let swords = []; let blackholes = []; 
+
+        // 🌈 시각적 진화를 위한 스킬별 고유 컬러 매핑 테이블
+        const colorLevels = {
+            atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], // 0~10렙
+            homing: ['#00ffff', '#00d2d3', '#48dbfb', '#0abde3', '#54a0ff', '#2e86de'], 
+            lightning: ['0,255,255', '129,236,236', '162,155,254', '108,92,231', '253,121,168', '232,67,147'],
+            sword: ['#f39c12', '#e74c3c', '#8e44ad', '#2980b9', '#2ecc71', '#1abc9c'],
+            storm: ['#00a8ff', '#0097e6', '#9c88ff', '#8c7ae6', '#fbc531', '#e1b12c'],
+            boomerang: ['#00d2d3', '#00b894', '#00cec9', '#0984e3', '#6c5ce7', '#fd79a8'],
+            laser: ['#ffffff', '#ffeaa7', '#fab1a0', '#ff7675', '#fd79a8', '#e84393'],
+            punch: ['#ff9ff3', '#f368e0', '#ff6b6b', '#ee5253', '#0abde3', '#2e86de']
+        };
 
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
         let customEnemyImg = new Image(); customEnemyImg.src = "enemy.png"; customEnemyImg.onerror = () => { customEnemyImg = null; };
@@ -257,7 +267,6 @@
         function toggleSpawn() { devStopSpawn = !devStopSpawn; }
         function clearAllEnemies() { enemies = []; }
         
-        // 🧪 보스 샌드백 소환 (공격 안함, 중앙에 고정, 체력 표시)
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
@@ -307,15 +316,9 @@
             recalculateStats(); renderDevSkills(); 
         }
 
-        // ⚖️ 딜 구조 완전 분리 및 밸런스 재조정
         function recalculateStats() {
-            // 평타용 데미지 (배율 1.02배로 너프)
-            p.base_dmg = 1; 
-            for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
-            
-            // 스킬용 위력 곱연산 (레벨당 15% 상승)
-            p.skill_mult = 1; 
-            for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
+            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
+            p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
 
             p.fireDelay = 15; for(let i=0; i<(p.lvl_firespeed||0); i++) p.fireDelay = Math.max(4, p.fireDelay - 2);
             p.skillCooldownMax = 600; for(let i=0; i<(p.lvl_skill_cd||0); i++) p.skillCooldownMax = Math.max(60, p.skillCooldownMax - 120);
@@ -334,7 +337,6 @@
         container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
         container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; }, {passive: true});
 
-        // 📦 스킬 풀(Pool) 로직 개편 (만렙 제한, 텍스트 색상 분리)
         function getAvailableAbilities(isDev = false) {
             let pool = [];
             const add = (id, maxLvl, title, desc, applyFn, typeClass, chance = 1.0, isRare = false, isLegendary = false) => {
@@ -343,12 +345,8 @@
                 if (isDev || Math.random() < chance) {
                     let lvlText = `[${cur+1} / ${maxLvl}]`;
                     pool.push({
-                        id: id,
-                        name: `<span class="${typeClass}">${lvlText} ${title}</span>`,
-                        desc: desc,
-                        apply: applyFn,
-                        isRare: isRare,
-                        isLegendary: isLegendary
+                        id: id, name: `<span class="${typeClass}">${lvlText} ${title}</span>`, desc: desc,
+                        apply: applyFn, isRare: isRare, isLegendary: isLegendary
                     });
                 }
             };
@@ -382,7 +380,7 @@
             let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
-            // 액티브 (초록색)
+            // 액티브
             if (p.activeSkillType === 'boomerang') {
                 add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
@@ -417,7 +415,7 @@
                 lvl_lightning: 0, lvl_homing: 0, lvl_sword: 0, lvl_storm: 0, lvl_blackhole: 0, bh_chance: 0, lvl_orbital: 0, lvl_shuriken: 0,
                 activeSkillType: 'boomerang', lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
                 
-                base_dmg: 1, skill_mult: 1, // ⚖️ 독립 데미지 변수 초기화
+                base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
             };
             recalculateStats();
@@ -493,7 +491,6 @@
             if(p.skillTimer > 0 || gameState !== 'PLAYING') return;
             p.skillTimer = p.skillCooldownMax; playSound('skill');
             
-            // 액티브 스킬은 스킬 계수 적용
             if(p.activeSkillType === 'boomerang') {
                 let sd = 30 * p.skill_mult;
                 activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying', hoverTimer: 0, dmg: sd });
@@ -529,9 +526,10 @@
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
         }
         
-        function drawPaw(w) {
+        function drawPaw(w, color) {
             ctx.fillStyle='#fff'; ctx.beginPath(); ctx.ellipse(0,0,w*0.4,w*0.35,0,0,Math.PI*2); ctx.fill(); 
-            ctx.fillStyle='#ff9ff3'; ctx.beginPath(); ctx.arc(0,5,w*0.15,0,Math.PI*2); ctx.fill(); 
+            ctx.fillStyle= color || '#ff9ff3'; 
+            ctx.beginPath(); ctx.arc(0,5,w*0.15,0,Math.PI*2); ctx.fill(); 
             ctx.beginPath(); ctx.arc(-14,-10,w*0.08,0,Math.PI*2); ctx.fill(); 
             ctx.beginPath(); ctx.arc(0,-18,w*0.08,0,Math.PI*2); ctx.fill(); 
             ctx.beginPath(); ctx.arc(14,-10,w*0.08,0,Math.PI*2); ctx.fill(); 
@@ -555,7 +553,8 @@
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
             if(p.iframe > 0) { p.iframe--; }
 
-            if (!isBossStage && !isBossWarning) {
+            // 🚫 타이머 수정: devStopSpawn 활성화 시 타이머 정지 (원래 보스 스폰 안됨)
+            if (!isBossStage && !isBossWarning && !devStopSpawn) {
                 bossSpawnTimer--;
                 
                 if (bossSpawnTimer === 420) { isSwarm = true; swarmWarningTimer = 90; playSound('levelup'); }
@@ -564,7 +563,7 @@
                 if (bossSpawnTimer <= 0) { 
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
-                else if (!devStopSpawn) {
+                else {
                     if (isSwarm && swarmWarningTimer <= 0) {
                         let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(2, Math.floor(12 * Math.pow(0.85, bossKills)));
                         if (frameCount % swarmSpawnRate === 0) {
@@ -591,7 +590,7 @@
                 }
             }
 
-            if (swarmWarningTimer > 0) {
+            if (swarmWarningTimer > 0 && !devStopSpawn) {
                 swarmWarningTimer--;
                 ctx.fillStyle = `rgba(230, 126, 34, ${Math.abs(Math.sin(frameCount*0.2))})`; ctx.font = "900 30px Arial"; ctx.textAlign = "center";
                 ctx.fillText("적의 대규모 무리 접근 중!", canvas.width/2, canvas.height/4);
@@ -646,6 +645,10 @@
                 if (bh.life <= 0 || bh.y < -300) blackholes.splice(i, 1);
             }
 
+            let c_boom = colorLevels.boomerang[Math.min(5, p.lvl_boom_split||0)];
+            let c_laser = colorLevels.laser[Math.min(5, p.lvl_laser_split||0)];
+            let c_punch = colorLevels.punch[Math.min(5, p.lvl_punch_count||0)];
+
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -662,7 +665,7 @@
                             activeSkills.splice(i,1); continue; 
                         } 
                     }
-                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle='#00d2d3'; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
+                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle=c_boom; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
                     
                     let hitAny = false;
                     enemies.forEach(e => { 
@@ -673,7 +676,7 @@
                     });
                     if (hitAny && frameCount % 6 === 0) playSound('hit');
                 } else if(sk.type==='laser') {
-                    sk.life--; let lx = p.x + sk.offsetX; ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.fillRect(lx-20, 0, 40, p.y); ctx.globalAlpha=1;
+                    sk.life--; let lx = p.x + sk.offsetX; ctx.globalAlpha=0.7; ctx.fillStyle=c_laser; ctx.fillRect(lx-20, 0, 40, p.y); ctx.globalAlpha=1;
                     enemies.forEach(e => { if(Math.abs(e.x-lx)<40 && e.y<p.y) { e.hp-=sk.dmg; } });
                     if(sk.life<=0) activeSkills.splice(i, 1);
                 } else if(sk.type==='punch') {
@@ -690,12 +693,12 @@
                         }
                         
                         if(sk.y<-100 || sk.x<-100 || sk.x>canvas.width+100 || sk.y>canvas.height+100) sk.state='done'; 
-                        if(sk.state === 'flying') { ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); drawPaw(sk.w * 0.8); ctx.restore(); }
+                        if(sk.state === 'flying') { ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); drawPaw(sk.w * 0.8, c_punch); ctx.restore(); }
                     }
                     else if (sk.state==='punching') { 
                         sk.hitTimer--; 
                         if(sk.hitTimer%10===0){
-                            playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:'rgba(255,159,243,0.8)', isAoE:true});
+                            playSound('hit'); let aoe = sk.w * 1.5; particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
                             enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<aoe && Math.abs(e.y-sk.y)<aoe){ e.hp -= sk.dmg*0.4; if(e.isBoss) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
@@ -705,13 +708,14 @@
                             sk.state='done';
                         }
                         if (sk.state !== 'done') {
-                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); drawPaw(sk.w); ctx.restore(); 
+                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); drawPaw(sk.w, c_punch); ctx.restore(); 
                         }
                     }
                     if (sk.state === 'done') { activeSkills.splice(i, 1); }
                 }
             }
 
+            let c_sword = colorLevels.sword[Math.min(5, p.lvl_sword||0)];
             if (p.lvl_sword > 0) {
                 p.swordTimer--;
                 if (p.swordTimer <= 0) {
@@ -720,7 +724,7 @@
                         let target = enemies.reduce((max, e) => (e.hp > max.hp ? e : max), enemies[0]);
                         if (target) {
                             let swordCount = 3 + p.lvl_sword * 2; 
-                            let swordDmg = 150 * p.skill_mult; // 스킬 계수 적용
+                            let swordDmg = 150 * p.skill_mult; 
                             for (let k = 0; k < swordCount; k++) {
                                 swords.push({
                                     target: target, angle: (Math.PI * 2 / swordCount) * k, orbitRadius: 80, delay: 30 + k * 8, state: 'orbit', dmg: swordDmg,
@@ -756,8 +760,8 @@
                         let dx = s.target.x - s.x; let dy = s.target.y - s.y; let dist = Math.hypot(dx, dy); angleToTarget = Math.atan2(dy, dx);
                         s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
                         if (dist < s.target.w/2 + 20) {
-                            s.target.hp -= s.dmg; s.hit = true; playSound('hit'); spawnParticles(s.x, s.y, '#f39c12', 15, 2);
-                            if(s.target.isBoss) s.target.iframe = 2;
+                            s.target.hp -= s.dmg; s.hit = true; playSound('hit'); spawnParticles(s.x, s.y, c_sword, 15, 2);
+                            if(s.target.isBoss && !s.target.isDevTest) s.target.iframe = 2;
                         }
                     } else {
                         s.x += Math.cos(s.angle) * 30; s.y += Math.sin(s.angle) * 30;
@@ -767,9 +771,9 @@
 
                 if (!s.hit) {
                     ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); 
-                    ctx.fillStyle = 'rgba(243, 156, 18, 0.4)'; ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(10, 15); ctx.lineTo(-10, 15); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(4, 10); ctx.lineTo(-4, 10); ctx.closePath(); ctx.fill();
-                    ctx.fillStyle = '#f39c12'; ctx.fillRect(-8, 10, 16, 3); ctx.fillRect(-2, 13, 4, 8);
+                    ctx.fillStyle = c_sword; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.moveTo(0, -35); ctx.lineTo(10, 15); ctx.lineTo(-10, 15); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(4, 10); ctx.lineTo(-4, 10); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = c_sword; ctx.fillRect(-8, 10, 16, 3); ctx.fillRect(-2, 13, 4, 8);
                     ctx.restore();
                 } else { swords.splice(i, 1); }
             }
@@ -838,7 +842,9 @@
             let targetX = Math.max(20, Math.min(canvas.width-20, window.mouseX_val));
             p.vx = (targetX - p.x)*0.25; p.x += p.vx;
             
-            // 🔫 샷건 발사 (평타 데미지 p.base_dmg 적용)
+            let c_homing = colorLevels.homing[Math.min(5, p.lvl_homing||0)];
+            let c_light = colorLevels.lightning[Math.min(5, p.lvl_lightning||0)];
+
             if(frameCount%p.fireDelay === 0) {
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
@@ -853,7 +859,7 @@
                     let isBhSeed = (p.bh_chance > 0 && Math.random() < p.bh_chance);
                     let isEnhanced = (p.lvl_homing > 0 && Math.random() < 0.33); 
                     
-                    let bColor = isBhSeed ? '#111' : (isEnhanced ? '#00ffff' : '#f1c40f');
+                    let bColor = isBhSeed ? '#111' : (isEnhanced ? c_homing : colorLevels.atk[Math.min(10, p.lvl_atk||0)]);
                     let bRadius = isBhSeed ? 10 : (isEnhanced ? 8 : 6);
 
                     bullets.push({ 
@@ -872,10 +878,10 @@
                     ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
                 } else {
                     ctx.fillStyle=b.color; 
-                    if (b.pierce > 0 && !b.enhanced) {
+                    if (b.pierce > 0 && !b.enhanced && !b.isBhSeed) {
                         ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx));
-                        ctx.fillStyle = 'rgba(241, 196, 15, 0.4)'; ctx.beginPath(); ctx.moveTo(b.r*3.5, 0); ctx.lineTo(-b.r*1.5, b.r*1.5); ctx.lineTo(-b.r*1.5, -b.r*1.5); ctx.fill();
-                        ctx.fillStyle = b.color; ctx.beginPath(); ctx.moveTo(b.r * 2.5, 0); ctx.lineTo(-b.r, b.r * 0.8); ctx.lineTo(-b.r, -b.r * 0.8); ctx.closePath(); ctx.fill(); ctx.restore();
+                        ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.moveTo(b.r*3.5, 0); ctx.lineTo(-b.r*1.5, b.r*1.5); ctx.lineTo(-b.r*1.5, -b.r*1.5); ctx.fill();
+                        ctx.globalAlpha = 1; ctx.beginPath(); ctx.moveTo(b.r * 2.5, 0); ctx.lineTo(-b.r, b.r * 0.8); ctx.lineTo(-b.r, -b.r * 0.8); ctx.closePath(); ctx.fill(); ctx.restore();
                     } else {
                         ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     }
@@ -898,7 +904,6 @@
                         
                         if (b.enhanced && homingBullets.length < 150) {
                             playSound('zap');
-                            // 평타 베이스 유도탄
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
@@ -907,7 +912,6 @@
                         }
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 100) {
                             playSound('zap');
-                            // 스킬 베이스 번개
                             let ld = 15 * p.skill_mult * (1 + p.lvl_lightning * 0.2); 
                             let jumps = 1 + p.lvl_lightning; 
                             let lx = e.x, ly = e.y;
@@ -944,13 +948,13 @@
                 }
                 hb.x += hb.vx; hb.y += hb.vy;
                 
-                ctx.fillStyle = 'rgba(0, 255, 255, 0.4)'; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
-                ctx.fillStyle = '#00ffff'; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = c_homing; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
                 
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
                     if (e !== hb.ignore && !hb.hitLog.has(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
-                        e.hp -= hb.dmg; hb.hitLog.set(e, true); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, '#00ffff', 3); 
+                        e.hp -= hb.dmg; hb.hitLog.set(e, true); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 3); 
                     }
                 }
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
@@ -967,21 +971,22 @@
                             let t = Math.max(0, Math.min(1, (wx*vx + wy*vy) / len2)); 
                             let cx = l.x1 + t*vx; let cy = l.y1 + t*vy;
                             if (Math.hypot(en.x - cx, en.y - cy) < en.w/2 + 20) { 
-                                en.hp -= l.dmg; if(Math.random()<0.5) spawnParticles(en.x, en.y, '#00ffff', 1);
+                                en.hp -= l.dmg; if(Math.random()<0.5) spawnParticles(en.x, en.y, '#00ffff', 1); // 번개 파티클은 청록 고정
                             }
                         });
                     }
                 }
                 l.life--;
-                ctx.strokeStyle = `rgba(0, 255, 255, ${Math.max(0, l.life/15)})`; ctx.lineWidth = 4; ctx.beginPath();
+                ctx.strokeStyle = `rgba(${c_light}, ${Math.max(0, l.life/15)})`; ctx.lineWidth = 4; ctx.beginPath();
                 ctx.moveTo(l.x1, l.y1); ctx.lineTo((l.x1+l.x2)/2 + (Math.random()-0.5)*30, (l.y1+l.y2)/2 + (Math.random()-0.5)*30); ctx.lineTo(l.x2, l.y2); ctx.stroke();
                 if (l.life <= 0) lightnings.splice(i, 1);
             }
 
+            let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];
             if (p.lvl_storm > 0) {
                 let sk_r = 60 + p.lvl_storm * 20; 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
-                ctx.globalAlpha = 0.6; ctx.strokeStyle = '#00a8ff'; ctx.lineWidth = 4;
+                ctx.globalAlpha = 0.6; ctx.strokeStyle = c_storm; ctx.lineWidth = 4;
                 ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.stroke();
                 
                 for(let j=0; j<4; j++) {
@@ -990,7 +995,7 @@
                     ctx.moveTo(sk_r-10, 0); ctx.lineTo(sk_r+10, -25); ctx.lineTo(sk_r+30, 0); ctx.fill(); 
                     ctx.restore(); 
                 }
-                ctx.fillStyle = 'rgba(0, 168, 255, 0.15)'; ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.fill(); 
+                ctx.fillStyle = c_storm; ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.fill(); 
                 ctx.restore();
                 
                 if (frameCount % 15 === 0) {
@@ -999,7 +1004,7 @@
                         if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
                             e.hp -= stormDmg; e.y -= 15; e.x += (e.x > p.x ? 10 : -10); 
                             if(e.isBoss && !e.isDevTest) e.iframe = 4;
-                            spawnParticles(e.x, e.y, '#00a8ff', 2);
+                            spawnParticles(e.x, e.y, c_storm, 2);
                         }
                     });
                 }
@@ -1008,7 +1013,6 @@
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i]; 
                 
-                // 🧪 개발자 모드 보스는 공격하지 않음 (!e.isDevTest 조건)
                 if(e.isBoss) {
                     if (!e.isDevTest && frameCount % Math.max(30, 90 - bossKills * 3) === 0) {
                         playSound('boss_shoot');
@@ -1034,7 +1038,6 @@
                         ctx.beginPath(); ctx.roundRect(-e.w/2, -e.h/2, e.w, e.h, 15); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0, e.w/4, 0, Math.PI*2); ctx.fill();
                         ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0, e.w/4 * (0.5 + Math.sin(frameCount*0.1)*0.5), 0, Math.PI*2); ctx.fill(); ctx.restore();
                         
-                        // 🧪 샌드백 보스 체력 표시
                         if (e.isDevTest) {
                             ctx.fillStyle = '#ff4757'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
                             ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${e.maxHp}`, e.x, e.y + e.h/2 + 35);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v7.2)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v7.3)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -485,7 +485,8 @@
         }
 
         let particles = []; let rocket = { active: false, fullTrajectory: [] }; 
-        let shotsFired = 0; let contentRevealed = false; let trajectoryMode = false;
+        let shotsFired = 0; let trajectoryShotsFired = 0; 
+        let contentRevealed = false; let trajectoryMode = false;
 
         function launchRocket() {
             if (rocket.active) return;
@@ -506,16 +507,23 @@
             playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             
-            if (!trajectoryMode && !contentRevealed) {
-                shotsFired++;
-                if (shotsFired >= 5) document.getElementById('trajectory-btn').style.display = 'block';
+            if (!contentRevealed) {
+                if (!trajectoryMode) {
+                    shotsFired++;
+                    if (shotsFired >= 5) document.getElementById('trajectory-btn').style.display = 'block';
+                } else {
+                    // 궤도 확인 모드에서 폭죽을 터뜨렸을 때
+                    trajectoryShotsFired++;
+                    if (trajectoryShotsFired >= 3) {
+                        document.getElementById('show-content-btn').style.display = 'block';
+                    }
+                }
             }
         }
 
         function enableTrajectory() {
             trajectoryMode = true;
             document.getElementById('trajectory-btn').style.display = 'none';
-            document.getElementById('show-content-btn').style.display = 'block';
         }
 
         function animateFw() {
@@ -807,7 +815,7 @@
         });
 
         // ==========================================
-        // Stage 8 특화: y = -0.2t^2 + 60t 그래프 시각화
+        // Stage 8 특화: y = -0.2t^2 + 60t 그래프 시각화 
         // ==========================================
         function showStage8Graph() {
             document.getElementById('s8-graph-btn').style.display = 'none';
@@ -821,9 +829,6 @@
             const w = cvs.width; const h = cvs.height;
             ctx.clearRect(0, 0, w, h);
 
-            // 함수: y = -0.2t^2 + 60t 
-            // 꼭짓점 t = 150 일 때 y = 4500
-            // 범위 120 <= t <= 200 일 때 y값은 4320 ~ 4000
             function mapX(t) { return ((t - 100) / 120) * (w - 40) + 30; } 
             function mapY(y) { return h - 20 - ((y - 3000) / 2000) * (h - 40); } 
 
@@ -840,7 +845,6 @@
                 ctx.fillText(t, px - 10, h - 5);
             }
 
-            // 전체 궤적
             ctx.beginPath(); ctx.strokeStyle = "#aaa"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
             for(let t = 100; t <= 220; t+=2) {
                 let y = -0.2*t*t + 60*t;
@@ -848,7 +852,6 @@
             }
             ctx.stroke(); ctx.setLineDash([]);
 
-            // 제한된 범위
             ctx.beginPath(); ctx.strokeStyle = "var(--primary)"; ctx.lineWidth = 4;
             for(let t = 120; t <= 200; t+=1) {
                 let y = -0.2*t*t + 60*t;
@@ -856,7 +859,6 @@
             }
             ctx.stroke();
 
-            // 최대 최솟값
             let maxT = 150, maxY = 4500; 
             let minT = 200, minY = 4000; 
 
@@ -917,7 +919,6 @@
             }
         }
         
-        // 페이지 로드 후 즉시 초기화하여 처음부터 0인 상태가 보이게 함
         window.onload = () => {
             drawStage9Triangle();
         };

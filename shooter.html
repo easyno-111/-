@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V41 리얼 체인 라이트닝)</title>
+    <title>로그라이트 화력 슈팅 (V42 번개 리워크 & 초기 스타팅 로드아웃)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -32,8 +32,8 @@
 
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 20, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
         .title-text { font-size: 40px; font-weight: 900; color: #00a8ff; text-shadow: 0 0 20px rgba(0, 168, 255, 0.5); margin-bottom: 20px; text-align: center; }
-        .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; pointer-events: auto; }
-        #reroll-btn { margin-top: 15px; padding: 10px 25px; font-size: 16px; background: #57606f; border-radius: 20px; color: white; border: none; cursor: pointer; display: none; pointer-events: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .start-btn { padding: 15px 40px; background: #00a8ff; color: white; border: none; border-radius: 30px; font-size: 22px; font-weight: bold; cursor: pointer; pointer-events: auto; transition: 0.2s; }
+        .start-btn:hover { background: #0082c8; transform: scale(1.05); }
 
         #levelup-screen { display: none; pointer-events: auto; }
         .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; color: white; transition: 0.2s; }
@@ -51,7 +51,6 @@
         /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
-        /* 빔 크기 대폭 상향 */
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
         /* ✨ 전설 상자 화면 섬광 효과 */
@@ -103,13 +102,36 @@
 
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
-            <p style="color: #ced6e0; margin-bottom: 20px; text-align: center;">끝없이 쏟아지는 적들을 쓸어버리세요!</p>
-            <div class="skin-btn-group" style="display:flex; gap:10px; margin-bottom:30px;">
-                <button class="skin-btn" style="padding:10px; border-radius:8px; cursor:pointer;" onclick="document.getElementById('p-img-upload').click()">내 캐릭터 변경</button>
-                <button class="skin-btn" style="padding:10px; border-radius:8px; cursor:pointer;" onclick="document.getElementById('e-img-upload').click()">적 캐릭터 변경</button>
+
+            <!-- 🎒 든든한 초기 스타팅 로드아웃 UI -->
+            <div style="background: rgba(47, 53, 66, 0.9); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
+                <label style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: block;">🎯 기본 액티브 스킬</label>
+                <select id="start-active" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #f1c40f; border-radius: 5px; font-weight: bold; margin-bottom: 15px; outline: none;">
+                    <option value="boomerang">🪃 부메랑</option>
+                    <option value="laser">🔱 레이저</option>
+                    <option value="punch">🐾 냥냥펀치</option>
+                </select>
+
+                <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: block;">✨ 초기 특성 지원 (1Lv 지급)</label>
+                <select id="start-passive" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #00ffff; border-radius: 5px; font-weight: bold; outline: none;">
+                    <option value="lvl_atk">⚔️ 공격력 UP</option>
+                    <option value="lvl_firespeed">🔫 연사 속도 UP</option>
+                    <option value="lvl_pierce">🏹 평타 관통</option>
+                    <option value="lvl_bullet">💥 탄환 확산</option>
+                    <option value="lvl_skill_dmg">🪄 스킬 파괴력 UP</option>
+                    <option value="lvl_skill_cd">⏳ 스킬 쿨타임 감소</option>
+                    <option value="lvl_regen">💖 자연 회복</option>
+                    <option value="lvl_vampire">🧛 흡혈</option>
+                </select>
+            </div>
+
+            <div class="skin-btn-group" style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="skin-btn" style="padding:10px; border-radius:8px; cursor:pointer; background:#2f3542; color:white; border:none; border: 1px solid #57606f;" onclick="document.getElementById('p-img-upload').click()">내 캐릭터</button>
+                <button class="skin-btn" style="padding:10px; border-radius:8px; cursor:pointer; background:#2f3542; color:white; border:none; border: 1px solid #57606f;" onclick="document.getElementById('e-img-upload').click()">적 캐릭터</button>
             </div>
             <input type="file" id="p-img-upload" accept="image/*" style="display:none;" onchange="handleImage(event, 'player')">
             <input type="file" id="e-img-upload" accept="image/*" style="display:none;" onchange="handleImage(event, 'enemy')">
+            
             <button class="start-btn" onclick="startGame()">전투 시작</button>
         </div>
 
@@ -311,7 +333,7 @@
             { id: 'lvl_shotgun', max: 1, name: '💠 샷건 (x2 배수)' },
             { id: 'lvl_skill_dmg', max: 10, name: '🪄 스킬 파괴력' },
             { id: 'lvl_skill_cd', max: 4, name: '⏳ 스킬 쿨감' },
-            { id: 'lvl_lightning', max: 10, name: '⚡ 연쇄 번개' },
+            { id: 'lvl_lightning', max: 10, name: '⚡ 연쇄 번개(투사체)' },
             { id: 'lvl_homing', max: 5, name: '✨ 유도 분열탄' },
             { id: 'lvl_sword', max: 5, name: '🗡️ 환영검 진형' },
             { id: 'lvl_storm', max: 5, name: '🌀 칼날 돌풍' },
@@ -411,6 +433,7 @@
             p.bulletMultiplier = Math.pow(2, p.lvl_shotgun || 0);
             p.bulletSpread = 1 + (p.lvl_bullet || 0);
             
+            // ⚡ 연쇄번개 확률 재계산 (레벨당 10% 증가)
             p.lightning_chance = (p.lvl_lightning || 0) * 0.1;
             
             p.homing_split = 3 + (p.lvl_homing||0);
@@ -450,7 +473,8 @@
             add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 9% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
             add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
             
-            let lightDesc = p.lvl_lightning === 0 ? '평타 적중 시 10% 확률로 튕기는 체인 번개 생성' : `번개 발동 확률 +10% (현재 ${(p.lvl_lightning+1)*10}%) 및 최대 점프 수 +1`;
+            // ⚡ 연쇄번개 리워크 설명 수정 (최대 10렙, 탄환 발동형)
+            let lightDesc = p.lvl_lightning === 0 ? '평타 시 10% 확률로 튕기는 연쇄 번개 탄환 발사' : `번개 발동 확률 +10% (현재 ${(p.lvl_lightning+1)*10}%) 및 최대 점프 수 +1`;
             add('lvl_lightning', 10, '⚡ 연쇄 번개', lightDesc, () => { p.lvl_lightning++; recalculateStats(); }, 'type-skill', p.lvl_lightning > 0 ? 0.6 : 0.2, true);
             
             let swordDesc = p.lvl_sword === 0 ? '적 주변에 환영검을 소환하여 난도질합니다.' : '소환되는 환영검 개수 +2 및 위력 대폭 증가';
@@ -490,22 +514,31 @@
             return pool;
         }
 
+        // 🎒 게임 시작 시 로드아웃 적용
         function startGame() {
             if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
             initAudio();
+
+            let startActive = document.getElementById('start-active').value;
+            let startPassive = document.getElementById('start-passive').value;
+
             p = { 
                 x: canvas.width/2, y: canvas.height-100, vx: 0, w: 40, h: 40, 
                 hp: 100, maxHp: 100, level: 1, exp: 0, maxExp: 30, 
                 lvl_atk: 0, lvl_firespeed: 0, lvl_pierce: 0, lvl_bullet: 0, lvl_shotgun: 0,
                 lvl_skill_dmg: 0, lvl_skill_cd: 0, lvl_vampire: 0, lvl_regen: 0,
                 lvl_lightning: 0, lvl_homing: 0, lvl_sword: 0, lvl_storm: 0, lvl_blackhole: 0, bh_chance: 0, lvl_orbital: 0, lvl_shuriken: 0,
-                activeSkillType: 'boomerang', lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
+                activeSkillType: startActive, lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
                 
                 cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
                 base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
             };
+            
+            // 초기 선택한 패시브 스킬 1레벨 지급!
+            p[startPassive] = 1;
+
             recalculateStats();
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = [];
             score = 0; bossKills = 0; frameCount = 0; isBossStage = false; isBossWarning = false; isSwarm = false;
@@ -1121,13 +1154,17 @@
 
                     let isBhSeed = (p.bh_chance > 0 && Math.random() < p.bh_chance);
                     let isEnhanced = (p.lvl_homing > 0 && Math.random() < 0.33); 
+                    // ⚡ 1. 번개 확률 연산 적용!
+                    let isLightningSeed = (p.lvl_lightning > 0 && Math.random() < p.lightning_chance);
                     
-                    let bColor = isBhSeed ? '#111' : (isEnhanced ? c_homing : c_atk);
-                    let bRadius = isBhSeed ? 10 : (isEnhanced ? 8 : 6);
+                    // ⚡ 2. 컬러 및 형태 할당 (번개가 유도탄보다 우선순위 적용됨)
+                    let bColor = isBhSeed ? '#111' : (isLightningSeed ? `rgb(${c_light})` : (isEnhanced ? c_homing : c_atk));
+                    let bRadius = isBhSeed ? 10 : (isLightningSeed ? 9 : (isEnhanced ? 8 : 6));
 
                     bullets.push({ 
                         x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], 
+                        isBhSeed: isBhSeed, isLightningSeed: isLightningSeed // ⚡ 플래그 추가
                     });
                 }
             }
@@ -1139,6 +1176,14 @@
                     ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = 'purple';
                     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+                } else if (b.isLightningSeed) {
+                    // ⚡ 3. 밋밋한 탄환 대신 눈부신 화이트코어 + 빛번짐 전격 탄환으로 렌더링!
+                    ctx.save(); ctx.shadowBlur = 10; ctx.shadowColor = b.color;
+                    ctx.fillStyle = b.color;
+                    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(b.x, b.y, b.r*0.5, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
                 } else {
                     ctx.fillStyle=b.color; 
                     if (b.pierce > 0 && !b.enhanced && !b.isBhSeed) {
@@ -1174,9 +1219,10 @@
                             }
                         }
                         
-                        // ⚡ 연쇄 번개: 리얼 체인(지그재그 궤적) 로직
-                        if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 50) {
+                        // ⚡ 4. 번개 탄환 적중 시에만 연쇄 번개 전개! (중복 방지용 플래그 체크)
+                        if (b.isLightningSeed && !b.lightningTriggered && lightnings.length < 50) {
                             playSound('zap');
+                            b.lightningTriggered = true; // 관통 시 중복 발동 방지
                             let ld = 15 * p.skill_mult * (1 + p.lvl_lightning * 0.2); 
                             let jumps = p.lvl_lightning; 
                             
@@ -1190,7 +1236,6 @@
                                     let en = enemies[m];
                                     if(!hitArr.includes(en)) {
                                         let dSq = (en.x - currE.x)*(en.x - currE.x) + (en.y - currE.y)*(en.y - currE.y);
-                                        // 💡 점프 최대 거리 제한 (약 240px 내외)
                                         if(dSq < closestDistSq && dSq < 60000) { 
                                             closestDistSq = dSq; closestE = en;
                                         }
@@ -1247,7 +1292,6 @@
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
             }
 
-            // ⚡ 연쇄 번개: 렌더링 및 순차 타격 로직 적용!
             for (let i = lightnings.length - 1; i >= 0; i--) {
                 let l = lightnings[i]; 
                 l.life--;

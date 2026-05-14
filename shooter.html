@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V46 밸런스 대격변 & 냥냥 콤보)</title>
+    <title>로그라이트 화력 슈팅 (V47 지옥불 부메랑)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -39,6 +39,7 @@
         .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; color: white; transition: 0.2s; }
         .ability-card.rare { border-color: #00a8ff; background: #0b1a2b; box-shadow: 0 0 10px rgba(0, 168, 255, 0.3); }
         .ability-card.legendary { border-color: #00ffff; background: #002233; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
+        .ability-card.ultra { border-color: #ff4757; background: #2d0000; box-shadow: 0 0 20px rgba(255, 71, 87, 0.8); animation: pulse 1s infinite alternate; }
         .ability-card:hover { transform: scale(1.03); background: #3a4151; }
         
         .ab-name { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
@@ -48,12 +49,10 @@
         .type-skill { color: #55efc4; } 
         .type-util { color: #ffeaa7; }  
 
-        /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
-        /* ✨ 전설 상자 화면 섬광 효과 */
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
 
         @keyframes shake-small {
@@ -103,14 +102,12 @@
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
 
-            <!-- 🎒 든든한 초기 스타팅 및 난이도 로드아웃 UI -->
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
-                
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
                 <select id="start-difficulty" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #ff7675; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
-                    <option value="easy">🟢 Easy (현재 밸런스)</option>
-                    <option value="normal">🟡 Normal (체력 스케일링 증가)</option>
-                    <option value="hard">🔴 Hard (지옥의 스케일링)</option>
+                    <option value="easy">🟢 Easy (가벼운 플레이)</option>
+                    <option value="normal" selected>🟡 Normal (완화된 밸런스)</option>
+                    <option value="hard">🔴 Hard (도전적인 난이도)</option>
                 </select>
 
                 <label style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🎯 기본 액티브 스킬</label>
@@ -209,7 +206,7 @@
 
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
-        let swords = []; let blackholes = []; 
+        let swords = []; let blackholes = []; let fireBooms = [];
 
         const colorLevels = {
             atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], 
@@ -350,6 +347,7 @@
             { id: 'lvl_blackhole', max: 5, name: '🌌 블랙홀 탄환' },
             { id: 'lvl_orbital', max: 5, name: '☄️ 유성 폭격' },
             { id: 'lvl_shuriken', max: 5, name: '🌟 수호 표창' },
+            { id: 'lvl_fire_boom', max: 5, name: '🔥 [초전설] 지옥불 부메랑' },
             { id: 'lvl_vampire', max: 5, name: '🧛 흡혈' },
             { id: 'lvl_regen', max: 5, name: '💖 자연 회복' },
             { id: 'lvl_boom_split', max: 5, name: '🪃 부메랑 분열' },
@@ -366,9 +364,8 @@
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
-            // ⚖️ 보스 체력 스케일링 픽스 적용
             let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, Math.max(0, lvl - 1));
-            enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true });
+            enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true, burnTimer: 0 });
             globalShakeTimer = 40; playSound('kill');
             closeDevMode();
         }
@@ -377,9 +374,8 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<250; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                // ⚖️ 물량몹 체력 스케일링 픽스 적용 (기본체력 1 보존)
                 let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
+                enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
             }
             playSound('levelup');
             closeDevMode();
@@ -462,14 +458,14 @@
 
         function getAvailableAbilities(isDev = false) {
             let pool = [];
-            const add = (id, maxLvl, title, desc, applyFn, typeClass, chance = 1.0, isRare = false, isLegendary = false) => {
+            const add = (id, maxLvl, title, desc, applyFn, typeClass, chance = 1.0, isRare = false, isLegendary = false, isUltra = false) => {
                 let cur = p[id] || 0;
                 if (cur >= maxLvl) return; 
                 if (isDev || Math.random() < chance) {
                     let lvlText = `[${cur+1} / ${maxLvl}]`;
                     pool.push({
                         id: id, name: `<span class="${typeClass}">${lvlText} ${title}</span>`, desc: desc,
-                        apply: applyFn, isRare: isRare, isLegendary: isLegendary
+                        apply: applyFn, isRare: isRare, isLegendary: isLegendary, isUltra: isUltra
                     });
                 }
             };
@@ -496,6 +492,10 @@
             add('lvl_orbital', 5, '☄️ 유성 폭격', orbDesc, () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); }, 'type-skill', p.lvl_orbital > 0 ? 0.4 : 0.02, false, true);
             let shuriDesc = p.lvl_shuriken === 0 ? '주위를 회전하며 적을 뚫는 수호 표창 생성' : '회전하는 수호 표창의 개수 최대치 증가';
             add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
+
+            // 🔥 초 레어 전설 스킬 지옥불 부메랑
+            let fbDesc = p.lvl_fire_boom === 0 ? '전방으로 모든 것을 태우는 거대 불부메랑 발사 (관통, 피격시 감속 및 극딜, 5초간 최대체력 2% 화상 도트뎀 부여)' : '지옥불 부메랑 크기 확장, 발사 주기 감소, 틱 데미지 증가';
+            add('lvl_fire_boom', 5, '🔥 지옥불 부메랑', fbDesc, () => { p.lvl_fire_boom++; recalculateStats(); }, 'type-skill', p.lvl_fire_boom > 0 ? 0.4 : 0.01, false, false, true);
 
             add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
             add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
@@ -539,11 +539,12 @@
                 lvl_atk: 0, lvl_firespeed: 0, lvl_pierce: 0, lvl_bullet: 0, lvl_shotgun: 0,
                 lvl_skill_dmg: 0, lvl_skill_cd: 0, lvl_vampire: 0, lvl_regen: 0,
                 lvl_lightning: 0, lvl_homing: 0, lvl_sword: 0, lvl_storm: 0, lvl_blackhole: 0, bh_chance: 0, lvl_orbital: 0, lvl_shuriken: 0,
+                lvl_fire_boom: 0, fireBoomTimer: 0,
                 activeSkillType: startActive, lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
                 
                 cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
-                // ⚖️ 합리적인 스케일링 배율 적용 (폭발 방지)
+                // ⚖️ 합리적인 스케일링 배율 적용 (폭발 방지 및 후반부 밸런스 조정)
                 diffMult: diff === 'hard' ? 1.5 : (diff === 'normal' ? 1.2 : 1),
                 diffExpAdd: diff === 'hard' ? 0.04 : (diff === 'normal' ? 0.015 : 0),
 
@@ -554,7 +555,7 @@
             p[startPassive] = 1;
 
             recalculateStats();
-            bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = [];
+            bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = []; fireBooms = [];
             score = 0; bossKills = 0; frameCount = 0; isBossStage = false; isBossWarning = false; isSwarm = false;
             bossSpawnTimer = BOSS_SPAWN_INTERVAL; 
             document.getElementById('start-screen').style.display = 'none'; document.getElementById('end-screen').style.display = 'none'; document.getElementById('ui-layer').style.display = 'block';
@@ -722,7 +723,12 @@
             let choices = pool.slice(0, optionCount || 3);
             const cont = document.getElementById('ability-container'); cont.innerHTML = '';
             choices.forEach(ab => {
-                let card = document.createElement('div'); card.className = ab.isLegendary ? 'ability-card legendary' : (ab.isRare ? 'ability-card rare' : 'ability-card');
+                let cardClass = 'ability-card';
+                if(ab.isUltra) cardClass += ' ultra';
+                else if(ab.isLegendary) cardClass += ' legendary';
+                else if(ab.isRare) cardClass += ' rare';
+
+                let card = document.createElement('div'); card.className = cardClass;
                 card.innerHTML = `<div class="ab-name">${ab.name}</div><div class="ab-desc">${ab.desc}</div>`;
                 card.onclick = () => { 
                     ab.apply(); p.level++; p.maxExp = Math.floor(p.maxExp * 1.35); p.exp = 0; 
@@ -813,9 +819,8 @@
                             let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.2);
-                                // ⚖️ 몹 스케일링 픽스 (베이스 1)
                                 let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
+                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
                         }
                     } else if (!isSwarm) {
@@ -828,9 +833,8 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 250) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.15);
-                                // ⚖️ 일반 몹 스케일링 픽스
                                 let normHp = Math.max(1, (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, speed: spd, isBoss: false });
+                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
                         }
                     }
@@ -856,9 +860,8 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    // ⚖️ 보스 체력 스케일링 픽스
                     let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
-                    enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
+                    enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
                     globalShakeTimer = 40; playSound('kill');
@@ -869,6 +872,93 @@
                 bossTimer--;
                 document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                 if (bossTimer <= 0) { gameEnd(false); return; }
+            }
+
+            // 🔥 초전설 스킬: 지옥불 부메랑 로직
+            if (p.lvl_fire_boom > 0) {
+                p.fireBoomTimer--;
+                if (p.fireBoomTimer <= 0) {
+                    p.fireBoomTimer = Math.max(120, 300 - p.lvl_fire_boom * 30); // 기본 5초, 만렙 2.5초
+                    playSound('skill');
+                    
+                    let targetX = window.mouseX_val || p.x;
+                    let targetY = p.y - 100;
+                    let angle = -Math.PI / 2; // 기본 위쪽
+                    
+                    let t = enemies.find(e => e.isBoss) || enemies[0];
+                    if (t) {
+                        angle = Math.atan2(t.y - p.y, t.x - p.x);
+                    }
+
+                    fireBooms.push({
+                        x: p.x, y: p.y,
+                        angle: angle,
+                        baseSpeed: 10 + p.lvl_fire_boom,
+                        speed: 10 + p.lvl_fire_boom,
+                        w: 150 + p.lvl_fire_boom * 30, // 아주 거대함
+                        dmg: 2 * p.skill_mult * (1 + p.lvl_fire_boom * 0.5), // 프레임당 틱 데미지 (엄청남)
+                        life: 200
+                    });
+                }
+            }
+
+            for (let i = fireBooms.length - 1; i >= 0; i--) {
+                let fb = fireBooms[i];
+                fb.life--;
+
+                fb.x += Math.cos(fb.angle) * fb.speed;
+                fb.y += Math.sin(fb.angle) * fb.speed;
+
+                let hitAny = false;
+                let fbRadius = fb.w / 2;
+
+                enemies.forEach(e => {
+                    let dx = e.x - fb.x; let dy = e.y - fb.y;
+                    if (Math.hypot(dx, dy) < fbRadius + e.w/2) {
+                        hitAny = true;
+                        e.hp -= fb.dmg; 
+                        e.burnTimer = 300; // 5초간 화상
+                        
+                        if (frameCount % 4 === 0) spawnParticles(e.x, e.y, '#e74c3c', 2);
+                        if (e.isBoss && !e.isDevTest && frameCount % 10 === 0) e.iframe = 2; 
+                    }
+                });
+
+                // 감속 및 가속 로직
+                if (hitAny) {
+                    fb.speed = Math.max(fb.baseSpeed * 0.25, fb.speed - 1.5); // 피격시 엄청 느려짐
+                    if (frameCount % 6 === 0) playSound('zap');
+                } else {
+                    fb.speed = Math.min(fb.baseSpeed, fb.speed + 0.8); // 원상복구
+                }
+
+                ctx.save();
+                ctx.translate(fb.x, fb.y);
+                ctx.rotate(fb.angle + Math.PI/2);
+                
+                ctx.shadowColor = '#ff4757'; ctx.shadowBlur = 20;
+                ctx.fillStyle = '#ff6b81';
+                ctx.beginPath();
+                ctx.arc(0, 0, fbRadius, Math.PI, 0, false); 
+                ctx.arc(0, -fbRadius*0.4, fbRadius, 0, Math.PI, true); 
+                ctx.closePath(); ctx.fill();
+
+                ctx.shadowColor = '#f1c40f'; ctx.shadowBlur = 10;
+                ctx.fillStyle = '#ffa502';
+                ctx.beginPath();
+                ctx.arc(0, -fbRadius*0.1, fbRadius*0.7, Math.PI, 0, false);
+                ctx.arc(0, -fbRadius*0.4, fbRadius*0.7, 0, Math.PI, true);
+                ctx.closePath(); ctx.fill();
+                ctx.restore();
+
+                if (frameCount % 2 === 0) {
+                    spawnParticles(fb.x + (Math.random()-0.5)*fb.w, fb.y + (Math.random()-0.5)*fb.w, '#ff4757', 2);
+                    spawnParticles(fb.x + (Math.random()-0.5)*fb.w*0.5, fb.y + (Math.random()-0.5)*fb.w*0.5, '#f1c40f', 1);
+                }
+
+                if (fb.life <= 0 || fb.x < -200 || fb.x > canvas.width + 200 || fb.y < -200 || fb.y > canvas.height + 200) {
+                    fireBooms.splice(i, 1);
+                }
             }
 
             for (let i = blackholes.length - 1; i >= 0; i--) {
@@ -1482,6 +1572,19 @@
 
                 if(e.isBoss && e.iframe > 0) e.iframe--;
                 
+                // 🔥 적 화상(Burn) 디버프 로직
+                if (e.burnTimer > 0) {
+                    e.burnTimer--;
+                    if (frameCount % 10 === 0) {
+                        spawnParticles(e.x + (Math.random()-0.5)*e.w, e.y + (Math.random()-0.5)*e.h, '#e74c3c', 1);
+                    }
+                    if (frameCount % 60 === 0) { // 매 1초마다 최대 체력 2% 데미지
+                        let burnDmg = e.maxHp * 0.02; 
+                        e.hp -= burnDmg;
+                        playSound('hit');
+                    }
+                }
+
                 let drawn = false;
                 if(customEnemyImg && customEnemyImg.complete && !e.isBoss) { ctx.drawImage(customEnemyImg, e.x-e.w/2, e.y-e.h/2, e.w, e.h); drawn=true; }
                 
@@ -1493,7 +1596,7 @@
                         
                         if (e.isDevTest) {
                             ctx.fillStyle = '#ff4757'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
-                            ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${e.maxHp}`, e.x, e.y + e.h/2 + 35);
+                            ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${Math.ceil(e.maxHp)}`, e.x, e.y + e.h/2 + 35);
                         }
                     } else {
                         let spr = getSprite('enemy', e.color || '#ff4757', e.w);

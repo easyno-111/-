@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V31 보스 테스트 & 밸런싱)</title>
+    <title>로그라이트 화력 슈팅 (V31 보스 테스트 & 딜 구조 분리)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -43,6 +43,11 @@
         
         .ab-name { font-size: 16px; font-weight: 900; margin-bottom: 6px; }
         .ab-desc { font-size: 13px; color: #dfe6e9; line-height: 1.4; word-break: keep-all; opacity: 0.9;}
+
+        /* 스킬 분류별 색상 */
+        .type-basic { color: #74b9ff; } /* 파란색: 평타 관련 */
+        .type-skill { color: #55efc4; } /* 초록색: 스킬 관련 */
+        .type-util { color: #ffeaa7; }  /* 노란색: 유틸 관련 */
 
         .chest-box { font-size: 80px; cursor: pointer; transition: 0.2s; }
         .anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
@@ -108,12 +113,12 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- 🛠️ 개발자 패널 (보스 소환 테스트 기능 추가) -->
+    <!-- 🛠️ 개발자 패널 (보스 샌드백 테스트 추가) -->
     <div id="dev-panel">
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
         <div style="display:flex; gap:10px; margin-bottom: 15px; align-items: center; background:#2f3542; padding:10px; border-radius:8px; justify-content: space-between;">
-            <label style="font-weight:bold;">보스 소환 테스트 (LV)</label>
+            <label style="font-weight:bold;">보스 소환 샌드백 (LV)</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="dev-boss-lvl" value="1" min="1" max="20" style="width: 50px; text-align:center; border-radius:5px; border:none; outline:none; font-weight:bold; color: black;">
                 <button class="dev-btn-small" onclick="spawnDevBoss()" style="width:auto; padding:0 10px; background:#8e44ad;">소환</button>
@@ -252,12 +257,12 @@
         function toggleSpawn() { devStopSpawn = !devStopSpawn; }
         function clearAllEnemies() { enemies = []; }
         
-        // 🧪 보스 소환 테스트 함수
+        // 🧪 보스 샌드백 소환 (공격 안함, 중앙에 고정, 체력 표시)
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
             let bh = 150 * Math.pow(1.25, lvl - 1);
-            enemies.push({ x: canvas.width/2, y: -50, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
+            enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true });
             globalShakeTimer = 40; playSound('kill');
             closeDevMode();
         }
@@ -302,9 +307,16 @@
             recalculateStats(); renderDevSkills(); 
         }
 
-        // ⚖️ 밸런스 재조정: 공격력 배율 1.15배로 수정
+        // ⚖️ 딜 구조 완전 분리 및 밸런스 재조정
         function recalculateStats() {
-            p.dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.dmg = (p.dmg+2)*1.15;
+            // 평타용 데미지 (배율 1.02배로 너프)
+            p.base_dmg = 1; 
+            for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
+            
+            // 스킬용 위력 곱연산 (레벨당 15% 상승)
+            p.skill_mult = 1; 
+            for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
+
             p.fireDelay = 15; for(let i=0; i<(p.lvl_firespeed||0); i++) p.fireDelay = Math.max(4, p.fireDelay - 2);
             p.skillCooldownMax = 600; for(let i=0; i<(p.lvl_skill_cd||0); i++) p.skillCooldownMax = Math.max(60, p.skillCooldownMax - 120);
             p.bulletMultiplier = Math.pow(2, p.lvl_shotgun || 0);
@@ -322,16 +334,17 @@
         container.addEventListener('mousemove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.clientX - rect.left; });
         container.addEventListener('touchmove', e => { const rect = canvas.getBoundingClientRect(); window.mouseX_val = e.touches[0].clientX - rect.left; }, {passive: true});
 
+        // 📦 스킬 풀(Pool) 로직 개편 (만렙 제한, 텍스트 색상 분리)
         function getAvailableAbilities(isDev = false) {
             let pool = [];
-            const add = (id, maxLvl, title, desc, applyFn, chance = 1.0, isRare = false, isLegendary = false) => {
+            const add = (id, maxLvl, title, desc, applyFn, typeClass, chance = 1.0, isRare = false, isLegendary = false) => {
                 let cur = p[id] || 0;
                 if (cur >= maxLvl) return; 
                 if (isDev || Math.random() < chance) {
                     let lvlText = `[${cur+1} / ${maxLvl}]`;
                     pool.push({
                         id: id,
-                        name: `${lvlText} ${title}`,
+                        name: `<span class="${typeClass}">${lvlText} ${title}</span>`,
                         desc: desc,
                         apply: applyFn,
                         isRare: isRare,
@@ -340,47 +353,43 @@
                 }
             };
 
-            add('lvl_firespeed', 5, '🔫 연사 속도 UP', '평타 발사 속도가 대폭 빨라집니다.', () => { p.lvl_firespeed++; recalculateStats(); }, 0.8);
-            // ⚔️ 공격력 밸런싱 설명 반영
-            add('lvl_atk', 10, '⚔️ 공격력 UP', '기본 데미지 +2 및 전체 위력 1.15배 상승', () => { p.lvl_atk++; recalculateStats(); }, 0.8);
-            add('lvl_pierce', 5, '🏹 평타 관통 UP', '기본 공격이 적을 관통합니다 (+1명)', () => { p.lvl_pierce++; recalculateStats(); }, 0.8);
-            add('lvl_bullet', 5, '💥 탄환 확산', '총알 개수 증가 및 부채꼴 확산 범위 넓어짐', () => { p.lvl_bullet++; recalculateStats(); }, 0.7);
-            add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 스킬의 데미지가 50% 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 0.7);
-            add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 0.7);
-            add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 0.5);
-            // 💖 자연회복 너프 설명 반영
-            add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 0.5);
-
-            add('lvl_shotgun', 1, '💠 [초희귀] 샷건', '모든 평타 탄환이 한 번에 두 배로 발사됩니다.', () => { p.lvl_shotgun++; recalculateStats(); }, 0.03, false, true);
+            // 평타 관련 (파란색: type-basic)
+            add('lvl_atk', 10, '⚔️ 공격력 UP', '기본 공격력 +2 및 위력 1.02배 상승 (평타 특화)', () => { p.lvl_atk++; recalculateStats(); }, 'type-basic', 0.8);
+            add('lvl_firespeed', 5, '🔫 연사 속도 UP', '평타 발사 속도가 대폭 빨라집니다.', () => { p.lvl_firespeed++; recalculateStats(); }, 'type-basic', 0.8);
+            add('lvl_pierce', 5, '🏹 평타 관통 UP', '기본 공격이 적을 관통합니다 (+1명)', () => { p.lvl_pierce++; recalculateStats(); }, 'type-basic', 0.8);
+            add('lvl_bullet', 5, '💥 탄환 확산', '총알 개수 증가 및 부채꼴 확산 범위 넓어짐', () => { p.lvl_bullet++; recalculateStats(); }, 'type-basic', 0.7);
+            add('lvl_shotgun', 1, '💠 [초희귀] 샷건', '모든 평타 탄환이 한 번에 두 배로 발사됩니다.', () => { p.lvl_shotgun++; recalculateStats(); }, 'type-basic', 0.03, false, true);
+            let homingDesc = p.lvl_homing === 0 ? '평타 관통 시 유도 분열탄 33% 발동' : '유도탄 분열 개수 +1 및 위력 상향 (평타 계수)';
+            add('lvl_homing', 5, '✨ 유도 분열탄', homingDesc, () => { p.lvl_homing++; recalculateStats(); }, 'type-basic', p.lvl_homing > 0 ? 0.6 : 0.2, true);
             
+            // 스킬 관련 (초록색: type-skill)
+            add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 15% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
+            add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
             let lightDesc = p.lvl_lightning === 0 ? '적중 시 튕기는 관통 번개 레이저 발사' : '번개 발동 확률 증가 및 튕기는 횟수 +1';
-            add('lvl_lightning', 5, '⚡ 연쇄 번개', lightDesc, () => { p.lvl_lightning++; recalculateStats(); }, p.lvl_lightning > 0 ? 0.6 : 0.2, true);
-            
-            let homingDesc = p.lvl_homing === 0 ? '평타 적중 시 유도 분열탄 발동' : '유도탄 분열 개수 +1 및 위력 상향';
-            add('lvl_homing', 5, '✨ 유도 분열탄', homingDesc, () => { p.lvl_homing++; recalculateStats(); }, p.lvl_homing > 0 ? 0.6 : 0.2, true);
-            
+            add('lvl_lightning', 5, '⚡ 연쇄 번개', lightDesc, () => { p.lvl_lightning++; recalculateStats(); }, 'type-skill', p.lvl_lightning > 0 ? 0.6 : 0.2, true);
             let swordDesc = p.lvl_sword === 0 ? '적 주변에 환영검을 소환하여 난도질합니다.' : '소환되는 환영검 개수 +2 및 위력 대폭 증가';
-            add('lvl_sword', 5, '🗡️ 환영검 진형', swordDesc, () => { p.lvl_sword++; recalculateStats(); }, p.lvl_sword > 0 ? 0.6 : 0.2, true);
-            
-            let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
-            add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
-            
+            add('lvl_sword', 5, '🗡️ 환영검 진형', swordDesc, () => { p.lvl_sword++; recalculateStats(); }, 'type-skill', p.lvl_sword > 0 ? 0.6 : 0.2, true);
             let stormDesc = p.lvl_storm === 0 ? '캐릭터 주변에 적을 갈아버리는 오라 생성' : '톱날 오라의 반경 넓어짐 및 틱 데미지 증가';
-            add('lvl_storm', 5, '🌀 칼날 돌풍', stormDesc, () => { p.lvl_storm++; recalculateStats(); }, p.lvl_storm > 0 ? 0.6 : 0.2, true);
-            
+            add('lvl_storm', 5, '🌀 칼날 돌풍', stormDesc, () => { p.lvl_storm++; recalculateStats(); }, 'type-skill', p.lvl_storm > 0 ? 0.6 : 0.2, true);
             let orbDesc = p.lvl_orbital === 0 ? '주기적으로 거대한 위성 레이저가 꽂힙니다.' : '위성 폭격 주기 감소 및 폭발 범위 증가';
-            add('lvl_orbital', 5, '☄️ 위성 폭격', orbDesc, () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); }, p.lvl_orbital > 0 ? 0.4 : 0.02, false, true);
-
+            add('lvl_orbital', 5, '☄️ 위성 폭격', orbDesc, () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); }, 'type-skill', p.lvl_orbital > 0 ? 0.4 : 0.02, false, true);
             let shuriDesc = p.lvl_shuriken === 0 ? '주위를 회전하며 적을 뚫는 수호 표창 생성' : '회전하는 수호 표창의 개수 최대치 증가';
-            add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
+            add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
 
+            // 유틸 관련 (노란색: type-util)
+            add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
+            add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
+            let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
+            add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
+
+            // 액티브 (초록색)
             if (p.activeSkillType === 'boomerang') {
-                add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 0.6);
+                add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
-                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 양옆으로 넓게 여러 갈래로 발사됩니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 0.6);
+                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 양옆으로 넓게 여러 갈래로 발사됩니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
-                add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 0.5);
-                add('lvl_punch_split', 5, '💥 냥냥펀치 분열', '주먹이 벽에 튕긴 후 여러 개로 쪼개집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 0.5);
+                add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
+                add('lvl_punch_split', 5, '💥 냥냥펀치 분열', '주먹이 타격 후 관통하며 여러 개로 쪼개집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
 
             if (p.activeSkillType !== 'boomerang') {
@@ -408,6 +417,7 @@
                 lvl_lightning: 0, lvl_homing: 0, lvl_sword: 0, lvl_storm: 0, lvl_blackhole: 0, bh_chance: 0, lvl_orbital: 0, lvl_shuriken: 0,
                 activeSkillType: 'boomerang', lvl_boom_split: 0, lvl_laser_split: 0, lvl_punch_count: 0, lvl_punch_split: 1, 
                 
+                base_dmg: 1, skill_mult: 1, // ⚖️ 독립 데미지 변수 초기화
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
             };
             recalculateStats();
@@ -482,17 +492,24 @@
             if(e) e.preventDefault(); 
             if(p.skillTimer > 0 || gameState !== 'PLAYING') return;
             p.skillTimer = p.skillCooldownMax; playSound('skill');
-            let sd = p.dmg * 8 * (1 + (p.lvl_skill_dmg||0) * 0.5);
             
-            if(p.activeSkillType === 'boomerang') activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying', hoverTimer: 0, dmg: sd*0.5 });
-            else if(p.activeSkillType === 'laser') { for(let i=0; i<(1+p.lvl_laser_split*2); i++) activeSkills.push({ type: 'laser', offsetX: (i-p.lvl_laser_split)*50, life: 180, w: 40, dmg: sd*0.05 }); }
+            // 액티브 스킬은 스킬 계수 적용
+            if(p.activeSkillType === 'boomerang') {
+                let sd = 30 * p.skill_mult;
+                activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying', hoverTimer: 0, dmg: sd });
+            }
+            else if(p.activeSkillType === 'laser') { 
+                let sd = 5 * p.skill_mult;
+                for(let i=0; i<(1+p.lvl_laser_split*2); i++) activeSkills.push({ type: 'laser', offsetX: (i-p.lvl_laser_split)*50, life: 180, w: 40, dmg: sd }); 
+            }
             else if(p.activeSkillType === 'punch') { 
+                let sd = 25 * p.skill_mult;
                 for(let i=0; i<(1+p.lvl_punch_count); i++) {
                     activeSkills.push({ 
                         type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 70, 
                         vx: Math.cos(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18 + p.vx*0.3, 
                         vy: Math.sin(-Math.PI/2+(i-p.lvl_punch_count/2)*0.4)*18, 
-                        state: 'flying', hitTimer: 0, pierceTimer: 0, dmg: sd*0.4 
+                        state: 'flying', hitTimer: 0, pierceTimer: 0, dmg: sd 
                     }); 
                 }
             }
@@ -527,7 +544,6 @@
             if(dt < frameDelay) return; lastTime = timestamp - (dt % frameDelay);
             if(gameState !== 'PLAYING') return; frameCount++; ctx.clearRect(0,0,canvas.width,canvas.height);
 
-            // 💖 자연 회복 밸런스 적용 (초당 0.2씩)
             if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 0.2); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
 
             ctx.fillStyle = isBossWarning ? '#300000' : 'white';
@@ -704,7 +720,7 @@
                         let target = enemies.reduce((max, e) => (e.hp > max.hp ? e : max), enemies[0]);
                         if (target) {
                             let swordCount = 3 + p.lvl_sword * 2; 
-                            let swordDmg = p.dmg * 20 * (1 + (p.lvl_skill_dmg||0)); 
+                            let swordDmg = 150 * p.skill_mult; // 스킬 계수 적용
                             for (let k = 0; k < swordCount; k++) {
                                 swords.push({
                                     target: target, angle: (Math.PI * 2 / swordCount) * k, orbitRadius: 80, delay: 30 + k * 8, state: 'orbit', dmg: swordDmg,
@@ -775,7 +791,8 @@
                 } else {
                     o.timer--; let a = Math.max(0, o.timer/40); 
                     ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
-                    enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= (p.dmg * 10 * (1 + (p.lvl_skill_dmg||0) * 0.5)); });
+                    let orbDmg = 200 * p.skill_mult * (1 + p.lvl_orbital * 0.5);
+                    enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= orbDmg; });
                     if(o.timer<=0) orbitals.splice(i, 1);
                 }
             }
@@ -798,12 +815,13 @@
                     let ang = (frameCount*0.1) + (idx*Math.PI*2/total); s.x = p.x + Math.cos(ang)*85; s.y = p.y + Math.sin(ang)*85; s.spin += 0.3;
                 } else {
                     s.x += s.vx; s.y += s.vy; s.spin += 0.6;
+                    let shuDmg = 5 * p.skill_mult * (1 + p.lvl_shuriken * 0.2);
                     enemies.forEach(e => {
                         if(Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
                             let hits = s.hitLog.get(e) || 0;
                             if(hits < 3) {
                                 s.vx *= 0.65; s.vy *= 0.65; 
-                                e.hp -= (p.dmg * 0.5 * (1 + (p.lvl_skill_dmg||0) * 0.3)); 
+                                e.hp -= shuDmg; 
                                 s.hitLog.set(e, hits+1);
                                 if(frameCount%5===0) spawnParticles(s.x, s.y, '#f1c40f', 1); 
                             }
@@ -820,6 +838,7 @@
             let targetX = Math.max(20, Math.min(canvas.width-20, window.mouseX_val));
             p.vx = (targetX - p.x)*0.25; p.x += p.vx;
             
+            // 🔫 샷건 발사 (평타 데미지 p.base_dmg 적용)
             if(frameCount%p.fireDelay === 0) {
                 playSound('shoot'); 
                 let totalBullets = p.bulletSpread * p.bulletMultiplier;
@@ -832,15 +851,13 @@
                     let bvy = -Math.cos(angleOffset) * 15;
 
                     let isBhSeed = (p.bh_chance > 0 && Math.random() < p.bh_chance);
-                    // ✨ 유도탄 33% 확률 독립 발사 적용
                     let isEnhanced = (p.lvl_homing > 0 && Math.random() < 0.33); 
                     
-                    let enhancedDmg = p.dmg * 2.0 * (1 + (p.lvl_skill_dmg||0) * 0.5);
                     let bColor = isBhSeed ? '#111' : (isEnhanced ? '#00ffff' : '#f1c40f');
                     let bRadius = isBhSeed ? 10 : (isEnhanced ? 8 : 6);
 
                     bullets.push({ 
-                        x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? enhancedDmg : p.dmg, 
+                        x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
                         enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: new Map(), isBhSeed: isBhSeed
                     });
                 }
@@ -881,7 +898,8 @@
                         
                         if (b.enhanced && homingBullets.length < 150) {
                             playSound('zap');
-                            let homingDmg = p.dmg * (0.8 + p.lvl_homing * 0.5) * (1 + (p.lvl_skill_dmg||0) * 0.5);
+                            // 평타 베이스 유도탄
+                            let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
                                 homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: new Map() });
@@ -889,7 +907,8 @@
                         }
                         if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 100) {
                             playSound('zap');
-                            let ld = (p.dmg * 2.0) * (1 + (p.lvl_skill_dmg||0) * 0.5); 
+                            // 스킬 베이스 번개
+                            let ld = 15 * p.skill_mult * (1 + p.lvl_lightning * 0.2); 
                             let jumps = 1 + p.lvl_lightning; 
                             let lx = e.x, ly = e.y;
                             for(let k=0; k<jumps; k++) {
@@ -975,11 +994,11 @@
                 ctx.restore();
                 
                 if (frameCount % 15 === 0) {
-                    let stormDmg = p.dmg * 1.5 * (1 + (p.lvl_skill_dmg||0) * 0.5) * p.lvl_storm; 
+                    let stormDmg = 8 * p.skill_mult * (1 + p.lvl_storm * 0.5);
                     enemies.forEach(e => {
                         if (Math.hypot(e.x - p.x, e.y - p.y) < sk_r + e.w/2) {
                             e.hp -= stormDmg; e.y -= 15; e.x += (e.x > p.x ? 10 : -10); 
-                            if(e.isBoss) e.iframe = 4;
+                            if(e.isBoss && !e.isDevTest) e.iframe = 4;
                             spawnParticles(e.x, e.y, '#00a8ff', 2);
                         }
                     });
@@ -989,8 +1008,9 @@
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i]; 
                 
+                // 🧪 개발자 모드 보스는 공격하지 않음 (!e.isDevTest 조건)
                 if(e.isBoss) {
-                    if (frameCount % Math.max(30, 90 - bossKills * 3) === 0) {
+                    if (!e.isDevTest && frameCount % Math.max(30, 90 - bossKills * 3) === 0) {
                         playSound('boss_shoot');
                         let dx = p.x - e.x; let dy = p.y - e.y; let angle = Math.atan2(dy, dx);
                         let bulletCount = 3 + Math.floor(bossKills/3); 
@@ -1013,6 +1033,12 @@
                         ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(frameCount*0.05); ctx.fillStyle = '#8e44ad'; ctx.shadowColor = '#d980fa'; ctx.shadowBlur = 20;
                         ctx.beginPath(); ctx.roundRect(-e.w/2, -e.h/2, e.w, e.h, 15); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0, e.w/4, 0, Math.PI*2); ctx.fill();
                         ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0, e.w/4 * (0.5 + Math.sin(frameCount*0.1)*0.5), 0, Math.PI*2); ctx.fill(); ctx.restore();
+                        
+                        // 🧪 샌드백 보스 체력 표시
+                        if (e.isDevTest) {
+                            ctx.fillStyle = '#ff4757'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+                            ctx.fillText(`체력: ${Math.ceil(Math.max(0, e.hp))} / ${e.maxHp}`, e.x, e.y + e.h/2 + 35);
+                        }
                     } else {
                         ctx.save(); let grad = ctx.createLinearGradient(e.x, e.y-e.h/2, e.x, e.y+e.h/2); grad.addColorStop(0, e.color || '#ff4757'); grad.addColorStop(1, '#111'); ctx.fillStyle = grad;
                         ctx.beginPath(); ctx.roundRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h, 6); ctx.fill();
@@ -1029,11 +1055,11 @@
                     
                     spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?40:10); 
 
-                    if(e.isBoss){
+                    if(e.isBoss && !e.isDevTest){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
                         if(bossKills>=WIN_CONDITION) {gameEnd(true); return;} else {p.exp+=p.maxExp; updateUI();}
-                    } else { 
+                    } else if(!e.isDevTest) { 
                         p.exp += (2 + Math.floor(bossKills / 2)); 
                     }
                     enemies.splice(i,1); if(p.exp>=p.maxExp) triggerLevelUp(); updateUI(); 

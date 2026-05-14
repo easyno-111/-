@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v6)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v6.1)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         :root {
-            var(--bg-color): #f2f2f7; 
+            --bg-color: #f2f2f7; 
             --card-bg: #ffffff;
             --text-main: #1d1d1f;
             --text-sub: #86868b;
@@ -25,7 +25,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #f2f2f7; color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; width: 100vw; }
         .math { font-style: italic; font-family: "Times New Roman", Times, serif; }
 
         /* ==================== 🚪 방탈출 문 애니메이션 ==================== */
@@ -378,14 +378,25 @@
             noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); noise.stop(audioCtx.currentTime + 1.5);
         }
 
-        let particles = []; let rocket = { active: false, history: [] }; 
+        let particles = []; let rocket = { active: false, fullTrajectory: [] }; 
         let shotsFired = 0; let contentRevealed = false; let trajectoryMode = false;
 
         function launchRocket() {
             if (rocket.active) return;
             rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
             rocket.vy = -(12 + Math.random() * 3); rocket.vx = (Math.random() - 0.5) * 5;
-            rocket.history = []; // 궤적 저장용 배열 초기화
+            
+            // 🚀 NEW: 발사 즉시 전체 포물선 궤도(내려가는 곳까지)를 물리 시뮬레이션으로 미리 계산
+            rocket.fullTrajectory = [];
+            let tx = rocket.x, ty = rocket.y, tvx = rocket.vx, tvy = rocket.vy;
+            // 땅(화면 바닥)보다 살짝 아래로 떨어질 때까지 시뮬레이션 반복
+            while(ty <= fwCanvas.height + 50) { 
+                rocket.fullTrajectory.push({x: tx, y: ty});
+                tvy += 0.2; // 중력 (아래 animateFw와 동일)
+                tx += tvx;
+                ty += tvy;
+            }
+
             rocket.active = true; playWhiz();
         }
 
@@ -412,24 +423,22 @@
             if(contentRevealed) return; 
             fwCtx.fillStyle = 'rgba(5, 5, 16, 0.2)'; fwCtx.fillRect(0, 0, fwCanvas.width, fwCanvas.height);
             
+            // 🚀 NEW: 궤도 모드 켜졌으면, 폭죽이 날아가거나 잔해가 남아있는 동안 미리 계산된 '완전한 포물선'을 화면에 유지
+            if (trajectoryMode && rocket.fullTrajectory && (rocket.active || particles.length > 0)) {
+                fwCtx.beginPath();
+                fwCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                fwCtx.lineWidth = 3;
+                fwCtx.setLineDash([8, 8]);
+                for (let i = 0; i < rocket.fullTrajectory.length; i++) {
+                    if (i === 0) fwCtx.moveTo(rocket.fullTrajectory[i].x, rocket.fullTrajectory[i].y);
+                    else fwCtx.lineTo(rocket.fullTrajectory[i].x, rocket.fullTrajectory[i].y);
+                }
+                fwCtx.stroke();
+                fwCtx.setLineDash([]);
+            }
+
             if (rocket.active) {
                 rocket.vy += 0.2; rocket.x += rocket.vx; rocket.y += rocket.vy;
-                rocket.history.push({x: rocket.x, y: rocket.y}); // 궤적 기록
-
-                // 궤도 모드 켜졌으면 점선 그리기
-                if (trajectoryMode) {
-                    fwCtx.beginPath();
-                    fwCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-                    fwCtx.lineWidth = 2;
-                    fwCtx.setLineDash([5, 5]);
-                    for (let i = 0; i < rocket.history.length; i++) {
-                        if (i === 0) fwCtx.moveTo(rocket.history[i].x, rocket.history[i].y);
-                        else fwCtx.lineTo(rocket.history[i].x, rocket.history[i].y);
-                    }
-                    fwCtx.stroke();
-                    fwCtx.setLineDash([]);
-                }
-
                 fwCtx.beginPath(); fwCtx.arc(rocket.x, rocket.y, 4, 0, Math.PI*2); fwCtx.fillStyle = '#00d2ff'; fwCtx.fill();
                 
                 // 최고점에서 터짐
@@ -625,7 +634,6 @@
 
             html2canvas(targetElement, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
             .then(canvas => {
-                // 아이패드 메모리 초과/새로고침 방지를 위해 Blob 객체 사용
                 canvas.toBlob(function(blob) {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');

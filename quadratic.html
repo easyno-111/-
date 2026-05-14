@@ -3,81 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>데이터 시뮬레이터</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>이차함수 데이터 시뮬레이터</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --neon-blue: #00d2ff;
-            --neon-pink: #ff0055;
-            --neon-cyan: #00ffcc;
-            --dark-bg: #050505;
-            --panel: rgba(20, 20, 25, 0.8);
+            --primary: #007aff;
+            --accent: #ff2d55;
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-main: #1d1d1f;
+            --border-color: #d1d1d6;
         }
-        body {
-            font-family: 'Noto Sans KR', sans-serif; margin: 20px;
-            background-color: var(--dark-bg); color: white;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        h1 { color: var(--neon-blue); font-family: 'Orbitron', sans-serif; text-shadow: 0 0 10px rgba(0,210,255,0.5); margin-bottom: 20px; font-size: 24px; }
+        * { box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+        body { margin: 20px; background-color: var(--bg-color); display: flex; flex-direction: column; align-items: center; }
+        h1 { color: var(--text-main); margin-bottom: 20px; font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         
         .controls {
-            background: var(--panel); padding: 20px; border-radius: 15px;
-            border: 1px solid rgba(0, 210, 255, 0.3); box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px;
-            align-items: center; justify-content: center; width: 100%; max-width: 800px;
-            backdrop-filter: blur(10px);
+            background: var(--card-bg); padding: 25px; border-radius: 15px; border: 1px solid var(--border-color);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 20px;
+            align-items: center; justify-content: center; width: 100%; max-width: 850px;
         }
-        .input-group { display: flex; align-items: center; gap: 5px; font-size: 18px; font-family: 'Orbitron', sans-serif; }
+        .input-group { display: flex; align-items: center; gap: 5px; font-size: 18px; font-weight: bold; color: var(--text-main); }
+        .input-group i { font-family: "Times New Roman", Times, serif; font-style: italic; }
         
         input[type="number"] {
-            width: 60px; padding: 8px; font-size: 16px; font-family: 'Orbitron', sans-serif;
-            background: #111; color: var(--neon-blue); border: 1px solid #444;
-            border-radius: 5px; text-align: center; outline: none; transition: 0.3s;
+            width: 65px; padding: 8px; font-size: 16px; font-weight: bold; background: #f9f9f9; color: var(--primary);
+            border: 2px solid var(--border-color); border-radius: 8px; text-align: center; outline: none; transition: 0.3s;
         }
-        input[type="number"]:focus { border-color: var(--neon-blue); box-shadow: 0 0 8px rgba(0,210,255,0.5); }
-        .interval-inputs input { width: 70px; }
+        input[type="number"]:focus { border-color: var(--primary); }
+        .interval-inputs input { width: 80px; }
         
-        .info { font-size: 13px; color: #888; margin-top: 5px; margin-bottom: 15px; }
+        /* 🎲 함수 랜덤 버튼 스타일 */
+        .random-btn {
+            background: var(--primary-light, #e5f1ff); color: var(--primary); border: 2px solid var(--primary);
+            padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
+            display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .random-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+
+        .info { font-size: 14px; color: #888; margin-top: 5px; margin-bottom: 15px; font-weight: bold; }
         
         #result-panel {
-            font-size: 18px; font-family: 'Noto Sans KR', sans-serif; padding: 15px 25px;
-            border-radius: 8px; background-color: rgba(0,0,0,0.5); border: 1px solid #333;
-            min-width: 250px; text-align: center; line-height: 1.5;
+            font-size: 18px; padding: 15px 25px; border-radius: 10px; background-color: #fafafa;
+            border: 1px solid var(--border-color); min-width: 250px; text-align: center; line-height: 1.5; font-weight: bold;
         }
-        .max-text { color: var(--neon-pink); font-weight: bold; text-shadow: 0 0 5px rgba(255,0,85,0.5); }
-        .min-text { color: var(--neon-cyan); font-weight: bold; text-shadow: 0 0 5px rgba(0,255,204,0.5); }
+        .max-text { color: var(--accent); }
+        .min-text { color: var(--primary); }
         
         canvas {
-            background: #0a0b10; border-radius: 10px; border: 1px solid #333;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); cursor: default; touch-action: none;
+            background: var(--card-bg); border-radius: 15px; border: 2px solid var(--border-color);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05); cursor: default; touch-action: none; max-width: 100%;
         }
     </style>
 </head>
 <body>
 
-    <h1>DATA SIMULATOR</h1>
+    <h1><i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> 이차함수 시뮬레이터</h1>
 
     <div class="controls">
         <div class="input-group">
             <i>f(x)</i> = 
-            <input type="number" id="val-a" value="1" step="0.1"> <i>x</i><sup>2</sup> + 
-            <input type="number" id="val-b" value="-4" step="0.1"> <i>x</i> + 
-            <input type="number" id="val-c" value="3" step="0.1">
+            <input type="number" id="val-a" value="1" step="0.5"> <i>x</i><sup>2</sup> + 
+            <input type="number" id="val-b" value="-4" step="0.5"> <i>x</i> + 
+            <input type="number" id="val-c" value="3" step="0.5">
         </div>
+
+        <button type="button" class="random-btn" onclick="randomizeFunction()"><i class="fa-solid fa-dice"></i> 함수 랜덤 변경</button>
         
         <div class="input-group interval-inputs">
-            RANGE: 
-            <input type="number" id="val-xmin" value="0" step="0.5" placeholder="INF"> 
+            구간: 
+            <input type="number" id="val-xmin" value="0" step="0.5" placeholder="없음"> 
             &le; <i>x</i> &le; 
-            <input type="number" id="val-xmax" value="5" step="0.5" placeholder="INF">
+            <input type="number" id="val-xmax" value="5" step="0.5" placeholder="없음">
         </div>
         
         <div id="result-panel">
-            <span class="max-text">MAX VAL: <span id="max-display">-</span></span><br>
-            <span class="min-text">MIN VAL: <span id="min-display">-</span></span>
+            <span class="max-text">최댓값: <span id="max-display">-</span></span><br>
+            <span class="min-text">최솟값: <span id="min-display">-</span></span>
         </div>
     </div>
-    <div class="info">※ 구간을 비우면 전체 구간으로 스캔합니다. 화면의 스캔 영역(구간)을 터치하여 드래그해보세요.</div>
+    <div class="info">※ 구간칸을 비우면 실수 전체입니다. 그래프 위 파란색 구간 영역을 터치하여 좌우로 드래그해보세요!</div>
 
     <canvas id="mathCanvas" width="800" height="500"></canvas>
 
@@ -98,7 +103,7 @@
         const originY = canvas.height / 2 + 100; 
 
         let isDraggingLeft = false; let isDraggingRight = false; let isDraggingBody = false;
-        let dragOffsetX = 0; const dragThreshold = 15;
+        let dragOffsetX = 0; const dragThreshold = 20;
 
         function getA() { return parseFloat(inputA.value) || 0; }
         function getB() { return parseFloat(inputB.value) || 0; }
@@ -107,6 +112,26 @@
         function getXMax() { return inputXMax.value === "" ? Infinity : parseFloat(inputXMax.value); }
 
         function f(x) { return getA() * x * x + getB() * x + getC(); }
+
+        // 🎲 함수 랜덤 변경 로직
+        function randomizeFunction() {
+            let a = 0;
+            while(a === 0) {
+                // a는 -2 ~ 2 사이의 깔끔한 정수 또는 0.5 단위
+                a = (Math.floor(Math.random() * 5) - 2); 
+                if(Math.random() > 0.5) a += 0.5; 
+            }
+            if (a === 0) a = 1; 
+            
+            // b와 c는 -6 ~ 6 사이의 정수
+            const b = Math.floor(Math.random() * 13) - 6; 
+            const c = Math.floor(Math.random() * 13) - 6; 
+
+            inputA.value = a;
+            inputB.value = b;
+            inputC.value = c;
+            draw();
+        }
 
         function toMathX(px) { return (px - originX) / scale; }
         function toMathY(py) { return -(py - originY) / scale; }
@@ -126,50 +151,45 @@
         }
 
         function drawGrid() {
-            ctx.font = "12px Orbitron"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = "14px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             for (let i = -20; i <= 20; i++) {
                 ctx.beginPath();
-                ctx.strokeStyle = i === 0 ? "rgba(0, 210, 255, 0.5)" : "rgba(255, 255, 255, 0.05)";
+                ctx.strokeStyle = i === 0 ? "#1d1d1f" : "#e5e5ea";
                 ctx.lineWidth = i === 0 ? 2 : 1;
                 ctx.moveTo(toPixelX(i), 0); ctx.lineTo(toPixelX(i), canvas.height); ctx.stroke();
-                
-                if (i !== 0 && i % 2 === 0) { ctx.fillStyle = "#555"; ctx.fillText(i, toPixelX(i), originY + 15); }
+                if (i !== 0 && i % 2 === 0) { ctx.fillStyle = "#888"; ctx.fillText(i, toPixelX(i), originY + 15); }
 
                 ctx.beginPath();
-                ctx.strokeStyle = i === 0 ? "rgba(0, 210, 255, 0.5)" : "rgba(255, 255, 255, 0.05)";
+                ctx.strokeStyle = i === 0 ? "#1d1d1f" : "#e5e5ea";
                 ctx.lineWidth = i === 0 ? 2 : 1;
                 ctx.moveTo(0, toPixelY(i)); ctx.lineTo(canvas.width, toPixelY(i)); ctx.stroke();
-
-                if (i !== 0 && i % 2 === 0) { ctx.fillStyle = "#555"; ctx.fillText(i, originX - 15, toPixelY(i)); }
+                if (i !== 0 && i % 2 === 0) { ctx.fillStyle = "#888"; ctx.fillText(i, originX - 15, toPixelY(i)); }
             }
-            ctx.fillStyle = "rgba(0, 210, 255, 0.8)"; ctx.fillText("0", originX - 10, originY + 15);
+            ctx.fillStyle = "#1d1d1f"; ctx.fillText("0", originX - 10, originY + 15);
         }
 
         function drawIntervalHighlight(xmin, xmax) {
             const pxMin = toPixelX(xmin), pxMax = toPixelX(xmax);
-            ctx.fillStyle = "rgba(0, 210, 255, 0.1)"; 
+            ctx.fillStyle = "rgba(0, 122, 255, 0.1)"; 
             ctx.fillRect(pxMin, 0, pxMax - pxMin, canvas.height);
 
-            ctx.strokeStyle = "#00d2ff"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+            ctx.strokeStyle = "var(--primary)"; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(pxMin, 0); ctx.lineTo(pxMin, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(pxMax, 0); ctx.lineTo(pxMax, canvas.height); ctx.stroke();
             ctx.setLineDash([]);
         }
 
         function drawParabola(isRestricted, xmin, xmax) {
-            // 배경 실선 (제한 범위 밖)
-            ctx.beginPath(); ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.strokeStyle = "#c1c1c1"; ctx.lineWidth = 2;
             for (let px = 0; px <= canvas.width; px += 2) {
                 let py = toPixelY(f(toMathX(px)));
                 if (px === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
             }
             ctx.stroke();
 
-            // 강조된 실선 (제한 범위 내)
             if (isRestricted) {
                 ctx.beginPath();
-                ctx.strokeStyle = "#00d2ff"; ctx.lineWidth = 4;
-                ctx.shadowBlur = 15; ctx.shadowColor = "#00d2ff"; // 네온 효과
+                ctx.strokeStyle = "var(--primary)"; ctx.lineWidth = 5;
                 const startPx = Math.max(0, toPixelX(xmin));
                 const endPx = Math.min(canvas.width, toPixelX(xmax));
                 
@@ -178,13 +198,12 @@
                     if (px === startPx) ctx.moveTo(px, py); else ctx.lineTo(px, py);
                 }
                 ctx.stroke();
-                ctx.shadowBlur = 0; // 초기화
             }
         }
 
         function calculateAndDrawExtremes(xmin, xmax, isRestricted) {
             const a = getA(), b = getB();
-            if (a === 0) { maxDisplay.textContent = "-"; minDisplay.textContent = "-"; return; }
+            if (a === 0) { maxDisplay.textContent = "없음"; minDisplay.textContent = "없음"; return; }
 
             const vertexX = -b / (2 * a);
             const candidates = [];
@@ -204,29 +223,26 @@
                 if (a > 0) maxPoint = null; else minPoint = null; 
             }
 
-            maxDisplay.textContent = maxPoint ? maxPoint.y.toFixed(2) : "NONE";
-            minDisplay.textContent = minPoint ? minPoint.y.toFixed(2) : "NONE";
+            maxDisplay.textContent = maxPoint ? maxPoint.y.toFixed(2) : "없음";
+            minDisplay.textContent = minPoint ? minPoint.y.toFixed(2) : "없음";
 
-            ctx.font = "bold 14px Orbitron";
-            if (maxPoint) drawPoint(maxPoint.x, maxPoint.y, "#ff0055", "MAX");
-            if (minPoint) drawPoint(minPoint.x, minPoint.y, "#00ffcc", "MIN");
+            ctx.font = "bold 16px Arial";
+            if (maxPoint) drawPoint(maxPoint.x, maxPoint.y, "var(--accent)", "최댓값");
+            if (minPoint) drawPoint(minPoint.x, minPoint.y, "var(--primary)", "최솟값");
         }
 
         function drawPoint(mx, my, color, label) {
             const px = toPixelX(mx), py = toPixelY(my);
             
-            ctx.shadowBlur = 10; ctx.shadowColor = color;
-            ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2);
             ctx.fillStyle = color; ctx.fill();
             ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
-            ctx.shadowBlur = 0;
 
             const text = `${label}(${mx.toFixed(1)}, ${my.toFixed(1)})`;
             ctx.fillStyle = color;
-            ctx.fillText(text, px + 15, py - 15);
+            ctx.fillText(text, px + 20, py - 15);
         }
 
-        // 마우스/터치 이벤트 (기존과 동일)
         function getPointerX(e) {
             const rect = canvas.getBoundingClientRect();
             let clientX = e.clientX;

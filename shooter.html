@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V47 하드코어 경험치 밸런스)</title>
+    <title>로그라이트 화력 슈팅 (V48 궁극의 시너지 개화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -101,7 +101,6 @@
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
 
-            <!-- 🎒 초기 스타팅 및 난이도 로드아웃 UI -->
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
@@ -449,6 +448,12 @@
             p.lvl_shuriken_active = (p.lvl_shuriken||0) > 0;
             p.vampire_chance = (p.lvl_vampire||0) * 0.05;
             p.bh_chance = (p.lvl_blackhole > 0) ? Math.min(0.1, 0.01 + (p.lvl_blackhole - 1) * 0.01) : 0; 
+            
+            // ☄️ 메테오(유성 폭격) 쿨타임 대폭 감소 (MAX시 1초마다 쾅쾅!)
+            if(p.lvl_orbital > 0) {
+                p.orbitalCooldown = Math.max(60, 180 - p.lvl_orbital * 24); 
+            }
+
             updateUI();
         }
 
@@ -544,7 +549,8 @@
                 diffExpMult: diff === 'hard' ? 2.5 : (diff === 'normal' ? 1.5 : 1),
 
                 base_dmg: 1, skill_mult: 1, 
-                totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
+                totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0,
+                orbitalCooldown: 180
             };
             
             p[startPassive] = 1;
@@ -782,6 +788,13 @@
             if(dt < frameDelay) return; lastTime = timestamp - (dt % frameDelay);
             if(gameState !== 'PLAYING') return; frameCount++; ctx.clearRect(0,0,canvas.width,canvas.height);
 
+            // 🔥 시너지 조건 확인
+            let hasSupernova = p.lvl_bullet >= 5 && p.lvl_homing >= 5;
+            let hasSuperBeam = p.activeSkillType === 'laser' && p.lvl_laser_split >= 5 && p.lvl_lightning >= 10;
+            let hasPlanetPunch = p.activeSkillType === 'punch' && p.lvl_punch_split >= 5 && p.lvl_orbital >= 5;
+            let hasTyphoon = p.activeSkillType === 'boomerang' && p.lvl_boom_split >= 5 && p.lvl_storm >= 5;
+            let hasSingularity = p.lvl_shuriken >= 5 && p.lvl_blackhole >= 5;
+
             if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 0.2); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
 
             ctx.fillStyle = isBossWarning ? '#300000' : 'white';
@@ -918,7 +931,8 @@
                                     w: sk.w * 0.6,
                                     vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15,
                                     state: 'sub_flying_out', timer: 20,
-                                    baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: []
+                                    baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: [],
+                                    isTyphoon: hasTyphoon // 🔥 태풍의 눈 시너지 발동
                                 });
                             }
                             activeSkills.splice(i, 1); continue;
@@ -944,6 +958,23 @@
 
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle=c_boom; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
                     
+                    // 🔥 태풍의 눈 오라 데미지 및 렌더링
+                    if (sk.isTyphoon && frameCount % 10 === 0) {
+                        let stormAoe = 80;
+                        ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount * 0.3);
+                        ctx.globalAlpha = 0.5; ctx.strokeStyle = '#00a8ff'; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.arc(0, 0, stormAoe, 0, Math.PI * 2); ctx.stroke();
+                        ctx.fillStyle = '#00a8ff'; ctx.globalAlpha = 0.2; ctx.fill();
+                        ctx.restore();
+                        
+                        enemies.forEach(e => {
+                            if((e.x-sk.x)*(e.x-sk.x) + (e.y-sk.y)*(e.y-sk.y) < stormAoe*stormAoe) {
+                                e.hp -= p.base_dmg * 2.0;
+                                spawnParticles(e.x, e.y, '#00a8ff', 1);
+                            }
+                        });
+                    }
+
                     if (sk.state !== 'flying_out') { 
                         let hitAny = false;
                         enemies.forEach(e => {
@@ -969,7 +1000,29 @@
                         if (dot > 0) {
                             let px = dirX * dot; let py = dirY * dot;
                             let distSq = (dx - px)*(dx - px) + (dy - py)*(dy - py);
-                            if (distSq < (sk.w/2 + e.w/2)*(sk.w/2 + e.w/2)) { e.hp -= sk.dmg; }
+                            if (distSq < (sk.w/2 + e.w/2)*(sk.w/2 + e.w/2)) { 
+                                e.hp -= sk.dmg; 
+                                
+                                // 🔥 초전도 광선 시너지 발동!
+                                if (hasSuperBeam && frameCount % 15 === 0 && lightnings.length < 50) {
+                                    playSound('zap');
+                                    let ld = 15 * p.skill_mult * (1 + p.lvl_lightning * 0.2); 
+                                    let chain = [ {x: e.x, y: e.y, enemy: e} ];
+                                    let currE = e; let hitArr = [e];
+                                    for(let k=0; k < p.lvl_lightning; k++) {
+                                        let closestDistSq = Infinity; let closestE = null;
+                                        for(let m=0; m<enemies.length; m++) {
+                                            let en = enemies[m];
+                                            if(!hitArr.includes(en)) {
+                                                let dSq = (en.x - currE.x)*(en.x - currE.x) + (en.y - currE.y)*(en.y - currE.y);
+                                                if(dSq < closestDistSq && dSq < 60000) { closestDistSq = dSq; closestE = en; }
+                                            }
+                                        }
+                                        if(closestE) { currE = closestE; hitArr.push(currE); chain.push({x: currE.x, y: currE.y, enemy: currE}); } else break;
+                                    }
+                                    lightnings.push({ chain: chain, life: 16, maxLife: 16, currentJump: 0, maxJumps: chain.length - 1, dmg: ld, c_light: '255,255,255' });
+                                }
+                            }
                         }
                     });
                     if(sk.life<=0) activeSkills.splice(i, 1);
@@ -1042,6 +1095,17 @@
                                         if(e.isBoss && !e.isDevTest) e.iframe=4; 
                                     } 
                                 });
+                                
+                                // 🔥 행성 붕괴 펀치 시너지 발동!
+                                if (hasPlanetPunch) {
+                                    for(let m=1; m<=3; m++){
+                                        orbitals.push({ 
+                                            x: sk.targetX + (Math.random()-0.5)*120, y: sk.targetY + (Math.random()-0.5)*120, 
+                                            timer: 20 * m, state: 'aim', r: 90, dmg: sk.dmg * 4 
+                                        });
+                                    }
+                                }
+
                                 sk.state = 'done';
                             }
                         }
@@ -1117,7 +1181,7 @@
             if(p.lvl_orbital > 0) {
                 p.orbitalTimer--;
                 if(p.orbitalTimer <= 0) {
-                    p.orbitalTimer = Math.max(90, 300 - p.lvl_orbital*30);
+                    p.orbitalTimer = p.orbitalCooldown;
                     let t = enemies.find(e => e.isBoss) || enemies[Math.floor(Math.random()*enemies.length)];
                     if(t) {
                         let orbDmg = 250 * p.skill_mult * (1 + p.lvl_orbital * 0.8);
@@ -1187,7 +1251,16 @@
                     if(t) { let dx=t.x-s.x, dy=t.y-s.y, d=Math.sqrt(dx*dx+dy*dy); s.vx=(dx/d)*18; s.vy=(dy/d)*18; } else { s.vx=0; s.vy=-18; }
                     s.state='pierce';
                 });
+                
+                // 🔥 특이점 슈리켄 시너지 발동!
+                if (hasSingularity && frameCount % 120 === 0 && orb.length > 0) {
+                    let rndShuri = orb[Math.floor(Math.random() * orb.length)];
+                    let bh_radius = 80 + p.lvl_blackhole * 20; 
+                    blackholes.push({x: rndShuri.x, y: rndShuri.y, r: bh_radius, life: 60, maxLife: 60, dmg: 0, vy: 0});
+                    playSound('bh_spawn');
+                }
             }
+            
             for(let i=shurikens.length-1; i>=0; i--) {
                 let s = shurikens[i];
                 if(s.state === 'orbit') {
@@ -1237,12 +1310,14 @@
                     let isEnhanced = (p.lvl_homing > 0 && Math.random() < 0.33); 
                     let isLightningSeed = (p.lvl_lightning > 0 && Math.random() < p.lightning_chance);
                     
-                    let bColor = isBhSeed ? '#111' : (isLightningSeed ? `rgb(${c_light})` : (isEnhanced ? c_homing : c_atk));
-                    let bRadius = isBhSeed ? 10 : (isLightningSeed ? 9 : (isEnhanced ? 8 : 6));
+                    // 🔥 무한의 초신성 컬러 적용
+                    let bColor = isBhSeed ? '#111' : (isLightningSeed ? `rgb(${c_light})` : (hasSupernova ? '#ffbe76' : (isEnhanced ? c_homing : c_atk)));
+                    let bRadius = isBhSeed ? 10 : (isLightningSeed ? 9 : (isEnhanced || hasSupernova ? 8 : 6));
 
                     bullets.push({ 
-                        x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed, isLightningSeed: isLightningSeed
+                        x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced || hasSupernova ? p.base_dmg * 2.0 : p.base_dmg, 
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], 
+                        isBhSeed: isBhSeed, isLightningSeed: isLightningSeed, isSupernova: hasSupernova
                     });
                 }
             }
@@ -1260,6 +1335,11 @@
                     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#fff';
                     ctx.beginPath(); ctx.arc(b.x, b.y, b.r*0.5, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                } else if (b.isSupernova) {
+                    ctx.save(); ctx.shadowBlur = 15; ctx.shadowColor = '#f39c12';
+                    ctx.fillStyle = '#ffeaa7';
+                    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.restore();
                 } else {
                     ctx.fillStyle=b.color; 
@@ -1287,7 +1367,16 @@
 
                         e.hp -= b.dmg; b.hitLog.push(e); playSound('hit');
                         
-                        if (b.enhanced && homingBullets.length < 150) {
+                        // 🔥 무한의 초신성 시너지 발동!
+                        if (b.isSupernova && homingBullets.length < 250) {
+                            playSound('zap');
+                            let homingDmg = p.base_dmg * 2.0;
+                            for(let k=0; k<2; k++) {
+                                let angle = Math.random() * Math.PI * 2;
+                                // ignore 속성을 null로 설정하여 방금 맞춘 적(보스 등)을 다시 타겟팅 가능하게 함
+                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*10, vy: Math.sin(angle)*10, dmg: homingDmg, target: e, life: 90, pierce: 1, ignore: null, hitLog: [] });
+                            }
+                        } else if (b.enhanced && homingBullets.length < 150) {
                             playSound('zap');
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
@@ -1356,13 +1445,19 @@
                 }
                 hb.x += hb.vx; hb.y += hb.vy;
                 
-                ctx.fillStyle = c_homing; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
+                if (hasSupernova && hb.ignore === null) {
+                    ctx.fillStyle = '#ffbe76'; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(hb.x, hb.y, 10, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(hb.x, hb.y, 6, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+                } else {
+                    ctx.fillStyle = c_homing; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
+                }
                 
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
                     if (e !== hb.ignore && !hb.hitLog.includes(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
-                        e.hp -= hb.dmg; hb.hitLog.push(e); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 3); 
+                        e.hp -= hb.dmg; hb.hitLog.push(e); hb.pierce--; hb.target = null; 
+                        spawnParticles(e.x, e.y, (hasSupernova && hb.ignore === null) ? '#ffbe76' : c_homing, 3); 
                     }
                 }
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
@@ -1508,7 +1603,6 @@
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
                         if(bossKills>=WIN_CONDITION) {gameEnd(true); return;} else {p.exp+=p.maxExp; updateUI();}
                     } else if(!e.isDevTest) { 
-                        // ⚖️ 하드코어 난이도 몹 EXP 버프 (하드 2.5배, 노말 1.5배)
                         p.exp += (2 + Math.floor(bossKills / 2)) * p.diffExpMult; 
                     }
                     enemies.splice(i,1); if(p.exp>=p.maxExp) triggerLevelUp(); updateUI(); 

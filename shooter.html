@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V37 물량 테스트 & 냥냥펀치 버프)</title>
+    <title>로그라이트 화력 슈팅 (V38 도파민 폭발 상자)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -37,7 +37,7 @@
 
         #levelup-screen { display: none; pointer-events: auto; }
         .ability-card { background: #2f3542; width: 90%; border-radius: 15px; padding: 18px; margin-bottom: 12px; border: 2px solid #57606f; cursor: pointer; color: white; transition: 0.2s; }
-        .ability-card.rare { border-color: #e1b12c; background: #3a2b10; }
+        .ability-card.rare { border-color: #00a8ff; background: #0b1a2b; box-shadow: 0 0 10px rgba(0, 168, 255, 0.3); }
         .ability-card.legendary { border-color: #00ffff; background: #002233; box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); }
         .ability-card:hover { transform: scale(1.03); background: #3a4151; }
         
@@ -48,11 +48,24 @@
         .type-skill { color: #55efc4; } 
         .type-util { color: #ffeaa7; }  
 
-        .chest-box { font-size: 80px; cursor: pointer; transition: 0.2s; }
-        .anim-shake { animation: shake-normal 0.6s ease-in-out forwards; }
-        .anim-shake-rare { animation: shake-rare 1.4s ease-in-out forwards; }
-        @keyframes shake-normal { 0%, 100% { transform: rotate(0deg); } 20%, 60% { transform: rotate(-15deg); } 40%, 80% { transform: rotate(15deg); } 100% { opacity: 0; } }
-        @keyframes shake-rare { 0%, 100% { transform: rotate(0deg); } 10%, 30%, 50%, 70%, 90% { transform: rotate(-25deg) scale(1.4); } 20%, 40%, 60%, 80% { transform: rotate(25deg) scale(1.4); } 100% { opacity: 0; scale: 2.5; } }
+        /* 🎁 도파민 폭발 상자 연출 CSS */
+        .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
+        #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
+        .beam { position: absolute; bottom: 0; left: -15px; width: 30px; height: 400px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        @keyframes shake-small {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-8px) rotate(-8deg); }
+            75% { transform: translateX(8px) rotate(8deg); }
+        }
+        @keyframes shake-crazy {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            10% { transform: translate(-12px, -8px) rotate(-15deg) scale(1.1); }
+            30% { transform: translate(12px, 8px) rotate(15deg) scale(1.15); }
+            50% { transform: translate(-12px, 8px) rotate(-15deg) scale(1.1); }
+            70% { transform: translate(12px, -8px) rotate(15deg) scale(1.2); }
+            90% { transform: translate(0px, 0px) rotate(0deg) scale(1.25); filter: brightness(1.5); }
+        }
 
         #dev-panel { display: none; position: fixed; top: 5%; left: 50%; transform: translateX(-50%); width: 90%; max-width: 450px; background: rgba(10, 15, 25, 0.95); border: 2px solid #00a8ff; border-radius: 15px; padding: 20px; color: white; z-index: 1000; max-height: 90vh; overflow-y: auto; pointer-events: auto; box-shadow: 0 0 30px rgba(0, 168, 255, 0.4); }
         .dev-skill-row { display: flex; justify-content: space-between; align-items: center; background: #2f3542; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
@@ -95,11 +108,15 @@
         </div>
 
         <div class="overlay" id="levelup-screen">
-            <div id="lvl-title-text" style="font-size:32px; color:#f1c40f; font-weight:900; margin-bottom:20px;">보물상자!</div>
-            <div id="chest-container" style="display:flex; flex-direction:column; align-items:center;">
-                <div id="chest-emoji" class="chest-box" onpointerdown="openChest()">🎁</div>
-                <p style="color:white; margin-top:20px;">터치하여 열기</p>
+            <div id="lvl-title-text" style="font-size:32px; color:white; font-weight:900; margin-bottom:20px; text-shadow: 0 0 10px rgba(255,255,255,0.5);">미지의 상자 발견!</div>
+            
+            <!-- 🎁 새로운 상자 렌더링 영역 (빔 컨테이너 추가) -->
+            <div id="chest-container" style="display:flex; flex-direction:column; align-items:center; position:relative;">
+                <div id="beam-container"></div>
+                <div id="chest-emoji" class="chest-box" onpointerdown="clickChest()">🎁</div>
+                <p id="chest-desc" style="color:#dfe6e9; margin-top:20px; font-weight:bold;">터치하여 열기</p>
             </div>
+            
             <div id="ability-container" style="width: 100%; display: none; flex-direction: column; align-items: center; overflow-y: auto; max-height: 70vh;"></div>
             <button id="reroll-btn">🔄 능력 새로고침 (1회)</button>
         </div>
@@ -112,7 +129,6 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
-    <!-- 🛠️ 개발자 패널 -->
     <div id="dev-panel">
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
@@ -172,7 +188,6 @@
             shuriken: ['#f1c40f', '#e67e22', '#e74c3c', '#fd79a8', '#9c88ff', '#00cec9'] 
         };
 
-        // ⚡ 사전 렌더링(Pre-render) 캐싱 엔진: 극강의 렌더링 최적화
         const spriteCache = {};
         function getSprite(type, color, param) {
             let key = type + '_' + color + '_' + param;
@@ -180,12 +195,10 @@
                 let c = document.createElement('canvas');
                 let cx = c.getContext('2d');
                 if (type === 'enemy') {
-                    // 👻 최적화 + 귀여움을 위한 단순화 몬스터 렌더링 (슬라임 형태)
                     let size = param || 30; c.width = size; c.height = size;
                     let half = size / 2; cx.translate(half, half);
                     cx.fillStyle = color;
                     cx.beginPath(); cx.arc(0, 0, half - 2, 0, Math.PI*2); cx.fill();
-                    // 귀여운 까만 눈 두개
                     cx.fillStyle = 'rgba(0,0,0,0.6)';
                     cx.beginPath(); cx.arc(-4, -2, 3, 0, Math.PI*2); cx.fill();
                     cx.beginPath(); cx.arc(4, -2, 3, 0, Math.PI*2); cx.fill();
@@ -213,8 +226,10 @@
             return spriteCache[key];
         }
 
-        let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
-        let customEnemyImg = null
+        // 👻 캐릭터 기본 이미지 렌더링 끄기 (null 처리)
+        let customPlayerImg = null; 
+        let customEnemyImg = null; 
+
         function handleImage(event, type) {
             const file = event.target.files[0]; if (!file) return;
             const img = new Image(); img.src = URL.createObjectURL(file);
@@ -320,7 +335,6 @@
             closeDevMode();
         }
 
-        // 🌊 개발자 기능: 물량 테스트 (한번에 250마리 스폰)
         function spawnSwarmTest() {
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<250; k++) {
@@ -434,10 +448,8 @@
             add('lvl_sword', 5, '🗡️ 환영검 진형', swordDesc, () => { p.lvl_sword++; recalculateStats(); }, 'type-skill', p.lvl_sword > 0 ? 0.6 : 0.2, true);
             let stormDesc = p.lvl_storm === 0 ? '캐릭터 주변에 적을 갈아버리는 오라 생성' : '톱날 오라의 반경 넓어짐 및 틱 데미지 증가';
             add('lvl_storm', 5, '🌀 칼날 돌풍', stormDesc, () => { p.lvl_storm++; recalculateStats(); }, 'type-skill', p.lvl_storm > 0 ? 0.6 : 0.2, true);
-            
             let orbDesc = p.lvl_orbital === 0 ? '불타는 거대 운석이 하늘에서 사선으로 꽂힙니다.' : '유성 폭격 낙하 주기 감소 및 폭발 위력 증가';
             add('lvl_orbital', 5, '☄️ 유성 폭격', orbDesc, () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); }, 'type-skill', p.lvl_orbital > 0 ? 0.4 : 0.02, false, true);
-            
             let shuriDesc = p.lvl_shuriken === 0 ? '주위를 회전하며 적을 뚫는 수호 표창 생성' : '회전하는 수호 표창의 개수 최대치 증가';
             add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
 
@@ -451,7 +463,6 @@
             } else if (p.activeSkillType === 'laser') {
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
-                // 🐾 냥냥펀치 설명에 폭발 버프 반영
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
                 add('lvl_punch_split', 5, '💥 냥냥펀치 연쇄폭발', '주먹이 적에 닿자마자 대형 연쇄 폭발을 일으키며 쪼개집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
@@ -506,25 +517,116 @@
             else { btn.classList.remove('cooldown'); document.getElementById('skill-name').style.display='block'; document.getElementById('skill-cool').innerText = ''; }
         }
 
+        // 🎁 보물상자 애니메이션 변수 
         let isChestOpening = false;
         let currentChestReroll = 1; 
+        let chestClickCount = 0;
+        let chestRarity = 'NORMAL';
 
         function triggerLevelUp() { 
-            gameState = 'LEVELUP'; isChestOpening = false; isRareChest = Math.random() < 0.1; currentChestReroll = 1; 
-            document.getElementById('levelup-screen').style.display = 'flex'; document.getElementById('chest-container').style.display = 'flex'; document.getElementById('ability-container').style.display = 'none'; document.getElementById('reroll-btn').style.display = 'none';
-            let chestEl = document.getElementById('chest-emoji'); chestEl.className = 'chest-box'; 
-            if (isRareChest) { document.getElementById('lvl-title-text').innerText = '✨ 황금 상자! ✨'; document.getElementById('lvl-title-text').style.color = '#00ffff'; chestEl.innerHTML = '✨🎁✨'; } 
-            else { document.getElementById('lvl-title-text').innerText = '보물상자 발견!'; document.getElementById('lvl-title-text').style.color = '#f1c40f'; chestEl.innerHTML = '🎁'; }
-        }
-        
-        function openChest() {
-            if(isChestOpening) return; isChestOpening = true; playSound('shoot');
+            gameState = 'LEVELUP'; isChestOpening = false; chestClickCount = 0; currentChestReroll = 1; 
+            
+            // 🎲 등급 판정 (노말 65%, 레어 25%, 전설 10%)
+            let rand = Math.random();
+            if (rand < 0.10) chestRarity = 'LEGENDARY';
+            else if (rand < 0.35) chestRarity = 'RARE';
+            else chestRarity = 'NORMAL';
+
+            document.getElementById('levelup-screen').style.display = 'flex'; 
+            document.getElementById('chest-container').style.display = 'flex'; 
+            document.getElementById('ability-container').style.display = 'none'; 
+            document.getElementById('reroll-btn').style.display = 'none';
+            
+            // 초기화 (모두 동일한 상자로 보이게)
+            let title = document.getElementById('lvl-title-text');
+            title.innerText = '미지의 상자 발견!';
+            title.style.color = 'white';
+            
             let chestEl = document.getElementById('chest-emoji');
-            if (isRareChest) { chestEl.classList.add('anim-shake-rare'); setTimeout(showOptions, 1400); } 
-            else { chestEl.classList.add('anim-shake'); setTimeout(showOptions, 600); }
+            chestEl.style.animation = 'none';
+            chestEl.style.transform = 'scale(1)';
+            chestEl.innerHTML = '🎁';
+            document.getElementById('chest-desc').style.display = 'block';
+            document.getElementById('beam-container').innerHTML = ''; // 빔 초기화
         }
 
-        function showOptions() {
+        // 🎇 빛줄기 생성 함수
+        function createBeam(angle, color) {
+            let b = document.createElement('div');
+            b.className = 'beam';
+            b.style.transform = `rotate(${angle}deg)`;
+            b.style.background = `linear-gradient(to top, ${color}, transparent)`;
+            document.getElementById('beam-container').appendChild(b);
+            setTimeout(() => b.style.opacity = '0.8', 50);
+        }
+        
+        function clickChest() {
+            if(isChestOpening) return;
+            let chestEl = document.getElementById('chest-emoji');
+            let title = document.getElementById('lvl-title-text');
+            let desc = document.getElementById('chest-desc');
+            
+            chestClickCount++;
+            
+            if (chestClickCount === 1 || chestClickCount === 2) {
+                // 1~2 타: 살짝 흔들리기
+                playSound('hit');
+                chestEl.style.animation = 'none';
+                void chestEl.offsetWidth; // 리플로우
+                chestEl.style.animation = 'shake-small 0.3s';
+            } 
+            else if (chestClickCount === 3) {
+                // 3타: 개방 및 애니메이션 발동
+                isChestOpening = true;
+                playSound('shoot');
+                desc.style.display = 'none';
+                
+                let baseColor = chestRarity === 'NORMAL' ? '#f1c40f' : (chestRarity === 'RARE' ? '#00a8ff' : '#00ffff');
+                
+                // 1단계: 기본 빔 1개 발사
+                createBeam(0, baseColor);
+                
+                if (chestRarity === 'NORMAL') {
+                    title.innerText = '보물상자!'; title.style.color = '#f1c40f';
+                    setTimeout(() => { showOptions(3); }, 800);
+                } 
+                else if (chestRarity === 'RARE') {
+                    // 1초 뒤 3개로 퍼짐
+                    setTimeout(() => {
+                        playSound('zap');
+                        createBeam(-30, baseColor); createBeam(30, baseColor);
+                        title.innerText = '희귀 보물상자!'; title.style.color = '#00a8ff';
+                    }, 1000);
+                    // 옵션 4개 표시
+                    setTimeout(() => { showOptions(4); }, 2000);
+                }
+                else if (chestRarity === 'LEGENDARY') {
+                    // 1초 뒤 3개로 퍼지며 지랄발광 시작
+                    setTimeout(() => {
+                        playSound('zap');
+                        createBeam(-30, baseColor); createBeam(30, baseColor);
+                        chestEl.style.animation = 'shake-crazy 1s infinite';
+                        title.innerText = '황금 보물상자!!'; title.style.color = '#00ffff';
+                    }, 1000);
+                    
+                    // 1초 뒤 폭발하며 5개 빔, 상자 진화
+                    setTimeout(() => {
+                        playSound('kill');
+                        createBeam(-60, baseColor); createBeam(60, baseColor);
+                        chestEl.innerHTML = '✨🎁✨';
+                        chestEl.style.animation = 'none';
+                        chestEl.style.transform = 'scale(1.4)';
+                        title.innerText = '✨ 전설의 황금 상자!! ✨';
+                    }, 2000);
+                    
+                    // 옵션 5개 표시
+                    setTimeout(() => { showOptions(5); }, 3000);
+                }
+            }
+        }
+
+        // 선택지 개수를 파라미터로 받음
+        function showOptions(optionCount) {
             playSound('levelup');
             document.getElementById('chest-container').style.display = 'none';
             document.getElementById('ability-container').style.display = 'flex';
@@ -532,7 +634,7 @@
             const rerollBtn = document.getElementById('reroll-btn');
             rerollBtn.style.display = currentChestReroll > 0 ? 'inline-block' : 'none';
             rerollBtn.onclick = () => {
-                if(currentChestReroll > 0) { currentChestReroll--; playSound('shoot'); showOptions(); }
+                if(currentChestReroll > 0) { currentChestReroll--; playSound('shoot'); showOptions(optionCount); }
             };
 
             let pool = getAvailableAbilities();
@@ -541,7 +643,8 @@
                 [pool[i], pool[j]] = [pool[j], pool[i]];
             }
             
-            let choices = pool.slice(0, isRareChest ? 5 : 3);
+            // 등급에 따른 개수만큼 표시 (3, 4, 5개)
+            let choices = pool.slice(0, optionCount || 3);
             const cont = document.getElementById('ability-container'); cont.innerHTML = '';
             choices.forEach(ab => {
                 let card = document.createElement('div'); card.className = ab.isLegendary ? 'ability-card legendary' : (ab.isRare ? 'ability-card rare' : 'ability-card');
@@ -576,10 +679,9 @@
                 let sd = 25 * p.skill_mult;
                 let count = (1 + p.lvl_punch_count) + p.cheat_extra_proj;
                 for(let i=0; i<count; i++) {
-                    // 🐾 각도 계산 픽스 (1개일 때 정면으로 나가도록 수정)
+                    // 🐾 각도 계산 픽스 적용 (홀수일 때 정중앙 타겟)
                     let angleCalc = count > 1 ? (i - (count-1)/2) * 0.4 : 0;
                     activeSkills.push({ 
-                        // 🐾 크기 70 -> 90 버프 적용!
                         type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 90, 
                         vx: Math.cos(-Math.PI/2 + angleCalc)*18 + p.vx*0.3, 
                         vy: Math.sin(-Math.PI/2 + angleCalc)*18, 
@@ -598,7 +700,6 @@
             if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
         }
 
-        // 🗑️ 파티클 렌더링 최적화 (150 제한 및 가벼운 사각형 렌더링)
         function spawnParticles(x, y, color, count, speedMult = 1) {
             if (particles.length > 150) return; 
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
@@ -741,7 +842,7 @@
                     enemies.forEach(e => { 
                         if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { 
                             if (frameCount % 6 === 0) { e.hp -= sk.dmg; hitAny = true; if(e.isBoss && !e.isDevTest) e.iframe = 2; }
-                            if(sk.state==='flying'){ sk.state='hovering'; sk.hoverTimer=50; }
+                            if(sk.state==='flying'){ sk.state='hovering'; sk.hoverTimer=15; } 
                         } 
                     });
                     if (hitAny && frameCount % 6 === 0) playSound('hit');
@@ -938,7 +1039,7 @@
             let c_shuri = colorLevels.shuriken[Math.min(5, p.lvl_shuriken||0)];
             if(p.lvl_shuriken_active) {
                 if(frameCount % 60 === 0 && shurikens.filter(s=>s.state==='orbit').length < p.shurikenLimit) {
-                    shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: [] }); // 무한관통 Array
+                    shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: [] }); 
                 }
                 let orb = shurikens.filter(s=>s.state==='orbit');
                 if(orb.length > 0 && orb.length >= p.shurikenLimit) orb.forEach(s => {
@@ -1188,7 +1289,6 @@
                         let spr = getSprite('enemy', e.color || '#ff4757', e.w);
                         ctx.drawImage(spr, e.x - e.w/2, e.y - e.h/2);
                         
-                        // 체력 숫자는 조금 작게 표시
                         ctx.fillStyle = "white"; ctx.font = "bold 12px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
                         ctx.fillText(Math.ceil(e.hp), e.x, e.y + 4);
                     }
@@ -1231,12 +1331,7 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 let pt = particles[i]; pt.life--; pt.x += pt.vx; pt.y += pt.vy; let lifeRatio = Math.max(0, pt.life / (pt.maxLife || 25)); ctx.globalAlpha = lifeRatio;
                 if (pt.isAoE) { ctx.strokeStyle = pt.color; ctx.lineWidth = 3; ctx.beginPath(); let r = Math.max(0.1, pt.size * (1 - lifeRatio)); ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2); ctx.stroke(); } 
-                else { 
-                    // 🚀 가벼운 사각형 렌더링으로 GC 최적화
-                    ctx.fillStyle = pt.color; 
-                    let r = Math.max(0.1, pt.size * lifeRatio); 
-                    ctx.fillRect(pt.x - r, pt.y - r, r*2, r*2); 
-                }
+                else { ctx.fillStyle = pt.color; let r = Math.max(0.1, pt.size * lifeRatio); ctx.fillRect(pt.x - r, pt.y - r, r*2, r*2); }
                 ctx.globalAlpha = 1; if (pt.life <= 0) particles.splice(i, 1);
             }
 

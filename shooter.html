@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V33 부채꼴 레이저 & 냥냥펀치 상향)</title>
+    <title>로그라이트 화력 슈팅 (V35 레이저 트래킹 완벽화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -167,7 +167,8 @@
             storm: ['#00a8ff', '#0097e6', '#9c88ff', '#8c7ae6', '#fbc531', '#e1b12c'],
             boomerang: ['#00d2d3', '#00b894', '#00cec9', '#0984e3', '#6c5ce7', '#fd79a8'],
             laser: ['#ffffff', '#ffeaa7', '#fab1a0', '#ff7675', '#fd79a8', '#e84393'],
-            punch: ['#ff9ff3', '#f368e0', '#ff6b6b', '#ee5253', '#0abde3', '#2e86de']
+            punch: ['#ff9ff3', '#f368e0', '#ff6b6b', '#ee5253', '#0abde3', '#2e86de'],
+            meteor: ['#e17055', '#d63031', '#c0392b', '#b33939', '#ff3f34', '#ff9f43'] 
         };
 
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
@@ -326,7 +327,6 @@
             recalculateStats(); renderDevSkills(); 
         }
 
-        // ⚖️ 스킬 배율 9% (1.09) 로 하향 조정
         function recalculateStats() {
             p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
             p.base_dmg *= p.cheat_dmg_mult; 
@@ -373,7 +373,6 @@
             let homingDesc = p.lvl_homing === 0 ? '각 평타가 33% 확률로 유도 분열탄 발동' : '유도탄 분열 개수 +1 및 위력 상향 (평타 계수)';
             add('lvl_homing', 5, '✨ 유도 분열탄', homingDesc, () => { p.lvl_homing++; recalculateStats(); }, 'type-basic', p.lvl_homing > 0 ? 0.6 : 0.2, true);
             
-            // ⚖️ 스킬 데미지 9% 설명 수정
             add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 9% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
             add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
             let lightDesc = p.lvl_lightning === 0 ? '적중 시 튕기는 관통 번개 레이저 발사' : '번개 발동 확률 증가 및 튕기는 횟수 +1';
@@ -382,8 +381,10 @@
             add('lvl_sword', 5, '🗡️ 환영검 진형', swordDesc, () => { p.lvl_sword++; recalculateStats(); }, 'type-skill', p.lvl_sword > 0 ? 0.6 : 0.2, true);
             let stormDesc = p.lvl_storm === 0 ? '캐릭터 주변에 적을 갈아버리는 오라 생성' : '톱날 오라의 반경 넓어짐 및 틱 데미지 증가';
             add('lvl_storm', 5, '🌀 칼날 돌풍', stormDesc, () => { p.lvl_storm++; recalculateStats(); }, 'type-skill', p.lvl_storm > 0 ? 0.6 : 0.2, true);
-            let orbDesc = p.lvl_orbital === 0 ? '주기적으로 거대한 유성 레이저가 꽂힙니다.' : '유성 폭격 주기 감소 및 폭발 범위 증가';
+            
+            let orbDesc = p.lvl_orbital === 0 ? '불타는 거대 운석이 하늘에서 사선으로 꽂힙니다.' : '유성 폭격 낙하 주기 감소 및 폭발 위력 증가';
             add('lvl_orbital', 5, '☄️ 유성 폭격', orbDesc, () => { p.lvl_orbital++; p.orbitalTimer = 0; recalculateStats(); }, 'type-skill', p.lvl_orbital > 0 ? 0.4 : 0.02, false, true);
+            
             let shuriDesc = p.lvl_shuriken === 0 ? '주위를 회전하며 적을 뚫는 수호 표창 생성' : '회전하는 수호 표창의 개수 최대치 증가';
             add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
 
@@ -395,10 +396,10 @@
             if (p.activeSkillType === 'boomerang') {
                 add('lvl_boom_split', 5, '🎇 부메랑 분열', '체공이 끝난 부메랑이 여러 갈래로 나뉘어 날아갑니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
-                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 발사됩니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
+                add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
-                add('lvl_punch_split', 5, '💥 냥냥펀치 분열', '주먹이 적에 닿자마자 연쇄 폭발을 일으키며 쪼개집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
+                add('lvl_punch_split', 5, '💥 냥냥펀치 연쇄폭발', '주먹이 적에 닿자마자 즉시 분열하며 연쇄 폭발을 일으킵니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
 
             if (p.activeSkillType !== 'boomerang') {
@@ -525,7 +526,7 @@
                         type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 70, 
                         vx: Math.cos(-Math.PI/2+(i-count/2)*0.4)*18 + p.vx*0.3, 
                         vy: Math.sin(-Math.PI/2+(i-count/2)*0.4)*18, 
-                        state: 'flying', hitTimer: 0, pierceTimer: 2, dmg: sd // 🚀 관통 2프레임으로 즉시 연쇄 폭발
+                        state: 'flying', hitTimer: 0, pierceTimer: 2, dmg: sd 
                     }); 
                 }
             }
@@ -694,8 +695,11 @@
                     });
                     if (hitAny && frameCount % 6 === 0) playSound('hit');
                 } else if(sk.type==='laser') {
-                    // 🔱 부채꼴 사선 레이저 로직 및 타격 판정
+                    // 🔱 픽스: 레이저 트래킹
                     sk.life--; 
+                    sk.x = p.x; 
+                    sk.y = p.y - 20;
+                    
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angleOffset); 
                     ctx.globalAlpha=0.7; ctx.fillStyle=c_laser; 
                     ctx.fillRect(-sk.w/2, -canvas.height*1.5, sk.w, canvas.height*1.5); 
@@ -708,9 +712,7 @@
                         if (dot > 0) {
                             let px = dirX * dot; let py = dirY * dot;
                             let dist = Math.hypot(dx - px, dy - py);
-                            if (dist < sk.w/2 + e.w/2) {
-                                e.hp -= sk.dmg;
-                            }
+                            if (dist < sk.w/2 + e.w/2) { e.hp -= sk.dmg; }
                         }
                     });
                     if(sk.life<=0) activeSkills.splice(i, 1);
@@ -816,23 +818,61 @@
             if(p.lvl_orbital > 0) {
                 p.orbitalTimer--;
                 if(p.orbitalTimer <= 0) {
-                    p.orbitalTimer = Math.max(120, 360 - p.lvl_orbital*30);
+                    p.orbitalTimer = Math.max(90, 300 - p.lvl_orbital*30);
                     let t = enemies.find(e => e.isBoss) || enemies[Math.floor(Math.random()*enemies.length)];
-                    if(t) orbitals.push({ x: t.x, y: t.y, timer: 90, state: 'aim', r: 60+p.lvl_orbital_range*20 });
+                    if(t) {
+                        let orbDmg = 250 * p.skill_mult * (1 + p.lvl_orbital * 0.8);
+                        orbitals.push({ x: t.x, y: t.y, timer: 60, state: 'aim', r: 80 + p.lvl_orbital*25, dmg: orbDmg });
+                    }
                 }
             }
+            let c_meteor = colorLevels.meteor[Math.min(5, p.lvl_orbital||0)];
             for (let i = orbitals.length - 1; i >= 0; i--) {
                 let o = orbitals[i];
                 if(o.state === 'aim') {
-                    o.timer--; ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.1);
-                    ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.beginPath(); let r = Math.max(0.1, o.r*(o.timer/90+0.5)); ctx.arc(0, 0, r, 0, Math.PI*2); ctx.stroke(); ctx.restore();
-                    if(o.timer<=0) { o.state='fire'; o.timer=40; globalShakeTimer=30; playSound('skill'); }
-                } else {
-                    o.timer--; let a = Math.max(0, o.timer/40); 
-                    ctx.fillStyle=`rgba(0,255,255,${a})`; ctx.fillRect(o.x-o.r, 0, o.r*2, canvas.height);
-                    let orbDmg = 200 * p.skill_mult * (1 + p.lvl_orbital * 0.5);
-                    enemies.forEach(e => { if(Math.abs(e.x-o.x) < o.r + e.w/2) e.hp -= orbDmg; });
-                    if(o.timer<=0) orbitals.splice(i, 1);
+                    o.timer--; 
+                    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.05);
+                    ctx.fillStyle = 'rgba(255, 50, 50, 0.2)'; ctx.beginPath(); ctx.arc(0, 0, o.r, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = `rgba(255, 0, 0, ${0.5 + Math.sin(frameCount*0.2)*0.5})`; ctx.lineWidth = 3; 
+                    ctx.beginPath(); ctx.arc(0, 0, o.r, 0, Math.PI*2); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(20, 0); ctx.moveTo(0, -20); ctx.lineTo(0, 20); ctx.stroke();
+                    ctx.restore();
+                    if(o.timer<=0) { o.state='fall'; o.timer=15; }
+                } else if (o.state === 'fall') {
+                    o.timer--;
+                    let progress = 1 - (o.timer / 15);
+                    let startX = o.x + 300; let startY = o.y - 800; 
+                    let currentX = startX + (o.x - startX) * progress;
+                    let currentY = startY + (o.y - startY) * progress;
+                    
+                    ctx.save(); ctx.translate(currentX, currentY); 
+                    ctx.rotate(Math.atan2(o.y - startY, o.x - startX));
+                    ctx.fillStyle = 'rgba(255, 100, 0, 0.6)'; 
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-100, -25); ctx.lineTo(-100, 25); ctx.fill();
+                    ctx.fillStyle = c_meteor; 
+                    ctx.beginPath(); ctx.arc(0, 0, 30 + (p.lvl_orbital||0)*5, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    
+                    if(o.timer <= 0) {
+                        o.state = 'explode'; o.timer = 30; globalShakeTimer = 40; playSound('skill');
+                        enemies.forEach(e => { 
+                            if(Math.hypot(e.x - o.x, e.y - o.y) < o.r + e.w/2) {
+                                e.hp -= o.dmg; if(e.isBoss && !e.isDevTest) e.iframe = 4;
+                            }
+                        });
+                    }
+                } else if (o.state === 'explode') {
+                    o.timer--;
+                    let a = o.timer / 30;
+                    ctx.save(); ctx.translate(o.x, o.y);
+                    ctx.fillStyle = `rgba(0, 0, 0, ${a * 0.6})`; 
+                    ctx.beginPath(); ctx.ellipse(0, 0, o.r, o.r*0.6, 0, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = `rgba(255, ${Math.random()*150 + 50}, 0, ${a})`; 
+                    ctx.beginPath(); ctx.arc(0, 0, o.r * (1.5 - a*0.5), 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
+                    
+                    if(frameCount % 2 === 0) spawnParticles(o.x + (Math.random()-0.5)*o.r, o.y + (Math.random()-0.5)*o.r, c_meteor, 2, 2);
+                    if(o.timer <= 0) orbitals.splice(i, 1);
                 }
             }
 
@@ -879,6 +919,7 @@
             
             let c_homing = colorLevels.homing[Math.min(5, p.lvl_homing||0)];
             let c_light = colorLevels.lightning[Math.min(5, p.lvl_lightning||0)];
+            let c_atk = colorLevels.atk[Math.min(10, p.lvl_atk||0)];
 
             if(frameCount%p.fireDelay === 0) {
                 playSound('shoot'); 
@@ -894,7 +935,7 @@
                     let isBhSeed = (p.bh_chance > 0 && Math.random() < p.bh_chance);
                     let isEnhanced = (p.lvl_homing > 0 && Math.random() < 0.33); 
                     
-                    let bColor = isBhSeed ? '#111' : (isEnhanced ? c_homing : colorLevels.atk[Math.min(10, p.lvl_atk||0)]);
+                    let bColor = isBhSeed ? '#111' : (isEnhanced ? c_homing : c_atk);
                     let bRadius = isBhSeed ? 10 : (isEnhanced ? 8 : 6);
 
                     bullets.push({ 
@@ -1017,7 +1058,6 @@
                 if (l.life <= 0) lightnings.splice(i, 1);
             }
 
-            let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];
             if (p.lvl_storm > 0) {
                 let sk_r = 60 + p.lvl_storm * 20; 
                 ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);

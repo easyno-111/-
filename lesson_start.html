@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v7.1)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v7.2)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -424,14 +424,14 @@
                         
                         <div class="panel" style="width: 100%; max-width: 800px; text-align: center;">
                             <h3 style="color: var(--primary);"><i class="fa-solid fa-sliders"></i> 높이(a) 조절 시뮬레이터</h3>
-                            <p class="desc">슬라이더를 움직여 직사각형의 높이 a(0~60)를 변화시키면서 실시간 넓이를 확인하세요!</p>
+                            <p class="desc">슬라이더를 처음(0)부터 서서히 움직여서 언제 넓이가 최대가 되는지 찾아보세요!</p>
                             
-                            <input type="range" id="s9-slider" min="0" max="60" value="30" step="0.5" oninput="drawStage9Triangle()">
+                            <input type="range" id="s9-slider" min="0" max="60" value="0" step="0.5" oninput="drawStage9Triangle()">
                             
                             <div class="stat-box">
-                                높이 <span class="math">a</span> = <span id="s9-a-val" style="color: var(--neon-blue);">30.0</span> cm &nbsp; | &nbsp; 
-                                밑변 = <span id="s9-b-val" style="color: var(--neon-blue);">60.0</span> cm <br>
-                                실시간 넓이 = <span id="s9-area-val" class="stat-highlight">1800.0</span> cm²
+                                높이 <span class="math">a</span> = <span id="s9-a-val" style="color: var(--neon-blue);">0.0</span> cm &nbsp; | &nbsp; 
+                                밑변 = <span id="s9-b-val" style="color: var(--neon-blue);">120.0</span> cm <br>
+                                실시간 넓이 = <span id="s9-area-val" class="stat-highlight">0.0</span> cm²
                             </div>
                             
                             <canvas id="s9-triangle-canvas" width="600" height="320" style="width: 100%; max-width: 600px; background: white; border: 2px solid var(--border-color); border-radius: 10px; margin-top: 10px;"></canvas>
@@ -602,7 +602,6 @@
                 
                 setTimeout(resizeAllCanvases, 400);
 
-                // Stage 9 애니메이션 그리기 호출 (초기화)
                 if (currentStage === 8) {
                     setTimeout(drawStage9Triangle, 400);
                 }
@@ -808,7 +807,7 @@
         });
 
         // ==========================================
-        // Stage 8 특화: y = -0.2t^2 + 60t 그래프 시각화 (공식 수정 완벽 반영)
+        // Stage 8 특화: y = -0.2t^2 + 60t 그래프 시각화
         // ==========================================
         function showStage8Graph() {
             document.getElementById('s8-graph-btn').style.display = 'none';
@@ -825,11 +824,9 @@
             // 함수: y = -0.2t^2 + 60t 
             // 꼭짓점 t = 150 일 때 y = 4500
             // 범위 120 <= t <= 200 일 때 y값은 4320 ~ 4000
-            // 시각화 매핑: t범위(100~220), y범위(3000~5000)
             function mapX(t) { return ((t - 100) / 120) * (w - 40) + 30; } 
             function mapY(y) { return h - 20 - ((y - 3000) / 2000) * (h - 40); } 
 
-            // 축 및 눈금
             ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1; ctx.font = "12px Arial"; ctx.fillStyle = "#666";
             
             for(let y = 3000; y <= 5000; y += 500) {
@@ -843,7 +840,7 @@
                 ctx.fillText(t, px - 10, h - 5);
             }
 
-            // 전체 궤적 그리기 (회색 점선)
+            // 전체 궤적
             ctx.beginPath(); ctx.strokeStyle = "#aaa"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
             for(let t = 100; t <= 220; t+=2) {
                 let y = -0.2*t*t + 60*t;
@@ -851,7 +848,7 @@
             }
             ctx.stroke(); ctx.setLineDash([]);
 
-            // 제한된 범위 (120 <= t <= 200) 강조
+            // 제한된 범위
             ctx.beginPath(); ctx.strokeStyle = "var(--primary)"; ctx.lineWidth = 4;
             for(let t = 120; t <= 200; t+=1) {
                 let y = -0.2*t*t + 60*t;
@@ -859,14 +856,13 @@
             }
             ctx.stroke();
 
-            // 최댓값 (t=150)과 최솟값 (t=200) 점 찍기
+            // 최대 최솟값
             let maxT = 150, maxY = 4500; 
             let minT = 200, minY = 4000; 
 
             ctx.fillStyle = "var(--accent)"; ctx.beginPath(); ctx.arc(mapX(maxT), mapY(maxY), 6, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = "var(--primary)"; ctx.beginPath(); ctx.arc(mapX(minT), mapY(minY), 6, 0, Math.PI*2); ctx.fill();
 
-            // 레이블
             ctx.fillStyle = "var(--accent)"; ctx.font = "bold 14px Arial"; ctx.fillText(`Max(4500)`, mapX(maxT)-30, mapY(maxY)-10);
             ctx.fillStyle = "var(--primary)"; ctx.fillText(`Min(4000)`, mapX(minT)-60, mapY(minY)-10);
         }
@@ -881,22 +877,18 @@
             const w = cvs.width; const h = cvs.height;
             ctx.clearRect(0, 0, w, h);
 
-            // 입력 값 가져오기
             const a = parseFloat(document.getElementById('s9-slider').value); 
             const b = 120 - 2 * a; 
             const area = a * b; 
 
-            // 텍스트 업데이트
             document.getElementById('s9-a-val').innerText = a.toFixed(1);
             document.getElementById('s9-b-val').innerText = b.toFixed(1);
             document.getElementById('s9-area-val').innerText = area.toFixed(1);
 
-            // 그리기 설정
-            const scale = 4; // 120 -> 480px, 60 -> 240px
+            const scale = 4; 
             const ox = 50; 
             const oy = h - 40; 
 
-            // 축 그리기
             ctx.strokeStyle = "#ccc"; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(w - 20, oy); ctx.stroke(); 
             ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, 20); ctx.stroke(); 
@@ -904,7 +896,6 @@
             ctx.fillText("120", ox + 120*scale - 10, oy + 20);
             ctx.fillText("60", ox - 25, oy - 60*scale + 5);
 
-            // 큰 직각삼각형 그리기
             ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
             ctx.beginPath();
             ctx.moveTo(ox, oy); 
@@ -914,19 +905,22 @@
             ctx.fill();
             ctx.strokeStyle = "#888"; ctx.lineWidth = 2; ctx.stroke();
 
-            // 실시간 직사각형 그리기
             ctx.fillStyle = "rgba(0, 122, 255, 0.4)";
             ctx.fillRect(ox, oy - a*scale, b*scale, a*scale);
             ctx.strokeStyle = "var(--primary)"; ctx.lineWidth = 3;
             ctx.strokeRect(ox, oy - a*scale, b*scale, a*scale);
 
-            // 최댓값(넓이 1800) 강조
             if (Math.abs(area - 1800) < 1) {
                 ctx.fillStyle = "var(--accent)";
                 ctx.font = "bold 20px Noto Sans KR";
                 ctx.fillText("⭐ 최대 넓이 도달! (1800)", ox + 150, oy - 100);
             }
         }
+        
+        // 페이지 로드 후 즉시 초기화하여 처음부터 0인 상태가 보이게 함
+        window.onload = () => {
+            drawStage9Triangle();
+        };
     </script>
 </body>
 </html>

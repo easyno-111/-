@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V39 원클릭 도파민 상자)</title>
+    <title>로그라이트 화력 슈팅 (V40 도파민 진화 상자 & 번개 리워크)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -51,8 +51,7 @@
         /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
-        /* 빔 크기 대폭 상향 */
-        .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); mix-blend-mode: screen; filter: blur(2px); }
+        .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
         /* ✨ 전설 상자 화면 섬광 효과 */
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
@@ -82,7 +81,6 @@
 </head>
 <body>
     
-    <!-- 전설 섬광 오버레이 -->
     <div id="flash-overlay"></div>
 
     <button id="sound-btn" onclick="toggleSound()">🔊</button>
@@ -185,7 +183,8 @@
         const colorLevels = {
             atk: ['#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b', '#fd79a8', '#e84393', '#a29bfe', '#6c5ce7', '#00cec9'], 
             homing: ['#00ffff', '#00d2d3', '#48dbfb', '#0abde3', '#54a0ff', '#2e86de'], 
-            lightning: ['0,255,255', '129,236,236', '162,155,254', '108,92,231', '253,121,168', '232,67,147'],
+            // ⚡ 연쇄번개 컬러맵 (10단계 확장)
+            lightning: ['0,255,255', '32,224,255', '64,192,255', '96,160,255', '128,128,255', '160,96,255', '192,64,255', '224,32,255', '255,0,255', '255,0,200', '255,0,150'],
             sword: ['#f39c12', '#e74c3c', '#8e44ad', '#2980b9', '#2ecc71', '#1abc9c'],
             storm: ['#00a8ff', '#0097e6', '#9c88ff', '#8c7ae6', '#fbc531', '#e1b12c'],
             boomerang: ['#00d2d3', '#00b894', '#00cec9', '#0984e3', '#6c5ce7', '#fd79a8'],
@@ -233,7 +232,7 @@
             return spriteCache[key];
         }
 
-        // 👤 플레이어 이미지는 롤백 (로드하도록 설정), 적 이미지만 null
+        // 👤 플레이어 이미지는 기본으로 찾도록 롤백
         let customPlayerImg = new Image(); customPlayerImg.src = "player.png"; customPlayerImg.onerror = () => { customPlayerImg = null; };
         let customEnemyImg = null; 
 
@@ -313,7 +312,7 @@
             { id: 'lvl_shotgun', max: 1, name: '💠 샷건 (x2 배수)' },
             { id: 'lvl_skill_dmg', max: 10, name: '🪄 스킬 파괴력' },
             { id: 'lvl_skill_cd', max: 4, name: '⏳ 스킬 쿨감' },
-            { id: 'lvl_lightning', max: 5, name: '⚡ 연쇄 번개(레이저)' },
+            { id: 'lvl_lightning', max: 10, name: '⚡ 연쇄 번개(투사체)' }, // ⚡ 최대 10렙으로 변경
             { id: 'lvl_homing', max: 5, name: '✨ 유도 분열탄' },
             { id: 'lvl_sword', max: 5, name: '🗡️ 환영검 진형' },
             { id: 'lvl_storm', max: 5, name: '🌀 칼날 돌풍' },
@@ -324,7 +323,7 @@
             { id: 'lvl_regen', max: 5, name: '💖 자연 회복' },
             { id: 'lvl_boom_split', max: 5, name: '🪃 부메랑 분열' },
             { id: 'lvl_laser_split', max: 5, name: '🔱 레이저 갈래' },
-            { id: 'lvl_punch_count', max: 5, name: '🐾 냥냥펀 개수' },
+            { id: 'lvl_punch_count', max: 5, name: '🐾 냥냥펀치 개수' },
             { id: 'lvl_punch_split', max: 5, name: '💥 냥냥펀치 분열' }
         ];
 
@@ -412,7 +411,10 @@
             p.skillCooldownMax = 600; for(let i=0; i<(p.lvl_skill_cd||0); i++) p.skillCooldownMax = Math.max(60, p.skillCooldownMax - 120);
             p.bulletMultiplier = Math.pow(2, p.lvl_shotgun || 0);
             p.bulletSpread = 1 + (p.lvl_bullet || 0);
-            p.lightning_chance = Math.min(0.8, 0.2 + (p.lvl_lightning||0)*0.05);
+            
+            // ⚡ 연쇄번개 확률 재계산 (레벨당 10%)
+            p.lightning_chance = (p.lvl_lightning || 0) * 0.1;
+            
             p.homing_split = 3 + (p.lvl_homing||0);
             p.shurikenLimit = Math.min(10, 5 + (p.lvl_shuriken||0));
             p.lvl_shuriken_active = (p.lvl_shuriken||0) > 0;
@@ -449,8 +451,11 @@
             
             add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 9% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
             add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
-            let lightDesc = p.lvl_lightning === 0 ? '적중 시 튕기는 관통 번개 레이저 발사' : '번개 발동 확률 증가 및 튕기는 횟수 +1';
-            add('lvl_lightning', 5, '⚡ 연쇄 번개', lightDesc, () => { p.lvl_lightning++; recalculateStats(); }, 'type-skill', p.lvl_lightning > 0 ? 0.6 : 0.2, true);
+            
+            // ⚡ 연쇄번개 리워크 설명 수정
+            let lightDesc = p.lvl_lightning === 0 ? '평타 적중 시 10% 확률로 튕기는 연쇄 번개 구체 생성' : `번개 발동 확률 +10% (현재 ${(p.lvl_lightning+1)*10}%) 및 튕기는 횟수 +1`;
+            add('lvl_lightning', 10, '⚡ 연쇄 번개', lightDesc, () => { p.lvl_lightning++; recalculateStats(); }, 'type-skill', p.lvl_lightning > 0 ? 0.6 : 0.2, true);
+            
             let swordDesc = p.lvl_sword === 0 ? '적 주변에 환영검을 소환하여 난도질합니다.' : '소환되는 환영검 개수 +2 및 위력 대폭 증가';
             add('lvl_sword', 5, '🗡️ 환영검 진형', swordDesc, () => { p.lvl_sword++; recalculateStats(); }, 'type-skill', p.lvl_sword > 0 ? 0.6 : 0.2, true);
             let stormDesc = p.lvl_storm === 0 ? '캐릭터 주변에 적을 갈아버리는 오라 생성' : '톱날 오라의 반경 넓어짐 및 틱 데미지 증가';
@@ -534,9 +539,10 @@
         function triggerLevelUp() { 
             gameState = 'LEVELUP'; isChestOpening = false; currentChestReroll = 1; 
             
+            // 🎲 확률 상향: 노말 50%, 레어 35%, 전설 15%
             let rand = Math.random();
-            if (rand < 0.10) chestRarity = 'LEGENDARY';
-            else if (rand < 0.35) chestRarity = 'RARE';
+            if (rand < 0.15) chestRarity = 'LEGENDARY';
+            else if (rand < 0.50) chestRarity = 'RARE';
             else chestRarity = 'NORMAL';
 
             document.getElementById('levelup-screen').style.display = 'flex'; 
@@ -552,22 +558,30 @@
             chestEl.style.animation = 'none';
             chestEl.style.transform = 'scale(1)';
             chestEl.innerHTML = '🎁';
-            document.getElementById('chest-desc').innerText = '터치하여 열기';
+            document.getElementById('chest-desc').innerText = '터치하여 개방하기';
             document.getElementById('chest-desc').style.display = 'block';
             document.getElementById('beam-container').innerHTML = ''; 
-            document.getElementById('flash-overlay').style.opacity = '0'; // 플래시 초기화
+            document.getElementById('flash-overlay').style.opacity = '0'; 
         }
 
-        function createBeam(angle, color) {
+        function createBeam(angle, color, id) {
             let b = document.createElement('div');
             b.className = 'beam';
+            if(id) b.id = id;
             b.style.transform = `rotate(${angle}deg)`;
             b.style.background = `linear-gradient(to top, ${color}, transparent)`;
             document.getElementById('beam-container').appendChild(b);
             setTimeout(() => b.style.opacity = '0.9', 50);
         }
+
+        function changeBeamColors(color) {
+            let beams = document.querySelectorAll('.beam');
+            beams.forEach(b => {
+                b.style.background = `linear-gradient(to top, ${color}, transparent)`;
+            });
+        }
         
-        // 🔄 원클릭 자동 재생
+        // 🔄 원클릭 자동 재생 연출
         function autoOpenChest() {
             if(isChestOpening) return;
             isChestOpening = true; // 클릭 방지
@@ -590,54 +604,68 @@
                 chestEl.style.animation = 'shake-small 0.3s';
             }, 500);
             
-            // 3타 개방 연출 (1초)
+            // 3타 개방 (1초) - 무조건 황금빛(일반)으로 시작!
             setTimeout(() => {
                 playSound('shoot');
                 desc.style.display = 'none';
-                let baseColor = chestRarity === 'NORMAL' ? '#f1c40f' : (chestRarity === 'RARE' ? '#00a8ff' : '#00ffff');
+                let baseColor = '#f1c40f'; // 시작은 무조건 황금빛!
                 
-                createBeam(0, baseColor);
+                createBeam(0, baseColor, 'beam-main');
                 
                 if (chestRarity === 'NORMAL') {
-                    title.innerText = '보물상자!'; title.style.color = '#f1c40f';
+                    title.innerText = '일반 보물상자!'; title.style.color = '#f1c40f';
                     setTimeout(() => { showOptions(3); }, 800);
                 } 
                 else if (chestRarity === 'RARE') {
+                    // 2초 뒤 푸른빛으로 변색 및 분열
                     setTimeout(() => {
                         playSound('zap');
-                        createBeam(-30, baseColor); createBeam(30, baseColor);
+                        changeBeamColors('#00a8ff');
+                        createBeam(-30, '#00a8ff', 'beam-left');
+                        createBeam(30, '#00a8ff', 'beam-right');
                         title.innerText = '희귀 보물상자!'; title.style.color = '#00a8ff';
-                    }, 800);
-                    setTimeout(() => { showOptions(4); }, 1800);
+                        
+                        chestEl.style.animation = 'none';
+                        void chestEl.offsetWidth;
+                        chestEl.style.animation = 'shake-small 0.3s';
+                    }, 2000);
+                    setTimeout(() => { showOptions(4); }, 3500);
                 }
                 else if (chestRarity === 'LEGENDARY') {
+                    // 2초 뒤 푸른빛으로 페이크
                     setTimeout(() => {
                         playSound('zap');
-                        createBeam(-30, baseColor); createBeam(30, baseColor);
-                        chestEl.style.animation = 'shake-crazy 1s infinite';
-                        title.innerText = '황금 보물상자!!'; title.style.color = '#00ffff';
-                    }, 800);
+                        changeBeamColors('#00a8ff');
+                        createBeam(-30, '#00a8ff', 'beam-left');
+                        createBeam(30, '#00a8ff', 'beam-right');
+                        title.innerText = '희귀 상자...?'; title.style.color = '#00a8ff';
+                    }, 2000);
                     
+                    // 2초 뒤 진동 발광 + 섬광 플래시 + 전설 개방
                     setTimeout(() => {
                         playSound('kill');
+                        
                         // ✨ 전설 섬광 효과 (Flash)
                         let flash = document.getElementById('flash-overlay');
                         flash.style.transition = 'opacity 0.1s';
                         flash.style.opacity = '1';
-                        
                         setTimeout(() => {
-                            flash.style.transition = 'opacity 1s ease-out';
+                            flash.style.transition = 'opacity 1.5s ease-out';
                             flash.style.opacity = '0';
                         }, 100);
 
-                        createBeam(-60, baseColor); createBeam(60, baseColor);
+                        changeBeamColors('#00ffff');
+                        createBeam(-60, '#00ffff', 'beam-far-left');
+                        createBeam(60, '#00ffff', 'beam-far-right');
+
                         chestEl.innerHTML = '✨🎁✨';
-                        chestEl.style.animation = 'none';
+                        chestEl.style.animation = 'shake-crazy 1s infinite';
                         chestEl.style.transform = 'scale(1.5)';
                         title.innerText = '✨ 전설의 황금 상자!! ✨';
-                    }, 1800);
+                        title.style.color = '#00ffff';
+                    }, 4000);
                     
-                    setTimeout(() => { showOptions(5); }, 3000);
+                    setTimeout(() => { showOptions(5); }, 5500);
                 }
             }, 1000);
         }
@@ -653,6 +681,7 @@
                 if(currentChestReroll > 0) { currentChestReroll--; playSound('shoot'); showOptions(optionCount); }
             };
 
+            // 🎲 리얼 랜덤 셔플 (피셔-예이츠 알고리즘 적용)
             let pool = getAvailableAbilities();
             for (let i = pool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -1092,7 +1121,7 @@
             p.vx = (targetX - p.x)*0.25; p.x += p.vx;
             
             let c_homing = colorLevels.homing[Math.min(5, p.lvl_homing||0)];
-            let c_light = colorLevels.lightning[Math.min(5, p.lvl_lightning||0)];
+            let c_light = colorLevels.lightning[Math.min(10, p.lvl_lightning||0)];
             let c_atk = colorLevels.atk[Math.min(10, p.lvl_atk||0)];
 
             if(frameCount%p.fireDelay === 0) {
@@ -1160,17 +1189,15 @@
                                 homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: [] });
                             }
                         }
-                        if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 100) {
+                        
+                        // ⚡ 연쇄 번개 리워크 발동 로직 (투사체 생성)
+                        if(p.lvl_lightning > 0 && Math.random() < p.lightning_chance && lightnings.length < 150) {
                             playSound('zap');
                             let ld = 15 * p.skill_mult * (1 + p.lvl_lightning * 0.2); 
-                            let jumps = 1 + p.lvl_lightning; 
-                            let lx = e.x, ly = e.y;
-                            for(let k=0; k<jumps; k++) {
-                                if(enemies.length === 0) break;
-                                let target = enemies[Math.floor(Math.random() * enemies.length)];
-                                lightnings.push({x1: lx, y1: ly, x2: target.x, y2: target.y, life: 15, dmg: ld, hitDone: false});
-                                lx = target.x; ly = target.y;
-                            }
+                            let jumps = p.lvl_lightning; // 레벨당 튕기는 횟수
+                            lightnings.push({
+                                x: e.x, y: e.y, target: null, jumps: jumps, dmg: ld, hitLog: [e]
+                            });
                         }
                         
                         if(b.pierce <= 0) {
@@ -1215,26 +1242,41 @@
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvas.height+50 || hb.x < -50 || hb.x > canvas.width+50) homingBullets.splice(i, 1);
             }
 
+            // ⚡ 연쇄 번개 투사체(Projectile) 이동 로직
             for (let i = lightnings.length - 1; i >= 0; i--) {
                 let l = lightnings[i]; 
-                if (!l.hitDone) {
-                    l.hitDone = true;
-                    let vx = l.x2 - l.x1; let vy = l.y2 - l.y1; let len2 = vx*vx + vy*vy;
-                    if(len2 > 0) {
-                        enemies.forEach(en => {
-                            let wx = en.x - l.x1; let wy = en.y - l.y1;
-                            let t = Math.max(0, Math.min(1, (wx*vx + wy*vy) / len2)); 
-                            let cx = l.x1 + t*vx; let cy = l.y1 + t*vy;
-                            if (Math.hypot(en.x - cx, en.y - cy) < en.w/2 + 20) { 
-                                en.hp -= l.dmg; if(Math.random()<0.5) spawnParticles(en.x, en.y, `rgb(${c_light})`, 1);
-                            }
-                        });
+
+                if (!l.target || l.target.hp <= 0 || !enemies.includes(l.target)) {
+                    let closestDistSq = Infinity; let closestE = null;
+                    for(let j=0; j<enemies.length; j++) {
+                        if (!l.hitLog.includes(enemies[j])) {
+                            let dSq = (enemies[j].x - l.x)*(enemies[j].x - l.x) + (enemies[j].y - l.y)*(enemies[j].y - l.y);
+                            if (dSq < closestDistSq) { closestDistSq = dSq; closestE = enemies[j]; }
+                        }
                     }
+                    l.target = closestE;
                 }
-                l.life--;
-                ctx.strokeStyle = `rgba(${c_light}, ${Math.max(0, l.life/15)})`; ctx.lineWidth = 4; ctx.beginPath();
-                ctx.moveTo(l.x1, l.y1); ctx.lineTo((l.x1+l.x2)/2 + (Math.random()-0.5)*30, (l.y1+l.y2)/2 + (Math.random()-0.5)*30); ctx.lineTo(l.x2, l.y2); ctx.stroke();
-                if (l.life <= 0) lightnings.splice(i, 1);
+
+                if (l.target) {
+                    let dx = l.target.x - l.x; let dy = l.target.y - l.y; let dist = Math.max(1, Math.hypot(dx, dy));
+                    l.x += (dx/dist) * 12; // 번개 투사체 속도 12
+                    l.y += (dy/dist) * 12;
+
+                    ctx.fillStyle = `rgb(${c_light})`; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(l.x, l.y, 4, 0, Math.PI*2); ctx.fill();
+
+                    if (dist < 15) {
+                        l.target.hp -= l.dmg; l.hitLog.push(l.target); l.jumps--; l.target = null;
+                        spawnParticles(l.x, l.y, `rgb(${c_light})`, 2); playSound('zap');
+                    }
+                } else {
+                    // 타겟이 없으면 위로 날아감
+                    l.y -= 12;
+                    ctx.fillStyle = `rgb(${c_light})`; ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(l.x, l.y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(l.x, l.y, 4, 0, Math.PI*2); ctx.fill();
+                }
+
+                if (l.jumps <= 0 || l.y < -50 || l.y > canvas.height+50 || l.x < -50 || l.x > canvas.width+50) lightnings.splice(i, 1);
             }
 
             let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];

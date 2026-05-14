@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V46 밸런스 대격변 & 냥냥 콤보)</title>
+    <title>로그라이트 화력 슈팅 (V47 하드코어 경험치 밸런스)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -48,12 +48,10 @@
         .type-skill { color: #55efc4; } 
         .type-util { color: #ffeaa7; }  
 
-        /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
-        /* ✨ 전설 상자 화면 섬광 효과 */
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
 
         @keyframes shake-small {
@@ -103,7 +101,7 @@
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
 
-            <!-- 🎒 든든한 초기 스타팅 및 난이도 로드아웃 UI -->
+            <!-- 🎒 초기 스타팅 및 난이도 로드아웃 UI -->
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
@@ -366,7 +364,6 @@
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
-            // ⚖️ 보스 체력 스케일링 픽스 적용
             let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, Math.max(0, lvl - 1));
             enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true });
             globalShakeTimer = 40; playSound('kill');
@@ -377,7 +374,6 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<250; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                // ⚖️ 물량몹 체력 스케일링 픽스 적용 (기본체력 1 보존)
                 let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                 enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
             }
@@ -543,9 +539,9 @@
                 
                 cheat_dmg_mult: 1, cheat_skill_mult: 1, cheat_boss_hp: 1.25, cheat_extra_proj: 0,
                 
-                // ⚖️ 합리적인 스케일링 배율 적용 (폭발 방지)
                 diffMult: diff === 'hard' ? 2.0 : (diff === 'normal' ? 1.5 : 1),
                 diffExpAdd: diff === 'hard' ? 0.08 : (diff === 'normal' ? 0.04 : 0),
+                diffExpMult: diff === 'hard' ? 2.5 : (diff === 'normal' ? 1.5 : 1),
 
                 base_dmg: 1, skill_mult: 1, 
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
@@ -813,9 +809,7 @@
                             let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.2);
-                                // ⚖️ 몹 스케일링 픽스 (베이스 1)
-                                let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, speed: spd, isBoss: false, color: '#e67e22' });
+                                enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills)), speed: spd, isBoss: false, color: '#e67e22' });
                             }
                         }
                     } else if (!isSwarm) {
@@ -828,9 +822,7 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 250) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.15);
-                                // ⚖️ 일반 몹 스케일링 픽스
-                                let normHp = Math.max(1, (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, speed: spd, isBoss: false });
+                                enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: Math.max(1, (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills)), speed: spd, isBoss: false });
                             }
                         }
                     }
@@ -856,7 +848,6 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    // ⚖️ 보스 체력 스케일링 픽스
                     let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
@@ -1517,7 +1508,8 @@
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
                         if(bossKills>=WIN_CONDITION) {gameEnd(true); return;} else {p.exp+=p.maxExp; updateUI();}
                     } else if(!e.isDevTest) { 
-                        p.exp += (2 + Math.floor(bossKills / 2)); 
+                        // ⚖️ 하드코어 난이도 몹 EXP 버프 (하드 2.5배, 노말 1.5배)
+                        p.exp += (2 + Math.floor(bossKills / 2)) * p.diffExpMult; 
                     }
                     enemies.splice(i,1); if(p.exp>=p.maxExp) triggerLevelUp(); updateUI(); 
                 }

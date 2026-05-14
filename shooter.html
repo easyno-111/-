@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V43 부메랑 귀환 & 메가 젤리 스탬프)</title>
+    <title>로그라이트 화력 슈팅 (V44 메커니즘 개편 & 메가 스탬프)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -48,10 +48,12 @@
         .type-skill { color: #55efc4; } 
         .type-util { color: #ffeaa7; }  
 
+        /* 🎁 도파민 폭발 상자 연출 CSS */
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
         
+        /* ✨ 전설 상자 화면 섬광 효과 */
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
 
         @keyframes shake-small {
@@ -101,6 +103,7 @@
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
 
+            <!-- 🎒 초기 스타팅 로드아웃 UI -->
             <div style="background: rgba(47, 53, 66, 0.9); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 <label style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 8px; display: block;">🎯 기본 액티브 스킬</label>
                 <select id="start-active" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #f1c40f; border-radius: 5px; font-weight: bold; margin-bottom: 15px; outline: none;">
@@ -153,6 +156,7 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
+    <!-- 🛠️ 개발자 패널 -->
     <div id="dev-panel">
         <h3 style="text-align:center; color:#00a8ff; margin-bottom:15px;">🛠️ 개발자 시스템 툴</h3>
         
@@ -485,15 +489,13 @@
             let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
-            // 🪃 부메랑 텍스트 수정
             if (p.activeSkillType === 'boomerang') {
-                add('lvl_boom_split', 5, '🎇 부메랑 분열', '부메랑이 돌아올 때 피해량이 증폭되며, 회수 시 여러 갈래로 분열합니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
+                add('lvl_boom_split', 5, '🎇 부메랑 분열', '부메랑이 적 타격 시 5갈래로 퍼졌다가 다시 타격 지점으로 되돌아옵니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
-                // 🐾 냥냥펀치 텍스트 수정
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 냥냥펀치 주먹 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
-                add('lvl_punch_split', 5, '💥 냥냥펀치 메가스탬프', '연쇄 폭발의 끝에 거대한 발바닥이 떨어져 초광역 폭발을 일으킵니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
+                add('lvl_punch_split', 5, '💥 냥냥펀치 메가스탬프', '연쇄 폭발 속도가 증가하며 마지막에 거대한 스탬프가 떨어집니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
 
             if (p.activeSkillType !== 'boomerang') {
@@ -719,8 +721,7 @@
             
             if(p.activeSkillType === 'boomerang') {
                 let sd = 30 * p.skill_mult;
-                // 🪃 부메랑 비행 시작 (타이머 35프레임)
-                activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying_out', timer: 35, baseDmg: sd, dmg: sd, hitLog: [] });
+                activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying_out', baseDmg: sd, dmg: sd, hitLog: [] });
             }
             else if(p.activeSkillType === 'laser') { 
                 let sd = 2 * p.skill_mult; 
@@ -878,50 +879,68 @@
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
-                    // 🪃 진정한 귀환 부메랑 메커니즘
+                    // 🪃 타격 지점 만개(Split) 및 정점 회수 로직
                     if(sk.state==='flying_out') { 
                         sk.x+=sk.vx; sk.y+=sk.vy; 
-                        sk.timer--;
-                        if (sk.timer <= 0) { 
-                            sk.state = 'returning'; sk.timer = 60; 
-                            sk.dmg = sk.baseDmg * 2.5; // ⚡ 회수 딜 2.5배 폭발!
-                            sk.hitLog = []; // 타격 로그 리셋 (돌아올때 또 때림)
-                        } 
-                    }
-                    else if (sk.state==='returning') { 
-                        let dx = p.x - sk.x; let dy = p.y - sk.y;
-                        let dist = Math.hypot(dx, dy);
-                        // 플레이어에게 부메랑 유도
-                        sk.x += (dx / (dist || 1)) * 18;
-                        sk.y += (dy / (dist || 1)) * 18;
-                        sk.timer--;
                         
-                        // 잡히거나 시간이 다되면 분열
-                        if (dist < 40 || sk.timer <= 0) {
-                            if(sk.level<=p.lvl_boom_split && sk.level<3) {
-                                for(let j=0; j<5; j++) {
-                                    activeSkills.push({
-                                        type:'boomerang', level:sk.level+1, x:sk.x, y:sk.y, w:sk.w*0.6, 
-                                        vx:Math.cos(j*Math.PI*2/5)*15, vy:Math.sin(j*Math.PI*2/5)*15, 
-                                        state:'flying_out', timer: 20, baseDmg:sk.baseDmg*0.5, dmg:sk.baseDmg*0.5, hitLog:[]
-                                    }); 
-                                }
+                        let hitEnemy = null;
+                        for(let j=0; j<enemies.length; j++) {
+                            let e = enemies[j];
+                            if(!sk.hitLog.includes(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
+                                e.hp -= sk.dmg; sk.hitLog.push(e);
+                                if(e.isBoss && !e.isDevTest) e.iframe = 2;
+                                playSound('hit');
+                                hitEnemy = e; break; 
                             }
-                            activeSkills.splice(i,1); continue; 
+                        }
+                        
+                        if (hitEnemy && sk.level === 1 && p.lvl_boom_split > 0) {
+                            let splits = 5; 
+                            for(let j=0; j<splits; j++) {
+                                let angle = (Math.PI * 2 / splits) * j;
+                                activeSkills.push({
+                                    type: 'boomerang', level: 2, 
+                                    x: hitEnemy.x, y: hitEnemy.y,
+                                    originX: hitEnemy.x, originY: hitEnemy.y,
+                                    w: sk.w * 0.6,
+                                    vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15,
+                                    state: 'sub_flying_out', timer: 20,
+                                    baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: []
+                                });
+                            }
+                            activeSkills.splice(i, 1); continue;
+                        } else if (sk.x < -100 || sk.x > canvas.width+100 || sk.y < -100 || sk.y > canvas.height+100) {
+                            activeSkills.splice(i, 1); continue;
                         }
                     }
-                    
+                    else if (sk.state === 'sub_flying_out') {
+                        sk.x += sk.vx; sk.y += sk.vy;
+                        sk.timer--;
+                        if (sk.timer <= 0) {
+                            sk.state = 'sub_returning'; sk.timer = 40; 
+                            sk.hitLog = []; sk.dmg = sk.baseDmg * 2.5; 
+                        }
+                    }
+                    else if (sk.state === 'sub_returning') {
+                        let dx = sk.originX - sk.x; let dy = sk.originY - sk.y;
+                        let dist = Math.hypot(dx, dy);
+                        sk.x += (dx / (dist || 1)) * 18; sk.y += (dy / (dist || 1)) * 18;
+                        sk.timer--;
+                        if (dist < 20 || sk.timer <= 0) { activeSkills.splice(i, 1); continue; }
+                    }
+
                     ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle=c_boom; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
                     
-                    let hitAny = false;
-                    enemies.forEach(e => { 
-                        if(!sk.hitLog.includes(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) { 
-                            e.hp -= sk.dmg; hitAny = true; 
-                            sk.hitLog.push(e);
-                            if(e.isBoss && !e.isDevTest) e.iframe = 2; 
-                        } 
-                    });
-                    if (hitAny) playSound('hit');
+                    if (sk.state !== 'flying_out') { 
+                        let hitAny = false;
+                        enemies.forEach(e => {
+                            if(!sk.hitLog.includes(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
+                                e.hp -= sk.dmg; hitAny = true; sk.hitLog.push(e);
+                                if(e.isBoss && !e.isDevTest) e.iframe = 2;
+                            }
+                        });
+                        if (hitAny) playSound('hit');
+                    }
 
                 } else if(sk.type==='laser') {
                     sk.life--; sk.x = p.x; sk.y = p.y - 20;
@@ -950,7 +969,8 @@
 
                         if (sk.pierceTimer <= 0) {
                             let hitAny = false; enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ hitAny=true; } });
-                            if(hitAny) { sk.state='punching'; sk.hitTimer=60; }
+                            // 🐾 히트 타이머 대폭 가속 (60 -> 15프레임)
+                            if(hitAny) { sk.state='punching'; sk.hitTimer=15; }
                         } else {
                             if (frameCount % 5 === 0) { enemies.forEach(e=>{ if(Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2){ e.hp -= sk.dmg*0.2; } }); }
                         }
@@ -964,21 +984,27 @@
                     }
                     else if (sk.state==='punching') { 
                         sk.hitTimer--; 
-                        if(sk.hitTimer%10===0){
+                        if(sk.hitTimer%5===0){
                             playSound('hit'); 
                             let aoe = sk.w * 1.8; 
-                            particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:15, maxLife:15, size:aoe, color:c_punch, isAoE:true});
+                            particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:10, maxLife:10, size:aoe, color:c_punch, isAoE:true});
                             let aoeSq = aoe * aoe;
                             enemies.forEach(e=>{ if((e.x-sk.x)*(e.x-sk.x) + (e.y-sk.y)*(e.y-sk.y) < aoeSq){ e.hp -= sk.dmg*0.4; if(e.isBoss && !e.isDevTest) e.iframe=4; } });
                         }
                         if(sk.hitTimer<=0){
                             if(sk.splitLevel < p.lvl_punch_split) { 
-                                for(let j=0; j<2; j++) { activeSkills.push({type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, vx:sk.vx+(j===0?-8:8), vy:-10, dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 2}); } 
+                                for(let j=0; j<2; j++) { 
+                                    activeSkills.push({
+                                        type:'punch', splitLevel: sk.splitLevel+1, x:sk.x, y:sk.y, w:sk.w*0.8, 
+                                        vx:sk.vx*0.5 + (j===0?-12:12), vy:sk.vy*0.5 - 10, 
+                                        dmg:sk.dmg, state:'flying', hitTimer: 0, pierceTimer: 2
+                                    }); 
+                                } 
                                 sk.state='done';
                             } else {
-                                // 🐾 메가 젤리 스탬프 발동!
-                                playSound('kill'); globalShakeTimer = 30;
-                                let megaAoe = sk.w * 4;
+                                // 🐾 초거대 메가 젤리 스탬프! 확정 발동
+                                playSound('kill'); globalShakeTimer = 25;
+                                let megaAoe = sk.w * 3.5;
                                 particles.push({x:sk.x, y:sk.y, vx:0, vy:0, life:30, maxLife:30, size:megaAoe, color:c_punch, isAoE:true});
                                 let aoeSq = megaAoe * megaAoe;
                                 let megaDmg = sk.dmg * 5;
@@ -986,22 +1012,21 @@
                                     if((e.x-sk.x)*(e.x-sk.x) + (e.y-sk.y)*(e.y-sk.y) < aoeSq) { e.hp -= megaDmg; if(e.isBoss && !e.isDevTest) e.iframe = 4; }
                                 });
                                 sk.state = 'mega_stamp';
-                                sk.hitTimer = 30; // 메가 젤리 잔상 유지 시간
+                                sk.hitTimer = 20; 
                             }
                         }
                         if (sk.state === 'punching') {
-                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); ctx.translate(0, Math.sin(sk.hitTimer*0.8)*20-10); 
+                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); ctx.translate(0, Math.sin(sk.hitTimer*1.5)*15); 
                             ctx.drawImage(getSprite('paw', c_punch, sk.w), -sk.w, -sk.w);
                             ctx.restore(); 
                         }
                     }
                     else if (sk.state === 'mega_stamp') {
-                        // 🐾 메가 젤리 거대화 및 페이드아웃 렌더링
                         sk.hitTimer--;
                         ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0);
-                        let alpha = sk.hitTimer / 30; 
+                        let alpha = sk.hitTimer / 20; 
                         ctx.globalAlpha = alpha;
-                        ctx.scale(3, 3); // 3배 뻥튀기!
+                        ctx.scale(3.5, 3.5); 
                         ctx.drawImage(getSprite('paw', c_punch, sk.w), -sk.w, -sk.w);
                         ctx.restore();
                         if (sk.hitTimer <= 0) sk.state = 'done';

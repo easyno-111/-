@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --primary: #007aff;
-            --accent: #ff2d55;
+            --primary: #0056b3; /* 더 진한 파란색 */
+            --accent: #d63031; /* 더 진한 빨간색 */
             --bg-color: #f2f2f7;
             --card-bg: #ffffff;
             --text-main: #1d1d1f;
@@ -33,20 +33,20 @@
         input[type="number"]:focus { border-color: var(--primary); }
         .interval-inputs input { width: 80px; }
         
-        /* 🎲 함수 랜덤 버튼 스타일 */
         .random-btn {
-            background: var(--primary-light, #e5f1ff); color: var(--primary); border: 2px solid var(--primary);
+            background: #e5f1ff; color: #007aff; border: 2px solid #007aff;
             padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 16px; cursor: pointer;
             display: flex; align-items: center; gap: 8px; transition: 0.2s;
         }
-        .random-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+        .random-btn:hover { background: #007aff; color: white; transform: scale(1.05); }
 
         .info { font-size: 14px; color: #888; margin-top: 5px; margin-bottom: 15px; font-weight: bold; }
         
         #result-panel {
-            font-size: 18px; padding: 15px 25px; border-radius: 10px; background-color: #fafafa;
-            border: 1px solid var(--border-color); min-width: 250px; text-align: center; line-height: 1.5; font-weight: bold;
+            font-size: 20px; padding: 15px 30px; border-radius: 10px; background-color: #fafafa;
+            border: 2px solid var(--border-color); min-width: 250px; text-align: center; line-height: 1.6; font-weight: 900;
         }
+        /* 최댓값, 최솟값 가독성 대폭 향상 */
         .max-text { color: var(--accent); }
         .min-text { color: var(--primary); }
         
@@ -58,7 +58,7 @@
 </head>
 <body>
 
-    <h1><i class="fa-solid fa-chart-line" style="color: var(--primary);"></i> 이차함수 시뮬레이터</h1>
+    <h1><i class="fa-solid fa-chart-line" style="color: #007aff;"></i> 이차함수 시뮬레이터</h1>
 
     <div class="controls">
         <div class="input-group">
@@ -82,7 +82,7 @@
             <span class="min-text">최솟값: <span id="min-display">-</span></span>
         </div>
     </div>
-    <div class="info">※ 구간칸을 비우면 실수 전체입니다. 그래프 위 파란색 구간 영역을 터치하여 좌우로 드래그해보세요!</div>
+    <div class="info">※ 파란색 구간의 경계선을 드래그해보세요. (0.5 단위로 부드럽게 스냅됩니다)</div>
 
     <canvas id="mathCanvas" width="800" height="500"></canvas>
 
@@ -103,7 +103,9 @@
         const originY = canvas.height / 2 + 100; 
 
         let isDraggingLeft = false; let isDraggingRight = false; let isDraggingBody = false;
-        let dragOffsetX = 0; const dragThreshold = 20;
+        let dragOffsetX = 0; 
+        // 터치 인식 범위 대폭 넓힘 (기존 20 -> 40)
+        const dragThreshold = 40;
 
         function getA() { return parseFloat(inputA.value) || 0; }
         function getB() { return parseFloat(inputB.value) || 0; }
@@ -113,24 +115,22 @@
 
         function f(x) { return getA() * x * x + getB() * x + getC(); }
 
-        // 🎲 함수 랜덤 변경 로직
+        // 0.5 단위로 딱딱 맞춰주는 스냅 함수 추가
+        function snap(val) {
+            return (Math.round(val * 2) / 2).toFixed(1);
+        }
+
         function randomizeFunction() {
             let a = 0;
             while(a === 0) {
-                // a는 -2 ~ 2 사이의 깔끔한 정수 또는 0.5 단위
                 a = (Math.floor(Math.random() * 5) - 2); 
                 if(Math.random() > 0.5) a += 0.5; 
             }
             if (a === 0) a = 1; 
-            
-            // b와 c는 -6 ~ 6 사이의 정수
             const b = Math.floor(Math.random() * 13) - 6; 
             const c = Math.floor(Math.random() * 13) - 6; 
 
-            inputA.value = a;
-            inputB.value = b;
-            inputC.value = c;
-            draw();
+            inputA.value = a; inputB.value = b; inputC.value = c; draw();
         }
 
         function toMathX(px) { return (px - originX) / scale; }
@@ -173,7 +173,7 @@
             ctx.fillStyle = "rgba(0, 122, 255, 0.1)"; 
             ctx.fillRect(pxMin, 0, pxMax - pxMin, canvas.height);
 
-            ctx.strokeStyle = "var(--primary)"; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
+            ctx.strokeStyle = "#007aff"; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
             ctx.beginPath(); ctx.moveTo(pxMin, 0); ctx.lineTo(pxMin, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(pxMax, 0); ctx.lineTo(pxMax, canvas.height); ctx.stroke();
             ctx.setLineDash([]);
@@ -189,7 +189,7 @@
 
             if (isRestricted) {
                 ctx.beginPath();
-                ctx.strokeStyle = "var(--primary)"; ctx.lineWidth = 5;
+                ctx.strokeStyle = "#007aff"; ctx.lineWidth = 5;
                 const startPx = Math.max(0, toPixelX(xmin));
                 const endPx = Math.min(canvas.width, toPixelX(xmax));
                 
@@ -273,12 +273,17 @@
                 else canvas.style.cursor = 'default';
             }
 
-            if (isDraggingLeft) { inputXMin.value = Math.min(mx, xmax - 0.5).toFixed(1); draw(); }
-            else if (isDraggingRight) { inputXMax.value = Math.max(mx, xmin + 0.5).toFixed(1); draw(); }
+            if (isDraggingLeft) { 
+                inputXMin.value = snap(Math.min(mx, xmax - 0.5)); draw(); 
+            }
+            else if (isDraggingRight) { 
+                inputXMax.value = snap(Math.max(mx, xmin + 0.5)); draw(); 
+            }
             else if (isDraggingBody) {
                 const intervalWidth = xmax - xmin;
-                inputXMin.value = (mx - dragOffsetX).toFixed(1);
-                inputXMax.value = (mx - dragOffsetX + intervalWidth).toFixed(1);
+                const newMin = Math.round((mx - dragOffsetX) * 2) / 2; // 스냅
+                inputXMin.value = newMin.toFixed(1);
+                inputXMax.value = (newMin + intervalWidth).toFixed(1);
                 canvas.style.cursor = 'grabbing'; draw();
             }
         }

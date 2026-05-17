@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v7.3)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.1)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -54,8 +54,7 @@
             border-radius: 10px; box-shadow: 0 0 30px rgba(0,210,255,0.4); transition: 0.3s;
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
-        
-        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); transition: opacity 1s; }
+        #firework-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: var(--dark-bg); transition: opacity 1s; pointer-events: none; }
         #firework-canvas { width: 100%; height: 100%; pointer-events: none; }
 
         /* ==================== 🛠 통합 플로팅 도구 모음 ==================== */
@@ -76,43 +75,76 @@
         .btn-pen-red { background: var(--accent); color: white; }
         .btn-eraser { background: #8e8e93; color: white; }
         .btn-clear { background: #f2f2f7; color: #ff3b30; border: 1px solid var(--border-color); }
+        .btn-map { background: #1d1d1f; color: white; margin-left: 10px; }
+
+        /* ==================== 🗺️ 전체 목차 (모달 팝업) ==================== */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+            background: rgba(0,0,0,0.6); z-index: 6000; display: none; align-items: center; justify-content: center; 
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 700px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h2 { color: var(--text-main); font-size: 24px; font-weight: 900; margin: 0; }
+        .modal-header button { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-sub); }
+        .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
+        .stage-grid-btn { 
+            padding: 15px 10px; border-radius: 15px; border: 2px solid var(--border-color); background: #f9f9f9; 
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 5px; 
+        }
+        .stage-grid-btn.unlocked { border-color: var(--primary); color: var(--primary); background: white; }
+        .stage-grid-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .stage-grid-btn.locked { background: #e5e5ea; color: #aaa; cursor: not-allowed; border-color: transparent; }
+        @media(max-width: 600px) { .stage-grid { grid-template-columns: repeat(3, 1fr); } }
 
         /* ==================== 📱 하단 네비게이션 ==================== */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
-            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
             border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            display: flex; justify-content: center; align-items: center; gap: 20px;
-            z-index: 3000; opacity: 0; visibility: hidden; transition: 1s;
+            display: flex; justify-content: center; align-items: center; gap: 15px;
+            z-index: 3000; opacity: 0; visibility: hidden; transition: 1s; padding: 0 10px;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
         
         .nav-btn {
             background: var(--card-bg); border: 2px solid var(--primary); color: var(--primary);
-            padding: 10px 25px; border-radius: 30px; cursor: pointer; font-size: clamp(14px, 2vw, 20px); font-weight: bold;
-            transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: clamp(14px, 2vw, 18px); font-weight: bold;
+            transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); white-space: nowrap;
         }
         .nav-btn:hover:not(:disabled) { background: var(--primary); color: white; }
-        .nav-btn:disabled { border-color: var(--border-color); color: var(--text-sub); cursor: not-allowed; display: none; }
+        .nav-btn:disabled { border-color: var(--border-color); color: var(--text-sub); cursor: not-allowed; opacity: 0.5;}
+
+        .stage-dots-container { display: none; gap: 8px; overflow-x: auto; max-width: 50vw; padding: 5px; scrollbar-width: none; }
+        .stage-dots-container::-webkit-scrollbar { display: none; }
+        .stage-dot {
+            width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            background: var(--card-bg); border: 2px solid var(--border-color); font-family: 'Orbitron', sans-serif;
+            color: var(--text-sub); font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.3s; flex-shrink: 0;
+        }
+        .stage-dot.unlocked { border-color: var(--primary); color: var(--primary); }
+        .stage-dot.active { background: var(--primary); color: white; border-color: var(--primary); transform: scale(1.1); }
+        .stage-dot.locked { background: #e5e5ea; color: #aaa; cursor: not-allowed; border-color: transparent; }
 
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
-        /* ==================== 📄 스테이지 레이아웃 (3D 애니메이션) ==================== */
+        /* ==================== 📄 스테이지 레이아웃 ==================== */
         #stages-perspective {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
             perspective: 1200px; visibility: hidden; opacity: 0; transition: opacity 0.5s; z-index: 1000;
         }
         #stages-perspective.visible { visibility: visible; opacity: 1; }
 
-        #stages-wrapper {
-            width: 100%; height: 100%; display: flex; flex-wrap: nowrap; transition: transform 0.1s;
-        }
+        #stages-wrapper { width: 100%; height: 100%; display: flex; flex-wrap: nowrap; transition: transform 0.1s; }
 
         .stage {
             flex: 0 0 100vw; width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
-            display: flex; justify-content: center; align-items: flex-start; 
-            overflow: hidden;
+            display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
         }
 
         .activity-card {
@@ -130,11 +162,7 @@
         .flex-row { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
         .panel { flex: 1; min-width: 300px; background: #f9f9f9; border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid var(--border-color); }
 
-        /* ==================== 🖌 스크롤 최적화 그리기 캔버스 ==================== */
-        .image-wrapper { 
-            position: relative; display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid var(--border-color); background: white; 
-        }
+        .image-wrapper { position: relative; display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid var(--border-color); background: white; }
         .textbook-img { width: 100%; display: block; border-radius: 10px; pointer-events: none; }
         .drawing-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none; cursor: crosshair; }
 
@@ -142,14 +170,8 @@
 
         .whiteboard-container { width: 100%; min-height: 500px; border: 2px solid var(--border-color); border-radius: 10px; background: white; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
         .whiteboard-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+        .grid-bg { background-color: #fff; background-image: linear-gradient(#e5e5ea 1px, transparent 1px), linear-gradient(90deg, #e5e5ea 1px, transparent 1px); background-size: 20px 20px; }
 
-        .grid-bg {
-            background-color: #fff;
-            background-image: linear-gradient(#e5e5ea 1px, transparent 1px), linear-gradient(90deg, #e5e5ea 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        /* ==================== 요소 스타일링 ==================== */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--primary); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(15px, 2vw, 18px); color: var(--text-sub); margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
@@ -165,6 +187,12 @@
         }
         .check-btn:hover { background: var(--primary); color: white; }
         .feedback { font-size: clamp(16px, 2vw, 20px); font-weight: bold; margin-top: 10px; min-height: 25px; }
+
+        .unlock-btn {
+            width: 100%; max-width: 400px; margin: 15px auto 0; display: block; font-size: 18px; padding: 15px;
+            background: #fff; border: 2px dashed var(--primary); color: var(--primary); border-radius: 15px; cursor: pointer; transition: 0.2s;
+        }
+        .unlock-btn:hover:not(:disabled) { background: var(--primary-light); }
         
         iframe { width: 100%; height: 75vh; min-height: 500px; border: none; border-radius: 10px; background: white; border: 1px solid var(--border-color); }
         
@@ -187,6 +215,17 @@
 </head>
 <body>
 
+    <div id="stage-map-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🗺️ 훈련장 전체 지도</h2>
+                <button type="button" onclick="toggleStageMap()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="stage-grid" id="stage-grid-container">
+                </div>
+        </div>
+    </div>
+
     <div id="door-transition">
         <div class="trans-door left open" id="trans-door-left"></div>
         <div class="trans-door right open" id="trans-door-right"></div>
@@ -205,15 +244,16 @@
         <button type="button" class="tool-btn btn-pen-red" onclick="setGlobalTool('pen', '#ff2d55')"><i class="fa-solid fa-pen"></i> 빨간펜</button>
         <button type="button" class="tool-btn btn-eraser" onclick="setGlobalTool('eraser')"><i class="fa-solid fa-eraser"></i> 지우개</button>
         <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 화면 지우기</button>
+        <button type="button" class="tool-btn btn-map" onclick="toggleStageMap()"><i class="fa-solid fa-map-location-dot"></i> 전체 목차</button>
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
-        <button type="button" class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전</button>
-        
         <button type="button" class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
         <button type="button" class="nav-btn" id="trajectory-btn" style="display: none; border-color: var(--neon-purple); color: var(--neon-purple); background: var(--dark-bg); font-family: 'Orbitron';" onclick="enableTrajectory()">궤도 확인하기 <i class="fa-solid fa-chart-line"></i></button>
         <button type="button" class="nav-btn" id="show-content-btn" style="display: none; border-color: var(--secondary); color: var(--secondary);" onclick="revealContent()">훈련 입장하기 <i class="fa-solid fa-door-open"></i></button>
         
+        <button type="button" class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전</button>
+        <div class="stage-dots-container" id="stage-nav-dots"></div>
         <button type="button" class="nav-btn" id="next-btn" style="display: none;" onclick="moveStage(1)">다음 <i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
@@ -264,6 +304,7 @@
                             <img src="step2_image.png" alt="실수 전체 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s2')">
                             <canvas id="canvas-s2" class="drawing-layer"></canvas>
                         </div>
+                        <button type="button" class="unlock-btn" onclick="unlockNextStage(this)">✅ 필기 완료 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -275,7 +316,8 @@
                         <div class="card-title">제한된 범위 직접 조작해보기</div>
                     </div>
                     <div class="card-body" style="padding: 0;">
-                        <iframe src="quadratic.html"></iframe>
+                        <iframe src="quadratic.html" style="height: 60vh;"></iframe>
+                        <button type="button" class="unlock-btn" onclick="unlockNextStage(this)" style="margin-bottom: 20px;">✅ 조작 완료 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -294,7 +336,7 @@
                         </div>
                         
                         <h3 style="margin-top: 10px; width: 100%; text-align: center;">💡 <span class="math">a < 0</span> 일 때의 빈칸을 채워보세요.</h3>
-                        <div class="quiz-grid">
+                        <div class="quiz-grid" id="stage-4-selects">
                             <div class="quiz-col">
                                 <p style="color: var(--text-sub); margin-bottom: 10px;">(1) 꼭짓점 포함</p>
                                 최댓값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select><br><br>
@@ -311,6 +353,7 @@
                                 최솟값: <select><option value="">선택</option><option value="fa">f(α)</option><option value="fp">f(p)</option><option value="fb">f(β)</option></select>
                             </div>
                         </div>
+                        <button type="button" class="unlock-btn" onclick="checkStage3Unlock(this)">✅ 정답 확인 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -330,6 +373,7 @@
                         <div class="whiteboard-container grid-bg" style="height: 600px; width: 100%;">
                             <canvas id="canvas-s5" class="whiteboard-canvas"></canvas>
                         </div>
+                        <button type="button" class="unlock-btn" onclick="unlockNextStage(this)">✅ 문제 풀이 완료 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -349,6 +393,7 @@
                         <div class="whiteboard-container grid-bg" style="height: 800px; width: 100%;"> 
                             <canvas id="canvas-s6" class="whiteboard-canvas"></canvas>
                         </div>
+                        <button type="button" class="unlock-btn" onclick="unlockNextStage(this)">✅ 문제 풀이 완료 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -368,6 +413,7 @@
                         <div class="whiteboard-container grid-bg" style="height: 600px; width: 100%; margin-top: 20px;"> 
                             <canvas id="canvas-s7-pad" class="whiteboard-canvas"></canvas>
                         </div>
+                        <button type="button" class="unlock-btn" onclick="unlockNextStage(this)">✅ 문제 풀이 완료 (다음 단계 열기)</button>
                     </div>
                 </div>
             </div>
@@ -394,7 +440,7 @@
                             </div>
                             
                             <div class="panel" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
-                                <button type="button" class="check-btn" id="s8-graph-btn" style="padding: 15px 30px; font-size: 20px; width: 100%;" onclick="showStage8Graph()">
+                                <button type="button" class="check-btn" id="s8-graph-btn" style="padding: 15px 30px; font-size: 20px; width: 100%;" onclick="showStage8Graph(this)">
                                     <i class="fa-solid fa-chart-area"></i> 정답 그래프 확인하기
                                 </button>
                                 <div id="s8-graph-container" style="display: none; width: 100%; text-align: center; margin-top: 15px;">
@@ -402,6 +448,7 @@
                                     <canvas id="s8-graph-canvas" width="400" height="300" style="width: 100%; border: 2px solid #333; border-radius: 10px; background: #fafafa;"></canvas>
                                     <p style="margin-top: 10px; font-weight: bold; color: var(--accent);">최댓값: 4500 (t=150)</p>
                                     <p style="font-weight: bold; color: var(--primary);">최솟값: 4000 (t=200)</p>
+                                    <button type="button" class="unlock-btn" disabled style="background: var(--secondary); color: white; border-color: var(--secondary);">✅ 확인 완료</button>
                                 </div>
                             </div>
                         </div>
@@ -424,7 +471,7 @@
                         
                         <div class="panel" style="width: 100%; max-width: 800px; text-align: center;">
                             <h3 style="color: var(--primary);"><i class="fa-solid fa-sliders"></i> 높이(a) 조절 시뮬레이터</h3>
-                            <p class="desc">슬라이더를 처음(0)부터 서서히 움직여서 언제 넓이가 최대가 되는지 찾아보세요!</p>
+                            <p class="desc">슬라이더를 처음(0)부터 움직여서 <b>최대 넓이(1800)</b>를 찾아야 다음 단계가 열립니다!</p>
                             
                             <input type="range" id="s9-slider" min="0" max="60" value="0" step="0.5" oninput="drawStage9Triangle()">
                             
@@ -435,6 +482,7 @@
                             </div>
                             
                             <canvas id="s9-triangle-canvas" width="600" height="320" style="width: 100%; max-width: 600px; background: white; border: 2px solid var(--border-color); border-radius: 10px; margin-top: 10px;"></canvas>
+                            <button type="button" class="unlock-btn" id="s9-unlock-btn" disabled>🔒 최대 넓이를 찾으세요</button>
                         </div>
                     </div>
                 </div>
@@ -453,6 +501,135 @@
             </div>
 
         </div> </div> <script>
+        // ==========================================
+        // 0. 미션 통제 및 내비게이션 상태 시스템 (팝업 맵 연결)
+        // ==========================================
+        let currentStage = 0;
+        const totalStages = 10; 
+        let maxUnlockedStage = 0; // 초기에는 1단계만
+        let isTransitioning = false;
+
+        // 목차 팝업창 토글
+        function toggleStageMap() {
+            const modal = document.getElementById('stage-map-modal');
+            if (modal.classList.contains('active')) {
+                modal.classList.remove('active');
+            } else {
+                renderStageMap();
+                modal.classList.add('active');
+            }
+        }
+
+        // 목차 팝업창 렌더링 (잠금/해제 상태 반영)
+        function renderStageMap() {
+            const container = document.getElementById('stage-grid-container');
+            container.innerHTML = '';
+            for(let i=0; i<totalStages; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                
+                let icon = '';
+                if(i === 0) icon = '🚀'; else if(i === 9) icon = '🔐'; else icon = '📝';
+                
+                if (i === currentStage) {
+                    btn.className = 'stage-grid-btn active';
+                    btn.innerHTML = `<span style="font-size:24px;">${icon}</span> Stage ${i+1}<br><span style="font-size:12px; font-weight:normal;">현재 위치</span>`;
+                } else if (i <= maxUnlockedStage) {
+                    btn.className = 'stage-grid-btn unlocked';
+                    btn.innerHTML = `<span style="font-size:24px;">${icon}</span> Stage ${i+1}<br><span style="font-size:12px; font-weight:normal;">이동 가능</span>`;
+                    btn.onclick = () => { toggleStageMap(); jumpToStage(i); };
+                } else {
+                    btn.className = 'stage-grid-btn locked';
+                    btn.innerHTML = `<span style="font-size:24px;">🔒</span> Stage ${i+1}<br><span style="font-size:12px; font-weight:normal;">잠김</span>`;
+                }
+                container.appendChild(btn);
+            }
+        }
+
+        // 하단 점(Dots) 초기화
+        function initNavDots() {
+            const container = document.getElementById('stage-nav-dots');
+            container.innerHTML = '';
+            for(let i=0; i<totalStages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `stage-dot ${i === 0 ? 'active' : 'locked'}`;
+                btn.innerText = i + 1;
+                btn.onclick = () => jumpToStage(i);
+                container.appendChild(btn);
+            }
+        }
+
+        // 내비게이션 UI 업데이트 (버튼 및 점 상태)
+        function updateNavUI() {
+            document.getElementById('prev-btn').disabled = (currentStage === 0);
+            document.getElementById('next-btn').disabled = (currentStage >= maxUnlockedStage);
+            
+            const dots = document.querySelectorAll('.stage-dot');
+            dots.forEach((dot, index) => {
+                dot.classList.remove('active', 'unlocked', 'locked');
+                if (index === currentStage) {
+                    dot.classList.add('active');
+                } else if (index <= maxUnlockedStage) {
+                    dot.classList.add('unlocked');
+                } else {
+                    dot.classList.add('locked');
+                }
+            });
+        }
+
+        // 다음 단계 잠금 해제 (완료 시)
+        function unlockNextStage(btnElem = null) {
+            if (currentStage === maxUnlockedStage && maxUnlockedStage < totalStages - 1) {
+                maxUnlockedStage++;
+                updateNavUI();
+            }
+            if (btnElem) {
+                btnElem.innerText = "✅ 미션 완료됨";
+                btnElem.style.background = "var(--secondary)";
+                btnElem.style.borderColor = "var(--secondary)";
+                btnElem.style.color = "white";
+                btnElem.disabled = true;
+            }
+        }
+
+        // 자유 이동 로직 (맵이나 점에서 호출)
+        function jumpToStage(targetIndex) {
+            if (isTransitioning || targetIndex > maxUnlockedStage || targetIndex === currentStage) return;
+            
+            isTransitioning = true;
+            const doorOverlay = document.getElementById('door-transition');
+            const leftDoor = document.getElementById('trans-door-left');
+            const rightDoor = document.getElementById('trans-door-right');
+
+            doorOverlay.style.visibility = 'visible';
+            leftDoor.classList.remove('open');
+            rightDoor.classList.remove('open');
+
+            setTimeout(() => {
+                currentStage = targetIndex;
+                document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
+                updateNavUI();
+                setTimeout(resizeAllCanvases, 400);
+                if (currentStage === 8) setTimeout(drawStage9Triangle, 400);
+
+                setTimeout(() => {
+                    leftDoor.classList.add('open');
+                    rightDoor.classList.add('open');
+                    setTimeout(() => { 
+                        doorOverlay.style.visibility = 'hidden'; 
+                        isTransitioning = false;
+                    }, 1000);
+                }, 200);
+            }, 800);
+        }
+
+        function moveStage(dir) { jumpToStage(currentStage + dir); }
+
+        window.onload = () => {
+            initNavDots();
+            drawStage9Triangle(); 
+        };
+
         // ==========================================
         // 1. 폭죽 애니메이션 시스템
         // ==========================================
@@ -512,11 +689,8 @@
                     shotsFired++;
                     if (shotsFired >= 5) document.getElementById('trajectory-btn').style.display = 'block';
                 } else {
-                    // 궤도 확인 모드에서 폭죽을 터뜨렸을 때
                     trajectoryShotsFired++;
-                    if (trajectoryShotsFired >= 3) {
-                        document.getElementById('show-content-btn').style.display = 'block';
-                    }
+                    if (trajectoryShotsFired >= 3) document.getElementById('show-content-btn').style.display = 'block';
                 }
             }
         }
@@ -552,16 +726,13 @@
             fwCtx.globalAlpha = 1; requestAnimationFrame(animateFw);
         }
 
-        // ==========================================
-        // 2. 방 이동 애니메이션 & 밝은 테마 전환
-        // ==========================================
-        const doorOverlay = document.getElementById('door-transition');
-        const leftDoor = document.getElementById('trans-door-left');
-        const rightDoor = document.getElementById('trans-door-right');
-        const stagesWrapper = document.getElementById('stages-wrapper');
-
+        // 훈련장 최초 진입
         function revealContent() {
             contentRevealed = true;
+            const doorOverlay = document.getElementById('door-transition');
+            const leftDoor = document.getElementById('trans-door-left');
+            const rightDoor = document.getElementById('trans-door-right');
+
             doorOverlay.style.visibility = 'visible';
             leftDoor.classList.remove('open');
             rightDoor.classList.remove('open');
@@ -571,56 +742,21 @@
                 document.getElementById('fw-btn').style.display = 'none';
                 document.getElementById('trajectory-btn').style.display = 'none';
                 document.getElementById('show-content-btn').style.display = 'none';
+                
                 document.getElementById('prev-btn').style.display = 'block';
                 document.getElementById('next-btn').style.display = 'block';
+                document.getElementById('stage-nav-dots').style.display = 'flex';
                 
                 document.getElementById('stages-perspective').classList.add('visible');
                 document.getElementById('global-tools').classList.add('visible');
                 
+                updateNavUI();
                 initStage1Graph();
                 
                 setTimeout(() => {
                     leftDoor.classList.add('open');
                     rightDoor.classList.add('open');
                     setTimeout(() => { doorOverlay.style.visibility = 'hidden'; }, 1000);
-                }, 200);
-            }, 800);
-        }
-
-        let currentStage = 0;
-        const totalStages = 10; 
-        let isTransitioning = false;
-
-        function moveStage(dir) {
-            if(isTransitioning) return;
-            let nextStage = currentStage + dir;
-            if(nextStage < 0 || nextStage >= totalStages) return;
-            
-            isTransitioning = true;
-            doorOverlay.style.visibility = 'visible';
-            leftDoor.classList.remove('open');
-            rightDoor.classList.remove('open');
-
-            setTimeout(() => {
-                currentStage = nextStage;
-                stagesWrapper.style.transform = `translateX(-${currentStage * 100}vw)`;
-                
-                document.getElementById('prev-btn').disabled = (currentStage === 0);
-                document.getElementById('next-btn').disabled = (currentStage === totalStages - 1);
-                
-                setTimeout(resizeAllCanvases, 400);
-
-                if (currentStage === 8) {
-                    setTimeout(drawStage9Triangle, 400);
-                }
-
-                setTimeout(() => {
-                    leftDoor.classList.add('open');
-                    rightDoor.classList.add('open');
-                    setTimeout(() => { 
-                        doorOverlay.style.visibility = 'hidden'; 
-                        isTransitioning = false;
-                    }, 1000);
                 }, 200);
             }, 800);
         }
@@ -640,10 +776,7 @@
             8: ['canvas-s9'] 
         };
 
-        function setGlobalTool(tool, color) {
-            drawState.tool = tool;
-            if(color) drawState.color = color;
-        }
+        function setGlobalTool(tool, color) { drawState.tool = tool; if(color) drawState.color = color; }
 
         function clearCurrentCanvas() {
             const ids = stageCanvasMap[currentStage];
@@ -723,9 +856,7 @@
         function stopDraw(cvs) { drawState.isDrawing = false; cvs.getContext('2d').beginPath(); }
 
         function resizeAllCanvases() {
-            Object.values(stageCanvasMap).forEach(ids => {
-                ids.forEach(id => initCanvasOverlay(id));
-            });
+            Object.values(stageCanvasMap).forEach(ids => { ids.forEach(id => initCanvasOverlay(id)); });
             if(currentStage === 8) drawStage9Triangle();
         }
 
@@ -735,20 +866,32 @@
         }
 
         // ==========================================
-        // Stage 1: 퀴즈 및 그래프 기능
+        // Stage 1 (Index 0): 퀴즈 로직 및 단계 해제
         // ==========================================
+        let s0_q1_done = false, s0_q2_done = false;
+        
+        function checkStage0Unlock() {
+            if (s0_q1_done && s0_q2_done) { unlockNextStage(); }
+        }
+
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;
             const minVal = document.getElementById('q1-min').value;
             const fb = document.getElementById('fb-q1');
-            if (maxVal === "x" && minVal === "1") { fb.style.color = "var(--secondary)"; fb.innerText = "정답입니다! 훌륭해요."; }
+            if (maxVal === "x" && minVal === "1") { 
+                fb.style.color = "var(--secondary)"; fb.innerText = "정답입니다! 훌륭해요."; 
+                s0_q1_done = true; checkStage0Unlock();
+            }
             else { fb.style.color = "var(--accent)"; fb.innerText = "다시 생각해보세요."; }
         }
         function checkQ2() {
             const minVal = document.getElementById('q2-min').value;
             const maxVal = document.getElementById('q2-max').value;
             const fb = document.getElementById('fb-q2');
-            if (minVal == "1" && maxVal == "5") { fb.style.color = "var(--secondary)"; fb.innerText = "완벽합니다! 잘 찾았네요."; } 
+            if (minVal == "1" && maxVal == "5") { 
+                fb.style.color = "var(--secondary)"; fb.innerText = "완벽합니다! 잘 찾았네요."; 
+                s0_q2_done = true; checkStage0Unlock();
+            } 
             else { fb.style.color = "var(--accent)"; fb.innerText = "그래프 영역을 다시 확인해보세요!"; }
         }
 
@@ -814,13 +957,21 @@
             });
         });
 
+        // Stage 4 (Index 3) 퀴즈 체크 및 해제
+        function checkStage3Unlock(btn) {
+            let allFilled = true;
+            document.querySelectorAll('#stage-4-selects select').forEach(s => { if (s.value === "") allFilled = false; });
+            if (allFilled) unlockNextStage(btn); else alert("6개의 빈칸을 모두 선택해야 다음 단계가 열립니다!");
+        }
+
         // ==========================================
-        // Stage 8 특화: y = -0.2t^2 + 60t 그래프 시각화 
+        // Stage 8 특화 (Index 7): 그래프 시각화 및 자동 해제
         // ==========================================
-        function showStage8Graph() {
-            document.getElementById('s8-graph-btn').style.display = 'none';
+        function showStage8Graph(btn) {
+            btn.style.display = 'none';
             document.getElementById('s8-graph-container').style.display = 'block';
             drawStage8Graph();
+            unlockNextStage(); 
         }
 
         function drawStage8Graph() {
@@ -870,8 +1021,10 @@
         }
 
         // ==========================================
-        // Stage 9 특화: 직각삼각형 내접 직사각형 시뮬레이션
+        // Stage 9 특화 (Index 8): 직사각형 넓이 통과 로직
         // ==========================================
+        let stage9Unlocked = false;
+
         function drawStage9Triangle() {
             const cvs = document.getElementById('s9-triangle-canvas');
             if(!cvs) return;
@@ -916,12 +1069,14 @@
                 ctx.fillStyle = "var(--accent)";
                 ctx.font = "bold 20px Noto Sans KR";
                 ctx.fillText("⭐ 최대 넓이 도달! (1800)", ox + 150, oy - 100);
+                
+                if(!stage9Unlocked) {
+                    stage9Unlocked = true;
+                    const btn = document.getElementById('s9-unlock-btn');
+                    unlockNextStage(btn);
+                }
             }
         }
-        
-        window.onload = () => {
-            drawStage9Triangle();
-        };
     </script>
 </body>
 </html>

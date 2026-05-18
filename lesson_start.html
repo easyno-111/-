@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.6)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.7)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -104,7 +104,7 @@
         .eraser-btn-size:hover { background: #eee; }
         .eraser-btn-size.active { background: #8e8e93; color: white; border-color: #8e8e93; }
 
-        /* ==================== 🗺️ 팝업(모달) 공통 스타일 ==================== */
+        /* ==================== 🗺️ 팝업(모달) 공통 스타일 및 스크롤 고도화 ==================== */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             background: rgba(0,0,0,0.7); z-index: 6000; display: none; align-items: center; justify-content: center; 
@@ -112,12 +112,33 @@
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 800px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; position: relative;
+            background: white; padding: 0 30px 30px 30px; border-radius: 20px; width: 90%; max-width: 800px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 90vh; position: relative;
+            
+            /* ⭐ 부드러운 스크롤 및 팝업창 전용 스크롤바 강제 적용 */
+            overflow-y: scroll !important; 
+            -webkit-overflow-scrolling: touch;
         }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .modal-content::-webkit-scrollbar { width: 24px !important; display: block !important; -webkit-appearance: none !important; }
+        .modal-content::-webkit-scrollbar-track { background-color: #f0f0f5 !important; border-radius: 12px; border-left: 2px solid var(--border-color); }
+        .modal-content::-webkit-scrollbar-thumb { background-color: #b0b0b5 !important; border-radius: 12px !important; border: 4px solid #f0f0f5 !important; }
+
+        /* ⭐ 닫기 버튼 상시 고정 (Sticky Header) */
+        .modal-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; left: 0; width: 100%; 
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 20px 0; margin-bottom: 20px; z-index: 100;
+            border-bottom: 2px solid var(--border-color);
+        }
         .modal-header h2 { color: var(--text-main); font-size: 24px; font-weight: 900; margin: 0; }
-        .modal-header button { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-sub); }
+        .modal-header button { 
+            background: #f2f2f7; border: none; width: 40px; height: 40px; border-radius: 50%;
+            font-size: 20px; cursor: pointer; color: var(--accent); transition: 0.2s;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-header button:hover { background: #e5e5ea; transform: scale(1.1); }
         
         .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
         .stage-grid-btn { 
@@ -129,7 +150,8 @@
         .stage-grid-btn.locked { background: #e5e5ea; color: #aaa; cursor: not-allowed; border-color: transparent; }
         @media(max-width: 600px) { .stage-grid { grid-template-columns: repeat(3, 1fr); } }
 
-        .report-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        /* 결과 보고서 갤러리 레이아웃 */
+        .report-grid { display: grid; grid-template-columns: 1fr; gap: 20px; padding-bottom: 30px;}
         .report-item { border: 2px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #f9f9f9; padding: 10px; text-align: center;}
         .report-item img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 5px; display: block; margin: 0 auto;}
         .report-item h4 { margin-bottom: 10px; color: var(--primary); }
@@ -166,16 +188,14 @@
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
-        /* ==================== ⭐ 플로팅 좌우 이동 화살표 (신규) ==================== */
+        /* ==================== ⭐ 플로팅 좌우 이동 화살표 ==================== */
         .float-nav-btn {
             position: fixed; top: 50%; transform: translateY(-50%);
             background: var(--primary); color: white; border: none;
             cursor: pointer; z-index: 3500; display: none; transition: 0.3s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3); align-items: center; justify-content: center;
         }
-        .float-nav-btn.left { 
-            left: 20px; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; opacity: 0.5; 
-        }
+        .float-nav-btn.left { left: 20px; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; opacity: 0.5; }
         .float-nav-btn.left:hover { opacity: 1; transform: translateY(-50%) scale(1.1); }
         
         .float-nav-btn.right {
@@ -216,22 +236,10 @@
         }
 
         /* iOS에서 숨겨지지 않도록 배경색을 명시적으로 깔아버림 */
-        .activity-card::-webkit-scrollbar { 
-            width: 24px !important; 
-            display: block !important; 
-        }
-        .activity-card::-webkit-scrollbar-track { 
-            background: #e5e5ea !important; /* 선명한 트랙 색상 */
-            border-left: 2px solid var(--border-color); 
-        }
-        .activity-card::-webkit-scrollbar-thumb { 
-            background: #8e8e93 !important; /* 진한 회색 썸 */
-            border-radius: 12px !important; 
-            border: 4px solid #e5e5ea !important; /* 트랙과 분리 */
-        }
-        .activity-card::-webkit-scrollbar-thumb:hover { 
-            background: #57575a !important; 
-        }
+        .activity-card::-webkit-scrollbar { width: 24px !important; display: block !important; }
+        .activity-card::-webkit-scrollbar-track { background: #e5e5ea !important; border-left: 2px solid var(--border-color); }
+        .activity-card::-webkit-scrollbar-thumb { background: #8e8e93 !important; border-radius: 12px !important; border: 4px solid #e5e5ea !important; }
+        .activity-card::-webkit-scrollbar-thumb:hover { background: #57575a !important; }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid var(--border-color); text-align: center; background: #fafafa; border-radius: 24px 24px 0 0; flex-shrink: 0; }
         .step-tag { font-family: 'Orbitron'; color: var(--primary); font-size: clamp(14px, 1.8vw, 20px); font-weight: bold; letter-spacing: 1px; }
@@ -299,7 +307,7 @@
     </button>
 
     <div id="team-input-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding-top:30px;">
             <h2 style="color:var(--text-main); margin-bottom: 10px; font-weight: 900;">🕵️‍♂️ 요원 소속 등록</h2>
             <p style="color:var(--text-sub); margin-bottom: 25px;">몇 조 소속인지 숫자로 입력해 주세요.</p>
             <input type="number" id="team-number-input" placeholder="예: 3" style="width: 150px; font-size: 28px; text-align: center; margin-bottom: 25px; padding: 15px;">
@@ -327,7 +335,8 @@
             <p style="color: var(--accent); font-weight: bold; text-align: center; margin-bottom: 20px; font-size: 18px;">
                 👇 아래 생성된 이미지들을 손가락으로 꾹 눌러서(Long-press) '사진 앱에 저장' 하세요! 👇
             </p>
-            <div id="report-grid-container" class="report-grid"></div>
+            <div id="report-grid-container" class="report-grid">
+                </div>
         </div>
     </div>
 
@@ -362,7 +371,7 @@
 
         <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 지우기</button>
         <button type="button" class="tool-btn btn-map" onclick="toggleStageMap()"><i class="fa-solid fa-map-location-dot"></i> 목차</button>
-        <button type="button" class="tool-btn btn-report" onclick="openReportModal()"><i class="fa-solid fa-file-export"></i> 전체 결과 모아보기</button>
+        <button type="button" class="tool-btn btn-report" onclick="openReportModal()"><i class="fa-solid fa-file-export"></i> 모아보기</button>
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
@@ -589,7 +598,7 @@
                         
                         <div class="panel" style="width: 100%; max-width: 800px; text-align: center;">
                             <h3 style="color: var(--primary);"><i class="fa-solid fa-sliders"></i> 높이(a) 조절 시뮬레이터</h3>
-                            <p class="desc">슬라이더를 처음(0)부터 움직여서 <b>최대 넓이(1800)</b>를 찾아야 다음 단계가 열립니다!</p>
+                            <p class="desc">아래의 파란색 동그라미를 오른쪽으로 밀어서 <b>최대 넓이(1800)</b>를 찾아보세요!</p>
                             
                             <input type="range" id="s9-slider" min="0" max="60" value="0" step="0.5" oninput="drawStage9Triangle()">
                             
@@ -713,12 +722,10 @@
             }
         }
 
-        // ⭐ UI 업데이트 시 플로팅 버튼(NEXT) 표시 로직 추가
         function updateNavUI() {
             document.getElementById('prev-btn').disabled = (currentStage === 0);
             document.getElementById('next-btn').disabled = (currentStage >= maxUnlockedStage);
             
-            // 미션을 해제했다면 플로팅 다음 화살표 표시
             if (contentRevealed) {
                 document.getElementById('float-prev-btn').style.display = (currentStage > 0) ? 'flex' : 'none';
                 document.getElementById('float-next-btn').style.display = (currentStage < maxUnlockedStage) ? 'flex' : 'none';
@@ -741,7 +748,7 @@
         function unlockNextStage(btnElem = null) {
             if (currentStage === maxUnlockedStage && maxUnlockedStage < totalStages - 1) {
                 maxUnlockedStage++;
-                updateNavUI(); // 여기서 플로팅 버튼이 나타남
+                updateNavUI();
             }
             if (btnElem) {
                 btnElem.innerText = "✅ 미션 완료됨";
@@ -756,7 +763,6 @@
             if (isTransitioning || targetIndex > maxUnlockedStage || targetIndex === currentStage) return;
             isTransitioning = true;
             
-            // 이동 중 플로팅 버튼 숨기기
             document.getElementById('float-prev-btn').style.display = 'none';
             document.getElementById('float-next-btn').style.display = 'none';
             
@@ -795,7 +801,7 @@
         };
 
         // ==========================================
-        // ⭐ 전체 갤러리 리포트 생성 기능 
+        // ⭐ 전체 갤러리 리포트 생성 기능 (Blob 압축 최적화)
         // ==========================================
         function openReportModal() {
             const modal = document.getElementById('report-modal');
@@ -805,8 +811,6 @@
             container.innerHTML = `<div style="text-align: center; padding: 50px; color: #888;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; margin-bottom: 15px;"></i><br>학습 데이터 이미지를 생성/합성 중입니다... 잠시만 기다려주세요.</div>`;
             
             setTimeout(() => {
-                container.innerHTML = '';
-                
                 const captureList = [
                     { name: "Stage 2: 개념 다지기", imgId: "img-s2", canvasId: "canvas-s2" },
                     { name: "Stage 4: 핵심 미션", imgId: "img-s4", canvasId: "canvas-s4" },
@@ -821,7 +825,7 @@
                     { name: "Stage 9: 응용 연습 3 (문제)", imgId: "img-s9", canvasId: "canvas-s9" }
                 ];
 
-                let hasData = false;
+                let validItems = [];
 
                 captureList.forEach(item => {
                     const canvasObj = document.getElementById(item.canvasId);
@@ -850,18 +854,27 @@
                     tCtx.drawImage(canvasObj, 0, 0);
 
                     if (tempCvs.width > 0) {
-                        hasData = true;
-                        const dataUrl = tempCvs.toDataURL('image/png');
-                        const div = document.createElement('div');
-                        div.className = 'report-item';
-                        div.innerHTML = `<h4>${item.name}</h4><img src="${dataUrl}" alt="${item.name}">`;
-                        container.appendChild(div);
+                        validItems.push({ name: item.name, canvas: tempCvs });
                     }
                 });
 
-                if(!hasData) {
+                container.innerHTML = '';
+                if(validItems.length === 0) {
                     container.innerHTML = `<div style="text-align: center; padding: 50px; color: #888;">아직 필기된 데이터가 없거나 캔버스를 불러올 수 없습니다. 훈련을 진행해 주세요.</div>`;
+                    return;
                 }
+
+                // 🚀 아이패드 렌더링 최적화: DataURL 대신 Blob(JPEG) 변환으로 메모리 사용량 최소화
+                validItems.forEach(item => {
+                    item.canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const div = document.createElement('div');
+                        div.className = 'report-item';
+                        div.innerHTML = `<h4>${item.name}</h4><img src="${url}" alt="${item.name}">`;
+                        container.appendChild(div);
+                    }, 'image/jpeg', 0.85);
+                });
+
             }, 500); 
         }
 
@@ -875,7 +888,7 @@
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if(audioCtx.state === 'suspended') audioCtx.resume();
-            } catch(e) {}
+            } catch(e) { console.log("Audio Init Error", e); }
             
             document.getElementById('launch-overlay').style.display = 'none';
             document.getElementById('bottom-nav').classList.add('visible');
@@ -1006,7 +1019,7 @@
         }
 
         // ==========================================
-        // 3. 글로벌 통합 그리기 시스템 (지우개 커서)
+        // 3. 글로벌 통합 그리기 시스템 (지우개 커서 가시성 강화)
         // ==========================================
         let drawState = { isDrawing: false, tool: 'pen', color: '#007aff', eraserSize: 30 };
         

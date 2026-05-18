@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Survivor v0.16.0</title>
+    <title>Space Survivor v0.16.1</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #112211; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
-        #gameCanvas { display: block; width: 100%; height: 100%; }
-        #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        .version { position: absolute; top: 15px; left: 15px; font-size: 14px; color: rgba(255,255,255,0.6); font-weight: bold; }
         
-        /* 🛠️ 개발자 모드 진입 (투명) */
+        /* 캔버스 절대 위치 강제 고정 (블랙스크린 방지) */
+        #gameCanvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: block; z-index: 1; }
+        #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        
+        .version { position: absolute; top: 15px; left: 15px; font-size: 14px; color: rgba(255,255,255,0.6); font-weight: bold; }
         #devTrigger { position: absolute; top: 0; right: 0; width: 80px; height: 80px; pointer-events: auto; z-index: 99; cursor: crosshair; }
 
         #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 90%; }
@@ -53,7 +54,7 @@
         #chestImage:hover { transform: scale(1.1); }
         #chestFlash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; transition: opacity 0.1s; pointer-events: none; z-index: 1000; }
 
-        #devPanel { background: rgba(15,10,20,0.95); border: 2px solid #aa44ff; border-radius: 15px; padding: 20px; width: 500px; max-width: 95%; max-height: 90%; overflow-y: auto; text-align: left; box-sizing: border-box; }
+        #devPanel { background: rgba(15,10,20,0.95); border: 2px solid #aa44ff; border-radius: 15px; padding: 20px; width: 500px; max-width: 95%; max-height: 90%; overflow-y: auto; text-align: left; box-sizing: border-box; pointer-events: auto; }
         .dev-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; font-size: 14px; }
         .dev-btn { background: #333; color: #fff; border: 1px solid #666; padding: 4px 10px; font-weight: bold; cursor: pointer; border-radius: 4px; }
         .dev-close { background: linear-gradient(135deg, #aa3333, #882222); color: #fff; width: 100%; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; border-radius: 8px; }
@@ -76,8 +77,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <div class="version">v0.16.0</div>
-        <!-- 🛠️ 개발자 10회 터치 트리거 -->
+        <div class="version">v0.16.1</div>
         <div id="devTrigger" onclick="handleDevClick()"></div>
 
         <div id="topBar">
@@ -146,7 +146,8 @@
     </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d', { alpha: false }); 
+const canvas = document.getElementById('gameCanvas'); 
+const ctx = canvas.getContext('2d'); // 블랙스크린 방지를 위해 alpha:false 제거
 let width, height; let cameraScale = 1.0; let vWidth, vHeight; 
 
 const ui = {
@@ -169,7 +170,6 @@ let isTimePaused = false; let waveInProgress = false; let waveTotal = 0; let wav
 let midBossSpawned = false; let chestOpening = false; let currentChestRarity = null;
 let midBossKills = 0;
 
-// 🛠️ 개발자 모드 클릭 카운터 (10회)
 let devClickCount = 0; let devClickTimer = null;
 let devConfig = { spawnPaused: false };
 
@@ -182,19 +182,17 @@ const passiveSkills = {
     knockback:    { level: 0, max: 8, icon: "🛡️", name: "넉백 증가", desc: "기본 공격의 넉백이 늘어납니다." },
     hpRegen:      { level: 0, max: 8, icon: "💚", name: "체력 회복력", desc: "초당 체력이 서서히 회복됩니다." },
     lifeSteal:    { level: 0, max: 8, icon: "🦇", name: "체력 흡수", desc: "적 처치 시 체력을 회복합니다." },
-    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 파멸적으로 증가합니다." }, // 🚀 상향
+    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 파멸적으로 증가합니다." },
     magnet:       { level: 0, max: 8, icon: "🧲", name: "자석 범위 증가", desc: "경험치 획득 범위가 넓어집니다." },
     moveSpeed:    { level: 0, max: 8, icon: "👟", name: "이동속도 증가", desc: "이동 속도가 빨라집니다." }
 };
 
 const activeSkills = {
-    // 🌟 궁극 진화 (조합) 스킬
     laser_bomb:       { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "[진화] 5갈래 파멸적 궤도 레이저 발동." },
     carrier_pigeon:   { level: 0, max: 1, icon: "🦅", name: "폭격 비둘기", desc: "[진화] 보스를 도륙하는 유도 미사일 폭격기 3기 소환." },
     moon_chakram:     { level: 0, max: 1, icon: "🥏", name: "달빛 차크람", desc: "[진화] 거대 차크람 4개가 주변을 고속 회전하며 분쇄." },
     absolute_zero:    { level: 0, max: 1, icon: "🧊", name: "절대 영도", desc: "[진화] 화면 전체를 꽁꽁 얼리고 최대체력을 지속 파괴." },
     thunder_shuriken: { level: 0, max: 1, icon: "🌩️", name: "뇌전 수리검", desc: "[진화] 황금 수리검이 보스를 갈아버리며 무한 벼락 호출." },
-    // 일반 액티브 스킬
     missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사." },
     shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "주위를 도는 방패. 적을 약하게 밀쳐냅니다." }, 
     bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "분열 폭탄. 보스에게 강력한 피해." }, 
@@ -221,7 +219,6 @@ const player = {
     bonusDmg: 0, cdr: 1.0 
 };
 
-// 콤보 맵핑
 const comboMap = [
     { req1: 'laser', req2: 'bomb', res: 'laser_bomb' },
     { req1: 'missile', req2: 'dove', res: 'carrier_pigeon' },
@@ -235,8 +232,13 @@ for(let k in activeSkills) activeTimers[k] = 0;
 let dovesState = []; 
 
 function resize() { 
-    width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; 
-    if (width < 800) { cameraScale = width / 800; } else { cameraScale = 1.0; }
+    width = canvas.width = window.innerWidth || document.documentElement.clientWidth || 800; 
+    height = canvas.height = window.innerHeight || document.documentElement.clientHeight || 600; 
+    
+    // 모바일/PC 대응 안전한 스케일링
+    if (width < 800) { cameraScale = Math.max(0.3, width / 800); } 
+    else { cameraScale = 1.0; }
+    
     vWidth = width / cameraScale; vHeight = height / cameraScale;
     initGrass(); 
 }
@@ -257,8 +259,12 @@ function recalcStats() {
     else player.range = base.range;
 }
 
-function startGame(type) {
-    difficultyMult = parseFloat(document.querySelector('input[name="difficulty"]:checked').value);
+function startGame(type = 'melee') {
+    // 래퍼 사이트에서 라디오버튼을 지웠을 경우를 대비한 안전장치
+    let diffEl = document.querySelector('input[name="difficulty"]:checked');
+    difficultyMult = diffEl ? parseFloat(diffEl.value) : 1.0;
+    if (!charSpecs[type]) type = 'melee';
+
     player.type = type; player.hp = player.maxHp = 100; player.level = 1; player.xp = 0; player.maxXp = 30; player.attackCount = 0;
     for(let k in passiveSkills) passiveSkills[k].level = 0;
     for(let k in activeSkills) activeSkills[k].level = 0;
@@ -271,6 +277,7 @@ function startGame(type) {
     isTimePaused = false; waveInProgress = false; waveTotal = 0; waveKilled = 0; midBossSpawned = false; chestOpening = false;
     midBossKills = 0; devClickCount = 0;
     
+    resize(); // 시작 시 캔버스 크기 재확인
     gameState = 'playing'; ui.menu.classList.add('hidden'); updateUI(); requestAnimationFrame(gameLoop);
 }
 
@@ -278,7 +285,7 @@ function handleDevClick() {
     if(gameState === 'dev') return;
     devClickCount++;
     clearTimeout(devClickTimer);
-    devClickTimer = setTimeout(() => { devClickCount = 0; }, 1000); // 1초 내에 10번 클릭해야함
+    devClickTimer = setTimeout(() => { devClickCount = 0; }, 1000); 
     if(devClickCount >= 10) { devClickCount = 0; openDevMode(); }
 }
 
@@ -485,7 +492,6 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
-    // 🌟 진화 스킬 1: 레이저 폭탄
     if (activeSkills.laser_bomb.level > 0) {
         activeTimers.laser_bomb--;
         if(activeTimers.laser_bomb <= 0) {
@@ -494,7 +500,6 @@ function handleActiveSkills() {
             activeTimers.laser_bomb = 240 * player.cdr; 
         }
     }
-    // 🌟 진화 스킬 2: 폭격 비둘기
     if (activeSkills.carrier_pigeon.level > 0) {
         while(dovesState.length < 3) dovesState.push({ x: pX, y: pY, cd: 0 });
         for(let i=0; i<dovesState.length; i++) {
@@ -505,11 +510,10 @@ function handleActiveSkills() {
             if(dv.cd <= 0) {
                 let ang = Math.random()*Math.PI*2;
                 projectiles.push({ x: dv.x, y: dv.y, dx: Math.cos(ang)*10, dy: Math.sin(ang)*10, life: 180, type: 'missile', dmg: 120 + player.bonusDmg*2, bossMult: 2.0, isDead: false });
-                dv.cd = 20 * player.cdr; // 초고속 사격
+                dv.cd = 20 * player.cdr; 
             }
         }
     }
-    // 🌟 진화 스킬 3: 달빛 차크람
     if (activeSkills.moon_chakram.level > 0) {
         activeTimers.moon_chakram--;
         if (activeTimers.moon_chakram <= 0) {
@@ -519,7 +523,6 @@ function handleActiveSkills() {
             activeTimers.moon_chakram = 500 * player.cdr;
         }
     }
-    // 🌟 진화 스킬 4: 절대 영도
     if (activeSkills.absolute_zero.level > 0) {
         activeTimers.absolute_zero--;
         if(activeTimers.absolute_zero <= 0) {
@@ -527,7 +530,6 @@ function handleActiveSkills() {
             activeTimers.absolute_zero = 100 * player.cdr;
         }
     }
-    // 🌟 진화 스킬 5: 뇌전 수리검
     if (activeSkills.thunder_shuriken.level > 0) {
         activeTimers.thunder_shuriken--;
         if(activeTimers.thunder_shuriken <= 0) {
@@ -538,7 +540,6 @@ function handleActiveSkills() {
         }
     }
 
-    // 일반 액티브 (진화 시 미발동)
     if (activeSkills.missile.level > 0 && activeSkills.carrier_pigeon.level === 0) {
         activeTimers.missile--;
         if(activeTimers.missile <= 0) {
@@ -701,7 +702,6 @@ function handleGemsAndDrops() {
             let baseXP = 10;
             if(g.type === 'big_gem') baseXP = 40;
             if(g.type === 'tiny_gem') baseXP = 1; 
-            // 🚀 XP 대폭 상향: 최대 500% 효율
             gainedXp += baseXP * (1 + (passiveSkills.xpGain.level * 0.5));
         }
     }
@@ -741,7 +741,6 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
     
     let pool = []; let comboPool = [];
     
-    // 🌟 진화 스킬 (조합) 가능 여부 체크
     comboMap.forEach(c => {
         if (activeSkills[c.req1].level === activeSkills[c.req1].max && 
             activeSkills[c.req2].level === activeSkills[c.req2].max &&
@@ -751,13 +750,12 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
     });
 
     if (comboPool.length > 0) {
-        pool = comboPool; // 진화 가능하면 무조건 진화만 뜸
+        pool = comboPool; 
     } else {
         for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
         for(let k in activeSkills) {
             let isEvo = comboMap.some(cm => cm.res === k);
-            if(isEvo) continue; // 기본 풀에는 진화 스킬 안 들어감
-            
+            if(isEvo) continue; 
             let sk = activeSkills[k];
             if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
             else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
@@ -771,7 +769,7 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
         ui.skillContainer.appendChild(card);
     } else {
         for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-        let choices = pool.slice(0, comboPool.length > 0 ? 1 : choiceCount); // 콤보는 1개만
+        let choices = pool.slice(0, comboPool.length > 0 ? 1 : choiceCount); 
         
         choices.forEach(c => {
             let nextLvl = c.obj.level + 1; let lvlStr = nextLvl === c.obj.max ? `<span style="color:#f0f">[ MAX ]</span>` : `[ ${nextLvl} / ${c.obj.max} ]`;
@@ -783,7 +781,7 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
             card.onclick = () => {
                 if (c.isCombo) {
                     c.obj.level = 1;
-                    c.reqs.forEach(req => { myActiveSlots = myActiveSlots.filter(s => s !== req); }); // 기존 스킬 삭제
+                    c.reqs.forEach(req => { myActiveSlots = myActiveSlots.filter(s => s !== req); }); 
                     myActiveSlots.push(c.key);
                 } else {
                     c.obj.level++;
@@ -809,6 +807,51 @@ function updateActiveUI() {
     }
 }
 function resumeGame() { ui.levelUp.classList.add('hidden'); gameState = 'playing'; lastTime = performance.now(); }
+
+function openDevMode() {
+    const prev = gameState; gameState = 'dev'; handleInputEnd();
+    document.getElementById('devSpawnToggle').checked = devConfig.spawnPaused;
+    
+    const makeRow = (k, sk, isAct) => {
+        let row = document.createElement('div'); row.className = 'dev-row';
+        let lvlStr = sk.level >= sk.max ? `<span style="color:#f0f; font-weight:bold;">MAX</span>` : `${sk.level}/${sk.max}`;
+        row.innerHTML = `<div style="flex:1;">${sk.icon} ${sk.name}</div><div style="flex:1; text-align:center; color:#44aaff;" id="dev-val-${k}">[ ${lvlStr} ]</div><div><button class="dev-btn" onclick="modifySkill('${k}', -1, ${isAct})">-</button> <button class="dev-btn" onclick="modifySkill('${k}', 1, ${isAct})">+</button></div>`;
+        return row;
+    };
+    
+    ui.devPassivesContainer.innerHTML = ''; ui.devActivesContainer.innerHTML = '';
+    for(let k in passiveSkills) ui.devPassivesContainer.appendChild(makeRow(k, passiveSkills[k], false));
+    for(let k in activeSkills) {
+        if(comboMap.some(cm=>cm.res===k)) continue; 
+        ui.devActivesContainer.appendChild(makeRow(k, activeSkills[k], true));
+    }
+    ui.devScreen.classList.remove('hidden'); ui.devScreen.dataset.prev = prev === 'dev' ? 'playing' : prev;
+}
+function closeDevMode() { ui.devScreen.classList.add('hidden'); gameState = ui.devScreen.dataset.prev || 'playing'; lastTime = performance.now(); }
+function toggleSpawn(cb) { devConfig.spawnPaused = cb.checked; }
+function killAllEnemies() { enemies.forEach(e => { e.isDead = true; spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave); gems.push({ x: e.x, y: e.y, isDead: false, type: e.isBoss||e.isMidBoss ? 'big_gem' : 'gem' }); }); if(bossMode){bossMode=false; isTimePaused=false; updateUI('boss');} }
+function modifySkill(k, amt, isAct) {
+    let sk = isAct ? activeSkills[k] : passiveSkills[k];
+    if(isAct && amt > 0 && sk.level === 0 && myActiveSlots.length >= 8) return; 
+    sk.level = Math.max(0, Math.min(sk.max, sk.level + amt));
+    if(isAct) {
+        if(sk.level > 0 && !myActiveSlots.includes(k)) myActiveSlots.push(k);
+        if(sk.level === 0 && myActiveSlots.includes(k)) myActiveSlots.splice(myActiveSlots.indexOf(k), 1);
+        updateActiveUI();
+    }
+    recalcStats();
+    let display = document.getElementById(`dev-val-${k}`);
+    display.innerHTML = `[ ${sk.level >= sk.max ? `<span style="color:#f0f; font-weight:bold;">MAX</span>` : `${sk.level}/${sk.max}`} ]`;
+}
+
+function formatTime(sec) { const m = String(Math.floor(sec/60)).padStart(2,'0'); const s = String(sec%60).padStart(2,'0'); return `${m}:${s}`; }
+function updateUI(t='all') {
+    if(t==='time'||t==='all') ui.timer.innerText = formatTime(gameSeconds);
+    if(t==='hp'||t==='all') ui.hpFill.style.width = `${(player.hp/player.maxHp)*100}%`;
+    if(t==='xp'||t==='all') ui.xpFill.style.width = `${(player.xp/player.maxXp)*100}%`;
+    if(t==='level'||t==='all') ui.levelText.innerText = `LV. ${player.level}`;
+    if(t==='boss'||t==='all') { if(bossMode){ui.bossTimerContainer.style.display='block'; ui.bossTimer.innerText=bossTimeLeft;} else ui.bossTimerContainer.style.display='none'; }
+}
 
 function update() {
     if (gameState !== 'playing') return;
@@ -898,8 +941,7 @@ function update() {
             }
         }
         else if(p.type === 'moon_chakram') {
-            p.angle += 0.08;
-            p.radius = 200 + Math.sin(frameCount*0.05)*50; // 확장 수축 궤도
+            p.angle += 0.08; p.radius = 200 + Math.sin(frameCount*0.05)*50; 
             p.x = worldX + Math.cos(p.angle)*p.radius; p.y = worldY + Math.sin(p.angle)*p.radius; p.dx = 0; p.dy = 0;
         }
         else if(p.type === 'thunder_shuriken') { 
@@ -1043,10 +1085,7 @@ function update() {
         if (e.freezeTimer > 0) { e.freezeTimer--; currentSpeed = 0; } 
         else if (e.slowTimer > 0) { e.slowTimer--; currentSpeed *= 0.4; if (e.slowTimer <= 0) e.slowStacks = 0; }
 
-        if (distSq > 0 && currentSpeed > 0) { 
-            const dist = Math.sqrt(distSq); 
-            e.x += (dx/dist)*currentSpeed; e.y += (dy/dist)*currentSpeed; 
-        }
+        if (distSq > 0 && currentSpeed > 0) { const dist = Math.sqrt(distSq); e.x += (dx/dist)*currentSpeed; e.y += (dy/dist)*currentSpeed; }
     }
 
     enemies = enemies.filter(e => !e.isDead); projectiles = projectiles.filter(p => !p.isDead);
@@ -1077,9 +1116,11 @@ function draw() {
             let p = ef.life / ef.maxLife;
             ctx.fillStyle = `rgba(80, 200, 50, ${p * 0.3})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, 0, Math.PI*2); ctx.fill(); 
             for(let b=0; b<5; b++) {
-                let bx = ex + Math.cos(b + frameCount*0.02) * (ef.radius * 0.5); let by = ey + Math.sin(b*2 + frameCount*0.03) * (ef.radius * 0.5);
+                let bx = ex + Math.cos(b + frameCount*0.02) * (ef.radius * 0.5);
+                let by = ey + Math.sin(b*2 + frameCount*0.03) * (ef.radius * 0.5);
                 let br = 10 + Math.sin(frameCount*0.1 + b)*5;
-                ctx.fillStyle = `rgba(130, 255, 100, ${p * 0.5})`; ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = `rgba(130, 255, 100, ${p * 0.5})`;
+                ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
             }
         } else if(ef.type === 'absolute_zero') {
             let p = ef.life / ef.maxLife;
@@ -1096,7 +1137,8 @@ function draw() {
     }
 
     for (let i=0; i<gems.length; i++) {
-        let g = gems[i]; let size = g.type==='big_gem'?7: (g.type==='tiny_gem'?2:4);
+        let g = gems[i]; 
+        let size = g.type==='big_gem'?7: (g.type==='tiny_gem'?2:4);
         ctx.fillStyle = g.type==='big_gem'?'#ffcc00': (g.type==='tiny_gem'?'#88ff88':'#44aaff');
         ctx.fillRect(g.x-worldX+cx-size, g.y-worldY+cy-size, size*2, size*2);
     }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V53v 스킬 포인트 & 극한 다단히트 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V54 냥냥펀치 리워크)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -101,7 +101,7 @@
         </div>
 
         <div class="overlay" id="start-screen">
-            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v53v</span></div>
+            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v54</span></div>
 
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 90%; max-width: 380px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
@@ -115,7 +115,7 @@
                 <select id="start-active" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #f1c40f; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
                     <option value="boomerang">🪃 부메랑 (광역/관통)</option>
                     <option value="laser">🔱 레이저 (일직선 극딜)</option>
-                    <option value="punch">🐾 냥냥펀치 (단일 유도)</option>
+                    <option value="punch">🐾 냥냥펀치 (벽바운스/전체화면 극딜)</option>
                 </select>
 
                 <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 상점 <span id="passive-count-display" style="color:white; float:right;">(포인트: 0/8)</span></label>
@@ -549,7 +549,7 @@
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
                 add('lvl_punch_count', 5, '🐾 냥냥펀치 개수', '한 번에 발사되는 타겟팅 고양이 발바닥 수 증가', () => { p.lvl_punch_count++; recalculateStats(); }, 'type-skill', 0.5);
-                add('lvl_punch_split', 5, '💥 메가 스탬프 강화', '마지막에 찍히는 메가 젤리의 크기와 파괴력이 증폭됩니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
+                add('lvl_punch_split', 5, '💥 메가 스탬프 강화', '마지막 메가 젤리가 화면 전체 적에게 맵병기급 피해를 주며, 파괴력이 증폭됩니다.', () => { p.lvl_punch_split++; recalculateStats(); }, 'type-skill', 0.5);
             }
 
             if (p.activeSkillType !== 'boomerang') {
@@ -711,7 +711,6 @@
                     }, 2000);
                     
                     setTimeout(() => {
-                        // 극한 최적화: 블러/블렌딩 대신 깔끔한 투명도 애니메이션으로 처리 (팅김 방지)
                         let flash = document.getElementById('flash-overlay');
                         flash.style.background = 'rgba(255,255,255,0.9)';
                         flash.style.transition = 'opacity 0.1s';
@@ -788,13 +787,12 @@
             if(p.skillTimer > 0 || gameState !== 'PLAYING') return;
             p.skillTimer = p.skillCooldownMax;
             
-            // V53 부메랑 다단히트/무한분열 리워크 대응
             if(p.activeSkillType === 'boomerang') {
                 let sd = 30 * p.skill_mult;
                 activeSkills.push({ 
                     type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, 
                     vx: p.vx*0.3, vy: -15, state: 'flying_out', 
-                    baseDmg: sd, dmg: sd, hitLog: new WeakSet() // 메모리 누수 방지
+                    baseDmg: sd, dmg: sd, hitLog: new WeakSet()
                 });
             }
             else if(p.activeSkillType === 'laser') { 
@@ -815,7 +813,7 @@
                         type: 'punch', splitLevel: 0, x: p.x, y: p.y - 30, w: 90, 
                         vx: Math.cos(-Math.PI/2 + angleCalc)*18 + p.vx*0.3, 
                         vy: Math.sin(-Math.PI/2 + angleCalc)*18, 
-                        state: 'flying', hitTimer: 0, dmg: sd 
+                        state: 'flying', hitTimer: 0, dmg: sd, bounces: 1 
                     }); 
                 }
             }
@@ -884,7 +882,6 @@
                             let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); 
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
-                                // 초반 구간 몹 체력 더 완화
                                 let swarmHp = Math.max(1, (1 + bossKills * 0.4) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                                 enemies.push({ id: Math.random(), x: Math.random()*canvasWidth, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
@@ -895,7 +892,6 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 80) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
-                                // 초반 구간 일반 몹 체력 완화
                                 let normHp = Math.max(1, (1.2 + bossKills * 0.8) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                                 enemies.push({ id: Math.random(), x: Math.random()*canvasWidth, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
@@ -975,7 +971,6 @@
                 let fbRadius = fb.w / 2;
                 let fbRadiusSq = fbRadius * fbRadius;
 
-                // 극한 최적화: 3프레임 연산 유지 + 다단히트 진동 효과
                 if (frameCount % 3 === 0) {
                     let actualDmg = fb.dmg * 3;
                     enemies.forEach(e => {
@@ -992,8 +987,8 @@
                 }
 
                 if (hitAny) {
-                    fb.speed = fb.baseSpeed * 0.15; // 타격시 극도로 느려짐
-                    fb.vibrateX = (Math.random() - 0.5) * 15; // 타격시 엄청난 진동
+                    fb.speed = fb.baseSpeed * 0.15; 
+                    fb.vibrateX = (Math.random() - 0.5) * 15; 
                     fb.vibrateY = (Math.random() - 0.5) * 15;
                 } else {
                     fb.speed = Math.min(fb.baseSpeed, fb.speed + 1.0); 
@@ -1050,7 +1045,6 @@
             let c_laser = colorLevels.laser[Math.min(5, p.lvl_laser_split||0)];
             let c_punch = colorLevels.punch[Math.min(5, p.lvl_punch_count||0)];
 
-            // V53v 기본 부메랑 대격변 로직
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -1067,10 +1061,9 @@
                             }
                         }
                         
-                        // 적 명중 시 즉시 분열하지 않고 꽂혀서 진동(hit_freeze)
                         if (hitEnemy && p.lvl_boom_split > 0) {
                             sk.state = 'hit_freeze';
-                            sk.timer = 15; // 15프레임간 꽂힘 유지
+                            sk.timer = 15; 
                             sk.targetX = hitEnemy.x;
                             sk.targetY = hitEnemy.y;
                         } else if (sk.x < -100 || sk.x > canvasWidth+100 || sk.y < -100 || sk.y > canvasHeight+100) {
@@ -1082,7 +1075,6 @@
                         sk.vibrateX = (Math.random()-0.5)*10;
                         sk.vibrateY = (Math.random()-0.5)*10;
                         
-                        // 꽂혀있는 동안 5프레임마다 광역 다단히트
                         if (frameCount % 5 === 0) {
                             let aoeSq = (sk.w/2) * (sk.w/2);
                             enemies.forEach(e => {
@@ -1103,7 +1095,7 @@
                                     baseVx: Math.cos(angle) * 15, baseVy: Math.sin(angle) * 15,
                                     vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15,
                                     state: 'sub_flying_out', timer: 20,
-                                    bounces: p.lvl_boom_split - 1, // 레벨에 따라 반복 횟수 결정
+                                    bounces: p.lvl_boom_split - 1, 
                                     baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: new WeakSet()
                                 });
                             }
@@ -1119,11 +1111,11 @@
                         });
                         
                         if (hitAny) {
-                            sk.vx *= 0.5; sk.vy *= 0.5; // 타격 시 느려짐
+                            sk.vx *= 0.5; sk.vy *= 0.5; 
                             sk.vibrateX = (Math.random()-0.5)*8;
                             sk.vibrateY = (Math.random()-0.5)*8;
                         } else {
-                            sk.vx += (sk.baseVx - sk.vx) * 0.2; // 원상 복구
+                            sk.vx += (sk.baseVx - sk.vx) * 0.2; 
                             sk.vy += (sk.baseVy - sk.vy) * 0.2;
                             sk.vibrateX = 0; sk.vibrateY = 0;
                         }
@@ -1160,7 +1152,7 @@
                         
                         sk.timer--;
                         if (dist < 20 || sk.timer <= 0) { 
-                            if (sk.bounces > 0) { // 추가 폭발 횟수가 남았다면
+                            if (sk.bounces > 0) { 
                                 sk.bounces--;
                                 sk.state = 'sub_flying_out';
                                 sk.timer = 20;
@@ -1173,7 +1165,6 @@
                         }
                     }
 
-                    // 부메랑 그리기 및 진동 적용
                     ctx.save(); 
                     ctx.translate(sk.x + (sk.vibrateX||0), sk.y + (sk.vibrateY||0)); 
                     ctx.rotate(frameCount*0.4); 
@@ -1214,7 +1205,29 @@
                             }
                         }
                         
-                        if(sk.y<-100 || sk.x<-100 || sk.x>canvasWidth+100 || sk.y>canvasHeight+100) sk.state='done'; 
+                        // V54: 벽 바운스 1회 적용 로직
+                        let bounced = false;
+                        if (sk.x < 0 || sk.x > canvasWidth) {
+                            if (sk.bounces > 0) {
+                                sk.vx *= -1;
+                                sk.x = sk.x < 0 ? 0 : canvasWidth;
+                                bounced = true;
+                            }
+                        }
+                        if (sk.y < 0 || sk.y > canvasHeight) {
+                            if (sk.bounces > 0) {
+                                sk.vy *= -1;
+                                sk.y = sk.y < 0 ? 0 : canvasHeight;
+                                bounced = true;
+                            }
+                        }
+
+                        if (bounced) {
+                            sk.bounces--;
+                            sk.angle = Math.atan2(sk.vy, sk.vx) + Math.PI/2;
+                        } else if(sk.x < -100 || sk.x > canvasWidth+100 || sk.y < -100 || sk.y > canvasHeight+100) {
+                            sk.state='done'; 
+                        }
                         
                         if (hitEnemy) {
                             sk.state = 'combo';
@@ -1251,22 +1264,19 @@
                                 });
                                 sk.timer = 6; 
                             } else {
-                                globalShakeTimer = 25;
-                                let megaAoe = sk.w * 3 * (1 + p.lvl_punch_split * 0.3); 
+                                // V54: 마지막 메가스탬프 전체화면 데미지 판정
+                                globalShakeTimer = 35; // 화면 진동 강화
                                 
                                 particles.push({
                                     x: sk.targetX, y: sk.targetY, vx:0, vy:0, 
-                                    life: 30, maxLife: 30, size: sk.w * 1.2, color: c_punch, 
+                                    life: 40, maxLife: 40, size: sk.w * 1.5, color: c_punch, 
                                     type: 'paw_mark', isMega: true, angle: 0
                                 });
                                 
-                                let aoeSq = megaAoe * megaAoe;
                                 let megaDmg = sk.dmg * (3 + p.lvl_punch_split * 2);
                                 enemies.forEach(e=>{ 
-                                    if((e.x-sk.targetX)*(e.x-sk.targetX) + (e.y-sk.targetY)*(e.y-sk.targetY) < aoeSq){ 
-                                        e.hp -= megaDmg; 
-                                        if(e.isBoss && !e.isDevTest) e.iframe=4; 
-                                    } 
+                                    e.hp -= megaDmg; // 전체 맵 타격
+                                    if(e.isBoss && !e.isDevTest) e.iframe=4; 
                                 });
                                 sk.state = 'done';
                             }

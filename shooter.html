@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V47 극한 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V48 소수정예 최적화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -241,7 +241,6 @@
                     cx.beginPath(); cx.arc(0,-18,w*0.08,0,Math.PI*2); cx.fill(); 
                     cx.beginPath(); cx.arc(14,-10,w*0.08,0,Math.PI*2); cx.fill(); 
                 } else if (type === 'sword') {
-                    // 성능 최적화: 그림자(shadow) 렌더링 삭제
                     c.width = 40; c.height = 80; cx.translate(20, 40);
                     cx.fillStyle = color; cx.globalAlpha = 0.4; cx.beginPath(); cx.moveTo(0, -35); cx.lineTo(10, 15); cx.lineTo(-10, 15); cx.closePath(); cx.fill();
                     cx.globalAlpha = 1; cx.fillStyle = '#fff'; cx.beginPath(); cx.moveTo(0, -25); cx.lineTo(4, 10); cx.lineTo(-4, 10); cx.closePath(); cx.fill();
@@ -308,7 +307,7 @@
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
-            let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, Math.max(0, lvl - 1));
+            let bh = 250 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd + 0.05, Math.max(0, lvl - 1));
             enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true, burnTimer: 0 });
             globalShakeTimer = 40;
             closeDevMode();
@@ -316,9 +315,9 @@
 
         function spawnSwarmTest() {
             if(gameState !== 'PLAYING') return;
-            for(let k=0; k<250; k++) {
+            for(let k=0; k<100; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                let swarmHp = Math.max(1, (5 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                 enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
             }
             closeDevMode();
@@ -374,10 +373,12 @@
         }
 
         function recalculateStats() {
-            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 2) * 1.02; 
+            // 밸런스 조정: 플레이어 평타 딜 증가율 버프 (+3 및 1.05배)
+            p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 3) * 1.05; 
             p.base_dmg *= p.cheat_dmg_mult; 
             
-            p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.09; 
+            // 밸런스 조정: 플레이어 스킬 딜 증가율 버프 (1.15배)
+            p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
             p.skill_mult *= p.cheat_skill_mult; 
 
             p.fireDelay = 15; for(let i=0; i<(p.lvl_firespeed||0); i++) p.fireDelay = Math.max(4, p.fireDelay - 2);
@@ -413,7 +414,7 @@
                 }
             };
 
-            add('lvl_atk', 10, '⚔️ 공격력 UP', '기본 공격력 +2 및 위력 1.02배 상승 (평타 특화)', () => { p.lvl_atk++; recalculateStats(); }, 'type-basic', 0.8);
+            add('lvl_atk', 10, '⚔️ 공격력 UP', '기본 공격력 대폭 상승 및 위력 1.05배 상승 (평타 특화)', () => { p.lvl_atk++; recalculateStats(); }, 'type-basic', 0.8);
             add('lvl_firespeed', 5, '🔫 연사 속도 UP', '평타 발사 속도가 대폭 빨라집니다.', () => { p.lvl_firespeed++; recalculateStats(); }, 'type-basic', 0.8);
             add('lvl_pierce', 5, '🏹 평타 관통 UP', '기본 공격이 적을 관통합니다 (+1명)', () => { p.lvl_pierce++; recalculateStats(); }, 'type-basic', 0.8);
             add('lvl_bullet', 5, '💥 탄환 확산', '총알 개수 증가 및 부채꼴 확산 범위 넓어짐', () => { p.lvl_bullet++; recalculateStats(); }, 'type-basic', 0.7);
@@ -421,7 +422,7 @@
             let homingDesc = p.lvl_homing === 0 ? '각 평타가 33% 확률로 유도 분열탄 발동' : '유도탄 분열 개수 +1 및 위력 상향 (평타 계수)';
             add('lvl_homing', 5, '✨ 유도 분열탄', homingDesc, () => { p.lvl_homing++; recalculateStats(); }, 'type-basic', p.lvl_homing > 0 ? 0.6 : 0.2, true);
             
-            add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 9% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
+            add('lvl_skill_dmg', 10, '🪄 스킬 파괴력 UP', '모든 [스킬류] 데미지가 15% 곱연산 증가합니다.', () => { p.lvl_skill_dmg++; recalculateStats(); }, 'type-skill', 0.7);
             add('lvl_skill_cd', 4, '⏳ 스킬 쿨타임 감소', '액티브 스킬의 쿨타임이 2초 감소합니다.', () => { p.lvl_skill_cd++; recalculateStats(); }, 'type-skill', 0.7);
             
             let lightDesc = p.lvl_lightning === 0 ? '평타 시 10% 확률로 튕기는 연쇄 번개 탄환 발사' : `번개 발동 확률 +10% (현재 ${(p.lvl_lightning+1)*10}%) 및 최대 점프 수 +1`;
@@ -437,7 +438,7 @@
             add('lvl_shuriken', 5, '🌟 수호 표창', shuriDesc, () => { p.lvl_shuriken++; recalculateStats(); }, 'type-skill', p.lvl_shuriken > 0 ? 0.6 : 0.2, true);
 
             let fbDesc = p.lvl_fire_boom === 0 ? '전방으로 모든 것을 태우는 거대 불부메랑 발사 (관통, 피격시 감속 및 극딜, 5초간 최대체력 2% 화상 도트뎀 부여)' : '지옥불 부메랑 크기 확장, 발사 주기 감소, 틱 데미지 증가';
-            add('lvl_fire_boom', 5, '🔥 지옥불 부메랑', fbDesc, () => { p.lvl_fire_boom++; recalculateStats(); }, 'type-skill', p.lvl_fire_boom > 0 ? 0.4 : 0.15, false, false, true);
+            add('lvl_fire_boom', 5, '🔥 지옥불 부메랑', fbDesc, () => { p.lvl_fire_boom++; recalculateStats(); }, 'type-skill', p.lvl_fire_boom > 0 ? 0.4 : 0.01, false, false, true);
 
             add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
             add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
@@ -708,7 +709,7 @@
         }
 
         function spawnParticles(x, y, color, count, speedMult = 1) {
-            if (particles.length > 80) return; // 최적화: 파티클 생성 제한 축소
+            if (particles.length > 80) return; 
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
         }
 
@@ -721,7 +722,6 @@
 
             if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 0.2); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
 
-            // 최적화: 별 렌더링 일괄 처리 (Batching)
             ctx.fillStyle = isBossWarning ? '#300000' : 'white';
             ctx.globalAlpha = 0.3;
             ctx.beginPath();
@@ -750,27 +750,24 @@
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else {
-                    if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 300) {
-                        let swarmSpawnRate = bossKills === 0 ? 15 : Math.max(2, Math.floor(12 * Math.pow(0.85, bossKills)));
+                    // 밸런스 조정: 물량 스폰 속도 및 동시 생성 숫자 대폭 하향, 체력 상승
+                    if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 120) { // 한계치 감소
+                        let swarmSpawnRate = Math.max(10, 30 - bossKills); // 느려진 스폰율
                         if (frameCount % swarmSpawnRate === 0) {
-                            let swarmCount = Math.floor(2 * Math.pow(1.15, bossKills));
+                            let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); // 소수 정예화
                             for(let k=0; k<swarmCount; k++) {
-                                let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.2);
-                                let swarmHp = Math.max(1, (1+Math.floor(bossKills/2.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
+                                let swarmHp = Math.max(1, (5 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
                         }
                     } else if (!isSwarm) {
-                        let spawnRate = 45; let hordeCount = 1;
-                        if (bossKills === 1) { spawnRate = 35; hordeCount = 2; } 
-                        else if (bossKills >= 2) {
-                            spawnRate = Math.max(5, Math.floor(30 * Math.pow(0.85, bossKills - 2)));
-                            hordeCount = Math.min(25, Math.floor(2 * Math.pow(1.15, bossKills - 2)));
-                        }
-                        if (frameCount % spawnRate === 0 && enemies.length < 250) { 
+                        let spawnRate = Math.max(20, 60 - bossKills * 2);
+                        let hordeCount = Math.min(8, 2 + Math.floor(bossKills / 3));
+                        if (frameCount % spawnRate === 0 && enemies.length < 80) { // 한계치 감소
                             for(let k=0; k<hordeCount; k++) {
-                                let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.15);
-                                let normHp = Math.max(1, (1+Math.floor(bossKills/1.5)) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
+                                let normHp = Math.max(1, (3 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
                         }
@@ -797,7 +794,8 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    let bh = 150 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
+                    // 보스 체력도 유저 버프에 맞춰 상향
+                    let bh = 250 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd + 0.05, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
@@ -811,7 +809,6 @@
                 if (bossTimer <= 0) { gameEnd(false); return; }
             }
 
-            // 🔥 초전설 스킬: 지옥불 부메랑 로직
             if (p.lvl_fire_boom > 0) {
                 p.fireBoomTimer--;
                 if (p.fireBoomTimer <= 0) {
@@ -852,7 +849,6 @@
                 enemies.forEach(e => {
                     let dx = e.x - fb.x; let dy = e.y - fb.y;
                     let distLimit = fbRadius + e.w/2;
-                    // 최적화: Math.hypot 제거 후 제곱합 계산
                     if (dx*dx + dy*dy < distLimit*distLimit) {
                         hitAny = true;
                         e.hp -= fb.dmg; 
@@ -872,7 +868,6 @@
                 ctx.translate(fb.x, fb.y);
                 ctx.rotate(fb.angle + Math.PI/2);
                 
-                // 최적화: 그림자(shadow) 삭제 후 그라디언트 느낌의 겹쳐 그리기
                 ctx.fillStyle = '#ff6b81';
                 ctx.beginPath();
                 ctx.arc(0, 0, fbRadius, Math.PI, 0, false); 
@@ -911,7 +906,6 @@
                 let rSq = (bh.r * 2.5) * (bh.r * 2.5);
                 enemies.forEach(e => {
                     let dx = bh.x - e.x; let dy = bh.y - e.y; 
-                    // 최적화: Math.hypot 제거 후 제곱합 계산
                     if (dx*dx + dy*dy < rSq && !e.isBoss) {
                         let dist = Math.sqrt(dx*dx + dy*dy) || 1;
                         e.x += (dx / dist) * 7; e.y += (dy / dist) * 7;
@@ -1129,7 +1123,7 @@
                         let dx = s.target.x - s.x; let dy = s.target.y - s.y; angleToTarget = Math.atan2(dy, dx);
                         s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
                         if (dx*dx + dy*dy < (s.target.w/2 + 20)*(s.target.w/2 + 20)) {
-                            s.target.hp -= s.dmg; s.hit = true; spawnParticles(s.x, s.y, c_sword, 5, 2); // 최적화: 파티클 수 감소
+                            s.target.hp -= s.dmg; s.hit = true; spawnParticles(s.x, s.y, c_sword, 5, 2); 
                             if(s.target.isBoss && !s.target.isDevTest) s.target.iframe = 2;
                         }
                     } else {
@@ -1284,7 +1278,6 @@
                     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke();
                 } else if (b.isLightningSeed) {
-                    // 최적화: 번개 그림자 삭제
                     ctx.fillStyle = b.color;
                     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#fff';
@@ -1314,7 +1307,7 @@
 
                         e.hp -= b.dmg; b.hitLog.push(e);
                         
-                        if (b.enhanced && homingBullets.length < 100) { // 최적화: 유도탄 최대 갯수 축소
+                        if (b.enhanced && homingBullets.length < 100) { 
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
@@ -1470,7 +1463,7 @@
                     let stormDmg = 8 * p.skill_mult * (1 + p.lvl_storm * 0.5);
                     enemies.forEach(e => {
                         let dx = e.x - p.x; let dy = e.y - p.y;
-                        if (dx*dx + dy*dy < (sk_r + e.w/2)*(sk_r + e.w/2)) { // 최적화: Math.hypot 제거
+                        if (dx*dx + dy*dy < (sk_r + e.w/2)*(sk_r + e.w/2)) { 
                             e.hp -= stormDmg; e.y -= 15; e.x += (e.x > p.x ? 10 : -10); 
                             if(e.isBoss && !e.isDevTest) e.iframe = 4;
                             spawnParticles(e.x, e.y, c_storm, 2);
@@ -1497,13 +1490,12 @@
 
                 if(e.isBoss && e.iframe > 0) e.iframe--;
                 
-                // 🔥 적 화상(Burn) 디버프 로직
                 if (e.burnTimer > 0) {
                     e.burnTimer--;
                     if (frameCount % 10 === 0) {
                         spawnParticles(e.x + (Math.random()-0.5)*e.w, e.y + (Math.random()-0.5)*e.h, '#e74c3c', 1);
                     }
-                    if (frameCount % 60 === 0) { // 매 1초마다 최대 체력 2% 데미지
+                    if (frameCount % 60 === 0) { 
                         let burnDmg = e.maxHp * 0.02; 
                         e.hp -= burnDmg;
                     }
@@ -1514,7 +1506,6 @@
                 
                 if(!drawn) {
                     if (e.isBoss) {
-                        // 최적화: 보스 렌더링 그림자 삭제
                         ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(frameCount*0.05); ctx.fillStyle = '#8e44ad';
                         ctx.beginPath(); ctx.roundRect(-e.w/2, -e.h/2, e.w, e.h, 15); ctx.fill(); ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(0,0, e.w/4, 0, Math.PI*2); ctx.fill();
                         ctx.fillStyle = '#ff4757'; ctx.beginPath(); ctx.arc(0,0, e.w/4 * (0.5 + Math.sin(frameCount*0.1)*0.5), 0, Math.PI*2); ctx.fill(); ctx.restore();
@@ -1538,7 +1529,7 @@
                     score+=e.isBoss?1000:10; 
                     if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
                     
-                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?15:3); // 최적화: 데스 파티클 수 감소
+                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?15:3); 
 
                     if(e.isBoss && !e.isDevTest){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 

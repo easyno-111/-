@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.2)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.3)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         :root {
@@ -55,7 +56,6 @@
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
         
-        /* 다시 학습하기 버튼 */
         .resume-btn {
             position: absolute; top: 20px; right: 20px;
             background: rgba(255,255,255,0.1); border: 2px solid var(--secondary); color: var(--secondary);
@@ -85,8 +85,8 @@
         .btn-eraser { background: #8e8e93; color: white; }
         .btn-clear { background: #f2f2f7; color: #ff3b30; border: 1px solid var(--border-color); }
         .btn-map { background: #1d1d1f; color: white; margin-left: 10px; }
+        .btn-report { background: var(--secondary); color: white; border: 2px solid #28a745; margin-left: 5px; }
 
-        /* 지우개 크기 조절 메뉴 */
         .eraser-menu-container { position: relative; display: inline-block; }
         .eraser-menu {
             position: absolute; top: 110%; left: 50%; transform: translateX(-50%);
@@ -104,20 +104,22 @@
         .eraser-btn-size:hover { background: #eee; }
         .eraser-btn-size.active { background: #8e8e93; color: white; border-color: #8e8e93; }
 
-        /* ==================== 🗺️ 전체 목차 (모달 팝업) ==================== */
+        /* ==================== 🗺️ 팝업(모달) 공통 스타일 ==================== */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            background: rgba(0,0,0,0.6); z-index: 6000; display: none; align-items: center; justify-content: center; 
+            background: rgba(0,0,0,0.7); z-index: 6000; display: none; align-items: center; justify-content: center; 
             backdrop-filter: blur(5px);
         }
         .modal-overlay.active { display: flex; }
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 700px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 800px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; position: relative;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h2 { color: var(--text-main); font-size: 24px; font-weight: 900; margin: 0; }
         .modal-header button { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-sub); }
+        
+        /* 목차 팝업용 */
         .stage-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
         .stage-grid-btn { 
             padding: 15px 10px; border-radius: 15px; border: 2px solid var(--border-color); background: #f9f9f9; 
@@ -128,12 +130,18 @@
         .stage-grid-btn.locked { background: #e5e5ea; color: #aaa; cursor: not-allowed; border-color: transparent; }
         @media(max-width: 600px) { .stage-grid { grid-template-columns: repeat(3, 1fr); } }
 
+        /* 결과 보고서 팝업용 */
+        .report-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .report-item { border: 2px solid var(--border-color); border-radius: 10px; overflow: hidden; background: #f9f9f9; padding: 10px; text-align: center;}
+        .report-item img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 5px; display: block; margin: 0 auto;}
+        .report-item h4 { margin-bottom: 10px; color: var(--primary); }
+
         /* ==================== 📱 하단 네비게이션 ==================== */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; min-height: 80px; padding: 10px;
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
             border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; /* 버튼 겹침 방지 */
+            display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; 
             z-index: 3000; opacity: 0; visibility: hidden; transition: 1s;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
@@ -174,32 +182,16 @@
             display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
         }
 
-        /* ⭐ 아이패드 최적화: 강제 두꺼운 스크롤바 항시 표시 */
         .activity-card {
             background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px;
             width: 100%; max-width: 1400px; height: 100%; display: flex; flex-direction: column; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 0 auto; position: relative;
-            
-            overflow-y: scroll !important; /* 항상 스크롤 가능하게 */
-            -webkit-overflow-scrolling: touch;
+            overflow-y: scroll !important; -webkit-overflow-scrolling: touch;
         }
 
-        /* 아이패드 Safari 강제 커스텀 스크롤바 */
-        .activity-card::-webkit-scrollbar {
-            width: 24px !important; /* 엄청 두껍게 설정하여 잡기 쉽게 만듦 */
-            display: block !important; 
-            -webkit-appearance: none !important;
-        }
-        .activity-card::-webkit-scrollbar-track {
-            background-color: #f0f0f5 !important;
-            border-radius: 12px;
-            border-left: 1px solid var(--border-color);
-        }
-        .activity-card::-webkit-scrollbar-thumb {
-            background-color: #b0b0b5 !important; /* 뚜렷한 회색 */
-            border-radius: 12px !important;
-            border: 4px solid #f0f0f5 !important; /* 트랙과 분리감 형성 */
-        }
+        .activity-card::-webkit-scrollbar { width: 24px !important; display: block !important; -webkit-appearance: none !important; }
+        .activity-card::-webkit-scrollbar-track { background-color: #f0f0f5 !important; border-radius: 12px; border-left: 1px solid var(--border-color); }
+        .activity-card::-webkit-scrollbar-thumb { background-color: #b0b0b5 !important; border-radius: 12px !important; border: 4px solid #f0f0f5 !important; }
         .activity-card::-webkit-scrollbar-thumb:hover { background-color: #8e8e93 !important; }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid var(--border-color); text-align: center; background: #fafafa; border-radius: 24px 24px 0 0; flex-shrink: 0; }
@@ -211,7 +203,7 @@
         .flex-row { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
         .panel { flex: 1; min-width: 300px; background: #f9f9f9; border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid var(--border-color); }
 
-        /* ==================== 🖌 오버레이 및 화이트보드 ==================== */
+        /* ==================== 🖌 그리기 캔버스 오버레이 ==================== */
         .image-wrapper { position: relative; display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid var(--border-color); background: white; }
         .textbook-img { width: 100%; display: block; border-radius: 10px; pointer-events: none; }
         .drawing-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none; cursor: crosshair; }
@@ -222,7 +214,7 @@
         .whiteboard-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
         .grid-bg { background-color: #fff; background-image: linear-gradient(#e5e5ea 1px, transparent 1px), linear-gradient(90deg, #e5e5ea 1px, transparent 1px); background-size: 20px 20px; }
 
-        /* ==================== 요소 및 잠금 해제 버튼 ==================== */
+        /* ==================== 요소 스타일링 ==================== */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--primary); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(15px, 2vw, 18px); color: var(--text-sub); margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
@@ -234,7 +226,7 @@
         
         .check-btn {
             background: var(--primary-light); border: 2px solid var(--primary); color: var(--primary);
-            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: clamp(16px, 2.5vw, 20px); transition: 0.2s;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: clamp(16px, 2.5vw, 20px); transition: 0.2s; width: 100%;
         }
         .check-btn:hover { background: var(--primary); color: white; }
         .feedback { font-size: clamp(16px, 2vw, 20px); font-weight: bold; margin-top: 10px; min-height: 25px; }
@@ -261,6 +253,16 @@
 </head>
 <body>
 
+    <div id="team-input-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 style="color:var(--text-main); margin-bottom: 10px; font-weight: 900;">🕵️‍♂️ 요원 소속 등록</h2>
+            <p style="color:var(--text-sub); margin-bottom: 25px;">몇 조 소속인지 숫자로 입력해 주세요.</p>
+            <input type="number" id="team-number-input" placeholder="예: 3" style="width: 150px; font-size: 28px; text-align: center; margin-bottom: 25px; padding: 15px;">
+            <br>
+            <button class="check-btn" onclick="submitTeamAndEnter()" style="width: 100%; padding: 15px; font-size: 20px;">확인 및 훈련 입장</button>
+        </div>
+    </div>
+
     <div id="stage-map-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -271,6 +273,24 @@
         </div>
     </div>
 
+    <div id="report-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>📝 <span id="report-team-name" style="color: var(--primary);"></span> 요원 훈련 결과 보고서</h2>
+                <button type="button" onclick="document.getElementById('report-modal').classList.remove('active')"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p style="color: var(--accent); font-weight: bold; text-align: center; margin-bottom: 20px; font-size: 18px;">
+                👇 아래 생성된 이미지들을 손가락으로 꾹 눌러서(Long-press) '사진 앱에 저장' 하세요! 👇
+            </p>
+            <div id="report-grid-container" class="report-grid">
+                <div style="text-align: center; padding: 50px; color: #888;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; margin-bottom: 15px;"></i><br>
+                    보고서 이미지를 생성 중입니다... 잠시만 기다려주세요.
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="door-transition">
         <div class="trans-door left open" id="trans-door-left"></div>
         <div class="trans-door right open" id="trans-door-right"></div>
@@ -278,7 +298,7 @@
 
     <div id="launch-overlay">
         <button type="button" class="access-btn" onclick="initMission()">MISSION START</button>
-        <button type="button" class="resume-btn" onclick="resumeLearning()"><i class="fa-solid fa-rotate-right"></i> 다시 학습하기 (자유 이동)</button>
+        <button type="button" class="resume-btn" onclick="resumeLearning()"><i class="fa-solid fa-rotate-right"></i> 다시 학습하기 (세이브 복구)</button>
     </div>
 
     <div id="firework-wrapper">
@@ -286,6 +306,8 @@
     </div>
 
     <div id="global-tools">
+        <span id="team-display" style="font-family: 'Orbitron'; font-weight: bold; color: var(--primary); margin-right: 10px; display: none; font-size: 18px;"></span>
+        
         <button type="button" class="tool-btn btn-pen-blue" onclick="setGlobalTool('pen', '#007aff')"><i class="fa-solid fa-pen"></i> 파란펜</button>
         <button type="button" class="tool-btn btn-pen-red" onclick="setGlobalTool('pen', '#ff2d55')"><i class="fa-solid fa-pen"></i> 빨간펜</button>
         
@@ -299,13 +321,15 @@
         </div>
 
         <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 지우기</button>
-        <button type="button" class="tool-btn btn-map" onclick="toggleStageMap()"><i class="fa-solid fa-map-location-dot"></i> 전체 목차</button>
+        <button type="button" class="tool-btn btn-map" onclick="toggleStageMap()"><i class="fa-solid fa-map-location-dot"></i> 목차</button>
+        
+        <button type="button" class="tool-btn btn-report" onclick="openReportModal()"><i class="fa-solid fa-file-export"></i> 전체 결과 모아보기</button>
     </div>
 
     <div class="bottom-nav" id="bottom-nav">
         <button type="button" class="nav-btn fw-btn" id="fw-btn" onclick="launchRocket()"><i class="fa-solid fa-rocket"></i> 폭죽 발사</button>
         <button type="button" class="nav-btn" id="trajectory-btn" style="display: none; border-color: var(--neon-purple); color: var(--neon-purple); background: var(--dark-bg); font-family: 'Orbitron';" onclick="enableTrajectory()">궤도 확인하기 <i class="fa-solid fa-chart-line"></i></button>
-        <button type="button" class="nav-btn" id="show-content-btn" style="display: none; border-color: var(--secondary); color: var(--secondary);" onclick="revealContent()">훈련 입장하기 <i class="fa-solid fa-door-open"></i></button>
+        <button type="button" class="nav-btn" id="show-content-btn" style="display: none; border-color: var(--secondary); color: var(--secondary);" onclick="requestTeamInput()">훈련 입장하기 <i class="fa-solid fa-door-open"></i></button>
         
         <button type="button" class="nav-btn" id="prev-btn" style="display: none;" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i> 이전</button>
         <div class="stage-dots-container" id="stage-nav-dots"></div>
@@ -327,20 +351,20 @@
                             <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
                                 최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
                                 최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
-                                <button type="button" class="check-btn" onclick="checkQ1()">확인</button>
+                                <button type="button" class="check-btn" onclick="checkQ1()" style="width: auto;">확인</button>
                             </div>
                             <div class="feedback" id="fb-q1"></div>
 
                             <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
-                                <button type="button" class="check-btn" onclick="checkQ2()">확인</button>
+                                <button type="button" class="check-btn" onclick="checkQ2()" style="width: auto;">확인</button>
                             </div>
                             <div class="feedback" id="fb-q2"></div>
                         </div>
                         <div class="panel" style="display: flex; flex-direction: column;">
                             <canvas id="math-canvas" style="width:100%; flex:1; min-height:280px; background:white; border-radius:10px; border:2px solid var(--border-color);"></canvas>
-                            <button type="button" class="check-btn" style="margin-top: 15px; width: 100%;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
+                            <button type="button" class="check-btn" style="margin-top: 15px;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                         </div>
                     </div>
                 </div>
@@ -354,8 +378,8 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백 (여기나 캔버스 바깥을 잡고 올리세요)</div>
-                        <div class="image-wrapper">
-                            <img src="step2_image.png" alt="실수 전체 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s2')">
+                        <div class="image-wrapper" id="wrap-s2">
+                            <img src="step2_image.png" id="img-s2" alt="실수 전체 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s2')">
                             <canvas id="canvas-s2" class="drawing-layer"></canvas>
                         </div>
                         <button type="button" class="unlock-btn" onclick="unlockNextStage(this)">✅ 필기 완료 (다음 단계 열기)</button>
@@ -383,9 +407,9 @@
                         <div class="card-title">제한된 범위의 최대/최소 규칙 찾기 (<span class="math">α ≤ x ≤ β</span>)</div>
                     </div>
                     <div class="card-body">
-                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백 (여기나 캔버스 바깥을 잡고 올리세요)</div>
-                        <div class="image-wrapper">
-                            <img src="step4_image.png" alt="제한된 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s4')">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
+                        <div class="image-wrapper" id="wrap-s4">
+                            <img src="step4_image.png" id="img-s4" alt="제한된 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s4')">
                             <canvas id="canvas-s4" class="drawing-layer"></canvas>
                         </div>
                         
@@ -420,8 +444,8 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
-                        <div class="image-wrapper" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
-                            <img src="step5_image.png" alt="예제 1" class="textbook-img" onload="initCanvasOverlay('canvas-s5-img')">
+                        <div class="image-wrapper" id="wrap-s5" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
+                            <img src="step5_image.png" id="img-s5" alt="예제 1" class="textbook-img" onload="initCanvasOverlay('canvas-s5-img')">
                             <canvas id="canvas-s5-img" class="drawing-layer"></canvas>
                         </div>
                         <div class="whiteboard-container grid-bg" style="height: 600px; width: 100%;">
@@ -440,8 +464,8 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
-                        <div class="image-wrapper" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
-                            <img src="step6_image.png" alt="추가 미션" class="textbook-img" onload="initCanvasOverlay('canvas-s6-img')">
+                        <div class="image-wrapper" id="wrap-s6" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
+                            <img src="step6_image.png" id="img-s6" alt="추가 미션" class="textbook-img" onload="initCanvasOverlay('canvas-s6-img')">
                             <canvas id="canvas-s6-img" class="drawing-layer"></canvas>
                         </div>
                         <div class="whiteboard-container grid-bg" style="height: 800px; width: 100%;"> 
@@ -460,8 +484,8 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
-                        <div class="image-wrapper">
-                            <img src="step7_image.png" alt="응용 연습 1" class="textbook-img" onload="initCanvasOverlay('canvas-s7')">
+                        <div class="image-wrapper" id="wrap-s7">
+                            <img src="step7_image.png" id="img-s7" alt="응용 연습 1" class="textbook-img" onload="initCanvasOverlay('canvas-s7')">
                             <canvas id="canvas-s7" class="drawing-layer"></canvas>
                         </div>
                         <div class="whiteboard-container grid-bg" style="height: 600px; width: 100%; margin-top: 20px;"> 
@@ -480,8 +504,8 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
-                        <div class="image-wrapper" style="margin-bottom: 20px;">
-                            <img src="step8_image.png" alt="응용 연습 2" class="textbook-img" onload="initCanvasOverlay('canvas-s8')">
+                        <div class="image-wrapper" id="wrap-s8" style="margin-bottom: 20px;">
+                            <img src="step8_image.png" id="img-s8" alt="응용 연습 2" class="textbook-img" onload="initCanvasOverlay('canvas-s8')">
                             <canvas id="canvas-s8" class="drawing-layer"></canvas>
                         </div>
                         
@@ -494,7 +518,7 @@
                             </div>
                             
                             <div class="panel" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
-                                <button type="button" class="check-btn" id="s8-graph-btn" style="padding: 15px 30px; font-size: 20px; width: 100%;" onclick="showStage8Graph(this)">
+                                <button type="button" class="check-btn" id="s8-graph-btn" style="padding: 15px 30px; font-size: 20px;" onclick="showStage8Graph(this)">
                                     <i class="fa-solid fa-chart-area"></i> 정답 그래프 확인하기
                                 </button>
                                 <div id="s8-graph-container" style="display: none; width: 100%; text-align: center; margin-top: 15px;">
@@ -518,14 +542,14 @@
                     </div>
                     <div class="card-body">
                         <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
-                        <div class="image-wrapper" style="margin-bottom: 20px;">
-                            <img src="step9_image.png" alt="응용 연습 3" class="textbook-img" onload="initCanvasOverlay('canvas-s9')">
+                        <div class="image-wrapper" id="wrap-s9" style="margin-bottom: 20px;">
+                            <img src="step9_image.png" id="img-s9" alt="응용 연습 3" class="textbook-img" onload="initCanvasOverlay('canvas-s9')">
                             <canvas id="canvas-s9" class="drawing-layer"></canvas>
                         </div>
                         
                         <div class="panel" style="width: 100%; max-width: 800px; text-align: center;">
                             <h3 style="color: var(--primary);"><i class="fa-solid fa-sliders"></i> 높이(a) 조절 시뮬레이터</h3>
-                            <p class="desc">아래의 파란색 동그라미를 오른쪽으로 밀어서 <b>최대 넓이(1800)</b>를 찾아보세요!</p>
+                            <p class="desc">슬라이더를 처음(0)부터 움직여서 <b>최대 넓이(1800)</b>를 찾아야 다음 단계가 열립니다!</p>
                             
                             <input type="range" id="s9-slider" min="0" max="60" value="0" step="0.5" oninput="drawStage9Triangle()">
                             
@@ -556,13 +580,33 @@
 
         </div> </div> <script>
         // ==========================================
-        // 0. 미션 통제 및 내비게이션 상태 시스템 (세이브 복구)
+        // 0. 미션 통제, 조 입력, 갤러리 리포트
         // ==========================================
         let currentStage = 0;
         const totalStages = 10; 
         let maxUnlockedStage = 0; 
         let isTransitioning = false;
+        let teamName = "";
 
+        // 조 입력 및 훈련 시작
+        function requestTeamInput() {
+            document.getElementById('team-input-modal').classList.add('active');
+        }
+
+        function submitTeamAndEnter() {
+            const inputVal = document.getElementById('team-number-input').value;
+            if(!inputVal) { alert("조 번호를 입력해주세요!"); return; }
+            teamName = inputVal + "조";
+            
+            document.getElementById('team-display').innerText = `🕵️‍♂️ ${teamName}`;
+            document.getElementById('team-display').style.display = 'inline-block';
+            document.getElementById('report-team-name').innerText = teamName;
+            
+            document.getElementById('team-input-modal').classList.remove('active');
+            revealContent(); // 문 애니메이션 실행 및 훈련장 입장
+        }
+
+        // 다시 학습하기 (세이브 복구)
         function resumeLearning() {
             maxUnlockedStage = totalStages - 1; 
             contentRevealed = true;
@@ -642,7 +686,7 @@
                 dot.classList.remove('active', 'unlocked', 'locked');
                 if (index === currentStage) {
                     dot.classList.add('active');
-                    dot.scrollIntoView({ behavior: 'smooth', inline: 'center' }); // 중앙 정렬 스크롤
+                    dot.scrollIntoView({ behavior: 'smooth', inline: 'center' }); 
                 } else if (index <= maxUnlockedStage) {
                     dot.classList.add('unlocked');
                 } else {
@@ -704,11 +748,98 @@
         };
 
         // ==========================================
-        // 1. 폭죽 애니메이션 시스템 (버그 수정판)
+        // ⭐ 전체 갤러리 리포트 생성 기능 (캔버스 합성)
+        // ==========================================
+        function openReportModal() {
+            const modal = document.getElementById('report-modal');
+            const container = document.getElementById('report-grid-container');
+            modal.classList.add('active');
+            
+            // 로딩 메시지
+            container.innerHTML = `<div style="text-align: center; padding: 50px; color: #888;"><i class="fa-solid fa-spinner fa-spin" style="font-size: 40px; margin-bottom: 15px;"></i><br>학습 데이터 이미지를 생성/합성 중입니다... 잠시만 기다려주세요.</div>`;
+            
+            // 약간의 딜레이 후 생성 (UI 렌더링 시간 확보)
+            setTimeout(() => {
+                container.innerHTML = '';
+                
+                // 캡쳐할 스테이지 및 캔버스 목록
+                const captureList = [
+                    { name: "Stage 2: 개념 다지기", imgId: "img-s2", canvasId: "canvas-s2" },
+                    { name: "Stage 4: 핵심 미션", imgId: "img-s4", canvasId: "canvas-s4" },
+                    { name: "Stage 5: 실전 미션 1 (문제)", imgId: "img-s5", canvasId: "canvas-s5-img" },
+                    { name: "Stage 5: 실전 미션 1 (화이트보드)", imgId: null, canvasId: "canvas-s5" },
+                    { name: "Stage 6: 실전 미션 2 (문제)", imgId: "img-s6", canvasId: "canvas-s6-img" },
+                    { name: "Stage 6: 실전 미션 2 (화이트보드)", imgId: null, canvasId: "canvas-s6" },
+                    { name: "Stage 7: 응용 연습 1 (문제)", imgId: "img-s7", canvasId: "canvas-s7" },
+                    { name: "Stage 7: 응용 연습 1 (화이트보드)", imgId: null, canvasId: "canvas-s7-pad" },
+                    { name: "Stage 8: 응용 연습 2 (문제)", imgId: "img-s8", canvasId: "canvas-s8" },
+                    { name: "Stage 8: 응용 연습 2 (모눈종이)", imgId: null, canvasId: "canvas-s8-draw" },
+                    { name: "Stage 9: 응용 연습 3 (문제)", imgId: "img-s9", canvasId: "canvas-s9" }
+                ];
+
+                let hasData = false;
+
+                captureList.forEach(item => {
+                    const canvasObj = document.getElementById(item.canvasId);
+                    if(!canvasObj) return;
+
+                    const tempCvs = document.createElement('canvas');
+                    tempCvs.width = canvasObj.width;
+                    tempCvs.height = canvasObj.height;
+                    const tCtx = tempCvs.getContext('2d');
+                    
+                    // 배경을 하얗게 칠함 (화이트보드용)
+                    tCtx.fillStyle = '#ffffff';
+                    tCtx.fillRect(0, 0, tempCvs.width, tempCvs.height);
+
+                    // 배경 이미지가 있으면 그림
+                    if (item.imgId) {
+                        const imgObj = document.getElementById(item.imgId);
+                        if (imgObj && imgObj.complete && imgObj.naturalHeight !== 0) {
+                            // 비율 맞춰서 중앙에 그리기
+                            const imgRatio = imgObj.naturalWidth / imgObj.naturalHeight;
+                            const cvsRatio = tempCvs.width / tempCvs.height;
+                            let drawW = tempCvs.width;
+                            let drawH = tempCvs.height;
+                            let dx = 0; let dy = 0;
+                            
+                            if (imgRatio > cvsRatio) {
+                                drawH = tempCvs.width / imgRatio;
+                                dy = (tempCvs.height - drawH) / 2;
+                            } else {
+                                drawW = tempCvs.height * imgRatio;
+                                dx = (tempCvs.width - drawW) / 2;
+                            }
+                            tCtx.drawImage(imgObj, dx, dy, drawW, drawH);
+                        }
+                    }
+
+                    // 학생 필기 층(Layer) 올리기
+                    tCtx.drawImage(canvasObj, 0, 0);
+
+                    // 화면에 보이지 않으면 빈 캔버스일 확률이 높음 (건너뜀)
+                    if (tempCvs.width > 0) {
+                        hasData = true;
+                        const dataUrl = tempCvs.toDataURL('image/png');
+                        
+                        const div = document.createElement('div');
+                        div.className = 'report-item';
+                        div.innerHTML = `<h4>${item.name}</h4><img src="${dataUrl}" alt="${item.name}">`;
+                        container.appendChild(div);
+                    }
+                });
+
+                if(!hasData) {
+                    container.innerHTML = `<div style="text-align: center; padding: 50px; color: #888;">아직 필기된 데이터가 없거나 캔버스를 불러올 수 없습니다. 훈련을 진행해 주세요.</div>`;
+                }
+            }, 500); // 렌더링 지연
+        }
+
+        // ==========================================
+        // 1. 폭죽 애니메이션 시스템
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
-        let audioCtx;
         
         function initMission() {
             try {
@@ -845,7 +976,7 @@
         }
 
         // ==========================================
-        // 3. 글로벌 통합 그리기 시스템 (지우개 커서 가시성 강화)
+        // 3. 글로벌 통합 그리기 시스템 (지우개)
         // ==========================================
         let drawState = { isDrawing: false, tool: 'pen', color: '#007aff', eraserSize: 30 };
         
@@ -873,13 +1004,6 @@
             updateCursor();
         }
 
-        function setGlobalTool(tool, color) { 
-            drawState.tool = tool; 
-            if(color) drawState.color = color; 
-            if(tool === 'pen') document.getElementById('eraser-menu').classList.remove('show');
-            updateCursor();
-        }
-
         function updateCursor() {
             let cursorStyle = 'crosshair';
             if (drawState.tool === 'eraser') {
@@ -888,7 +1012,6 @@
                 const encoded = encodeURIComponent(svg);
                 cursorStyle = `url("data:image/svg+xml,${encoded}") ${size/2} ${size/2}, auto`;
             }
-            
             Object.values(stageCanvasMap).forEach(ids => {
                 ids.forEach(id => {
                     const cvs = document.getElementById(id);
@@ -897,15 +1020,16 @@
             });
         }
 
-        function clearCurrentCanvas() {
-            const ids = stageCanvasMap[currentStage];
-            if (!ids || ids.length === 0) { alert("현재 화면에는 지울 수 있는 화이트보드가 없습니다."); return; }
-            if(confirm("현재 화면의 필기를 모두 지우시겠습니까?")) {
-                ids.forEach(id => {
-                    const cvs = document.getElementById(id);
-                    if(cvs) cvs.getContext('2d').clearRect(0, 0, cvs.width, cvs.height);
-                });
-            }
+        function setGlobalTool(tool, color) { 
+            drawState.tool = tool; 
+            if(color) drawState.color = color; 
+            if(tool === 'pen') document.getElementById('eraser-menu').classList.remove('show');
+            updateCursor();
+        }
+
+        function handleResize() {
+            if(contentRevealed && currentStage === 0) initStage1Graph();
+            resizeAllCanvases();
         }
 
         function initCanvasOverlay(canvasId) {
@@ -982,13 +1106,8 @@
             if(currentStage === 8) drawStage9Triangle();
         }
 
-        function handleResize() {
-            if(contentRevealed && currentStage === 0) initStage1Graph();
-            resizeAllCanvases();
-        }
-
         // ==========================================
-        // Stage 1: 퀴즈 로직
+        // Stage 1 (Index 0): 퀴즈 로직
         // ==========================================
         let s0_q1_done = false, s0_q2_done = false;
         function checkStage0Unlock() { if (s0_q1_done && s0_q2_done) unlockNextStage(); }

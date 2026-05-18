@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Survivor v0.9.0</title>
+    <title>Space Survivor v0.10.0</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #112211; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -11,48 +11,63 @@
         .version { position: absolute; top: 15px; left: 15px; font-size: 14px; color: rgba(255,255,255,0.6); font-weight: bold; }
         #devTrigger { position: absolute; top: 0; right: 0; width: 80px; height: 80px; pointer-events: auto; z-index: 99; cursor: crosshair; }
 
-        #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10; }
+        #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10; width: 90%; }
         #timer { font-size: 32px; font-weight: 900; font-family: monospace; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         #bossTimerContainer { color: #ff4444; font-size: 20px; font-weight: bold; margin-top: 8px; background: rgba(40,0,0,0.8); padding: 4px 15px; border-radius: 10px; border: 1px solid #f00; display: none; }
-        #warningMessage { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); font-size: 40px; color: #ff3333; font-weight: 900; text-shadow: 0 0 20px rgba(255,0,0,0.8); opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 15px; z-index: 10; }
+        #warningMessage { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); font-size: 40px; color: #ff3333; font-weight: 900; text-shadow: 0 0 20px rgba(255,0,0,0.8); opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 15px; z-index: 10; text-align: center; width: max-content; max-width: 90%; }
 
         #bottomUI { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 10; }
-        #activeSkillsPanel { display: flex; gap: 8px; margin-bottom: 15px; }
-        .skill-slot { width: 40px; height: 40px; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; box-shadow: 0 0 5px #000; }
+        #activeSkillsPanel { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; width: 100%; padding: 0 10px; box-sizing: border-box; }
+        .skill-slot { width: 40px; height: 40px; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; box-shadow: 0 0 5px #000; flex-shrink: 0; }
         .skill-slot .lvl { position: absolute; bottom: -5px; right: -5px; background: #000; font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid #ffcc00; color: #ffcc00; font-weight: bold; }
-        #hpBarContainer { width: 250px; height: 18px; background: rgba(0,0,0,0.8); border: 2px solid #222; border-radius: 10px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
+        #hpBarContainer { width: 250px; max-width: 80%; height: 18px; background: rgba(0,0,0,0.8); border: 2px solid #222; border-radius: 10px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
         #hpFill { width: 100%; height: 100%; background: linear-gradient(90deg, #aa0000, #ff4444); transition: width 0.2s ease-out; }
         #xpSection { width: 100%; display: flex; align-items: center; padding: 0 20px; box-sizing: border-box; }
-        #levelText { font-size: 22px; font-weight: 900; margin-right: 15px; color: #44aaff; text-shadow: 0 2px 4px #000; }
+        #levelText { font-size: 22px; font-weight: 900; margin-right: 15px; color: #44aaff; text-shadow: 0 2px 4px #000; white-space: nowrap; }
         #xpBarContainer { flex-grow: 1; height: 12px; background: rgba(0,0,0,0.8); border: 1px solid #333; border-radius: 6px; overflow: hidden; }
         #xpFill { width: 0%; height: 100%; background: linear-gradient(90deg, #0055aa, #44aaff); transition: width 0.2s linear; }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10,15,10,0.85); backdrop-filter: blur(8px); pointer-events: auto; z-index: 100; }
-        h1 { font-size: 48px; margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
-        .diff-selector { margin-bottom: 30px; font-size: 20px; font-weight: bold; color: #ffcc00; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 15px; border: 1px solid #555; }
-        .diff-selector label { margin: 0 10px; cursor: pointer; color: #fff; }
-        .btn { background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 1px solid #444; color: #fff; padding: 15px 30px; margin: 10px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; width: 280px; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10,15,10,0.85); backdrop-filter: blur(8px); pointer-events: auto; z-index: 100; overflow-y: auto; }
+        h1 { font-size: 48px; margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255,255,255,0.5); text-align: center; }
+        .diff-selector { margin-bottom: 30px; font-size: 20px; font-weight: bold; color: #ffcc00; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 15px; border: 1px solid #555; text-align: center; }
+        .diff-selector label { margin: 0 10px; cursor: pointer; color: #fff; display: inline-block; }
+        .btn { background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 1px solid #444; color: #fff; padding: 15px 30px; margin: 10px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; width: 280px; max-width: 90%; }
         .btn:hover { background: linear-gradient(135deg, #3a3a4a, #2a2a3a); border-color: #888; transform: translateY(-2px); }
         .hidden { display: none !important; }
 
-        #skillContainer { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 1000px; }
-        .skill-card { background: rgba(30,40,30,0.9); border: 2px solid #44aa44; border-radius: 16px; padding: 25px; width: 280px; cursor: pointer; text-align: left; transition: all 0.2s; position: relative; }
+        #skillContainer { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 1000px; width: 100%; padding: 10px; box-sizing: border-box; }
+        .skill-card { background: rgba(30,40,30,0.9); border: 2px solid #44aa44; border-radius: 16px; padding: 20px; width: 280px; max-width: 90%; cursor: pointer; text-align: left; transition: all 0.2s; position: relative; box-sizing: border-box; }
         .skill-card.active-type { border-color: #aa44ff; }
         .skill-card:hover { transform: scale(1.05) translateY(-5px); border-color: #fff; box-shadow: 0 12px 25px rgba(255,255,255,0.2); }
-        .skill-title { font-size: 20px; font-weight: 900; color: #66ff66; display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+        .skill-title { font-size: 18px; font-weight: 900; color: #66ff66; display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
         .active-type .skill-title { color: #aa44ff; }
         .skill-desc { font-size: 14px; color: #ccc; line-height: 1.4; }
 
-        #devPanel { background: rgba(15,10,20,0.95); border: 2px solid #aa44ff; border-radius: 15px; padding: 30px; width: 500px; max-height: 85%; overflow-y: auto; text-align: left; }
+        #devPanel { background: rgba(15,10,20,0.95); border: 2px solid #aa44ff; border-radius: 15px; padding: 20px; width: 500px; max-width: 95%; max-height: 90%; overflow-y: auto; text-align: left; box-sizing: border-box; }
         .dev-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; font-size: 14px; }
-        .dev-btn { background: #333; color: #fff; border: 1px solid #666; padding: 4px 12px; font-weight: bold; cursor: pointer; border-radius: 4px; }
-        .dev-close { background: linear-gradient(135deg, #aa3333, #882222); color: #fff; width: 100%; padding: 15px; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; border-radius: 8px; }
+        .dev-btn { background: #333; color: #fff; border: 1px solid #666; padding: 4px 10px; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        .dev-close { background: linear-gradient(135deg, #aa3333, #882222); color: #fff; width: 100%; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; border-radius: 8px; }
+
+        /* 모바일 반응형 미디어 쿼리 */
+        @media (max-width: 600px) {
+            h1 { font-size: 32px; }
+            .diff-selector { font-size: 16px; padding: 10px 15px; }
+            #timer { font-size: 24px; padding: 5px 15px; }
+            #warningMessage { font-size: 24px; padding: 8px 20px; }
+            #activeSkillsPanel { gap: 4px; }
+            .skill-slot { width: 34px; height: 34px; font-size: 16px; }
+            .skill-slot .lvl { font-size: 9px; padding: 1px 3px; bottom: -4px; right: -4px; }
+            .skill-card { padding: 15px; }
+            .skill-title { font-size: 16px; }
+            .skill-desc { font-size: 12px; }
+            #levelText { font-size: 18px; }
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <div class="version">v0.9.0</div>
+        <div class="version">v0.10.0</div>
         <div id="devTrigger" onclick="checkDevMode()"></div>
 
         <div id="topBar">
@@ -76,7 +91,7 @@
         <div id="menuScreen" class="overlay">
             <h1>SPACE SURVIVOR</h1>
             <div class="diff-selector">
-                난이도 선택: 
+                난이도 선택: <br>
                 <label><input type="radio" name="difficulty" value="0.7"> Easy</label>
                 <label><input type="radio" name="difficulty" value="1.0" checked> Normal</label>
                 <label><input type="radio" name="difficulty" value="1.5"> Hard</label>
@@ -87,7 +102,7 @@
         </div>
 
         <div id="levelUpScreen" class="overlay hidden">
-            <h2 id="lvlUpTitle" style="color: #ffcc00; font-size: 36px; text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 30px;">LEVEL UP!</h2>
+            <h2 id="lvlUpTitle" style="color: #ffcc00; font-size: 32px; text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 20px; text-align: center;">LEVEL UP!</h2>
             <div id="skillContainer"></div>
         </div>
 
@@ -96,9 +111,9 @@
                 <h2 style="color: #dd88ff; text-align: center; margin-top: 0;">🛠️ DEV MODE</h2>
                 <div class="dev-row" style="background: rgba(255,0,0,0.1); padding: 10px; border-radius: 8px;">
                     <label><input type="checkbox" id="devSpawnToggle" onchange="toggleSpawn(this)"> 적 스폰 중지</label>
-                    <button class="dev-btn" style="background:#cc3333;" onclick="killAllEnemies()">즉시 소탕 (Kill All)</button>
+                    <button class="dev-btn" style="background:#cc3333;" onclick="killAllEnemies()">즉시 소탕</button>
                 </div>
-                <h3 style="font-size: 14px; margin-top: 15px; border-bottom: 1px solid #444;">스킬/스탯 조작 (패시브)</h3>
+                <h3 style="font-size: 14px; margin-top: 15px; border-bottom: 1px solid #444;">스킬 조작 (패시브)</h3>
                 <div id="devPassivesContainer"></div>
                 <h3 style="font-size: 14px; margin-top: 15px; border-bottom: 1px solid #444; color:#aa44ff;">스킬 조작 (액티브 - 최대 8칸)</h3>
                 <div id="devActivesContainer"></div>
@@ -134,7 +149,7 @@ let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
 
 const passiveSkills = {
-    weaponUpgrade:{ level: 0, max: 5, icon: "🔥", name: "특화 무기 진화", desc: "직업 고유의 평타가 강화됩니다. (범위/타수 등 증가)" }, // 🚀 신규 평타 강화 패시브
+    weaponUpgrade:{ level: 0, max: 5, icon: "🔥", name: "특화 무기 진화", desc: "직업 고유의 평타가 강화됩니다. (범위/타수 등 증가)" },
     attackPower:  { level: 0, max: 8, icon: "⚔️", name: "공격력 증가", desc: "모든 공격과 스킬 데미지가 상승합니다." },
     attackSpeed:  { level: 0, max: 8, icon: "⚡", name: "공격속도 증가", desc: "모든 스킬의 쿨타임이 감소합니다." },
     knockback:    { level: 0, max: 8, icon: "🛡️", name: "넉백 증가", desc: "기본 공격의 넉백이 늘어납니다." },
@@ -146,10 +161,10 @@ const passiveSkills = {
 };
 
 const activeSkills = {
-    missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓아가는 미사일을 발사합니다." },
+    missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "끈질기게 쫓아가는 강력한 대형 미사일 다수 발사." }, // 🚀 개편
     shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "5바퀴를 돌며 적을 강하게 튕겨내는 방패를 생성합니다." },
     bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "폭발 시 4개의 파편으로 분열하여 광역 피해를 줍니다." },
-    shuriken:   { level: 0, max: 5, icon: "⭐", name: "수리검", desc: "적(보스 우선)에게 날아가 박힌 후 미친듯이 갈아버립니다." }, // 🚀 개편
+    shuriken:   { level: 0, max: 5, icon: "⭐", name: "수리검", desc: "적(보스 우선)에게 날아가 박힌 후 미친듯이 갈아버립니다." }, 
     dove:       { level: 0, max: 5, icon: "🕊️", name: "비둘기", desc: "주위를 맴돌며 미사일을 쏘는 비둘기 소환." },
     laser:      { level: 0, max: 5, icon: "🔦", name: "레이저 빔", desc: "가장 가까운 적에게 직선 관통 레이저 발사." },
     poison:     { level: 0, max: 5, icon: "🧪", name: "맹독 지대", desc: "광범위 지역에 최대 체력 비례 데미지를 주는 독 장판 생성." },
@@ -191,12 +206,8 @@ function recalcStats() {
     player.speed = base.speed + (passiveSkills.moveSpeed.level * 0.4);
     player.magnetRange = base.baseMagnet + (passiveSkills.magnet.level * 80);
 
-    // 🚀 특화 무기 진화 (사거리 등 기본 스펙에 영향주는 부분)
-    if(player.type === 'melee') {
-        player.range = base.range + (passiveSkills.weaponUpgrade.level * 25); // 근접 범위 증가
-    } else {
-        player.range = base.range;
-    }
+    if(player.type === 'melee') player.range = base.range + (passiveSkills.weaponUpgrade.level * 25);
+    else player.range = base.range;
 }
 
 function startGame(type) {
@@ -295,7 +306,6 @@ function getNearestEnemy(x, y, rangeSq) {
     return nearest;
 }
 
-// 🚀 평타 개편 로직
 function handleBasicAttacks() {
     if (player.currentCooldown > 0) { player.currentCooldown--; return; }
     const rangeSq = player.range * player.range;
@@ -304,11 +314,9 @@ function handleBasicAttacks() {
     if (nearest) {
         const dx=nearest.x-worldX; const dy=nearest.y-worldY; const dist=Math.sqrt(dx*dx+dy*dy);
         const dirX=dx/dist; const dirY=dy/dist; const angle=Math.atan2(dy, dx);
-        
         let wLvl = passiveSkills.weaponUpgrade.level;
 
         if (player.type === 'melee') {
-            // 🗡️ 근접 요원: 범위 증가 + 레벨에 따른 다단 히트 (3렙: 2타, 5렙: 3타)
             let hits = wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1);
             for(let i=0; i<enemies.length; i++) {
                 if(enemies[i].isDead) continue;
@@ -325,18 +333,15 @@ function handleBasicAttacks() {
             if(hits === 3) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle-0.2, life: 15, maxLife: 15, radius: player.range*0.6 });
         
         } else if (player.type === 'ranged') {
-            // 🏹 원거리 저격수: 다중 발사 (스프레드 샷, 최대 6발)
-            let arrows = 1 + wLvl; 
-            let spread = 0.15;
+            let arrows = 1 + wLvl; let spread = 0.15;
             for(let a=0; a<arrows; a++) {
                 let ang = angle + (a - (arrows-1)/2) * spread;
                 projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 30, type: 'arrow', dmg: player.damage, kb: player.knockback, isDead: false });
             }
 
         } else if (player.type === 'magic') {
-            // ✨ 초능력술사: 거대 구슬 발동 주기 감소 및 다중 투척
             player.attackCount++; 
-            let reqForBig = Math.max(1, 5 - wLvl); // 5, 4, 3, 2, 1
+            let reqForBig = Math.max(1, 5 - wLvl); 
             let isBig = (wLvl >= 4) || (player.attackCount % reqForBig === 0);
             let orbCount = (wLvl === 5) ? 3 : 1;
             
@@ -345,8 +350,7 @@ function handleBasicAttacks() {
                 projectiles.push({ 
                     x: worldX, y: worldY, dx: Math.cos(ang)*(isBig?6:10), dy: Math.sin(ang)*(isBig?6:10), 
                     life: 60, type: isBig ? 'big_orb' : 'orb', 
-                    dmg: isBig ? player.damage*3 : player.damage, 
-                    kb: player.knockback, isDead: false 
+                    dmg: isBig ? player.damage*3 : player.damage, kb: player.knockback, isDead: false 
                 });
             }
         }
@@ -357,13 +361,19 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
+    // 🚀 유도 미사일 개편 (개수 및 데미지 상향, 수명 5초)
     if (activeSkills.missile.level > 0) {
         activeTimers.missile--;
         if(activeTimers.missile <= 0) {
-            let count = activeSkills.missile.level;
+            let count = 1 + (activeSkills.missile.level * 2); // 3, 5, 7, 9, 11발
             for(let i=0; i<count; i++) {
                 let ang = Math.random()*Math.PI*2;
-                projectiles.push({ x: pX, y: pY, dx: Math.cos(ang)*8, dy: Math.sin(ang)*8, life: 90, type: 'missile', dmg: 20 + activeSkills.missile.level*10 + player.bonusDmg, isDead: false });
+                projectiles.push({ 
+                    x: pX, y: pY, dx: Math.cos(ang)*8, dy: Math.sin(ang)*8, 
+                    life: 300, type: 'missile', // 5초(300프레임)
+                    dmg: 50 + activeSkills.missile.level*30 + player.bonusDmg, 
+                    isDead: false 
+                });
             }
             activeTimers.missile = 60 * player.cdr; 
         }
@@ -373,13 +383,7 @@ function handleActiveSkills() {
         if(activeTimers.shield <= 0) {
             let radius = 120 + activeSkills.shield.level*10; 
             for(let i=0; i<5; i++) {
-                projectiles.push({ 
-                    x: pX, y: pY, angle: (Math.PI*2/5)*i, radius: radius, 
-                    life: 300, maxLife: 300, type: 'shield', 
-                    dmg: 20 + activeSkills.shield.level*10 + player.bonusDmg, 
-                    kb: 60 + activeSkills.shield.level*20,
-                    isDead: false 
-                });
+                projectiles.push({ x: pX, y: pY, angle: (Math.PI*2/5)*i, radius: radius, life: 300, maxLife: 300, type: 'shield', dmg: 20 + activeSkills.shield.level*10 + player.bonusDmg, kb: 60 + activeSkills.shield.level*20, isDead: false });
             }
             activeTimers.shield = 450 * player.cdr; 
         }
@@ -399,7 +403,6 @@ function handleActiveSkills() {
             activeTimers.bomb = 90 * player.cdr;
         }
     }
-    // ⭐ 수리검 개편 (생성 로직 - 바로 타겟 탐색 시작)
     if (activeSkills.shuriken.level > 0) {
         activeTimers.shuriken--;
         if(activeTimers.shuriken <= 0) {
@@ -451,11 +454,7 @@ function handleActiveSkills() {
         activeTimers.poison--;
         if(activeTimers.poison <= 0) {
             let pct = activeSkills.poison.level * 0.01; 
-            effects.push({ x: pX, y: pY, type: 'poison', life: 180, maxLife: 180, 
-                radius: 120 + activeSkills.poison.level * 40,
-                dmg: 10 + activeSkills.poison.level*5 + player.bonusDmg, 
-                hpPct: pct 
-            });
+            effects.push({ x: pX, y: pY, type: 'poison', life: 180, maxLife: 180, radius: 120 + activeSkills.poison.level * 40, dmg: 10 + activeSkills.poison.level*5 + player.bonusDmg, hpPct: pct });
             activeTimers.poison = 100 * player.cdr;
         }
     }
@@ -593,7 +592,7 @@ function updateActiveUI() {
 }
 function resumeGame() { ui.levelUp.classList.add('hidden'); gameState = 'playing'; lastTime = performance.now(); }
 
-function checkDevMode() { if(gameState==='dev')return; if(prompt("개발자 비밀번호(1563):")==="1563") openDevMode(); }
+function checkDevMode() { if(gameState==='dev')return; if(prompt("개발자 비밀번호를 입력하세요:")==="1563") openDevMode(); }
 function openDevMode() {
     const prev = gameState; gameState = 'dev'; handleInputEnd();
     document.getElementById('devSpawnToggle').checked = devConfig.spawnPaused;
@@ -668,23 +667,29 @@ function update() {
     for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
+        // 🚀 유도 미사일 개편 (추적 및 엔진 이펙트)
         if(p.type === 'missile') { 
-            let n = getNearestEnemy(p.x, p.y, 40000);
-            if(n) { let dx=n.x-p.x; let dy=n.y-p.y; let dist=Math.sqrt(dx*dx+dy*dy); p.dx += (dx/dist)*0.5; p.dy += (dy/dist)*0.5; }
+            let n = getNearestEnemy(p.x, p.y, 160000); // 400 거리
+            if(n) { 
+                let dx=n.x-p.x; let dy=n.y-p.y; let dist=Math.sqrt(dx*dx+dy*dy); 
+                p.dx += (dx/dist)*0.8; p.dy += (dy/dist)*0.8; 
+                let speed = Math.sqrt(p.dx*p.dx + p.dy*p.dy);
+                if(speed > 12) { p.dx = (p.dx/speed)*12; p.dy = (p.dy/speed)*12; } // 최고속도 제한
+            }
+            // 미사일 궤적 스파크
+            if(frameCount % 5 === 0) effects.push({x:p.x, y:p.y, type:'spark', life:15, maxLife:15, radius:4});
         } 
-        // ⭐ 수리검 궤도 비행 -> 타겟 추적/갈기 로직 완벽 적용
         else if(p.type === 'shuriken') { 
             if(!p.target || p.target.isDead) {
                 p.state = 'seek';
-                // 보스, 중간보스 우선 탐색
                 let boss = enemies.find(e => (!e.isDead && (e.isBoss || e.isMidBoss)));
                 if(boss) p.target = boss;
-                else p.target = getNearestEnemy(p.x, p.y, 400000); // 화면 끝까지 추적
+                else p.target = getNearestEnemy(p.x, p.y, 400000); 
             }
             if(p.state === 'seek') {
                 if(p.target) {
                     let dx = p.target.x - p.x; let dy = p.target.y - p.y; let dist = Math.sqrt(dx*dx+dy*dy);
-                    p.dx = (dx/dist)*22; p.dy = (dy/dist)*22; // 아주 빠르게 맹렬히 비행
+                    p.dx = (dx/dist)*22; p.dy = (dy/dist)*22; 
                     if(dist < 30) p.state = 'grind';
                 }
             }
@@ -692,7 +697,7 @@ function update() {
                 if(!p.target || p.target.isDead) { p.state = 'seek'; } 
                 else { 
                     p.x = p.target.x; p.y = p.target.y; p.dx=0; p.dy=0; 
-                    if(frameCount % 3 === 0) { // 3프레임마다 연타 스파크 타격
+                    if(frameCount % 3 === 0) { 
                         damageEnemy(p.target, p.dmg * 0.3, 0, 0, 0); 
                         effects.push({x: p.x + (Math.random()-0.5)*40, y: p.y + (Math.random()-0.5)*40, type: 'spark', life: 10, maxLife: 10, radius: 5});
                     }
@@ -730,6 +735,7 @@ function update() {
         for (let j = 0; j < enemies.length; j++) {
             let e = enemies[j]; if (e.isDead) continue;
             let hitRadSq = (p.type==='bomb'||p.type==='shuriken') ? 0 : 400; 
+            if(p.type==='missile') hitRadSq=625; // 미사일 충돌 반경 확대
             if(p.type==='bomb_frag') hitRadSq=400;
             if(p.type==='big_orb') hitRadSq=900;
             if(p.type==='shield') hitRadSq=625; 
@@ -742,12 +748,16 @@ function update() {
                     damageEnemy(e, p.dmg, 5, 0, 0);
                     effects.push({x:p.x, y:p.y, type:'explosion', life:10, maxLife:10, radius:40});
                     p.isDead = true; break;
+                } else if(p.type === 'missile') { // 미사일 적중 시 폭발
+                    damageEnemy(e, p.dmg, p.kb || 5, 0, 0);
+                    effects.push({ x: e.x, y: e.y, type: 'explosion', life: 12, maxLife: 12, radius: 30 });
+                    p.isDead = true; break;
                 } else if(p.type !== 'boomerang' && p.type !== 'shield') { 
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
                     damageEnemy(e, p.dmg, p.kb || 5, edx/edist, edy/edist);
                     effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
                     
-                    if(p.type === 'missile' || p.type === 'dove_shot' || p.type === 'arrow') { p.isDead = true; break; }
+                    if(p.type === 'dove_shot' || p.type === 'arrow') { p.isDead = true; break; }
                 } else {
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
                     damageEnemy(e, p.dmg, p.kb || 0, edx/edist, edy/edist); 
@@ -792,7 +802,6 @@ function draw() {
     ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, player.magnetRange, 0, Math.PI*2); ctx.stroke();
     
-    // 특화 무기(평타) 사거리 표시
     ctx.strokeStyle='rgba(255,100,100,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, player.range, 0, Math.PI*2); ctx.stroke();
 
     for (let i=0; i<effects.length; i++) {
@@ -832,7 +841,7 @@ function draw() {
         if(ef.type === 'slash') { ctx.strokeStyle = `rgba(255,255,255,${p*0.8})`; ctx.lineWidth = 15*p; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, ef.angle-1, ef.angle+1); ctx.stroke(); } 
         else if(ef.type === 'explosion') { ctx.fillStyle = `rgba(255,100,50,${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = `rgba(255,255,255,${p*0.5})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP*0.5, 0, Math.PI*2); ctx.fill(); } 
         else if(ef.type === 'hit') { ctx.fillStyle = `rgba(255,255,100,${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*p, 0, Math.PI*2); ctx.fill(); } 
-        else if(ef.type === 'spark') { ctx.fillStyle = `rgba(255, 200, 0, ${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*p, 0, Math.PI*2); ctx.fill(); } 
+        else if(ef.type === 'spark') { ctx.fillStyle = `rgba(255, 150, 0, ${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*p, 0, Math.PI*2); ctx.fill(); } 
         else if(ef.type === 'blood') { ctx.fillStyle = `rgba(255,0,0,${p*0.6})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP, 0, Math.PI*2); ctx.fill(); }
         else if(ef.type === 'laser') { ctx.strokeStyle = `rgba(0, 255, 255, ${p})`; ctx.lineWidth = 20*p; ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex+Math.cos(ef.angle)*ef.radius, ey+Math.sin(ef.angle)*ef.radius); ctx.stroke(); }
         else if(ef.type === 'lightning') { ctx.strokeStyle = `rgba(200, 200, 255, ${p})`; ctx.lineWidth = 10*p; ctx.beginPath(); ctx.moveTo(ex, ey-500); ctx.lineTo(ex, ey); ctx.stroke(); ctx.fillStyle=`rgba(200,200,255,${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, 0, Math.PI*2); ctx.fill(); }
@@ -842,9 +851,13 @@ function draw() {
 
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
-        if(pr.type === 'arrow' || pr.type === 'missile' || pr.type === 'dove_shot') {
-            let color = pr.type==='missile'?'#ff8800':(pr.type==='dove_shot'?'#aaaaff':'#ffff88');
-            ctx.fillStyle = color; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx)); ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-8, -4); ctx.lineTo(-8, 4); ctx.fill(); ctx.restore();
+        if(pr.type === 'missile') { // 🚀 미사일 디자인 거대화 및 변경
+            ctx.fillStyle = '#ff4400'; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx)); 
+            ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-12, -8); ctx.lineTo(-8, 0); ctx.lineTo(-12, 8); ctx.fill(); 
+            ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-16, -3); ctx.lineTo(-16, 3); ctx.fill(); // 불꽃
+            ctx.restore();
+        } else if(pr.type === 'arrow' || pr.type === 'dove_shot') {
+            ctx.fillStyle = pr.type==='dove_shot'?'#aaaaff':'#ffff88'; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx)); ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-8, -4); ctx.lineTo(-8, 4); ctx.fill(); ctx.restore();
         } else if(pr.type === 'orb') { ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill(); }
         else if(pr.type === 'big_orb') { ctx.fillStyle = `rgba(255,255,255,0.5)`; ctx.beginPath(); ctx.arc(px, py, 18, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = player.color; ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI*2); ctx.fill(); }
         else if(pr.type === 'bomb') { ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI*2); ctx.fill(); ctx.fillStyle='#f00'; ctx.beginPath(); ctx.arc(px, py, 4 + Math.sin(frameCount*0.5)*2, 0, Math.PI*2); ctx.fill(); } 

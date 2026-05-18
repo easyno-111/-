@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V52 초반 맞춤 지원 & 극한 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V53 스킬 포인트 & 최적화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -49,7 +49,8 @@
 
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
-        .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; mix-blend-mode: screen; filter: blur(2px); }
+        /* 최적화: GPU 과부하를 유발하는 filter: blur 와 mix-blend-mode 제거 */
+        .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; }
         
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
 
@@ -102,14 +103,14 @@
         </div>
 
         <div class="overlay" id="start-screen">
-            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v52</span></div>
+            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v53</span></div>
 
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 90%; max-width: 380px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
                 <select id="start-difficulty" onchange="onDifficultyChange()" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #ff7675; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
-                    <option value="easy">🟢 Easy (선택 3개 / 라이트 유저)</option>
-                    <option value="normal" selected>🟡 Normal (선택 4개 / 밸런스)</option>
-                    <option value="hard">🔴 Hard (선택 5개 / 지옥의 난이도)</option>
+                    <option value="easy">🟢 Easy (10포인트 지급)</option>
+                    <option value="normal" selected>🟡 Normal (8포인트 지급)</option>
+                    <option value="hard">🔴 Hard (6포인트 지급)</option>
                 </select>
 
                 <label style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🎯 기본 액티브 스킬</label>
@@ -119,10 +120,10 @@
                     <option value="punch">🐾 냥냥펀치 (단일 유도)</option>
                 </select>
 
-                <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 조합 <span id="passive-count-display" style="color:white; float:right;">(0/4)</span></label>
-                <div style="font-size: 11px; color:#aaa; margin-bottom: 8px;">※ 각 분류별로 <b>최대 2개까지만</b> 고를 수 있습니다.</div>
+                <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 상점 <span id="passive-count-display" style="color:white; float:right;">(포인트: 0/8)</span></label>
+                <div style="font-size: 11px; color:#aaa; margin-bottom: 8px;">※ 부여된 포인트 내에서 마음대로 조합하세요! (분류별 최대 2개)</div>
                 
-                <div id="start-passives-list" style="background: #111; padding: 10px; border-radius: 5px; border: 1px solid #00ffff; max-height: 180px; overflow-y: auto; margin-bottom: 12px;">
+                <div id="start-passives-list" style="background: #111; padding: 10px; border-radius: 5px; border: 1px solid #00ffff; max-height: 180px; overflow-y: auto; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <!-- JS로 렌더링됨 -->
                 </div>
             </div>
@@ -282,30 +283,29 @@
 
         function checkDevMode() { scoreTapCount++; if(scoreTapCount >= 5) { scoreTapCount=0; if(prompt("PW:")==="1563") openDevMode(); } }
         
-        // --- V52: 시작 특성 목록 분류 및 데이터 ---
-        let maxStartingPassives = 4;
+        // --- V53: 가중치(포인트) 기반 스킬 선택 데이터 ---
         const passivesData = [
             // 무기/탄환류 (w)
-            { cat: 'w', id: 'lvl_atk', name: '⚔️ 공격력 UP' },
-            { cat: 'w', id: 'lvl_firespeed', name: '🔫 연사 속도 UP' },
-            { cat: 'w', id: 'lvl_pierce', name: '🏹 평타 관통' },
-            { cat: 'w', id: 'lvl_bullet', name: '💥 탄환 확산' },
-            { cat: 'w', id: 'lvl_homing', name: '✨ 유도 분열탄' },
+            { cat: 'w', id: 'lvl_atk', name: '⚔️ 공격력 UP', cost: 2 },
+            { cat: 'w', id: 'lvl_firespeed', name: '🔫 연사 속도', cost: 2 },
+            { cat: 'w', id: 'lvl_pierce', name: '🏹 평타 관통', cost: 2 },
+            { cat: 'w', id: 'lvl_bullet', name: '💥 탄환 확산', cost: 3 },
+            { cat: 'w', id: 'lvl_homing', name: '✨ 유도 분열탄', cost: 4 },
 
             // 특수 스킬류 (s)
-            { cat: 's', id: 'lvl_skill_dmg', name: '🪄 스킬 파괴력' },
-            { cat: 's', id: 'lvl_skill_cd', name: '⏳ 스킬 쿨감' },
-            { cat: 's', id: 'lvl_lightning', name: '⚡ 연쇄 번개' },
-            { cat: 's', id: 'lvl_sword', name: '🗡️ 환영검 진형' },
-            { cat: 's', id: 'lvl_storm', name: '🌀 칼날 돌풍' },
-            { cat: 's', id: 'lvl_orbital', name: '☄️ 유성 폭격' },
-            { cat: 's', id: 'lvl_shuriken', name: '🌟 수호 표창' },
-            { cat: 's', id: 'lvl_fire_boom', name: '🔥 지옥불 부메랑' },
+            { cat: 's', id: 'lvl_skill_dmg', name: '🪄 스킬 데미지', cost: 2 },
+            { cat: 's', id: 'lvl_skill_cd', name: '⏳ 스킬 쿨감', cost: 3 },
+            { cat: 's', id: 'lvl_lightning', name: '⚡ 연쇄 번개', cost: 4 },
+            { cat: 's', id: 'lvl_sword', name: '🗡️ 환영검 진형', cost: 4 },
+            { cat: 's', id: 'lvl_storm', name: '🌀 칼날 돌풍', cost: 4 },
+            { cat: 's', id: 'lvl_orbital', name: '☄️ 유성 폭격', cost: 5 },
+            { cat: 's', id: 'lvl_shuriken', name: '🌟 수호 표창', cost: 4 },
+            { cat: 's', id: 'lvl_fire_boom', name: '🔥 불 부메랑', cost: 5 },
 
             // 보조/생존류 (u)
-            { cat: 'u', id: 'lvl_regen', name: '💖 자연 회복' },
-            { cat: 'u', id: 'lvl_vampire', name: '🧛 흡혈' },
-            { cat: 'u', id: 'lvl_blackhole', name: '🌌 블랙홀 탄환' }
+            { cat: 'u', id: 'lvl_regen', name: '💖 자연 회복', cost: 2 },
+            { cat: 'u', id: 'lvl_vampire', name: '🧛 처치시 흡혈', cost: 3 },
+            { cat: 'u', id: 'lvl_blackhole', name: '🌌 블랙홀 탄환', cost: 5 }
         ];
 
         function renderStartPassives() {
@@ -327,12 +327,12 @@
                 passivesData.filter(p => p.cat === c.id).forEach(sp => {
                     let label = document.createElement('label');
                     label.style.cssText = "color:#dfe6e9; font-size:11px; display:flex; align-items:center; gap:6px; cursor:pointer;";
-                    label.innerHTML = `<input type="checkbox" class="start-passive-cb" data-cat="${sp.cat}" value="${sp.id}" onchange="checkStartPassives(event)" style="transform:scale(1.2);"> <span>${sp.name}</span>`;
+                    label.innerHTML = `<input type="checkbox" class="start-passive-cb" data-cat="${sp.cat}" data-cost="${sp.cost}" value="${sp.id}" onchange="checkStartPassives(event)" style="transform:scale(1.2);"> <span>[${sp.cost}P] ${sp.name}</span>`;
                     list.appendChild(label);
                 });
             });
 
-            // 초기 기본값 세팅: 공격력(w) 1개, 자연회복(u) 1개
+            // 기본값: 공격력(2P), 자연회복(2P) 체크
             document.querySelector('input[value="lvl_atk"]').checked = true;
             document.querySelector('input[value="lvl_regen"]').checked = true;
             
@@ -341,57 +341,58 @@
 
         function checkStartPassives(event) {
             const diff = document.getElementById('start-difficulty').value;
-            maxStartingPassives = diff === 'easy' ? 3 : (diff === 'normal' ? 4 : 5);
-            const MAX_PER_CATEGORY = 2; // 한 카테고리당 최대 선택 가능 개수
+            let maxPoints = diff === 'easy' ? 10 : (diff === 'normal' ? 8 : 6);
+            const MAX_PER_CATEGORY = 2; // 카테고리당 최대 2개
             
             const cbs = document.querySelectorAll('.start-passive-cb');
-            let checkedTotal = 0;
+            let usedPoints = 0;
             let catCounts = { w: 0, s: 0, u: 0 };
 
-            // 현재 체크 상태 집계
             cbs.forEach(cb => { 
                 if(cb.checked) {
-                    checkedTotal++;
+                    usedPoints += parseInt(cb.dataset.cost);
                     catCounts[cb.dataset.cat]++;
                 }
             });
             
-            // 방금 클릭한 요소가 제한을 초과하게 만들었다면 강제 해제
+            // 포인트 초과 또는 카테고리 초과 시 클릭 취소
             if (event && event.target && event.target.checked) {
                 let targetCat = event.target.dataset.cat;
-                if (checkedTotal > maxStartingPassives || catCounts[targetCat] > MAX_PER_CATEGORY) {
+                let cost = parseInt(event.target.dataset.cost);
+                if (usedPoints > maxPoints || catCounts[targetCat] > MAX_PER_CATEGORY) {
                     event.target.checked = false;
-                    checkedTotal--;
+                    usedPoints -= cost;
                     catCounts[targetCat]--;
                 }
             }
             
-            // 남은 체크박스 활성화/비활성화 처리 (전체 제한 OR 카테고리 제한 도달 시)
+            // UI 상태 반영
             cbs.forEach(cb => {
                 if (!cb.checked) {
-                    cb.disabled = (checkedTotal >= maxStartingPassives) || (catCounts[cb.dataset.cat] >= MAX_PER_CATEGORY);
+                    let cost = parseInt(cb.dataset.cost);
+                    cb.disabled = (usedPoints + cost > maxPoints) || (catCounts[cb.dataset.cat] >= MAX_PER_CATEGORY);
                 } else {
                     cb.disabled = false;
                 }
             });
             
-            document.getElementById('passive-count-display').innerText = `(${checkedTotal}/${maxStartingPassives})`;
+            document.getElementById('passive-count-display').innerText = `(포인트: ${usedPoints}/${maxPoints})`;
         }
 
         function onDifficultyChange() {
             const diff = document.getElementById('start-difficulty').value;
-            maxStartingPassives = diff === 'easy' ? 3 : (diff === 'normal' ? 4 : 5);
+            let maxPoints = diff === 'easy' ? 10 : (diff === 'normal' ? 8 : 6);
             
             const cbs = document.querySelectorAll('.start-passive-cb');
-            let checkedTotal = 0;
+            let usedPoints = 0;
             
-            // 허용 개수보다 많이 체크되어있다면 밑에서부터 해제
             cbs.forEach(cb => {
                 if(cb.checked) {
-                    if(checkedTotal >= maxStartingPassives) {
+                    let cost = parseInt(cb.dataset.cost);
+                    if(usedPoints + cost > maxPoints) {
                         cb.checked = false;
                     } else {
-                        checkedTotal++;
+                        usedPoints += cost;
                     }
                 }
             });
@@ -407,7 +408,7 @@
         function spawnDevBoss() {
             if(gameState !== 'PLAYING') return;
             let lvl = parseInt(document.getElementById('dev-boss-lvl').value) || 1;
-            let bh = 250 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd + 0.05, Math.max(0, lvl - 1));
+            let bh = 180 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, Math.max(0, lvl - 1));
             enemies.push({ x: canvasWidth/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, isDevTest: true, burnTimer: 0 });
             globalShakeTimer = 40;
             closeDevMode();
@@ -417,7 +418,7 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<100; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                let swarmHp = Math.max(1, (1 + bossKills * 0.8) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.05, bossKills));
+                let swarmHp = Math.max(1, (1 + bossKills * 0.5) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                 enemies.push({ x: Math.random()*canvasWidth, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
             }
             closeDevMode();
@@ -436,7 +437,6 @@
                 </div>
             `;
             
-            // 개발자 툴에는 전체 스킬 노출
             const devSkillMap = passivesData.concat([
                 { id: 'lvl_shotgun', max: 1, name: '💠 샷건 (x2 배수)' },
                 { id: 'lvl_boom_split', max: 5, name: '🪃 부메랑 분열' },
@@ -833,7 +833,7 @@
         }
 
         function spawnParticles(x, y, color, count, speedMult = 1) {
-            if (particles.length > 50) return; // 파티클 극단적 제한 (최적화)
+            if (particles.length > 50) return; 
             for(let i=0; i<count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 8 * speedMult, vy: (Math.random() - 0.5) * 8 * speedMult, life: 25, maxLife: 25, size: 3 + Math.random()*3, color: color, isAoE: false }); }
         }
 
@@ -860,7 +860,7 @@
                 let s = stars[i];
                 s.y += isBossStage || isBossWarning || isSwarm ? s.v*3 : s.v; 
                 if(s.y > canvasHeight) { s.y = -10; s.x = Math.random()*canvasWidth; } 
-                ctx.moveTo(s.x, s.y);
+                ctx.moveTo(s.x + s.s, s.y);
                 ctx.arc(s.x, s.y, s.s, 0, Math.PI*2);
             }
             ctx.fill();
@@ -887,8 +887,8 @@
                             let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); 
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
-                                // 초반 밸런스 완전 하향 조정
-                                let swarmHp = Math.max(1, (1 + bossKills * 0.8) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.05, bossKills));
+                                // 초반 밸런스 파격 완화
+                                let swarmHp = Math.max(1, (1 + bossKills * 0.5) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                                 enemies.push({ x: Math.random()*canvasWidth, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
                         }
@@ -898,8 +898,8 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 80) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
-                                // 초반 밸런스 완전 하향 조정
-                                let normHp = Math.max(1, (1.5 + bossKills * 1.2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.05, bossKills));
+                                // 초반 밸런스 파격 완화
+                                let normHp = Math.max(1, (1.5 + bossKills * 1.0) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
                                 enemies.push({ x: Math.random()*canvasWidth, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
                         }
@@ -926,7 +926,7 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    let bh = 200 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd + 0.05, bossKills);
+                    let bh = 180 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
                     enemies.push({ x: canvasWidth/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
@@ -975,9 +975,7 @@
 
                 let hitAny = false;
                 let fbRadius = fb.w / 2;
-                let fbRadiusSq = fbRadius * fbRadius;
 
-                // 극한 최적화: 3프레임에 1번만 데미지 연산 (대신 3배의 딜 적용)
                 if (frameCount % 3 === 0) {
                     let actualDmg = fb.dmg * 3;
                     enemies.forEach(e => {
@@ -1310,7 +1308,6 @@
                     if(o.timer <= 0) {
                         o.state = 'explode'; o.timer = 30; globalShakeTimer = 40;
                         let rSq = o.r * o.r;
-                        // 극한 최적화: 1프레임 렉 방지를 위해 한번에 데미지 적용
                         enemies.forEach(e => { 
                             if((e.x - o.x)*(e.x - o.x) + (e.y - o.y)*(e.y - o.y) < rSq) {
                                 e.hp -= o.dmg; if(e.isBoss && !e.isDevTest) e.iframe = 4;
@@ -1344,7 +1341,7 @@
                     shurikens.forEach(s => {
                         if (s.state === 'orbit') {
                             let t = enemies.find(e=>e.isBoss) || enemies[0];
-                            if(t) { let dx=t.x-s.x, dy=t.y-s.y, d=Math.sqrt(dx*dx+dy*dy); s.vx=(dx/d)*18; s.vy=(dy/d)*18; } else { s.vx=0; s.vy=-18; }
+                            if(t) { let dx=t.x-s.x, dy=t.y-s.y, d=Math.sqrt(dx*dx+dy*dy)||1; s.vx=(dx/d)*18; s.vy=(dy/d)*18; } else { s.vx=0; s.vy=-18; }
                             s.state='pierce';
                         }
                     });
@@ -1435,9 +1432,8 @@
                     let e = enemies[j];
                     if(Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         
-                        // 극한 최적화: pierce 연산 시 includes 검사를 배열이 아닌 객체 속성처럼 우회 (불필요한 루프 방지)
                         if (b.pierce > 0 && !b.enhanced && !b.isBhSeed) {
-                            if (b.hitLog.includes(e)) continue; // 이미 때린 적 패스
+                            if (b.hitLog.includes(e)) continue; 
                         }
 
                         if (b.isBhSeed) {

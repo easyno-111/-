@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V50 초반 든든 지원 패치)</title>
+    <title>로그라이트 화력 슈팅 (V51 프리징 완벽 해결)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -75,7 +75,6 @@
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
         .dev-input { width: 60px; text-align: center; border-radius: 5px; border: 1px solid #00a8ff; outline: none; background: #111; color: white; font-weight: bold; padding: 4px; }
         
-        /* 커스텀 스크롤바 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111; border-radius: 3px; }
         ::-webkit-scrollbar-thumb { background: #00a8ff; border-radius: 3px; }
@@ -120,7 +119,6 @@
                 </select>
 
                 <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 지원 <span id="passive-count-display" style="color:white; float:right;">(0/4)</span></label>
-                <!-- 다중 선택 가능한 체크박스 리스트 -->
                 <div id="start-passives-list" style="background: #111; padding: 10px; border-radius: 5px; border: 1px solid #00ffff; max-height: 120px; overflow-y: auto; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <!-- JS로 렌더링됨 -->
                 </div>
@@ -298,8 +296,7 @@
             { id: 'lvl_punch_split', max: 5, name: '💥 냥냥펀치 메가스탬프' }
         ];
 
-        // --- 초기 특성 선택 로직 ---
-        let maxStartingPassives = 4; // 기본 노말은 4개
+        let maxStartingPassives = 4;
         const startingPassivesData = [
             { id: 'lvl_atk', name: '⚔️ 공격력 UP' },
             { id: 'lvl_firespeed', name: '🔫 연사 속도 UP' },
@@ -317,7 +314,6 @@
             startingPassivesData.forEach((sp, idx) => {
                 let label = document.createElement('label');
                 label.style.cssText = "color:#dfe6e9; font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;";
-                // 기본으로 첫 번째 특성 1개 정도는 체크되도록 설정
                 let isChecked = idx === 0 ? "checked" : "";
                 label.innerHTML = `<input type="checkbox" class="start-passive-cb" value="${sp.id}" onchange="checkStartPassives(event)" ${isChecked} style="transform:scale(1.2);"> <span>${sp.name}</span>`;
                 list.appendChild(label);
@@ -333,13 +329,11 @@
             let checkedCount = 0;
             cbs.forEach(cb => { if(cb.checked) checkedCount++; });
             
-            // 만약 제한을 넘겼다면 현재 클릭한 것을 강제로 해제
             if (checkedCount > maxStartingPassives && event && event.target) {
                 event.target.checked = false;
                 checkedCount--;
             }
             
-            // 남은 체크박스 활성화/비활성화 처리
             cbs.forEach(cb => {
                 if (!cb.checked) {
                     cb.disabled = (checkedCount >= maxStartingPassives);
@@ -355,7 +349,6 @@
             
             const cbs = document.querySelectorAll('.start-passive-cb');
             let checkedCount = 0;
-            // 허용 개수보다 많이 체크되어있다면 밑에서부터 해제
             cbs.forEach(cb => {
                 if(cb.checked) {
                     if(checkedCount >= maxStartingPassives) {
@@ -367,7 +360,6 @@
             });
             checkStartPassives();
         }
-        // -----------------------
 
         function openDevMode() { document.getElementById('dev-panel').style.display='block'; renderDevSkills(); }
         function closeDevMode() { document.getElementById('dev-panel').style.display='none'; }
@@ -509,10 +501,7 @@
             add('lvl_fire_boom', 5, '🔥 지옥불 부메랑', fbDesc, () => { p.lvl_fire_boom++; recalculateStats(); }, 'type-skill', p.lvl_fire_boom > 0 ? 0.4 : 0.01, false, false, true);
 
             add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
-            
-            // 밸런스 조정: 자연 회복 효과 설명 텍스트 변경
             add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 1.5씩 지속적으로 대폭 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
-            
             let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
@@ -559,7 +548,6 @@
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
             };
             
-            // 체크된 초기 패시브 스킬 모두 1레벨 지급
             const cbs = document.querySelectorAll('.start-passive-cb');
             cbs.forEach(cb => {
                 if (cb.checked) {
@@ -736,8 +724,21 @@
                 let card = document.createElement('div'); card.className = cardClass;
                 card.innerHTML = `<div class="ab-name">${ab.name}</div><div class="ab-desc">${ab.desc}</div>`;
                 card.onclick = () => { 
-                    ab.apply(); p.level++; p.maxExp = Math.floor(p.maxExp * 1.35); p.exp = 0; 
-                    document.getElementById('levelup-screen').style.display = 'none'; gameState = 'PLAYING'; updateUI(); 
+                    ab.apply(); p.level++; 
+                    // 레벨업 초과 경험치 이월 처리 및 중복 레벨업 방지
+                    p.exp -= p.maxExp;
+                    if(p.exp < 0) p.exp = 0;
+                    p.maxExp = Math.floor(p.maxExp * 1.35); 
+                    
+                    document.getElementById('levelup-screen').style.display = 'none'; 
+                    gameState = 'PLAYING'; 
+                    updateUI(); 
+                    
+                    if (p.exp >= p.maxExp) {
+                        setTimeout(() => {
+                            if (gameState === 'PLAYING') triggerLevelUp();
+                        }, 100);
+                    }
                 };
                 cont.appendChild(card);
             });
@@ -796,8 +797,14 @@
             if(dt < frameDelay) return; lastTime = timestamp - (dt % frameDelay);
             if(gameState !== 'PLAYING') return; frameCount++; ctx.clearRect(0,0,canvas.width,canvas.height);
 
-            // 밸런스 조정: 자연회복 1.5배 (기존 0.2)로 대폭 상향
-            if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 1.5); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
+            // UI 렉 방지용 배치 처리 변수
+            let uiNeedsUpdate = false;
+
+            if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { 
+                p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 1.5); 
+                spawnParticles(p.x, p.y, '#2ecc71', 2); 
+                uiNeedsUpdate = true; 
+            }
 
             ctx.fillStyle = isBossWarning ? '#300000' : 'white';
             ctx.globalAlpha = 0.3;
@@ -814,7 +821,7 @@
 
             ctx.save();
             if(globalShakeTimer > 0) { ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); globalShakeTimer--; }
-            if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; updateUI(); } else if(p.skillTimer%60===0) updateUI(); }
+            if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; uiNeedsUpdate = true; } else if(p.skillTimer%60===0) uiNeedsUpdate = true; }
             if(p.iframe > 0) { p.iframe--; }
 
             if (!isBossStage && !isBossWarning && !devStopSpawn) {
@@ -1602,20 +1609,35 @@
                 
                 if(e.hp<=0) { 
                     score+=e.isBoss?1000:10; 
-                    if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
+                    if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); uiNeedsUpdate = true; }
                     
                     spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?15:3); 
 
                     if(e.isBoss && !e.isDevTest){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 
                         bossSpawnTimer = BOSS_SPAWN_INTERVAL;
-                        if(bossKills>=WIN_CONDITION) {gameEnd(true); return;} else {p.exp+=p.maxExp; updateUI();}
+                        if(bossKills>=WIN_CONDITION) {gameEnd(true); return;} 
+                        else {
+                            p.exp+=p.maxExp; 
+                            uiNeedsUpdate = true;
+                        }
                     } else if(!e.isDevTest) { 
                         p.exp += (2 + Math.floor(bossKills / 2)); 
                     }
-                    enemies.splice(i,1); if(p.exp>=p.maxExp) triggerLevelUp(); updateUI(); 
+                    enemies.splice(i,1); 
+                    
+                    // 핵심 최적화: 레벨업 조건 충족 시 게임상태를 체크하여 중복 호출 방지
+                    if (p.exp >= p.maxExp && gameState === 'PLAYING') {
+                        triggerLevelUp(); 
+                    }
+                    uiNeedsUpdate = true; 
                 }
-                else if(e.y > canvas.height+50) { p.hp-=e.isBoss?50:5; enemies.splice(i,1); updateUI(); if(p.hp<=0) {gameEnd(false); return;} }
+                else if(e.y > canvas.height+50) { 
+                    p.hp -= e.isBoss ? 50 : 5; 
+                    enemies.splice(i,1); 
+                    uiNeedsUpdate = true; 
+                    if(p.hp<=0) {gameEnd(false); return;} 
+                }
             }
 
             for (let i = bossBullets.length - 1; i >= 0; i--) {
@@ -1626,7 +1648,7 @@
                 ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r/2, 0, Math.PI*2); ctx.fill(); 
 
                 if (p.iframe <= 0 && Math.abs(bb.x - p.x) < p.w/2 && Math.abs(bb.y - p.y) < p.h/2) {
-                    p.hp -= bb.dmg; p.iframe = 30; spawnParticles(p.x, p.y, '#ff0000', 15, 2); globalShakeTimer = 10; updateUI(); bossBullets.splice(i, 1);
+                    p.hp -= bb.dmg; p.iframe = 30; spawnParticles(p.x, p.y, '#ff0000', 15, 2); globalShakeTimer = 10; uiNeedsUpdate = true; bossBullets.splice(i, 1);
                     if (p.hp <= 0) { gameEnd(false); return; } continue;
                 }
                 if(bb.y > canvas.height + 50 || bb.x < -50 || bb.x > canvas.width + 50) bossBullets.splice(i, 1);
@@ -1666,10 +1688,13 @@
             }
 
             ctx.restore();
+
+            // 렌더링 끝난 후 모아둔 UI 업데이트 한 번만 실행 (성능 최적화 핵심)
+            if (uiNeedsUpdate) updateUI();
+
             requestAnimationFrame(gameLoop);
         }
 
-        // 초기 시작 시 패시브 목록 렌더링 호출
         renderStartPassives();
         requestAnimationFrame(gameLoop);
     </script>

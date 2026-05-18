@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.5)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.6)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -166,6 +166,30 @@
         .fw-btn { background: var(--dark-bg); color: var(--neon-blue); border-color: var(--neon-blue); font-family: 'Orbitron'; }
         .fw-btn:hover { background: var(--neon-blue); color: var(--dark-bg); }
 
+        /* ==================== ⭐ 플로팅 좌우 이동 화살표 (신규) ==================== */
+        .float-nav-btn {
+            position: fixed; top: 50%; transform: translateY(-50%);
+            background: var(--primary); color: white; border: none;
+            cursor: pointer; z-index: 3500; display: none; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); align-items: center; justify-content: center;
+        }
+        .float-nav-btn.left { 
+            left: 20px; width: 50px; height: 50px; border-radius: 50%; font-size: 20px; opacity: 0.5; 
+        }
+        .float-nav-btn.left:hover { opacity: 1; transform: translateY(-50%) scale(1.1); }
+        
+        .float-nav-btn.right {
+            right: 30px; width: 80px; height: 80px; border-radius: 20px; flex-direction: column;
+            animation: pulse-glow 2s infinite; opacity: 1;
+        }
+        .float-nav-btn.right:hover { transform: translateY(-50%) scale(1.05); }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 122, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 122, 255, 0); }
+        }
+
         /* ==================== 📄 스테이지 레이아웃 ==================== */
         #stages-perspective {
             position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 80px);
@@ -180,18 +204,34 @@
             display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
         }
 
+        /* ⭐ 아이패드 최적화: 강제 두꺼운 스크롤바 상시 유지 완벽판 */
         .activity-card {
             background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px;
             width: 100%; max-width: 1400px; height: 100%; display: flex; flex-direction: column; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 0 auto; position: relative;
             
-            overflow-y: scroll !important; -webkit-overflow-scrolling: touch;
+            overflow-y: scroll !important; /* 상시 스크롤 가능 */
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
-        .activity-card::-webkit-scrollbar { width: 20px !important; display: block !important; -webkit-appearance: none !important; }
-        .activity-card::-webkit-scrollbar-track { background-color: #f0f0f5 !important; border-radius: 10px; border-left: 1px solid var(--border-color); }
-        .activity-card::-webkit-scrollbar-thumb { background-color: #b0b0b5 !important; border-radius: 10px !important; border: 4px solid #f0f0f5 !important; }
-        .activity-card::-webkit-scrollbar-thumb:hover { background-color: #8e8e93 !important; }
+        /* iOS에서 숨겨지지 않도록 배경색을 명시적으로 깔아버림 */
+        .activity-card::-webkit-scrollbar { 
+            width: 24px !important; 
+            display: block !important; 
+        }
+        .activity-card::-webkit-scrollbar-track { 
+            background: #e5e5ea !important; /* 선명한 트랙 색상 */
+            border-left: 2px solid var(--border-color); 
+        }
+        .activity-card::-webkit-scrollbar-thumb { 
+            background: #8e8e93 !important; /* 진한 회색 썸 */
+            border-radius: 12px !important; 
+            border: 4px solid #e5e5ea !important; /* 트랙과 분리 */
+        }
+        .activity-card::-webkit-scrollbar-thumb:hover { 
+            background: #57575a !important; 
+        }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid var(--border-color); text-align: center; background: #fafafa; border-radius: 24px 24px 0 0; flex-shrink: 0; }
         .step-tag { font-family: 'Orbitron'; color: var(--primary); font-size: clamp(14px, 1.8vw, 20px); font-weight: bold; letter-spacing: 1px; }
@@ -252,6 +292,12 @@
 </head>
 <body>
 
+    <button type="button" id="float-prev-btn" class="float-nav-btn left" onclick="moveStage(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+    <button type="button" id="float-next-btn" class="float-nav-btn right" onclick="moveStage(1)">
+        <i class="fa-solid fa-chevron-right" style="font-size: 28px;"></i>
+        <span style="font-size: 12px; margin-top: 5px; font-weight: 900;">NEXT</span>
+    </button>
+
     <div id="team-input-modal" class="modal-overlay">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <h2 style="color:var(--text-main); margin-bottom: 10px; font-weight: 900;">🕵️‍♂️ 요원 소속 등록</h2>
@@ -281,8 +327,7 @@
             <p style="color: var(--accent); font-weight: bold; text-align: center; margin-bottom: 20px; font-size: 18px;">
                 👇 아래 생성된 이미지들을 손가락으로 꾹 눌러서(Long-press) '사진 앱에 저장' 하세요! 👇
             </p>
-            <div id="report-grid-container" class="report-grid">
-                </div>
+            <div id="report-grid-container" class="report-grid"></div>
         </div>
     </div>
 
@@ -293,7 +338,7 @@
 
     <div id="launch-overlay">
         <button type="button" class="access-btn" onclick="initMission()">MISSION START</button>
-        <button type="button" class="resume-btn" onclick="resumeLearning()"><i class="fa-solid fa-rotate-right"></i> 다시 학습하기 (세이브 복구)</button>
+        <button type="button" class="resume-btn" onclick="resumeLearning()"><i class="fa-solid fa-rotate-right"></i> 다시 학습하기 (자유 이동)</button>
     </div>
 
     <div id="firework-wrapper">
@@ -339,28 +384,26 @@
                         <div class="step-tag">STAGE 01. 생각 열기</div>
                         <div class="card-title">이차함수 <span class="math">y = x² - 6x + 10</span> 탐구</div>
                     </div>
-                    <div class="card-body">
-                        <div class="flex-row">
-                            <div class="panel" style="flex: 1.2;">
-                                <h3>1️⃣ 실수 전체 범위일 때, 이차함수의 최댓값과 최솟값을 선택하세요.</h3>
-                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
-                                    최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
-                                    최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
-                                    <button type="button" class="check-btn" onclick="checkQ1()" style="width: auto;">확인</button>
-                                </div>
-                                <div class="feedback" id="fb-q1"></div>
+                    <div class="card-body flex-row">
+                        <div class="panel" style="flex: 1.2;">
+                            <h3>1️⃣ 실수 전체 범위일 때, 이차함수의 최댓값과 최솟값을 선택하세요.</h3>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                                최댓값: <select id="q1-max"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select> 
+                                최솟값: <select id="q1-min"><option value="">선택</option><option value="x">없음</option><option value="10">10</option><option value="1">1</option></select>
+                                <button type="button" class="check-btn" onclick="checkQ1()" style="width: auto;">확인</button>
+                            </div>
+                            <div class="feedback" id="fb-q1"></div>
 
-                                <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
-                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                                    <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
-                                    <button type="button" class="check-btn" onclick="checkQ2()" style="width: auto;">확인</button>
-                                </div>
-                                <div class="feedback" id="fb-q2"></div>
+                            <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
+                                <button type="button" class="check-btn" onclick="checkQ2()" style="width: auto;">확인</button>
                             </div>
-                            <div class="panel" style="display: flex; flex-direction: column;">
-                                <canvas id="math-canvas" style="width:100%; flex:1; min-height:280px; background:white; border-radius:10px; border:2px solid var(--border-color);"></canvas>
-                                <button type="button" class="check-btn" style="margin-top: 15px;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
-                            </div>
+                            <div class="feedback" id="fb-q2"></div>
+                        </div>
+                        <div class="panel" style="display: flex; flex-direction: column;">
+                            <canvas id="math-canvas" style="width:100%; flex:1; min-height:280px; background:white; border-radius:10px; border:2px solid var(--border-color);"></canvas>
+                            <button type="button" class="check-btn" style="margin-top: 15px;" onclick="drawLimitLines()">x=1, x=4 직선 긋기</button>
                         </div>
                         <button type="button" class="unlock-btn" id="s0-unlock-btn" disabled>🔒 1번, 2번 정답을 모두 맞히세요</button>
                     </div>
@@ -670,9 +713,16 @@
             }
         }
 
+        // ⭐ UI 업데이트 시 플로팅 버튼(NEXT) 표시 로직 추가
         function updateNavUI() {
             document.getElementById('prev-btn').disabled = (currentStage === 0);
             document.getElementById('next-btn').disabled = (currentStage >= maxUnlockedStage);
+            
+            // 미션을 해제했다면 플로팅 다음 화살표 표시
+            if (contentRevealed) {
+                document.getElementById('float-prev-btn').style.display = (currentStage > 0) ? 'flex' : 'none';
+                document.getElementById('float-next-btn').style.display = (currentStage < maxUnlockedStage) ? 'flex' : 'none';
+            }
             
             const dots = document.querySelectorAll('.stage-dot');
             dots.forEach((dot, index) => {
@@ -691,7 +741,7 @@
         function unlockNextStage(btnElem = null) {
             if (currentStage === maxUnlockedStage && maxUnlockedStage < totalStages - 1) {
                 maxUnlockedStage++;
-                updateNavUI();
+                updateNavUI(); // 여기서 플로팅 버튼이 나타남
             }
             if (btnElem) {
                 btnElem.innerText = "✅ 미션 완료됨";
@@ -705,6 +755,10 @@
         function jumpToStage(targetIndex) {
             if (isTransitioning || targetIndex > maxUnlockedStage || targetIndex === currentStage) return;
             isTransitioning = true;
+            
+            // 이동 중 플로팅 버튼 숨기기
+            document.getElementById('float-prev-btn').style.display = 'none';
+            document.getElementById('float-next-btn').style.display = 'none';
             
             const doorOverlay = document.getElementById('door-transition');
             const leftDoor = document.getElementById('trans-door-left');
@@ -741,7 +795,7 @@
         };
 
         // ==========================================
-        // ⭐ 전체 갤러리 리포트 생성 기능 (캔버스 합성)
+        // ⭐ 전체 갤러리 리포트 생성 기능 
         // ==========================================
         function openReportModal() {
             const modal = document.getElementById('report-modal');
@@ -786,17 +840,9 @@
                         if (imgObj && imgObj.complete && imgObj.naturalHeight !== 0) {
                             const imgRatio = imgObj.naturalWidth / imgObj.naturalHeight;
                             const cvsRatio = tempCvs.width / tempCvs.height;
-                            let drawW = tempCvs.width;
-                            let drawH = tempCvs.height;
-                            let dx = 0; let dy = 0;
-                            
-                            if (imgRatio > cvsRatio) {
-                                drawH = tempCvs.width / imgRatio;
-                                dy = (tempCvs.height - drawH) / 2;
-                            } else {
-                                drawW = tempCvs.height * imgRatio;
-                                dx = (tempCvs.width - drawW) / 2;
-                            }
+                            let drawW = tempCvs.width; let drawH = tempCvs.height; let dx = 0; let dy = 0;
+                            if (imgRatio > cvsRatio) { drawH = tempCvs.width / imgRatio; dy = (tempCvs.height - drawH) / 2; } 
+                            else { drawW = tempCvs.height * imgRatio; dx = (tempCvs.width - drawW) / 2; }
                             tCtx.drawImage(imgObj, dx, dy, drawW, drawH);
                         }
                     }
@@ -806,7 +852,6 @@
                     if (tempCvs.width > 0) {
                         hasData = true;
                         const dataUrl = tempCvs.toDataURL('image/png');
-                        
                         const div = document.createElement('div');
                         div.className = 'report-item';
                         div.innerHTML = `<h4>${item.name}</h4><img src="${dataUrl}" alt="${item.name}">`;
@@ -830,7 +875,7 @@
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if(audioCtx.state === 'suspended') audioCtx.resume();
-            } catch(e) { console.log("Audio Init Error", e); }
+            } catch(e) {}
             
             document.getElementById('launch-overlay').style.display = 'none';
             document.getElementById('bottom-nav').classList.add('visible');
@@ -961,7 +1006,7 @@
         }
 
         // ==========================================
-        // 3. 글로벌 통합 그리기 시스템 (지우개 커서 가시성 강화)
+        // 3. 글로벌 통합 그리기 시스템 (지우개 커서)
         // ==========================================
         let drawState = { isDrawing: false, tool: 'pen', color: '#007aff', eraserSize: 30 };
         
@@ -1128,7 +1173,6 @@
         }
 
         function checkQ2() {
-            // 소수점 입력 및 공백 대응을 위해 parseFloat 활용
             const minVal = parseFloat(document.getElementById('q2-min').value);
             const maxVal = parseFloat(document.getElementById('q2-max').value);
             const fb = document.getElementById('fb-q2');
@@ -1202,7 +1246,6 @@
             });
         });
 
-        // Stage 4 퀴즈 체크
         function checkStage3Unlock(btn) {
             let allFilled = true;
             document.querySelectorAll('#stage-4-selects select').forEach(s => { if (s.value === "") allFilled = false; });

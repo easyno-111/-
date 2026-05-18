@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V53 스킬 포인트 & 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V53v 스킬 포인트 & 극한 다단히트 최적화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -49,7 +49,6 @@
 
         .chest-box { font-size: 80px; cursor: pointer; transition: transform 0.2s; z-index: 2; position: relative; }
         #beam-container { position: absolute; bottom: 40px; left: 50%; width: 0; height: 0; z-index: 1; }
-        /* 최적화: GPU 과부하를 유발하는 filter: blur 와 mix-blend-mode 제거 */
         .beam { position: absolute; bottom: 0; left: -30px; width: 60px; height: 800px; transform-origin: bottom center; opacity: 0; transition: opacity 0.3s, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.5s; }
         
         #flash-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 9999; transition: opacity 0.1s; }
@@ -76,7 +75,6 @@
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
         .dev-input { width: 60px; text-align: center; border-radius: 5px; border: 1px solid #00a8ff; outline: none; background: #111; color: white; font-weight: bold; padding: 4px; }
         
-        /* 커스텀 스크롤바 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #111; border-radius: 3px; }
         ::-webkit-scrollbar-thumb { background: #00a8ff; border-radius: 3px; }
@@ -103,7 +101,7 @@
         </div>
 
         <div class="overlay" id="start-screen">
-            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v53</span></div>
+            <div class="title-text">SURVIVOR<br>SHOOTER <span style="font-size:16px; color:#fff;">v53v</span></div>
 
             <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 90%; max-width: 380px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
@@ -283,16 +281,13 @@
 
         function checkDevMode() { scoreTapCount++; if(scoreTapCount >= 5) { scoreTapCount=0; if(prompt("PW:")==="1563") openDevMode(); } }
         
-        // --- V53: 가중치(포인트) 기반 스킬 선택 데이터 ---
         const passivesData = [
-            // 무기/탄환류 (w)
             { cat: 'w', id: 'lvl_atk', name: '⚔️ 공격력 UP', cost: 2 },
             { cat: 'w', id: 'lvl_firespeed', name: '🔫 연사 속도', cost: 2 },
             { cat: 'w', id: 'lvl_pierce', name: '🏹 평타 관통', cost: 2 },
             { cat: 'w', id: 'lvl_bullet', name: '💥 탄환 확산', cost: 3 },
             { cat: 'w', id: 'lvl_homing', name: '✨ 유도 분열탄', cost: 4 },
 
-            // 특수 스킬류 (s)
             { cat: 's', id: 'lvl_skill_dmg', name: '🪄 스킬 데미지', cost: 2 },
             { cat: 's', id: 'lvl_skill_cd', name: '⏳ 스킬 쿨감', cost: 3 },
             { cat: 's', id: 'lvl_lightning', name: '⚡ 연쇄 번개', cost: 4 },
@@ -302,7 +297,6 @@
             { cat: 's', id: 'lvl_shuriken', name: '🌟 수호 표창', cost: 4 },
             { cat: 's', id: 'lvl_fire_boom', name: '🔥 불 부메랑', cost: 5 },
 
-            // 보조/생존류 (u)
             { cat: 'u', id: 'lvl_regen', name: '💖 자연 회복', cost: 2 },
             { cat: 'u', id: 'lvl_vampire', name: '🧛 처치시 흡혈', cost: 3 },
             { cat: 'u', id: 'lvl_blackhole', name: '🌌 블랙홀 탄환', cost: 5 }
@@ -332,7 +326,6 @@
                 });
             });
 
-            // 기본값: 공격력(2P), 자연회복(2P) 체크
             document.querySelector('input[value="lvl_atk"]').checked = true;
             document.querySelector('input[value="lvl_regen"]').checked = true;
             
@@ -342,7 +335,7 @@
         function checkStartPassives(event) {
             const diff = document.getElementById('start-difficulty').value;
             let maxPoints = diff === 'easy' ? 10 : (diff === 'normal' ? 8 : 6);
-            const MAX_PER_CATEGORY = 2; // 카테고리당 최대 2개
+            const MAX_PER_CATEGORY = 2;
             
             const cbs = document.querySelectorAll('.start-passive-cb');
             let usedPoints = 0;
@@ -355,7 +348,6 @@
                 }
             });
             
-            // 포인트 초과 또는 카테고리 초과 시 클릭 취소
             if (event && event.target && event.target.checked) {
                 let targetCat = event.target.dataset.cat;
                 let cost = parseInt(event.target.dataset.cost);
@@ -366,7 +358,6 @@
                 }
             }
             
-            // UI 상태 반영
             cbs.forEach(cb => {
                 if (!cb.checked) {
                     let cost = parseInt(cb.dataset.cost);
@@ -398,7 +389,6 @@
             });
             checkStartPassives();
         }
-        // -----------------------
 
         function openDevMode() { document.getElementById('dev-panel').style.display='block'; renderDevSkills(); }
         function closeDevMode() { document.getElementById('dev-panel').style.display='none'; }
@@ -554,7 +544,7 @@
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
             if (p.activeSkillType === 'boomerang') {
-                add('lvl_boom_split', 5, '🎇 부메랑 분열', '부메랑이 적 타격 시 5갈래로 퍼졌다가 다시 타격 지점으로 되돌아옵니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
+                add('lvl_boom_split', 5, '🎇 부메랑 분열 (반복 타격)', '부메랑이 몹에 꽂혀 다단히트 후 분열하며, 여러 번 제자리로 돌아오며 폭발을 반복합니다.', () => { p.lvl_boom_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'laser') {
                 add('lvl_laser_split', 5, '🔱 레이저 갈래', '레이저가 부채꼴 모양으로 여러 갈래로 넓게 휩씁니다.', () => { p.lvl_laser_split++; recalculateStats(); }, 'type-skill', 0.6);
             } else if (p.activeSkillType === 'punch') {
@@ -721,11 +711,13 @@
                     }, 2000);
                     
                     setTimeout(() => {
+                        // 극한 최적화: 블러/블렌딩 대신 깔끔한 투명도 애니메이션으로 처리 (팅김 방지)
                         let flash = document.getElementById('flash-overlay');
+                        flash.style.background = 'rgba(255,255,255,0.9)';
                         flash.style.transition = 'opacity 0.1s';
                         flash.style.opacity = '1';
                         setTimeout(() => {
-                            flash.style.transition = 'opacity 1.5s ease-out';
+                            flash.style.transition = 'opacity 1.0s ease-out';
                             flash.style.opacity = '0';
                         }, 100);
 
@@ -796,9 +788,14 @@
             if(p.skillTimer > 0 || gameState !== 'PLAYING') return;
             p.skillTimer = p.skillCooldownMax;
             
+            // V53 부메랑 다단히트/무한분열 리워크 대응
             if(p.activeSkillType === 'boomerang') {
                 let sd = 30 * p.skill_mult;
-                activeSkills.push({ type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, vx: p.vx*0.3, vy: -15, state: 'flying_out', baseDmg: sd, dmg: sd, hitLog: [] });
+                activeSkills.push({ 
+                    type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, 
+                    vx: p.vx*0.3, vy: -15, state: 'flying_out', 
+                    baseDmg: sd, dmg: sd, hitLog: new WeakSet() // 메모리 누수 방지
+                });
             }
             else if(p.activeSkillType === 'laser') { 
                 let sd = 2 * p.skill_mult; 
@@ -887,9 +884,9 @@
                             let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); 
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
-                                // 초반 밸런스 파격 완화
-                                let swarmHp = Math.max(1, (1 + bossKills * 0.5) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvasWidth, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
+                                // 초반 구간 몹 체력 더 완화
+                                let swarmHp = Math.max(1, (1 + bossKills * 0.4) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                enemies.push({ id: Math.random(), x: Math.random()*canvasWidth, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
                         }
                     } else if (!isSwarm) {
@@ -898,9 +895,9 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 80) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
-                                // 초반 밸런스 파격 완화
-                                let normHp = Math.max(1, (1.5 + bossKills * 1.0) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
-                                enemies.push({ x: Math.random()*canvasWidth, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
+                                // 초반 구간 일반 몹 체력 완화
+                                let normHp = Math.max(1, (1.2 + bossKills * 0.8) * p.diffMult * Math.pow(1 + p.diffExpAdd, bossKills));
+                                enemies.push({ id: Math.random(), x: Math.random()*canvasWidth, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
                         }
                     }
@@ -927,7 +924,7 @@
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
                     let bh = 180 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd, bossKills);
-                    enemies.push({ x: canvasWidth/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
+                    enemies.push({ id: Math.random(), x: canvasWidth/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;
                     document.getElementById('boss-timer-display').style.display = 'block';
                     globalShakeTimer = 40;
@@ -961,7 +958,8 @@
                         speed: 10 + p.lvl_fire_boom,
                         w: 150 + p.lvl_fire_boom * 30,
                         dmg: 2 * p.skill_mult * (1 + p.lvl_fire_boom * 0.5),
-                        life: 200
+                        life: 200,
+                        vibrateX: 0, vibrateY: 0
                     });
                 }
             }
@@ -975,7 +973,9 @@
 
                 let hitAny = false;
                 let fbRadius = fb.w / 2;
+                let fbRadiusSq = fbRadius * fbRadius;
 
+                // 극한 최적화: 3프레임 연산 유지 + 다단히트 진동 효과
                 if (frameCount % 3 === 0) {
                     let actualDmg = fb.dmg * 3;
                     enemies.forEach(e => {
@@ -992,13 +992,16 @@
                 }
 
                 if (hitAny) {
-                    fb.speed = Math.max(fb.baseSpeed * 0.25, fb.speed - 1.5); 
+                    fb.speed = fb.baseSpeed * 0.15; // 타격시 극도로 느려짐
+                    fb.vibrateX = (Math.random() - 0.5) * 15; // 타격시 엄청난 진동
+                    fb.vibrateY = (Math.random() - 0.5) * 15;
                 } else {
-                    fb.speed = Math.min(fb.baseSpeed, fb.speed + 0.8); 
+                    fb.speed = Math.min(fb.baseSpeed, fb.speed + 1.0); 
+                    fb.vibrateX = 0; fb.vibrateY = 0;
                 }
 
                 ctx.save();
-                ctx.translate(fb.x, fb.y);
+                ctx.translate(fb.x + fb.vibrateX, fb.y + fb.vibrateY);
                 ctx.rotate(fb.angle + Math.PI/2);
                 
                 ctx.fillStyle = '#ff6b81';
@@ -1047,6 +1050,7 @@
             let c_laser = colorLevels.laser[Math.min(5, p.lvl_laser_split||0)];
             let c_punch = colorLevels.punch[Math.min(5, p.lvl_punch_count||0)];
 
+            // V53v 기본 부메랑 대격변 로직
             for(let i=activeSkills.length-1; i>=0; i--) {
                 let sk = activeSkills[i];
                 if(sk.type==='boomerang') {
@@ -1056,59 +1060,127 @@
                         let hitEnemy = null;
                         for(let j=0; j<enemies.length; j++) {
                             let e = enemies[j];
-                            if(!sk.hitLog.includes(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
-                                e.hp -= sk.dmg; sk.hitLog.push(e);
+                            if(!sk.hitLog.has(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
+                                e.hp -= sk.dmg; sk.hitLog.add(e);
                                 if(e.isBoss && !e.isDevTest) e.iframe = 2;
                                 hitEnemy = e; break; 
                             }
                         }
                         
-                        if (hitEnemy && sk.level === 1 && p.lvl_boom_split > 0) {
+                        // 적 명중 시 즉시 분열하지 않고 꽂혀서 진동(hit_freeze)
+                        if (hitEnemy && p.lvl_boom_split > 0) {
+                            sk.state = 'hit_freeze';
+                            sk.timer = 15; // 15프레임간 꽂힘 유지
+                            sk.targetX = hitEnemy.x;
+                            sk.targetY = hitEnemy.y;
+                        } else if (sk.x < -100 || sk.x > canvasWidth+100 || sk.y < -100 || sk.y > canvasHeight+100) {
+                            activeSkills.splice(i, 1); continue;
+                        }
+                    }
+                    else if (sk.state === 'hit_freeze') {
+                        sk.timer--;
+                        sk.vibrateX = (Math.random()-0.5)*10;
+                        sk.vibrateY = (Math.random()-0.5)*10;
+                        
+                        // 꽂혀있는 동안 5프레임마다 광역 다단히트
+                        if (frameCount % 5 === 0) {
+                            let aoeSq = (sk.w/2) * (sk.w/2);
+                            enemies.forEach(e => {
+                                let dx = e.x - sk.x; let dy = e.y - sk.y;
+                                if (dx*dx + dy*dy < aoeSq) { e.hp -= sk.dmg * 0.5; }
+                            });
+                        }
+                        
+                        if (sk.timer <= 0) {
                             let splits = 5; 
                             for(let j=0; j<splits; j++) {
                                 let angle = (Math.PI * 2 / splits) * j;
                                 activeSkills.push({
                                     type: 'boomerang', level: 2, 
-                                    x: hitEnemy.x, y: hitEnemy.y,
-                                    originX: hitEnemy.x, originY: hitEnemy.y,
+                                    x: sk.targetX, y: sk.targetY,
+                                    originX: sk.targetX, originY: sk.targetY,
                                     w: sk.w * 0.6,
+                                    baseVx: Math.cos(angle) * 15, baseVy: Math.sin(angle) * 15,
                                     vx: Math.cos(angle) * 15, vy: Math.sin(angle) * 15,
                                     state: 'sub_flying_out', timer: 20,
-                                    baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: []
+                                    bounces: p.lvl_boom_split - 1, // 레벨에 따라 반복 횟수 결정
+                                    baseDmg: sk.baseDmg * 0.5, dmg: sk.baseDmg * 0.5, hitLog: new WeakSet()
                                 });
                             }
-                            activeSkills.splice(i, 1); continue;
-                        } else if (sk.x < -100 || sk.x > canvasWidth+100 || sk.y < -100 || sk.y > canvasHeight+100) {
                             activeSkills.splice(i, 1); continue;
                         }
                     }
                     else if (sk.state === 'sub_flying_out') {
-                        sk.x += sk.vx; sk.y += sk.vy;
+                        let hitAny = false;
+                        enemies.forEach(e => {
+                            if (!sk.hitLog.has(e) && Math.abs(e.x - sk.x) < sk.w/2 && Math.abs(e.y - sk.y) < sk.w/2) {
+                                e.hp -= sk.dmg; sk.hitLog.add(e); hitAny = true;
+                            }
+                        });
+                        
+                        if (hitAny) {
+                            sk.vx *= 0.5; sk.vy *= 0.5; // 타격 시 느려짐
+                            sk.vibrateX = (Math.random()-0.5)*8;
+                            sk.vibrateY = (Math.random()-0.5)*8;
+                        } else {
+                            sk.vx += (sk.baseVx - sk.vx) * 0.2; // 원상 복구
+                            sk.vy += (sk.baseVy - sk.vy) * 0.2;
+                            sk.vibrateX = 0; sk.vibrateY = 0;
+                        }
+                        
+                        sk.x += sk.vx; 
+                        sk.y += sk.vy;
+                        
                         sk.timer--;
                         if (sk.timer <= 0) {
-                            sk.state = 'sub_returning'; sk.timer = 40; 
-                            sk.hitLog = []; sk.dmg = sk.baseDmg * 2.5; 
+                            sk.state = 'sub_returning'; 
+                            sk.timer = 40; 
+                            sk.hitLog = new WeakSet();
+                            sk.dmg = sk.baseDmg * 2.5; 
                         }
                     }
                     else if (sk.state === 'sub_returning') {
                         let dx = sk.originX - sk.x; let dy = sk.originY - sk.y;
-                        let distSq = dx*dx + dy*dy;
-                        let dist = Math.sqrt(distSq);
-                        sk.x += (dx / (dist || 1)) * 18; sk.y += (dy / (dist || 1)) * 18;
-                        sk.timer--;
-                        if (dist < 20 || sk.timer <= 0) { activeSkills.splice(i, 1); continue; }
-                    }
-
-                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(frameCount*0.4); ctx.fillStyle=c_boom; ctx.fillRect(-sk.w/2, -8, sk.w, 16); ctx.fillRect(-8, -sk.w/2, 16, sk.w); ctx.restore();
-                    
-                    if (sk.state !== 'flying_out') { 
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        sk.x += (dx / (dist || 1)) * 18; 
+                        sk.y += (dy / (dist || 1)) * 18;
+                        
+                        let hitAny = false;
                         enemies.forEach(e => {
-                            if(!sk.hitLog.includes(e) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
-                                e.hp -= sk.dmg; sk.hitLog.push(e);
-                                if(e.isBoss && !e.isDevTest) e.iframe = 2;
+                            if (!sk.hitLog.has(e) && Math.abs(e.x - sk.x) < sk.w/2 && Math.abs(e.y - sk.y) < sk.w/2) {
+                                e.hp -= sk.dmg; sk.hitLog.add(e); hitAny = true;
                             }
                         });
+                        if (hitAny) {
+                            sk.vibrateX = (Math.random()-0.5)*8; sk.vibrateY = (Math.random()-0.5)*8;
+                        } else {
+                            sk.vibrateX = 0; sk.vibrateY = 0;
+                        }
+                        
+                        sk.timer--;
+                        if (dist < 20 || sk.timer <= 0) { 
+                            if (sk.bounces > 0) { // 추가 폭발 횟수가 남았다면
+                                sk.bounces--;
+                                sk.state = 'sub_flying_out';
+                                sk.timer = 20;
+                                sk.hitLog = new WeakSet();
+                                sk.vx = sk.baseVx; sk.vy = sk.baseVy;
+                                sk.dmg = sk.baseDmg;
+                            } else {
+                                activeSkills.splice(i, 1); continue; 
+                            }
+                        }
                     }
+
+                    // 부메랑 그리기 및 진동 적용
+                    ctx.save(); 
+                    ctx.translate(sk.x + (sk.vibrateX||0), sk.y + (sk.vibrateY||0)); 
+                    ctx.rotate(frameCount*0.4); 
+                    ctx.fillStyle=c_boom; 
+                    ctx.fillRect(-sk.w/2, -8, sk.w, 16); 
+                    ctx.fillRect(-8, -sk.w/2, 16, sk.w); 
+                    ctx.restore();
 
                 } else if(sk.type==='laser') {
                     sk.life--; sk.x = p.x; sk.y = p.y - 20;
@@ -1333,7 +1405,7 @@
             if(p.lvl_shuriken_active) {
                 if(frameCount % 60 === 0) {
                     let activeCount = 0; for(let j=0; j<shurikens.length; j++) if(shurikens[j].state==='orbit') activeCount++;
-                    if (activeCount < p.shurikenLimit) shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: [] }); 
+                    if (activeCount < p.shurikenLimit) shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: new WeakSet() }); 
                 }
                 
                 let activeCount = 0; for(let j=0; j<shurikens.length; j++) if(shurikens[j].state==='orbit') activeCount++;
@@ -1357,12 +1429,10 @@
                     let shuDmg = 5 * p.skill_mult * (1 + p.lvl_shuriken * 0.2);
                     
                     enemies.forEach(e => {
-                        if(Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
-                            if(!s.hitLog.includes(e)) {
-                                e.hp -= shuDmg; 
-                                s.hitLog.push(e);
-                                if(frameCount%5===0) spawnParticles(s.x, s.y, c_shuri, 1); 
-                            }
+                        if(!s.hitLog.has(e) && Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
+                            e.hp -= shuDmg; 
+                            s.hitLog.add(e);
+                            if(frameCount%5===0) spawnParticles(s.x, s.y, c_shuri, 1); 
                         }
                     });
                     if(s.x<-50||s.x>canvasWidth+50||s.y<-50||s.y>canvasHeight+50) shurikens.splice(i, 1);
@@ -1400,7 +1470,7 @@
 
                     bullets.push({ 
                         x: p.x, y: p.y - 20, vx: bvx, vy: bvy, dmg: isEnhanced ? p.base_dmg * 2.0 : p.base_dmg, 
-                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: [], isBhSeed: isBhSeed, isLightningSeed: isLightningSeed
+                        enhanced: isEnhanced, color: bColor, r: bRadius, pierce: p.lvl_pierce || 0, hitLog: new WeakSet(), isBhSeed: isBhSeed, isLightningSeed: isLightningSeed
                     });
                 }
             }
@@ -1433,7 +1503,7 @@
                     if(Math.abs(b.x-e.x)<e.w/2 && Math.abs(b.y-e.y)<e.h/2) {
                         
                         if (b.pierce > 0 && !b.enhanced && !b.isBhSeed) {
-                            if (b.hitLog.includes(e)) continue; 
+                            if (b.hitLog.has(e)) continue; 
                         }
 
                         if (b.isBhSeed) {
@@ -1443,13 +1513,13 @@
                             bullets.splice(i, 1); removed = true; break;
                         }
 
-                        e.hp -= b.dmg; b.hitLog.push(e);
+                        e.hp -= b.dmg; b.hitLog.add(e);
                         
                         if (b.enhanced && homingBullets.length < 100) { 
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
                             for(let k=0; k<p.homing_split; k++) {
                                 let angle = Math.random() * Math.PI * 2;
-                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: [] });
+                                homingBullets.push({ x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: homingDmg, target: null, life: 120, pierce: 2, ignore: e, hitLog: new WeakSet() });
                             }
                         }
                         
@@ -1498,7 +1568,7 @@
                 if (!hb.target || hb.target.hp <= 0 || !enemies.includes(hb.target)) {
                     let closestDistSq = Infinity; let closestE = null;
                     for(let j=0; j<enemies.length; j++) { 
-                        if (enemies[j] !== hb.ignore && !hb.hitLog.includes(enemies[j])) { 
+                        if (enemies[j] !== hb.ignore && !hb.hitLog.has(enemies[j])) { 
                             let dSq = (enemies[j].x - hb.x)*(enemies[j].x - hb.x) + (enemies[j].y - hb.y)*(enemies[j].y - hb.y); 
                             if (dSq < closestDistSq) { closestDistSq = dSq; closestE = enemies[j]; } 
                         } 
@@ -1517,8 +1587,8 @@
                 
                 for (let j=0; j<enemies.length; j++) {
                     let e = enemies[j];
-                    if (e !== hb.ignore && !hb.hitLog.includes(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
-                        e.hp -= hb.dmg; hb.hitLog.push(e); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 1); 
+                    if (e !== hb.ignore && !hb.hitLog.has(e) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
+                        e.hp -= hb.dmg; hb.hitLog.add(e); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 1); 
                     }
                 }
                 if (hb.pierce <= 0 || hb.life <= 0 || hb.y < -50 || hb.y > canvasHeight+50 || hb.x < -50 || hb.x > canvasWidth+50) homingBullets.splice(i, 1);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V49 초반 밸런스 조정)</title>
+    <title>로그라이트 화력 슈팅 (V50 초반 든든 지원 패치)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -74,6 +74,11 @@
         .dev-btn { background: #57606f; color: white; border: none; padding: 10px; margin-bottom: 8px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
         .max-tag { color: #f1c40f; font-weight: 900; font-size: 14px; }
         .dev-input { width: 60px; text-align: center; border-radius: 5px; border: 1px solid #00a8ff; outline: none; background: #111; color: white; font-weight: bold; padding: 4px; }
+        
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #111; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #00a8ff; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -99,9 +104,9 @@
         <div class="overlay" id="start-screen">
             <div class="title-text">SURVIVOR<br>SHOOTER</div>
 
-            <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 85%; max-width: 320px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
+            <div style="background: rgba(47, 53, 66, 0.9); padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #00a8ff; text-align: left; width: 90%; max-width: 360px; box-shadow: 0 0 20px rgba(0, 168, 255, 0.3);">
                 <label style="color: #ff7675; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">🔥 난이도 선택</label>
-                <select id="start-difficulty" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #ff7675; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
+                <select id="start-difficulty" onchange="onDifficultyChange()" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #ff7675; border-radius: 5px; font-weight: bold; margin-bottom: 12px; outline: none;">
                     <option value="easy">🟢 Easy (가벼운 플레이)</option>
                     <option value="normal" selected>🟡 Normal (완화된 밸런스)</option>
                     <option value="hard">🔴 Hard (도전적인 난이도)</option>
@@ -114,17 +119,11 @@
                     <option value="punch">🐾 냥냥펀치</option>
                 </select>
 
-                <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 지원 (1Lv 지급)</label>
-                <select id="start-passive" style="width: 100%; padding: 8px; background: #111; color: white; border: 1px solid #00ffff; border-radius: 5px; font-weight: bold; outline: none;">
-                    <option value="lvl_atk">⚔️ 공격력 UP</option>
-                    <option value="lvl_firespeed">🔫 연사 속도 UP</option>
-                    <option value="lvl_pierce">🏹 평타 관통</option>
-                    <option value="lvl_bullet">💥 탄환 확산</option>
-                    <option value="lvl_skill_dmg">🪄 스킬 파괴력 UP</option>
-                    <option value="lvl_skill_cd">⏳ 스킬 쿨타임 감소</option>
-                    <option value="lvl_regen">💖 자연 회복</option>
-                    <option value="lvl_vampire">🧛 흡혈</option>
-                </select>
+                <label style="color: #00ffff; font-weight: bold; font-size: 14px; margin-bottom: 5px; display: block;">✨ 초기 특성 지원 <span id="passive-count-display" style="color:white; float:right;">(0/4)</span></label>
+                <!-- 다중 선택 가능한 체크박스 리스트 -->
+                <div id="start-passives-list" style="background: #111; padding: 10px; border-radius: 5px; border: 1px solid #00ffff; max-height: 120px; overflow-y: auto; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <!-- JS로 렌더링됨 -->
+                </div>
             </div>
 
             <div class="skin-btn-group" style="display:flex; gap:10px; margin-bottom:20px;">
@@ -299,6 +298,77 @@
             { id: 'lvl_punch_split', max: 5, name: '💥 냥냥펀치 메가스탬프' }
         ];
 
+        // --- 초기 특성 선택 로직 ---
+        let maxStartingPassives = 4; // 기본 노말은 4개
+        const startingPassivesData = [
+            { id: 'lvl_atk', name: '⚔️ 공격력 UP' },
+            { id: 'lvl_firespeed', name: '🔫 연사 속도 UP' },
+            { id: 'lvl_pierce', name: '🏹 평타 관통' },
+            { id: 'lvl_bullet', name: '💥 탄환 확산' },
+            { id: 'lvl_skill_dmg', name: '🪄 스킬 파괴력' },
+            { id: 'lvl_skill_cd', name: '⏳ 스킬 쿨감' },
+            { id: 'lvl_regen', name: '💖 자연 회복' },
+            { id: 'lvl_vampire', name: '🧛 처치시 흡혈' }
+        ];
+
+        function renderStartPassives() {
+            const list = document.getElementById('start-passives-list');
+            list.innerHTML = '';
+            startingPassivesData.forEach((sp, idx) => {
+                let label = document.createElement('label');
+                label.style.cssText = "color:#dfe6e9; font-size:12px; display:flex; align-items:center; gap:6px; cursor:pointer;";
+                // 기본으로 첫 번째 특성 1개 정도는 체크되도록 설정
+                let isChecked = idx === 0 ? "checked" : "";
+                label.innerHTML = `<input type="checkbox" class="start-passive-cb" value="${sp.id}" onchange="checkStartPassives(event)" ${isChecked} style="transform:scale(1.2);"> <span>${sp.name}</span>`;
+                list.appendChild(label);
+            });
+            checkStartPassives();
+        }
+
+        function checkStartPassives(event) {
+            const diff = document.getElementById('start-difficulty').value;
+            maxStartingPassives = diff === 'easy' ? 3 : (diff === 'normal' ? 4 : 5);
+            
+            const cbs = document.querySelectorAll('.start-passive-cb');
+            let checkedCount = 0;
+            cbs.forEach(cb => { if(cb.checked) checkedCount++; });
+            
+            // 만약 제한을 넘겼다면 현재 클릭한 것을 강제로 해제
+            if (checkedCount > maxStartingPassives && event && event.target) {
+                event.target.checked = false;
+                checkedCount--;
+            }
+            
+            // 남은 체크박스 활성화/비활성화 처리
+            cbs.forEach(cb => {
+                if (!cb.checked) {
+                    cb.disabled = (checkedCount >= maxStartingPassives);
+                }
+            });
+            
+            document.getElementById('passive-count-display').innerText = `(${checkedCount}/${maxStartingPassives})`;
+        }
+
+        function onDifficultyChange() {
+            const diff = document.getElementById('start-difficulty').value;
+            maxStartingPassives = diff === 'easy' ? 3 : (diff === 'normal' ? 4 : 5);
+            
+            const cbs = document.querySelectorAll('.start-passive-cb');
+            let checkedCount = 0;
+            // 허용 개수보다 많이 체크되어있다면 밑에서부터 해제
+            cbs.forEach(cb => {
+                if(cb.checked) {
+                    if(checkedCount >= maxStartingPassives) {
+                        cb.checked = false;
+                    } else {
+                        checkedCount++;
+                    }
+                }
+            });
+            checkStartPassives();
+        }
+        // -----------------------
+
         function openDevMode() { document.getElementById('dev-panel').style.display='block'; renderDevSkills(); }
         function closeDevMode() { document.getElementById('dev-panel').style.display='none'; }
         function toggleSpawn() { devStopSpawn = !devStopSpawn; }
@@ -317,7 +387,6 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<100; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                // 초반 밸런스 패치 적용 (1부터 시작)
                 let swarmHp = Math.max(1, (1 + bossKills * 1.5) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                 enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
             }
@@ -440,7 +509,10 @@
             add('lvl_fire_boom', 5, '🔥 지옥불 부메랑', fbDesc, () => { p.lvl_fire_boom++; recalculateStats(); }, 'type-skill', p.lvl_fire_boom > 0 ? 0.4 : 0.01, false, false, true);
 
             add('lvl_vampire', 5, '🧛 처치 시 흡혈', '적 처치 시 5% 확률로 체력을 회복합니다.', () => { p.lvl_vampire++; recalculateStats(); }, 'type-util', 0.5);
-            add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 0.2씩 지속적으로 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
+            
+            // 밸런스 조정: 자연 회복 효과 설명 텍스트 변경
+            add('lvl_regen', 5, '💖 초당 자연 회복', '매초 체력을 1.5씩 지속적으로 대폭 회복합니다.', () => { p.lvl_regen++; recalculateStats(); }, 'type-util', 0.5);
+            
             let bhDesc = p.lvl_blackhole === 0 ? '평타 시 확률적으로 초광역 몹 집결 블랙홀 발사' : '블랙홀 발동 확률 +1% 및 크기/지속시간 UP';
             add('lvl_blackhole', 5, '🌌 블랙홀 탄환', bhDesc, () => { p.lvl_blackhole++; recalculateStats(); }, 'type-util', p.lvl_blackhole > 0 ? 0.5 : 0.1, true);
 
@@ -469,7 +541,6 @@
 
         function startGame() {
             let startActive = document.getElementById('start-active').value;
-            let startPassive = document.getElementById('start-passive').value;
             let diff = document.getElementById('start-difficulty').value;
 
             p = { 
@@ -488,7 +559,13 @@
                 totalFired: 0, skillTimer: 0, lastShurikenTime: 0, orbitalTimer: 0, swordTimer: 0, stormTimer: 0, iframe: 0 
             };
             
-            p[startPassive] = 1;
+            // 체크된 초기 패시브 스킬 모두 1레벨 지급
+            const cbs = document.querySelectorAll('.start-passive-cb');
+            cbs.forEach(cb => {
+                if (cb.checked) {
+                    p[cb.value] = 1;
+                }
+            });
 
             recalculateStats();
             bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = []; fireBooms = [];
@@ -719,7 +796,8 @@
             if(dt < frameDelay) return; lastTime = timestamp - (dt % frameDelay);
             if(gameState !== 'PLAYING') return; frameCount++; ctx.clearRect(0,0,canvas.width,canvas.height);
 
-            if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 0.2); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
+            // 밸런스 조정: 자연회복 1.5배 (기존 0.2)로 대폭 상향
+            if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 1.5); spawnParticles(p.x, p.y, '#2ecc71', 2); updateUI(); }
 
             ctx.fillStyle = isBossWarning ? '#300000' : 'white';
             ctx.globalAlpha = 0.3;
@@ -755,7 +833,6 @@
                             let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); 
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
-                                // 초반 밸런스 패치 적용 (스웜몹 기본체력 1로 감소)
                                 let swarmHp = Math.max(1, (1 + bossKills * 1.5) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
@@ -766,7 +843,6 @@
                         if (frameCount % spawnRate === 0 && enemies.length < 80) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
-                                // 초반 밸런스 패치 적용 (일반몹 기본체력 2로 감소)
                                 let normHp = Math.max(1, (2 + bossKills * 1.8) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
@@ -1593,6 +1669,8 @@
             requestAnimationFrame(gameLoop);
         }
 
+        // 초기 시작 시 패시브 목록 렌더링 호출
+        renderStartPassives();
         requestAnimationFrame(gameLoop);
     </script>
 </body>

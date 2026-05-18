@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.1)</title>
+    <title>비밀 요원 훈련 - 이차함수 탐구 (v8.2)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Noto+Sans+KR:wght@500;700;900&display=swap" rel="stylesheet">
     
@@ -55,11 +55,11 @@
         }
         .access-btn:hover { background: var(--neon-blue); color: #000; }
         
-        /* 다시 학습하기 (세이브 복구) 버튼 */
+        /* 다시 학습하기 버튼 */
         .resume-btn {
-            position: absolute; top: 30px; right: 30px;
+            position: absolute; top: 20px; right: 20px;
             background: rgba(255,255,255,0.1); border: 2px solid var(--secondary); color: var(--secondary);
-            padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.3s;
+            padding: 10px 20px; border-radius: 20px; font-weight: bold; font-size: clamp(14px, 2vw, 16px); cursor: pointer; transition: 0.3s;
         }
         .resume-btn:hover { background: var(--secondary); color: white; }
 
@@ -130,11 +130,11 @@
 
         /* ==================== 📱 하단 네비게이션 ==================== */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
+            position: fixed; bottom: 0; left: 0; width: 100%; min-height: 80px; padding: 10px;
             background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px);
             border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            display: flex; justify-content: center; align-items: center; gap: 15px;
-            z-index: 3000; opacity: 0; visibility: hidden; transition: 1s; padding: 0 10px;
+            display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; /* 버튼 겹침 방지 */
+            z-index: 3000; opacity: 0; visibility: hidden; transition: 1s;
         }
         .bottom-nav.visible { opacity: 1; visibility: visible; }
         
@@ -170,19 +170,37 @@
         #stages-wrapper { width: 100%; height: 100%; display: flex; flex-wrap: nowrap; transition: transform 0.1s; }
 
         .stage {
-            flex: 0 0 100vw; width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(15px, 2vw, 40px) 20px;
+            flex: 0 0 100vw; width: 100vw; height: 100%; padding: clamp(70px, 8vh, 90px) clamp(10px, 2vw, 30px) 20px;
             display: flex; justify-content: center; align-items: flex-start; overflow: hidden;
         }
 
+        /* ⭐ 아이패드 최적화: 강제 두꺼운 스크롤바 항시 표시 */
         .activity-card {
             background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 24px;
             width: 100%; max-width: 1400px; height: 100%; display: flex; flex-direction: column; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 0 auto; overflow-x: hidden; position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin: 0 auto; position: relative;
             
-            /* ⭐ 스크롤 항상 보이게 최적화 */
-            overflow-y: scroll; 
+            overflow-y: scroll !important; /* 항상 스크롤 가능하게 */
             -webkit-overflow-scrolling: touch;
         }
+
+        /* 아이패드 Safari 강제 커스텀 스크롤바 */
+        .activity-card::-webkit-scrollbar {
+            width: 24px !important; /* 엄청 두껍게 설정하여 잡기 쉽게 만듦 */
+            display: block !important; 
+            -webkit-appearance: none !important;
+        }
+        .activity-card::-webkit-scrollbar-track {
+            background-color: #f0f0f5 !important;
+            border-radius: 12px;
+            border-left: 1px solid var(--border-color);
+        }
+        .activity-card::-webkit-scrollbar-thumb {
+            background-color: #b0b0b5 !important; /* 뚜렷한 회색 */
+            border-radius: 12px !important;
+            border: 4px solid #f0f0f5 !important; /* 트랙과 분리감 형성 */
+        }
+        .activity-card::-webkit-scrollbar-thumb:hover { background-color: #8e8e93 !important; }
 
         .card-header { padding: clamp(15px, 2vw, 20px); border-bottom: 1px solid var(--border-color); text-align: center; background: #fafafa; border-radius: 24px 24px 0 0; flex-shrink: 0; }
         .step-tag { font-family: 'Orbitron'; color: var(--primary); font-size: clamp(14px, 1.8vw, 20px); font-weight: bold; letter-spacing: 1px; }
@@ -193,15 +211,18 @@
         .flex-row { display: flex; flex-wrap: wrap; gap: 20px; width: 100%; }
         .panel { flex: 1; min-width: 300px; background: #f9f9f9; border-radius: 15px; padding: clamp(15px, 2.5vw, 25px); border: 1px solid var(--border-color); }
 
-        /* ==================== 🖌 그리기 캔버스 오버레이 ==================== */
+        /* ==================== 🖌 오버레이 및 화이트보드 ==================== */
         .image-wrapper { position: relative; display: inline-block; width: 100%; max-width: 1000px; margin: 0 auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-radius: 10px; border: 1px solid var(--border-color); background: white; }
         .textbook-img { width: 100%; display: block; border-radius: 10px; pointer-events: none; }
         .drawing-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; touch-action: none; cursor: crosshair; }
+
+        .scroll-margin { padding: 15px; width: 100%; text-align: center; background: #f2f2f7; border-radius: 10px; border: 2px dashed var(--border-color); color: var(--text-main); font-size: 16px; font-weight: bold; margin-bottom: 10px;}
 
         .whiteboard-container { width: 100%; min-height: 500px; border: 2px solid var(--border-color); border-radius: 10px; background: white; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
         .whiteboard-canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
         .grid-bg { background-color: #fff; background-image: linear-gradient(#e5e5ea 1px, transparent 1px), linear-gradient(90deg, #e5e5ea 1px, transparent 1px); background-size: 20px 20px; }
 
+        /* ==================== 요소 및 잠금 해제 버튼 ==================== */
         h3 { font-size: clamp(18px, 2.5vw, 24px); color: var(--primary); margin-bottom: 15px; line-height: 1.4; word-break: keep-all;}
         p.desc { font-size: clamp(15px, 2vw, 18px); color: var(--text-sub); margin-bottom: 15px; line-height: 1.5; word-break: keep-all; }
         
@@ -230,15 +251,9 @@
         .quiz-col { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); }
         @media (max-width: 800px) { .quiz-grid { grid-template-columns: 1fr; } }
 
-        /* ⭐ 두꺼운 스크롤바 항시 유지 */
-        ::-webkit-scrollbar { width: 16px; display: block !important; }
-        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; margin: 10px; border-left: 1px solid var(--border-color); }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.3); border-radius: 10px; border: 3px solid var(--card-bg); }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.5); }
-
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; margin: 15px 0; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: var(--primary); cursor: pointer; margin-top: -10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--border-color); border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 30px; width: 30px; border-radius: 50%; background: var(--primary); cursor: pointer; margin-top: -12px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); border: 2px solid white; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 8px; cursor: pointer; background: var(--border-color); border-radius: 5px; }
 
         .stat-box { background: #1d1d1f; color: #fff; padding: 15px; border-radius: 10px; font-family: 'Orbitron', monospace; font-size: 20px; text-align: center; margin-bottom: 10px;}
         .stat-highlight { color: var(--neon-purple); font-weight: bold; font-size: 24px; }
@@ -252,8 +267,7 @@
                 <h2>🗺️ 훈련장 전체 지도</h2>
                 <button type="button" onclick="toggleStageMap()"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="stage-grid" id="stage-grid-container">
-                </div>
+            <div class="stage-grid" id="stage-grid-container"></div>
         </div>
     </div>
 
@@ -284,7 +298,7 @@
             </div>
         </div>
 
-        <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 화면 지우기</button>
+        <button type="button" class="tool-btn btn-clear" onclick="clearCurrentCanvas()"><i class="fa-solid fa-trash"></i> 지우기</button>
         <button type="button" class="tool-btn btn-map" onclick="toggleStageMap()"><i class="fa-solid fa-map-location-dot"></i> 전체 목차</button>
     </div>
 
@@ -318,7 +332,6 @@
                             <div class="feedback" id="fb-q1"></div>
 
                             <h3 style="margin-top: 30px;">2️⃣ <span class="math">x=1, x=4</span> 직선을 긋고, <span class="math">1 ≤ x ≤ 4</span> 일 때 <span class="math">y</span>의 값의 범위를 구하세요.</h3>
-                            <p class="desc">(우측의 '직선 긋기' 버튼을 먼저 누르세요)</p>
                             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                                 <input type="number" id="q2-min" style="width: 70px;"> ≤ <span class="math">y</span> ≤ <input type="number" id="q2-max" style="width: 70px;">
                                 <button type="button" class="check-btn" onclick="checkQ2()">확인</button>
@@ -340,6 +353,7 @@
                         <div class="card-title">실수 전체 범위일 때의 최대·최소</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백 (여기나 캔버스 바깥을 잡고 올리세요)</div>
                         <div class="image-wrapper">
                             <img src="step2_image.png" alt="실수 전체 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s2')">
                             <canvas id="canvas-s2" class="drawing-layer"></canvas>
@@ -369,6 +383,7 @@
                         <div class="card-title">제한된 범위의 최대/최소 규칙 찾기 (<span class="math">α ≤ x ≤ β</span>)</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백 (여기나 캔버스 바깥을 잡고 올리세요)</div>
                         <div class="image-wrapper">
                             <img src="step4_image.png" alt="제한된 범위" class="textbook-img" onload="initCanvasOverlay('canvas-s4')">
                             <canvas id="canvas-s4" class="drawing-layer"></canvas>
@@ -404,6 +419,7 @@
                         <div class="card-title">직접 문제 풀이하기</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
                         <div class="image-wrapper" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
                             <img src="step5_image.png" alt="예제 1" class="textbook-img" onload="initCanvasOverlay('canvas-s5-img')">
                             <canvas id="canvas-s5-img" class="drawing-layer"></canvas>
@@ -423,6 +439,7 @@
                         <div class="card-title">심화 문제 풀이하기</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
                         <div class="image-wrapper" style="max-width: 800px; border: none; box-shadow: none; margin-bottom: 10px;">
                             <img src="step6_image.png" alt="추가 미션" class="textbook-img" onload="initCanvasOverlay('canvas-s6-img')">
                             <canvas id="canvas-s6-img" class="drawing-layer"></canvas>
@@ -442,6 +459,7 @@
                         <div class="card-title">실생활 활용 문제 풀이</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
                         <div class="image-wrapper">
                             <img src="step7_image.png" alt="응용 연습 1" class="textbook-img" onload="initCanvasOverlay('canvas-s7')">
                             <canvas id="canvas-s7" class="drawing-layer"></canvas>
@@ -461,6 +479,7 @@
                         <div class="card-title">그래프 시각화 분석</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
                         <div class="image-wrapper" style="margin-bottom: 20px;">
                             <img src="step8_image.png" alt="응용 연습 2" class="textbook-img" onload="initCanvasOverlay('canvas-s8')">
                             <canvas id="canvas-s8" class="drawing-layer"></canvas>
@@ -498,6 +517,7 @@
                         <div class="card-title">도형 내접 직사각형 최대 넓이 찾기</div>
                     </div>
                     <div class="card-body">
+                        <div class="scroll-margin"><i class="fa-solid fa-arrows-up-down"></i> 화면 스크롤 여백</div>
                         <div class="image-wrapper" style="margin-bottom: 20px;">
                             <img src="step9_image.png" alt="응용 연습 3" class="textbook-img" onload="initCanvasOverlay('canvas-s9')">
                             <canvas id="canvas-s9" class="drawing-layer"></canvas>
@@ -505,7 +525,7 @@
                         
                         <div class="panel" style="width: 100%; max-width: 800px; text-align: center;">
                             <h3 style="color: var(--primary);"><i class="fa-solid fa-sliders"></i> 높이(a) 조절 시뮬레이터</h3>
-                            <p class="desc">슬라이더를 처음(0)부터 서서히 움직여서 <b>최대 넓이(1800)</b>를 찾아야 다음 단계가 열립니다!</p>
+                            <p class="desc">아래의 파란색 동그라미를 오른쪽으로 밀어서 <b>최대 넓이(1800)</b>를 찾아보세요!</p>
                             
                             <input type="range" id="s9-slider" min="0" max="60" value="0" step="0.5" oninput="drawStage9Triangle()">
                             
@@ -536,23 +556,20 @@
 
         </div> </div> <script>
         // ==========================================
-        // 0. 미션 통제 및 내비게이션 상태 시스템 (팝업 맵 및 세이브 복구 연결)
+        // 0. 미션 통제 및 내비게이션 상태 시스템 (세이브 복구)
         // ==========================================
         let currentStage = 0;
         const totalStages = 10; 
-        let maxUnlockedStage = 0; // 초기에는 1단계만
+        let maxUnlockedStage = 0; 
         let isTransitioning = false;
 
-        // ⭐ 다시 학습하기 (잠금 전면 해제 및 맵 이동)
         function resumeLearning() {
-            maxUnlockedStage = totalStages - 1; // 모든 스테이지 잠금 해제
+            maxUnlockedStage = totalStages - 1; 
             contentRevealed = true;
             
-            // 초기 화면 덮개 제거
             document.getElementById('launch-overlay').style.display = 'none';
             document.getElementById('firework-wrapper').style.display = 'none';
             
-            // 바텀 네비게이션 복구
             document.getElementById('bottom-nav').classList.add('visible');
             document.getElementById('fw-btn').style.display = 'none';
             document.getElementById('trajectory-btn').style.display = 'none';
@@ -561,7 +578,6 @@
             document.getElementById('next-btn').style.display = 'block';
             document.getElementById('stage-nav-dots').style.display = 'flex';
             
-            // 스테이지 노출
             document.getElementById('stages-perspective').classList.add('visible');
             document.getElementById('global-tools').classList.add('visible');
             
@@ -569,11 +585,9 @@
             initStage1Graph();
             setTimeout(resizeAllCanvases, 400);
             
-            // 곧바로 맵 열어서 원하는 곳 선택 유도
             toggleStageMap();
         }
 
-        // 목차 팝업창 토글
         function toggleStageMap() {
             const modal = document.getElementById('stage-map-modal');
             if (modal.classList.contains('active')) {
@@ -584,16 +598,13 @@
             }
         }
 
-        // 목차 팝업창 렌더링
         function renderStageMap() {
             const container = document.getElementById('stage-grid-container');
             container.innerHTML = '';
             for(let i=0; i<totalStages; i++) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                
-                let icon = '';
-                if(i === 0) icon = '🚀'; else if(i === 9) icon = '🔐'; else icon = '📝';
+                let icon = i === 0 ? '🚀' : (i === 9 ? '🔐' : '📝');
                 
                 if (i === currentStage) {
                     btn.className = 'stage-grid-btn active';
@@ -610,7 +621,6 @@
             }
         }
 
-        // 하단 점(Dots) 초기화
         function initNavDots() {
             const container = document.getElementById('stage-nav-dots');
             container.innerHTML = '';
@@ -623,7 +633,6 @@
             }
         }
 
-        // 내비게이션 UI 업데이트 (버튼 및 점 상태)
         function updateNavUI() {
             document.getElementById('prev-btn').disabled = (currentStage === 0);
             document.getElementById('next-btn').disabled = (currentStage >= maxUnlockedStage);
@@ -633,6 +642,7 @@
                 dot.classList.remove('active', 'unlocked', 'locked');
                 if (index === currentStage) {
                     dot.classList.add('active');
+                    dot.scrollIntoView({ behavior: 'smooth', inline: 'center' }); // 중앙 정렬 스크롤
                 } else if (index <= maxUnlockedStage) {
                     dot.classList.add('unlocked');
                 } else {
@@ -641,7 +651,6 @@
             });
         }
 
-        // 다음 단계 잠금 해제 (완료 시)
         function unlockNextStage(btnElem = null) {
             if (currentStage === maxUnlockedStage && maxUnlockedStage < totalStages - 1) {
                 maxUnlockedStage++;
@@ -656,11 +665,10 @@
             }
         }
 
-        // 자유 이동 로직
         function jumpToStage(targetIndex) {
             if (isTransitioning || targetIndex > maxUnlockedStage || targetIndex === currentStage) return;
-            
             isTransitioning = true;
+            
             const doorOverlay = document.getElementById('door-transition');
             const leftDoor = document.getElementById('trans-door-left');
             const rightDoor = document.getElementById('trans-door-right');
@@ -673,7 +681,7 @@
                 currentStage = targetIndex;
                 document.getElementById('stages-wrapper').style.transform = `translateX(-${currentStage * 100}vw)`;
                 updateNavUI();
-                updateCursor(); // 새 페이지 진입 시 커서 상태 유지
+                updateCursor(); 
                 setTimeout(resizeAllCanvases, 400);
                 if (currentStage === 8) setTimeout(drawStage9Triangle, 400);
 
@@ -696,12 +704,18 @@
         };
 
         // ==========================================
-        // 1. 폭죽 애니메이션 시스템
+        // 1. 폭죽 애니메이션 시스템 (버그 수정판)
         // ==========================================
         const fwCanvas = document.getElementById('firework-canvas');
         const fwCtx = fwCanvas.getContext('2d');
+        let audioCtx;
         
         function initMission() {
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+            } catch(e) { console.log("Audio Init Error", e); }
+            
             document.getElementById('launch-overlay').style.display = 'none';
             document.getElementById('bottom-nav').classList.add('visible');
             fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight;
@@ -709,11 +723,34 @@
             animateFw();
         }
 
+        function playWhiz() {
+            if(!audioCtx) return; 
+            try {
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(100, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 1.2);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.2);
+                osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.2);
+            } catch(e) {}
+        }
+        function playBoom() {
+            if(!audioCtx) return; 
+            try {
+                const noise = audioCtx.createBufferSource(); const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                noise.buffer = buffer; const filter = audioCtx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.setValueAtTime(1000, audioCtx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 1.5);
+                const gain = audioCtx.createGain(); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+                noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination); noise.start(); noise.stop(audioCtx.currentTime + 1.5);
+            } catch(e) {}
+        }
+
         let particles = []; let rocket = { active: false, fullTrajectory: [] }; 
         let shotsFired = 0; let trajectoryShotsFired = 0; 
+        let contentRevealed = false; let trajectoryMode = false;
 
         function launchRocket() {
             if (rocket.active) return;
+            fwCanvas.width = window.innerWidth; fwCanvas.height = window.innerHeight;
             rocket.x = fwCanvas.width / 2; rocket.y = fwCanvas.height;
             rocket.vy = -(14 + Math.random() * 4); 
             rocket.vx = (Math.random() - 0.5) * 5;
@@ -724,10 +761,11 @@
                 rocket.fullTrajectory.push({x: tx, y: ty});
                 tvy += 0.2; tx += tvx; ty += tvy;
             }
-            rocket.active = true; 
+            rocket.active = true; playWhiz();
         }
 
         function createExplosion(x, y) {
+            playBoom();
             for (let i = 0; i < 80; i++) particles.push({ x: x, y: y, vx: (Math.random()-0.5)*10, vy: (Math.random()-0.5)*10, color: `hsl(${Math.random()*360}, 100%, 60%)`, life: 1 });
             
             if (!contentRevealed) {
@@ -772,7 +810,6 @@
             fwCtx.globalAlpha = 1; requestAnimationFrame(animateFw);
         }
 
-        // 훈련장 최초 진입
         function revealContent() {
             contentRevealed = true;
             const doorOverlay = document.getElementById('door-transition');
@@ -822,45 +859,36 @@
             8: ['canvas-s9'] 
         };
 
-        // 지우개 메뉴 토글
         function toggleEraserMenu() {
             const menu = document.getElementById('eraser-menu');
             menu.classList.toggle('show');
-            setGlobalTool('eraser'); // 지우개 모드로 바로 전환
+            setGlobalTool('eraser'); 
         }
 
-        // 지우개 사이즈 설정
         function setEraserSize(size, btnElem) {
             drawState.eraserSize = size;
             document.querySelectorAll('.eraser-btn-size').forEach(b => b.classList.remove('active'));
             btnElem.classList.add('active');
-            document.getElementById('eraser-menu').classList.remove('show'); // 선택 후 닫기
+            document.getElementById('eraser-menu').classList.remove('show'); 
             updateCursor();
         }
 
         function setGlobalTool(tool, color) { 
             drawState.tool = tool; 
             if(color) drawState.color = color; 
-            
-            // 펜 선택 시 지우개 메뉴 닫기
-            if(tool === 'pen') {
-                document.getElementById('eraser-menu').classList.remove('show');
-            }
+            if(tool === 'pen') document.getElementById('eraser-menu').classList.remove('show');
             updateCursor();
         }
 
-        // 커서 모양 실시간 동적 업데이트 (마우스 & 애플펜슬용)
         function updateCursor() {
             let cursorStyle = 'crosshair';
             if (drawState.tool === 'eraser') {
                 const size = drawState.eraserSize;
-                // SVG를 활용해 지우개 크기만큼의 동그라미 커서 생성
                 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${size/2 - 1}" fill="rgba(255,255,255,0.7)" stroke="black" stroke-width="1"/></svg>`;
                 const encoded = encodeURIComponent(svg);
                 cursorStyle = `url("data:image/svg+xml,${encoded}") ${size/2} ${size/2}, auto`;
             }
             
-            // 캔버스들에 커서 적용
             Object.values(stageCanvasMap).forEach(ids => {
                 ids.forEach(id => {
                     const cvs = document.getElementById(id);
@@ -908,7 +936,7 @@
             cvs.ontouchmove = (e) => doDraw(e, cvs);
             cvs.ontouchend = () => stopDraw(cvs);
             
-            updateCursor(); // 초기화 시 커서 모양 유지
+            updateCursor();
         }
 
         function startDraw(e, cvs) {
@@ -960,13 +988,10 @@
         }
 
         // ==========================================
-        // Stage 1 (Index 0): 퀴즈 로직
+        // Stage 1: 퀴즈 로직
         // ==========================================
         let s0_q1_done = false, s0_q2_done = false;
-        
-        function checkStage0Unlock() {
-            if (s0_q1_done && s0_q2_done) { unlockNextStage(); }
-        }
+        function checkStage0Unlock() { if (s0_q1_done && s0_q2_done) unlockNextStage(); }
 
         function checkQ1() {
             const maxVal = document.getElementById('q1-max').value;
@@ -1051,7 +1076,7 @@
             });
         });
 
-        // Stage 4 (Index 3) 퀴즈 체크 및 해제
+        // Stage 4 퀴즈 체크
         function checkStage3Unlock(btn) {
             let allFilled = true;
             document.querySelectorAll('#stage-4-selects select').forEach(s => { if (s.value === "") allFilled = false; });
@@ -1059,7 +1084,7 @@
         }
 
         // ==========================================
-        // Stage 8 특화 (Index 7): 그래프 시각화
+        // Stage 8 특화: 그래프 시각화
         // ==========================================
         function showStage8Graph(btn) {
             btn.style.display = 'none';
@@ -1115,7 +1140,7 @@
         }
 
         // ==========================================
-        // Stage 9 특화 (Index 8): 직사각형 넓이 통과 로직
+        // Stage 9 특화: 직사각형 넓이 통과 로직
         // ==========================================
         let stage9Unlocked = false;
 

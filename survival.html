@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Survivor v0.12.0</title>
+    <title>Space Survivor v0.13.0</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #112211; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
-        #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .version { position: absolute; top: 15px; left: 15px; font-size: 14px; color: rgba(255,255,255,0.6); font-weight: bold; }
         #devTrigger { position: absolute; top: 0; right: 0; width: 80px; height: 80px; pointer-events: auto; z-index: 99; cursor: crosshair; }
 
-        #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 10; width: 90%; }
+        #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 90%; }
         #timer { font-size: 32px; font-weight: 900; font-family: monospace; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         #bossTimerContainer { color: #ff4444; font-size: 20px; font-weight: bold; margin-top: 8px; background: rgba(40,0,0,0.8); padding: 4px 15px; border-radius: 10px; border: 1px solid #f00; display: none; }
-        #warningMessage { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); font-size: 40px; color: #ff3333; font-weight: 900; text-shadow: 0 0 20px rgba(255,0,0,0.8); opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 15px; z-index: 10; text-align: center; width: max-content; max-width: 90%; }
+        #warningMessage { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); font-size: 40px; color: #ff3333; font-weight: 900; text-shadow: 0 0 20px rgba(255,0,0,0.8); opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 15px; text-align: center; width: max-content; max-width: 90%; }
 
-        #bottomUI { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 10; }
+        #bottomUI { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; flex-direction: column; align-items: center; padding-bottom: 20px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
         #activeSkillsPanel { display: flex; gap: 8px; margin-bottom: 15px; justify-content: center; width: 100%; padding: 0 10px; box-sizing: border-box; }
         .skill-slot { width: 40px; height: 40px; background: rgba(0,0,0,0.6); border: 2px solid #555; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-size: 20px; position: relative; box-shadow: 0 0 5px #000; flex-shrink: 0; }
         .skill-slot .lvl { position: absolute; bottom: -5px; right: -5px; background: #000; font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid #ffcc00; color: #ffcc00; font-weight: bold; }
@@ -48,11 +48,11 @@
         .dev-btn { background: #333; color: #fff; border: 1px solid #666; padding: 4px 10px; font-weight: bold; cursor: pointer; border-radius: 4px; }
         .dev-close { background: linear-gradient(135deg, #aa3333, #882222); color: #fff; width: 100%; padding: 15px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; border-radius: 8px; }
 
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
             h1 { font-size: 32px; }
             .diff-selector { font-size: 16px; padding: 10px 15px; }
             #timer { font-size: 24px; padding: 5px 15px; }
-            #warningMessage { font-size: 24px; padding: 8px 20px; }
+            #warningMessage { font-size: 20px; padding: 8px 15px; }
             #activeSkillsPanel { gap: 4px; }
             .skill-slot { width: 34px; height: 34px; font-size: 16px; }
             .skill-slot .lvl { font-size: 9px; padding: 1px 3px; bottom: -4px; right: -4px; }
@@ -66,14 +66,14 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <div class="version">v0.12.0</div>
+        <div class="version">v0.13.0</div>
         <div id="devTrigger" onclick="checkDevMode()"></div>
 
         <div id="topBar">
             <div id="timer">00:00</div>
             <div id="bossTimerContainer">보스 타임어택: <span id="bossTimer">60</span>초!</div>
         </div>
-        <div id="warningMessage">⚠️ 경고 메세지 ⚠️</div>
+        <div id="warningMessage">⚠️ 중간 보스 접근 ⚠️</div>
 
         <div id="bottomUI">
             <div id="activeSkillsPanel">
@@ -128,7 +128,10 @@
     </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d', { alpha: false }); let width, height;
+const canvas = document.getElementById('gameCanvas'); const ctx = canvas.getContext('2d', { alpha: false }); 
+let width, height;
+let cameraScale = 1.0; 
+let vWidth, vHeight; // 확대/축소가 반영된 논리적 화면 크기
 
 const ui = {
     timer: document.getElementById('timer'), bossTimerContainer: document.getElementById('bossTimerContainer'), bossTimer: document.getElementById('bossTimer'),
@@ -141,8 +144,9 @@ const ui = {
 const FPS = 60; const frameInterval = 1000 / FPS; let lastTime = 0;
 let gameState = 'menu'; let frameCount = 0; let gameSeconds = 0; let worldX = 0, worldY = 0;
 let enemies = []; let projectiles = []; let effects = []; let gems = []; let drops = []; let grasses = [];
+let particles = []; // 🎆 폭죽 이펙트 최적화용 배열
 let waveWarningTimer = 0; let bossMode = false; let bossTimeLeft = 0; let activeMagnet = 0;
-let difficultyMult = 1.0; let pendingMidBossCount = 0; // 👹 웨이브 클리어 시 소환될 중간보스 스택
+let difficultyMult = 1.0; let pendingMidBossCount = 0;
 
 let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
@@ -160,11 +164,11 @@ const passiveSkills = {
 };
 
 const activeSkills = {
-    missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사. (초반 쿨타임이 깁니다)" },
-    shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "5바퀴를 돌며 적을 강하게 튕겨내는 방패를 생성합니다." },
-    bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "폭발 시 4개의 파편으로 분열하여 광역 피해를 줍니다." },
-    shuriken:   { level: 0, max: 5, icon: "⭐", name: "수리검", desc: "적에게 날아가 박힌 후 미친듯이 갈아버립니다." }, 
-    dove:       { level: 0, max: 5, icon: "🕊️", name: "비둘기", desc: "주위를 맴돌며 미사일을 쏘는 비둘기 소환." },
+    missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사." },
+    shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "주위를 도는 방패. (넉백 하향)" }, // 너프 설명 반영
+    bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "분열 폭탄. 보스에게 3배의 피해를 줍니다." }, // 보스 특화
+    shuriken:   { level: 0, max: 5, icon: "⭐", name: "수리검", desc: "사방으로 느리게 발사되며 적을 관통하여 갈아버립니다." }, // 개편
+    dove:       { level: 0, max: 5, icon: "🕊️", name: "비둘기", desc: "주위를 맴돌며 미사일을 쏩니다. 보스에게 2배 피해." }, // 보스 특화
     laser:      { level: 0, max: 5, icon: "🔦", name: "레이저 빔", desc: "가장 가까운 적에게 직선 관통 레이저 발사." },
     poison:     { level: 0, max: 5, icon: "🧪", name: "맹독 지대", desc: "부글부글 끓는 독 장판이 최대 체력 비례 데미지를 줍니다." },
     lightning:  { level: 0, max: 5, icon: "🌩️", name: "낙뢰", desc: "무작위 적에게 강력한 벼락을 내리칩니다." },
@@ -189,9 +193,20 @@ const player = {
 let activeTimers = { missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0 };
 let dovesState = []; 
 
-function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initGrass(); }
+function resize() { 
+    width = canvas.width = window.innerWidth; 
+    height = canvas.height = window.innerHeight; 
+    // 📱 모바일 환경 해상도 보정 (시야 확보)
+    if (width < 800) { cameraScale = width / 800; } 
+    else { cameraScale = 1.0; }
+    
+    vWidth = width / cameraScale;
+    vHeight = height / cameraScale;
+
+    initGrass(); 
+}
 window.addEventListener('resize', resize); resize();
-function initGrass() { grasses = []; for (let i = 0; i < 200; i++) grasses.push({ x: Math.random()*width*1.5, y: Math.random()*height*1.5, length: Math.random()*8+4 }); }
+function initGrass() { grasses = []; for (let i = 0; i < 200; i++) grasses.push({ x: Math.random()*vWidth*1.5, y: Math.random()*vHeight*1.5, length: Math.random()*8+4 }); }
 function getDistSq(x1, y1, x2, y2) { const dx = x1 - x2; const dy = y1 - y2; return dx * dx + dy * dy; }
 
 function recalcStats() {
@@ -219,10 +234,12 @@ function startGame(type) {
     recalcStats(); player.color = charSpecs[type].color; player.angle = -Math.PI / 2;
     worldX = 0; worldY = 0; frameCount = 0; gameSeconds = 0; lastTime = performance.now();
     enemies = []; projectiles = []; effects = []; gems = []; drops = []; activeMagnet = 0; dovesState = []; bossMode = false;
+    particles = [];
     
     gameState = 'playing'; ui.menu.classList.add('hidden'); updateUI(); requestAnimationFrame(gameLoop);
 }
 
+// 입력 처리는 화면 픽셀 좌표 기준이므로 유지 (정규화된 방향 벡터만 쓰기 때문)
 function handleInputStart(x,y) { if(gameState!=='playing')return; joystick.active=true; joystick.originX=joystick.x=x; joystick.originY=joystick.y=y; }
 function handleInputMove(x,y) {
     if(!joystick.active)return; joystick.x=x; joystick.y=y;
@@ -244,7 +261,7 @@ canvas.addEventListener('mouseup', handleInputEnd);
 function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     if (devConfig.spawnPaused && !isWave && !isBoss && !isMidBoss) return;
     const angle = Math.random() * Math.PI * 2; 
-    const spawnRadius = Math.max(width, height) * 0.6; 
+    const spawnRadius = Math.max(vWidth, vHeight) * 0.6; // 스케일 적용된 화면 바깥 기준
     let healthMultiplier = (1 + (gameSeconds / 60) * 0.6) * difficultyMult; 
     
     let size = isBoss ? 50 : (isMidBoss ? 30 : 14);
@@ -274,16 +291,30 @@ function checkPlayerHit() {
     }
 }
 
+// 🎆 파티클 이펙트 생성 함수
+function spawnDeathParticles(x, y, isBoss, isMidBoss, isWave) {
+    if(particles.length > 150) return; // 렉 방지 캡
+    let count = isBoss ? 30 : (isMidBoss ? 20 : 6);
+    let colors = isBoss ? ['#ff2222', '#ffaa00'] : (isMidBoss ? ['#aa22aa', '#ff55ff'] : (isWave ? ['#ffff00', '#ff8800'] : ['#55ff55', '#22aa22']));
+    for(let i=0; i<count; i++) {
+        let ang = Math.random() * Math.PI * 2;
+        let spd = Math.random() * 4 + 2;
+        particles.push({
+            x: x, y: y, dx: Math.cos(ang)*spd, dy: Math.sin(ang)*spd,
+            life: 20 + Math.random()*15, maxLife: 35,
+            color: colors[Math.floor(Math.random()*colors.length)]
+        });
+    }
+}
+
 function damageEnemy(e, dmg, knockback, dirX, dirY) {
     e.hp -= dmg;
     if (e.hp <= 0) {
         e.isDead = true;
         if(e.isBoss) { bossMode = false; updateUI('boss'); }
-        if(e.isMidBoss) { triggerLevelUp(true); } 
         
-        // 💥 적 처치(Death) 이펙트 렌더링
-        let colorStr = e.isBoss ? '255, 50, 50' : (e.isMidBoss ? '200, 50, 200' : (e.isWave ? '150, 200, 50' : '50, 255, 100'));
-        effects.push({ x: e.x, y: e.y, type: 'enemy_death', life: 15, maxLife: 15, radius: e.size, color: colorStr });
+        // 💥 적 처치 시 폭죽 파티클 발동
+        spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave);
 
         let gemType = (e.isBoss || e.isMidBoss) ? 'big_gem' : (e.isWave ? 'tiny_gem' : 'gem');
         gems.push({ x: e.x, y: e.y, isDead: false, type: gemType });
@@ -296,7 +327,9 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
             player.hp = Math.min(player.maxHp, player.hp + (passiveSkills.lifeSteal.level * 0.5)); updateUI('hp');
         }
     } else {
-        const kb = (e.isBoss || e.isMidBoss) ? knockback * 0.1 : knockback; 
+        // 🛡️ 웨이브 몹은 넉백 면역
+        let kbMod = e.isWave ? 0 : ((e.isBoss || e.isMidBoss) ? 0.1 : 1);
+        const kb = knockback * kbMod; 
         e.x += dirX*kb; e.y += dirY*kb;
     }
 }
@@ -343,7 +376,6 @@ function handleBasicAttacks() {
                 let ang = angle + (a - (arrows-1)/2) * spread;
                 projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 30, type: 'arrow', dmg: player.damage, kb: player.knockback, isDead: false });
             }
-
         } else if (player.type === 'magic') {
             player.attackCount++; 
             let reqForBig = Math.max(1, 5 - wLvl); 
@@ -366,6 +398,7 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
+    // 🚀 유도 미사일 개편 (쿨타임 증가로 하향 최적화)
     if (activeSkills.missile.level > 0) {
         activeTimers.missile--;
         if(activeTimers.missile <= 0) {
@@ -382,16 +415,18 @@ function handleActiveSkills() {
             activeTimers.missile = (200 - activeSkills.missile.level * 25) * player.cdr; 
         }
     }
+    // 🛡️ 수호 방패 넉백 하향
     if (activeSkills.shield.level > 0) {
         activeTimers.shield--;
         if(activeTimers.shield <= 0) {
             let radius = 120 + activeSkills.shield.level*10; 
             for(let i=0; i<5; i++) {
-                projectiles.push({ x: pX, y: pY, angle: (Math.PI*2/5)*i, radius: radius, life: 300, maxLife: 300, type: 'shield', dmg: 20 + activeSkills.shield.level*10 + player.bonusDmg, kb: 60 + activeSkills.shield.level*20, isDead: false });
+                projectiles.push({ x: pX, y: pY, angle: (Math.PI*2/5)*i, radius: radius, life: 300, maxLife: 300, type: 'shield', dmg: 20 + activeSkills.shield.level*10 + player.bonusDmg, kb: 15 + activeSkills.shield.level*5, isDead: false });
             }
             activeTimers.shield = 450 * player.cdr; 
         }
     }
+    // 💣 폭탄: 보스 특화 데미지
     if (activeSkills.bomb.level > 0) {
         activeTimers.bomb--;
         if(activeTimers.bomb <= 0) {
@@ -401,18 +436,21 @@ function handleActiveSkills() {
                 for(let i=0; i<count; i++) {
                     let tx = nearest.x + (Math.random()-0.5)*100; let ty = nearest.y + (Math.random()-0.5)*100;
                     let dx = tx-pX; let dy = ty-pY; let dist = Math.sqrt(dx*dx+dy*dy);
-                    projectiles.push({ x: pX, y: pY, dx: (dx/dist)*5, dy: (dy/dist)*5, life: dist/5, type: 'bomb', dmg: 40 + activeSkills.bomb.level*15 + player.bonusDmg, isDead: false });
+                    projectiles.push({ x: pX, y: pY, dx: (dx/dist)*5, dy: (dy/dist)*5, life: dist/5, type: 'bomb', dmg: 40 + activeSkills.bomb.level*15 + player.bonusDmg, bossMult: 3.0, isDead: false });
                 }
             }
             activeTimers.bomb = 90 * player.cdr;
         }
     }
+    // ⭐ 수리검 개편 (사방으로 느리게 발사되며 관통 갈갈)
     if (activeSkills.shuriken.level > 0) {
         activeTimers.shuriken--;
         if(activeTimers.shuriken <= 0) {
-            let count = activeSkills.shuriken.level;
+            let count = activeSkills.shuriken.level + 1; // 2, 3, 4, 5, 6개
+            let baseAng = Math.random() * Math.PI*2;
             for(let i=0; i<count; i++) {
-                projectiles.push({ x: pX, y: pY, state: 'seek', life: 300, type: 'shuriken', dmg: 15 + activeSkills.shuriken.level*8 + player.bonusDmg, target: null, isDead: false });
+                let ang = baseAng + (Math.PI*2/count)*i;
+                projectiles.push({ x: pX, y: pY, dx: Math.cos(ang)*4, dy: Math.sin(ang)*4, life: 300, type: 'shuriken', dmg: 10 + activeSkills.shuriken.level*5 + player.bonusDmg, bossMult: 3.0, isDead: false });
             }
             activeTimers.shuriken = 150 * player.cdr;
         }
@@ -429,7 +467,7 @@ function handleActiveSkills() {
                 let n = getNearestEnemy(dv.x, dv.y, 40000);
                 if(n) {
                     let dx = n.x-dv.x; let dy = n.y-dv.y; let dist = Math.sqrt(dx*dx+dy*dy);
-                    projectiles.push({ x: dv.x, y: dv.y, dx: (dx/dist)*12, dy: (dy/dist)*12, life: 40, type: 'dove_shot', dmg: 15 + activeSkills.dove.level*10 + player.bonusDmg, isDead: false });
+                    projectiles.push({ x: dv.x, y: dv.y, dx: (dx/dist)*12, dy: (dy/dist)*12, life: 40, type: 'dove_shot', dmg: 15 + activeSkills.dove.level*10 + player.bonusDmg, bossMult: 2.0, isDead: false });
                     dv.cd = (60 - (activeSkills.dove.level * 5)) * player.cdr;
                 }
             }
@@ -482,7 +520,7 @@ function handleActiveSkills() {
     if (activeSkills.nova.level > 0) {
         activeTimers.nova--;
         if(activeTimers.nova <= 0) {
-            let radius = 150 + activeSkills.nova.level*30; // ❄️ 서리 폭발 반경 상향
+            let radius = 150 + activeSkills.nova.level*30;
             effects.push({ x: pX, y: pY, type: 'nova', life: 20, maxLife: 20, radius: radius });
             for(let i=0; i<enemies.length; i++) {
                 if(enemies[i].isDead) continue;
@@ -608,7 +646,7 @@ function updateActiveUI() {
 }
 function resumeGame() { ui.levelUp.classList.add('hidden'); gameState = 'playing'; lastTime = performance.now(); }
 
-function checkDevMode() { if(gameState==='dev')return; if(prompt("비밀번호 입력:")==="1563") openDevMode(); }
+function checkDevMode() { if(gameState==='dev')return; openDevMode(); }
 function openDevMode() {
     const prev = gameState; gameState = 'dev'; handleInputEnd();
     document.getElementById('devSpawnToggle').checked = devConfig.spawnPaused;
@@ -627,7 +665,7 @@ function openDevMode() {
 }
 function closeDevMode() { ui.devScreen.classList.add('hidden'); gameState = ui.devScreen.dataset.prev || 'playing'; lastTime = performance.now(); }
 function toggleSpawn(cb) { devConfig.spawnPaused = cb.checked; }
-function killAllEnemies() { enemies.forEach(e => { e.isDead = true; gems.push({ x: e.x, y: e.y, isDead: false, type: e.isBoss||e.isMidBoss ? 'big_gem' : 'gem' }); }); if(bossMode){bossMode=false; updateUI('boss');} }
+function killAllEnemies() { enemies.forEach(e => { e.isDead = true; spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave); gems.push({ x: e.x, y: e.y, isDead: false, type: e.isBoss||e.isMidBoss ? 'big_gem' : 'gem' }); }); if(bossMode){bossMode=false; updateUI('boss');} }
 function modifySkill(k, amt, isAct) {
     let sk = isAct ? activeSkills[k] : passiveSkills[k];
     if(isAct && amt > 0 && sk.level === 0 && myActiveSlots.length >= 8) return; 
@@ -666,18 +704,17 @@ function update() {
             } else {
                 ui.warning.innerText = "⚠️ 적의 포위망 형성! (10초 뒤 축소) ⚠️"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3;
                 
-                // ⚠️ 포위망 웨이브 개편: 아주 가까운 거리에서 완벽한 원으로 소환
-                let waveCount = 30 + Math.floor(gameSeconds/60) * 8; // 시간이 갈수록 물량 폭발
-                let dist = Math.max(width, height) * 0.45; // 화면 살짝 바깥 (도망치면 부딪힘)
+                let waveCount = 30 + Math.floor(gameSeconds/60) * 10; 
+                let dist = Math.max(vWidth, vHeight) * 0.8; // ⚠️ 화면 밖 먼 곳에서 소환
                 for(let i=0; i<waveCount; i++) { 
                     let ang = (Math.PI * 2 / waveCount) * i;
-                    let maxHp = 250 * (1 + gameSeconds/300) * difficultyMult; // 10배 체력, 지수 증가 방지
+                    let maxHp = 250 * (1 + gameSeconds/300) * difficultyMult; 
                     let e = {
                         x: worldX + Math.cos(ang)*dist, y: worldY + Math.sin(ang)*dist,
-                        size: 16, speed: (1 + (gameSeconds/300)) * 0.4, // 천천히 조여옴
+                        size: 16, speed: (1 + (gameSeconds/300)) * 0.4, // 아주 느리게 조여옴
                         maxHp: maxHp, hp: maxHp, isBoss: false, isMidBoss: false, isWave: true, isDead: false,
                         slowStacks: 0, slowTimer: 0, freezeTimer: 0,
-                        waitTimer: 600 // 10초 대기
+                        waitTimer: 600 // ⚠️ 10초(600프레임) 대기
                     };
                     enemies.push(e);
                 }
@@ -689,7 +726,7 @@ function update() {
 
     if (waveWarningTimer > 0) { waveWarningTimer--; if (waveWarningTimer === 0) ui.warning.style.opacity = 0; }
 
-    // 👹 중간보스 스폰 체크 (웨이브 적이 0마리가 되면 소환)
+    // 👹 중간보스는 포위망이 완전히 박살나야 등장
     if (pendingMidBossCount > 0 && frameCount % 30 === 0) {
         let waveExists = enemies.some(e => e.isWave);
         if (!waveExists) {
@@ -706,6 +743,14 @@ function update() {
 
     handleBasicAttacks(); handleActiveSkills(); checkPlayerHit(); handleGemsAndDrops();
 
+    // 🎆 폭죽 파티클 물리엔진 업데이트
+    for(let i=0; i<particles.length; i++) {
+        let p = particles[i];
+        p.x += p.dx; p.y += p.dy;
+        p.dx *= 0.9; p.dy *= 0.9; // 마찰력
+        p.life--;
+    }
+
     for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
@@ -720,29 +765,8 @@ function update() {
             if(frameCount % 5 === 0) effects.push({x:p.x, y:p.y, type:'spark', life:15, maxLife:15, radius:4});
         } 
         else if(p.type === 'shuriken') { 
-            if(!p.target || p.target.isDead) {
-                p.state = 'seek';
-                let boss = enemies.find(e => (!e.isDead && (e.isBoss || e.isMidBoss)));
-                if(boss) p.target = boss;
-                else p.target = getNearestEnemy(p.x, p.y, 400000); 
-            }
-            if(p.state === 'seek') {
-                if(p.target) {
-                    let dx = p.target.x - p.x; let dy = p.target.y - p.y; let dist = Math.sqrt(dx*dx+dy*dy);
-                    p.dx = (dx/dist)*22; p.dy = (dy/dist)*22; 
-                    if(dist < 30) p.state = 'grind';
-                }
-            }
-            if(p.state === 'grind') {
-                if(!p.target || p.target.isDead) { p.state = 'seek'; } 
-                else { 
-                    p.x = p.target.x; p.y = p.target.y; p.dx=0; p.dy=0; 
-                    if(frameCount % 3 === 0) { 
-                        damageEnemy(p.target, p.dmg * 0.3, 0, 0, 0); 
-                        effects.push({x: p.x + (Math.random()-0.5)*40, y: p.y + (Math.random()-0.5)*40, type: 'spark', life: 10, maxLife: 10, radius: 5});
-                    }
-                } 
-            }
+            // ⭐ 수리검: 일정한 방향으로 느리게 날아가며 관통
+            p.x += p.dx; p.y += p.dy; 
         } 
         else if(p.type === 'shield') {
             p.angle += 0.1047; 
@@ -757,14 +781,15 @@ function update() {
             }
         }
 
-        p.x += p.dx || 0; p.y += p.dy || 0; p.life--; 
+        if(p.type !== 'shuriken') { p.x += p.dx || 0; p.y += p.dy || 0; }
+        p.life--; 
         
         if (p.life <= 0) { 
             if(p.type === 'bomb') {
                 effects.push({x:p.x, y:p.y, type:'explosion', life:15, maxLife:15, radius:80});
-                for(let f=0; f<4; f++) { 
-                    let ang = (Math.PI*2 / 4) * f + Math.random();
-                    projectiles.push({ x: p.x, y: p.y, dx: Math.cos(ang)*8, dy: Math.sin(ang)*8, life: 30, type: 'bomb_frag', dmg: p.dmg * 0.5, isDead: false });
+                for(let f=0; f<6; f++) { 
+                    let ang = (Math.PI*2 / 6) * f + Math.random();
+                    projectiles.push({ x: p.x, y: p.y, dx: Math.cos(ang)*8, dy: Math.sin(ang)*8, life: 30, type: 'bomb_frag', dmg: p.dmg * 0.5, bossMult: p.bossMult, isDead: false });
                 }
             } else if (p.type === 'bomb_frag') {
                 effects.push({x:p.x, y:p.y, type:'explosion', life:10, maxLife:10, radius:40});
@@ -774,34 +799,45 @@ function update() {
 
         for (let j = 0; j < enemies.length; j++) {
             let e = enemies[j]; if (e.isDead) continue;
-            let hitRadSq = (p.type==='bomb'||p.type==='shuriken') ? 0 : 400; 
+            let hitRadSq = 400; 
             if(p.type==='missile') hitRadSq=625; 
-            if(p.type==='bomb_frag') hitRadSq=400;
+            if(p.type==='bomb' || p.type==='bomb_frag') hitRadSq=400;
             if(p.type==='big_orb') hitRadSq=900;
             if(p.type==='shield') hitRadSq=625; 
-            if(p.type==='boomerang') hitRadSq=900; 
+            if(p.type==='boomerang') hitRadSq=1600; 
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
+                let isBossTarget = (e.isBoss || e.isMidBoss);
+                let mult = (p.bossMult && isBossTarget) ? p.bossMult : 1;
+
                 if (p.type === 'big_orb') {
                     effects.push({ x: p.x, y: p.y, type: 'explosion', life: 20, maxLife: 20, radius: 120 });
-                    for(let k=0; k<enemies.length; k++) { if(!enemies[k].isDead && getDistSq(p.x, p.y, enemies[k].x, enemies[k].y)<14400) damageEnemy(enemies[k], p.dmg, p.kb, 0, 0); }
+                    for(let k=0; k<enemies.length; k++) { if(!enemies[k].isDead && getDistSq(p.x, p.y, enemies[k].x, enemies[k].y)<14400) damageEnemy(enemies[k], p.dmg*mult, p.kb, 0, 0); }
+                    p.isDead = true; break;
                 } else if(p.type === 'bomb_frag') {
-                    damageEnemy(e, p.dmg, 5, 0, 0);
+                    damageEnemy(e, p.dmg*mult, 5, 0, 0);
                     effects.push({x:p.x, y:p.y, type:'explosion', life:10, maxLife:10, radius:40});
                     p.isDead = true; break;
                 } else if(p.type === 'missile') { 
-                    damageEnemy(e, p.dmg, p.kb || 5, 0, 0);
+                    damageEnemy(e, p.dmg*mult, p.kb || 5, 0, 0);
                     effects.push({ x: e.x, y: e.y, type: 'explosion', life: 12, maxLife: 12, radius: 30 });
                     p.isDead = true; break;
+                } else if(p.type === 'shuriken') {
+                    // ⭐ 수리검 적중 시: 데미지를 주고 엄청 느려짐 (관통 유지)
+                    if(frameCount % 5 === 0) {
+                        damageEnemy(e, p.dmg*mult, 0, 0, 0); 
+                        effects.push({x: p.x + (Math.random()-0.5)*40, y: p.y + (Math.random()-0.5)*40, type: 'spark', life: 10, maxLife: 10, radius: 5});
+                    }
+                    p.dx *= 0.8; p.dy *= 0.8; // 마찰로 느려짐
                 } else if(p.type !== 'boomerang' && p.type !== 'shield') { 
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
-                    damageEnemy(e, p.dmg, p.kb || 5, edx/edist, edy/edist);
+                    damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
                     effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
                     
                     if(p.type === 'dove_shot' || p.type === 'arrow') { p.isDead = true; break; }
                 } else {
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
-                    damageEnemy(e, p.dmg, p.kb || 0, edx/edist, edy/edist); 
+                    damageEnemy(e, p.dmg*mult, p.kb || 0, edx/edist, edy/edist); 
                     effects.push({ x: e.x, y: e.y, type: 'hit', life: 5, maxLife: 5, radius: 10 });
                 }
             }
@@ -823,7 +859,7 @@ function update() {
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i]; if (e.isDead) continue;
         
-        // ⚠️ 10초(600프레임)간 제자리에 대기하며 조여올 준비
+        // ⚠️ 포위망 대기 로직 (연산 최적화)
         if (e.isWave && e.waitTimer > 0) {
             e.waitTimer--;
             continue; 
@@ -849,19 +885,24 @@ function update() {
 
     enemies = enemies.filter(e => !e.isDead); projectiles = projectiles.filter(p => !p.isDead);
     gems = gems.filter(g => !g.isDead); drops = drops.filter(d => !d.isDead); effects = effects.filter(ef => ef.life > 0);
+    particles = particles.filter(p => p.life > 0);
 }
 
 function draw() {
     ctx.fillStyle = '#112211'; ctx.fillRect(0, 0, width, height);
-    const cx = width/2; const cy = height/2;
+    ctx.save();
+    ctx.scale(cameraScale, cameraScale); // 📱 모바일 카메라 스케일 적용
+
+    const cx = vWidth/2; const cy = vHeight/2;
 
     ctx.strokeStyle = '#1d3b1d'; ctx.lineWidth = 2; ctx.beginPath();
     for (let i=0; i<grasses.length; i++) {
-        let sx = (grasses[i].x - worldX) % (width*1.5); let sy = (grasses[i].y - worldY) % (height*1.5);
-        if (sx < -width*0.2) sx += width*1.5; if (sy < -height*0.2) sy += height*1.5;
+        let sx = (grasses[i].x - worldX) % (vWidth*1.5); let sy = (grasses[i].y - worldY) % (vHeight*1.5);
+        if (sx < -vWidth*0.2) sx += vWidth*1.5; if (sy < -vHeight*0.2) sy += vHeight*1.5;
         ctx.moveTo(sx, sy); ctx.lineTo(sx+5, sy-grasses[i].length);
     }
     ctx.stroke();
+    
     ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, player.magnetRange, 0, Math.PI*2); ctx.stroke();
     ctx.strokeStyle='rgba(255,100,100,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, player.range, 0, Math.PI*2); ctx.stroke();
 
@@ -895,8 +936,19 @@ function draw() {
 
     for (let i=0; i<enemies.length; i++) {
         let e = enemies[i]; let ex = e.x-worldX+cx; let ey = e.y-worldY+cy;
-        ctx.fillStyle = e.isBoss ? '#dd2222' : (e.isMidBoss ? '#aa33aa' : '#33cc55'); 
-        ctx.beginPath(); ctx.arc(ex, ey, e.size, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = e.isBoss ? '#dd2222' : (e.isMidBoss ? '#aa33aa' : (e.isWave ? '#ffaa22' : '#33cc55')); 
+        
+        // ⚠️ 웨이브 적은 뾰족한 다이아몬드 형태로 변경
+        if (e.isWave) {
+            ctx.save(); ctx.translate(ex, ey); ctx.rotate(frameCount*0.05);
+            ctx.fillRect(-e.size, -e.size, e.size*2, e.size*2);
+            ctx.rotate(Math.PI/4);
+            ctx.fillRect(-e.size, -e.size, e.size*2, e.size*2);
+            ctx.restore();
+        } else {
+            ctx.beginPath(); ctx.arc(ex, ey, e.size, 0, Math.PI*2); ctx.fill();
+        }
+
         if(e.hp < e.maxHp) { ctx.fillStyle='#000'; ctx.fillRect(ex-15, ey-e.size-8, 30, 4); ctx.fillStyle='#f00'; ctx.fillRect(ex-15, ey-e.size-8, 30*(e.hp/e.maxHp), 4); }
     }
 
@@ -907,16 +959,7 @@ function draw() {
 
     for (let i=0; i<effects.length; i++) {
         let ef = effects[i]; let ex = ef.x-worldX+cx; let ey = ef.y-worldY+cy; let p = ef.life/ef.maxLife; let invP = 1-p;
-        
-        // 💥 적 처치 시 십자 파편 이펙트
-        if(ef.type === 'enemy_death') {
-            ctx.fillStyle = `rgba(${ef.color}, ${p * 0.6})`;
-            ctx.beginPath(); ctx.arc(ex, ey, ef.radius * (1 + invP*0.5), 0, Math.PI*2); ctx.fill();
-            ctx.strokeStyle = `rgba(${ef.color}, ${p})`; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(ex - ef.radius*invP, ey); ctx.lineTo(ex + ef.radius*invP, ey); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(ex, ey - ef.radius*invP); ctx.lineTo(ex, ey + ef.radius*invP); ctx.stroke();
-        }
-        else if(ef.type === 'slash') { ctx.strokeStyle = `rgba(255,255,255,${p*0.8})`; ctx.lineWidth = 15*p; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, ef.angle-1, ef.angle+1); ctx.stroke(); } 
+        if(ef.type === 'slash') { ctx.strokeStyle = `rgba(255,255,255,${p*0.8})`; ctx.lineWidth = 15*p; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, ef.angle-1, ef.angle+1); ctx.stroke(); } 
         else if(ef.type === 'explosion') { ctx.fillStyle = `rgba(255,100,50,${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = `rgba(255,255,255,${p*0.5})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP*0.5, 0, Math.PI*2); ctx.fill(); } 
         else if(ef.type === 'hit') { ctx.fillStyle = `rgba(255,255,100,${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*p, 0, Math.PI*2); ctx.fill(); } 
         else if(ef.type === 'spark') { ctx.fillStyle = `rgba(255, 150, 0, ${p})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*p, 0, Math.PI*2); ctx.fill(); } 
@@ -927,6 +970,15 @@ function draw() {
         else if(ef.type === 'freeze') { ctx.fillStyle = `rgba(150, 200, 255, 0.7)`; ctx.fillRect(ex - ef.radius, ey - ef.radius, ef.radius*2, ef.radius*2); }
         else if(ef.type === 'heal') { ctx.fillStyle = `rgba(100, 255, 100, ${p})`; ctx.font="bold 16px sans-serif"; ctx.fillText("+20", ex-10, ey-invP*20); }
     }
+
+    // 🎆 폭죽 파티클 그리기
+    for (let i=0; i<particles.length; i++) {
+        let pt = particles[i]; let px = pt.x-worldX+cx; let py = pt.y-worldY+cy;
+        ctx.globalAlpha = pt.life / pt.maxLife;
+        ctx.fillStyle = pt.color;
+        ctx.fillRect(px-2, py-2, 4, 4);
+    }
+    ctx.globalAlpha = 1.0;
 
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
@@ -944,8 +996,8 @@ function draw() {
         else if(pr.type === 'shuriken') { 
             ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount*0.8); 
             ctx.fillStyle='#aaa'; 
-            ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(4, -4); ctx.lineTo(12, 0); ctx.lineTo(4, 4); ctx.lineTo(0, 12); ctx.lineTo(-4, 4); ctx.lineTo(-12, 0); ctx.lineTo(-4, -4); ctx.fill(); 
-            ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(5, -5); ctx.lineTo(15, 0); ctx.lineTo(5, 5); ctx.lineTo(0, 15); ctx.lineTo(-5, 5); ctx.lineTo(-15, 0); ctx.lineTo(-5, -5); ctx.fill(); 
+            ctx.fillStyle='#0ff'; ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
             ctx.restore(); 
         }
         else if(pr.type === 'shield') { 
@@ -956,7 +1008,7 @@ function draw() {
         }
         else if(pr.type === 'boomerang') { 
             ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount*0.4); 
-            ctx.strokeStyle='#0ff'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,0,20,0,Math.PI); ctx.stroke(); 
+            ctx.strokeStyle='#0ff'; ctx.lineWidth=6; ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI); ctx.stroke(); // 🪃 부메랑 더 크게 
             ctx.restore(); 
         }
     }
@@ -967,7 +1019,9 @@ function draw() {
         if (joystick.dx!==0 || joystick.dy!==0) { ctx.fillStyle = '#ff8800'; ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-18, 4); ctx.lineTo(-18, -4); ctx.fill(); }
         ctx.restore();
     }
+    ctx.restore(); // 스케일 복구
 
+    // 조이스틱 (UI 레이어처럼 화면 픽셀 기준으로 그리기 위해 스케일 밖에서 렌더링)
     if (joystick.active && gameState==='playing') {
         ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joystick.originX, joystick.originY, joystick.radius, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(joystick.x, joystick.y, 15, 0, Math.PI*2); ctx.fill();

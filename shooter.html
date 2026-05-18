@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V48 소수정예 최적화)</title>
+    <title>로그라이트 화력 슈팅 (V49 초반 밸런스 조정)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -317,7 +317,8 @@
             if(gameState !== 'PLAYING') return;
             for(let k=0; k<100; k++) {
                 let spd = 1.5 + Math.random()*2.0;
-                let swarmHp = Math.max(1, (5 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
+                // 초반 밸런스 패치 적용 (1부터 시작)
+                let swarmHp = Math.max(1, (1 + bossKills * 1.5) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                 enemies.push({ x: Math.random()*canvas.width, y: -Math.random()*400 - 50, w: 30, h: 30, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
             }
             closeDevMode();
@@ -373,11 +374,9 @@
         }
 
         function recalculateStats() {
-            // 밸런스 조정: 플레이어 평타 딜 증가율 버프 (+3 및 1.05배)
             p.base_dmg = 1; for(let i=0; i<(p.lvl_atk||0); i++) p.base_dmg = (p.base_dmg + 3) * 1.05; 
             p.base_dmg *= p.cheat_dmg_mult; 
             
-            // 밸런스 조정: 플레이어 스킬 딜 증가율 버프 (1.15배)
             p.skill_mult = 1; for(let i=0; i<(p.lvl_skill_dmg||0); i++) p.skill_mult *= 1.15; 
             p.skill_mult *= p.cheat_skill_mult; 
 
@@ -750,24 +749,25 @@
                     isBossWarning = true; bossWarningTimer = 120; isSwarm = false; 
                 } 
                 else {
-                    // 밸런스 조정: 물량 스폰 속도 및 동시 생성 숫자 대폭 하향, 체력 상승
-                    if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 120) { // 한계치 감소
-                        let swarmSpawnRate = Math.max(10, 30 - bossKills); // 느려진 스폰율
+                    if (isSwarm && swarmWarningTimer <= 0 && enemies.length < 120) { 
+                        let swarmSpawnRate = Math.max(10, 30 - bossKills); 
                         if (frameCount % swarmSpawnRate === 0) {
-                            let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); // 소수 정예화
+                            let swarmCount = Math.min(10, 3 + Math.floor(bossKills / 2)); 
                             for(let k=0; k<swarmCount; k++) {
                                 let spd = 3.0 + Math.random()*2.0 + (bossKills * 0.1);
-                                let swarmHp = Math.max(1, (5 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
+                                // 초반 밸런스 패치 적용 (스웜몹 기본체력 1로 감소)
+                                let swarmHp = Math.max(1, (1 + bossKills * 1.5) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30, w: 25, h: 25, hp: swarmHp, maxHp: swarmHp, speed: spd, isBoss: false, color: '#e67e22', burnTimer: 0 });
                             }
                         }
                     } else if (!isSwarm) {
                         let spawnRate = Math.max(20, 60 - bossKills * 2);
                         let hordeCount = Math.min(8, 2 + Math.floor(bossKills / 3));
-                        if (frameCount % spawnRate === 0 && enemies.length < 80) { // 한계치 감소
+                        if (frameCount % spawnRate === 0 && enemies.length < 80) { 
                             for(let k=0; k<hordeCount; k++) {
                                 let spd = 1.5 + Math.random()*1.5 + (bossKills * 0.1);
-                                let normHp = Math.max(1, (3 + bossKills * 2) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
+                                // 초반 밸런스 패치 적용 (일반몹 기본체력 2로 감소)
+                                let normHp = Math.max(1, (2 + bossKills * 1.8) * p.diffMult * Math.pow(1 + p.diffExpAdd + 0.1, bossKills));
                                 enemies.push({ x: Math.random()*canvas.width, y: -30 - Math.random()*50, w: 30, h: 30, hp: normHp, maxHp: normHp, speed: spd, isBoss: false, burnTimer: 0 });
                             }
                         }
@@ -794,7 +794,6 @@
                 if(bossWarningTimer <= 0) {
                     isBossWarning = false; isBossStage = true; bossTimer = 30;
                     enemies = []; bossBullets = [];
-                    // 보스 체력도 유저 버프에 맞춰 상향
                     let bh = 250 * p.diffMult * Math.pow(p.cheat_boss_hp + p.diffExpAdd + 0.05, bossKills);
                     enemies.push({ x: canvas.width/2, y: 160, w: 90, h: 90, hp: bh, maxHp: bh, speed: 0, isBoss: true, iframe: 0, burnTimer: 0 });
                     document.getElementById('boss-timer-display').innerText = `⚠️ 보스 출현! 남은 시간: ${bossTimer}s ⚠️`;

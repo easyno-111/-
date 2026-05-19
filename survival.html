@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Space Survivor v0.15.0</title>
+    <!-- 버전 업데이트: v0.16.2 -->
+    <title>Space Survivor v0.16.2</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #112211; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
         #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         .version { position: absolute; top: 15px; left: 15px; font-size: 14px; color: rgba(255,255,255,0.6); font-weight: bold; }
         #devTrigger { position: absolute; top: 0; right: 0; width: 80px; height: 80px; pointer-events: auto; z-index: 99; cursor: crosshair; }
+        
+        #recipeBtn { position: absolute; top: 10px; left: 80px; background: rgba(0,0,0,0.7); color: #ffcc00; border: 1px solid #ffcc00; padding: 6px 12px; border-radius: 8px; cursor: pointer; pointer-events: auto; z-index: 99; font-weight: bold; font-size: 14px; transition: 0.2s; box-shadow: 0 0 10px rgba(255,200,0,0.2); }
+        #recipeBtn:hover { background: rgba(255,200,0,0.3); transform: scale(1.05); }
 
         #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 90%; }
         #timer { font-size: 32px; font-weight: 900; font-family: monospace; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
@@ -68,13 +72,17 @@
             .skill-title { font-size: 14px; }
             .skill-desc { font-size: 12px; }
             #levelText { font-size: 18px; }
+            #recipeBtn { top: 10px; left: 60px; font-size: 12px; padding: 4px 8px; }
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <div class="version">v0.15.0</div>
+        <!-- 버전 v0.16.2 -->
+        <div class="version">v0.16.2</div>
+        <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
+        
         <div id="devTrigger" onclick="checkDevMode()"></div>
 
         <div id="topBar">
@@ -106,6 +114,24 @@
             <button class="btn" onclick="startGame('melee')">🗡️ 근접 요원</button>
             <button class="btn" onclick="startGame('ranged')">🏹 원거리 저격수</button>
             <button class="btn" onclick="startGame('magic')">✨ 초능력술사</button>
+        </div>
+
+        <div id="recipeScreen" class="overlay hidden">
+            <h2 style="color: #ffcc00; font-size: 36px; text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 30px; text-align: center;">🔥 스킬 조합식</h2>
+            
+            <div class="skill-card combo-type" style="width: 450px; margin-bottom: 15px; cursor: default;">
+                <div class="skill-title"><span>🎇 레이저 폭탄</span> <span style="color:#ffcc00;">궁극기</span></div>
+                <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔦 레이저 빔 (Lv.5) + 💣 폭탄 (Lv.5)</div>
+                <div class="skill-desc">5개의 파멸적 궤도 레이저 기둥이 회전하며 적을 갈아버립니다. (시전 범위 대폭발)</div>
+            </div>
+            
+            <div class="skill-card combo-type" style="width: 450px; margin-bottom: 30px; cursor: default; border-color: #00ffff; box-shadow: 0 0 20px #00ffff;">
+                <div class="skill-title" style="color:#00ffff;"><span>⚡ 번개 수리검</span> <span style="color:#ffcc00;">궁극기</span></div>
+                <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🌩️ 낙뢰 (Lv.5) + ⭐ 수리검 (Lv.5)</div>
+                <div class="skill-desc">사방으로 날아가는 거대 수리검 4개가 주변 적들에게 지속적으로 연쇄 벼락을 내리칩니다.</div>
+            </div>
+
+            <button class="btn" style="background: linear-gradient(135deg, #444, #222);" onclick="closeRecipe()">돌아가기 (게임 재개)</button>
         </div>
 
         <div id="levelUpScreen" class="overlay hidden">
@@ -140,6 +166,13 @@
             <h2 id="survivalTimeResult" style="color: #aaa; margin-bottom: 40px;">버틴 시간: 00:00</h2>
             <button class="btn" onclick="location.reload()">재도전</button>
         </div>
+
+        <!-- 🎯 신규 게임 클리어 화면 -->
+        <div id="gameClearScreen" class="overlay hidden">
+            <h1 style="color: #44ff44; text-shadow: 0 0 20px rgba(0,255,0,0.5);">MISSION CLEAR</h1>
+            <h2 id="clearTimeResult" style="color: #aaa; margin-bottom: 40px;">클리어 시간: 15:00</h2>
+            <button class="btn" onclick="location.reload()">새 게임 시작</button>
+        </div>
     </div>
 
 <script>
@@ -152,7 +185,10 @@ const ui = {
     menu: document.getElementById('menuScreen'), levelUp: document.getElementById('levelUpScreen'), lvlUpTitle: document.getElementById('lvlUpTitle'), skillContainer: document.getElementById('skillContainer'),
     chestScreen: document.getElementById('chestScreen'), chestImage: document.getElementById('chestImage'), chestFlash: document.getElementById('chestFlash'),
     gameOver: document.getElementById('gameOverScreen'), result: document.getElementById('survivalTimeResult'), devScreen: document.getElementById('devScreen'), 
-    devPassivesContainer: document.getElementById('devPassivesContainer'), devActivesContainer: document.getElementById('devActivesContainer')
+    devPassivesContainer: document.getElementById('devPassivesContainer'), devActivesContainer: document.getElementById('devActivesContainer'),
+    recipeScreen: document.getElementById('recipeScreen'),
+    // 클리어 화면 UI 객체 매핑
+    gameClear: document.getElementById('gameClearScreen'), clearResult: document.getElementById('clearTimeResult')
 };
 
 const FPS = 60; const frameInterval = 1000 / FPS; let lastTime = 0;
@@ -164,7 +200,7 @@ let difficultyMult = 1.0;
 
 let isTimePaused = false; let waveInProgress = false; let waveTotal = 0; let waveKilled = 0; 
 let midBossSpawned = false; let chestOpening = false; let currentChestRarity = null;
-let midBossKills = 0; // 📈 웨이브 스케일링용 스택
+let midBossKills = 0; 
 
 let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
@@ -176,13 +212,15 @@ const passiveSkills = {
     knockback:    { level: 0, max: 8, icon: "🛡️", name: "넉백 증가", desc: "기본 공격의 넉백이 늘어납니다." },
     hpRegen:      { level: 0, max: 8, icon: "💚", name: "체력 회복력", desc: "초당 체력이 서서히 회복됩니다." },
     lifeSteal:    { level: 0, max: 8, icon: "🦇", name: "체력 흡수", desc: "적 처치 시 체력을 회복합니다." },
-    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 증가합니다." },
+    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 폭발적으로 증가합니다." },
     magnet:       { level: 0, max: 8, icon: "🧲", name: "자석 범위 증가", desc: "경험치 획득 범위가 넓어집니다." },
     moveSpeed:    { level: 0, max: 8, icon: "👟", name: "이동속도 증가", desc: "이동 속도가 빨라집니다." }
 };
 
 const activeSkills = {
-    laser_bomb: { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "5갈래의 파멸적 궤도 레이저가 회전하며 적을 갈아버립니다." }, // 🚀 신규 스킬
+    laser_bomb:       { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "위에서 꽂아 내리는 5개의 거대 기둥이 회전합니다." }, 
+    thunder_shuriken: { level: 0, max: 1, icon: "⚡", name: "번개 수리검", desc: "거대 수리검 4개가 비행하며 주변을 번개로 지집니다." },
+    
     missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사." },
     shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "주위를 도는 방패. 적을 밀쳐냅니다." }, 
     bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "분열 폭탄. 보스에게 3배의 피해를 줍니다." }, 
@@ -197,9 +235,9 @@ const activeSkills = {
 let myActiveSlots = []; 
 
 const charSpecs = {
-    melee: { color: '#ff5555', range: 120, fireCooldown: 50, speed: 3.5, damage: 30, knockback: 15, baseMagnet: 100 },
-    ranged: { color: '#55ff55', range: 300, fireCooldown: 25, speed: 3.0, damage: 15, knockback: 5, baseMagnet: 100 },
-    magic: { color: '#aa55ff', range: 220, fireCooldown: 60, speed: 2.8, damage: 25, knockback: 10, baseMagnet: 100 }
+    melee:  { color: '#ff5555', range: 120, fireCooldown: 50, speed: 4.0, damage: 30, knockback: 15, baseMagnet: 100 },
+    ranged: { color: '#55ff55', range: 300, fireCooldown: 25, speed: 3.5, damage: 15, knockback: 5, baseMagnet: 100 },
+    magic:  { color: '#aa55ff', range: 220, fireCooldown: 60, speed: 3.3, damage: 25, knockback: 10, baseMagnet: 100 }
 };
 
 const player = { 
@@ -209,7 +247,7 @@ const player = {
     bonusDmg: 0, cdr: 1.0 
 };
 
-let activeTimers = { missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0 };
+let activeTimers = { missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0 };
 let dovesState = []; 
 
 function resize() { 
@@ -230,7 +268,7 @@ function recalcStats() {
     player.damage = base.damage + player.bonusDmg; 
     player.fireCooldown = Math.max(5, base.fireCooldown * player.cdr);
     player.knockback = base.knockback + (passiveSkills.knockback.level * 3);
-    player.speed = base.speed + (passiveSkills.moveSpeed.level * 0.4);
+    player.speed = base.speed + (passiveSkills.moveSpeed.level * 0.6);
     player.magnetRange = base.baseMagnet + (passiveSkills.magnet.level * 80);
 
     if(player.type === 'melee') player.range = base.range + (passiveSkills.weaponUpgrade.level * 25);
@@ -252,6 +290,18 @@ function startGame(type) {
     midBossKills = 0;
     
     gameState = 'playing'; ui.menu.classList.add('hidden'); updateUI(); requestAnimationFrame(gameLoop);
+}
+
+function openRecipe() {
+    if(gameState === 'playing') {
+        gameState = 'recipe'; handleInputEnd();
+        ui.recipeScreen.classList.remove('hidden');
+    }
+}
+function closeRecipe() {
+    ui.recipeScreen.classList.add('hidden');
+    gameState = 'playing';
+    lastTime = performance.now();
 }
 
 function handleInputStart(x,y) { if(gameState!=='playing')return; joystick.active=true; joystick.originX=joystick.x=x; joystick.originY=joystick.y=y; }
@@ -276,13 +326,13 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     if (devConfig.spawnPaused && !isWave && !isBoss && !isMidBoss) return;
     const angle = Math.random() * Math.PI * 2; 
     const spawnRadius = Math.max(vWidth, vHeight) * 0.6; 
-    let healthMultiplier = (1 + (gameSeconds / 60) * 0.6) * difficultyMult; 
+    
+    let healthMultiplier = (1 + (gameSeconds / 60) * 1.0) * difficultyMult; 
     
     let size = isBoss ? 55 : (isMidBoss ? 35 : 14);
     let baseSpeed = isBoss ? 1.8 : (isMidBoss ? 2.2 : (1 + Math.random()*0.5 + (gameSeconds/300)));
     
-    // 👹 보스 체력 완화 스케일링
-    let maxHp = isBoss ? (5000 + gameSeconds * 100) * difficultyMult : (isMidBoss ? 1000 + gameSeconds*15 : 25*healthMultiplier);
+    let maxHp = isBoss ? (5000 + gameSeconds * 100) * difficultyMult : (isMidBoss ? 1000 + gameSeconds*15 : 40 * healthMultiplier);
     
     let e = {
         x: worldX + Math.cos(angle)*spawnRadius, y: worldY + Math.sin(angle)*spawnRadius,
@@ -376,7 +426,15 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
 
         if(e.isBoss) { 
             bossMode = false; isTimePaused = false; updateUI('boss'); 
-            drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false }); // 👑 보스는 황금 상자 100% 확정
+            drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false }); 
+            
+            // 🎯 15분(900초) 이상 시점에 보스를 잡으면 클리어 처리
+            if (gameSeconds >= 900) {
+                gameState = 'gameclear';
+                ui.clearResult.innerText = `클리어 시간: ${formatTime(gameSeconds)}`;
+                ui.gameClear.classList.remove('hidden');
+                return; // 클리어 시 나머지 잡다한 처리 중단
+            }
         }
         if(e.isWave && !midBossSpawned) {
             waveKilled++;
@@ -392,7 +450,7 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
         }
 
         let gemType = (e.isBoss || e.isMidBoss) ? 'big_gem' : (e.isWave ? 'tiny_gem' : 'gem');
-        gems.push({ x: e.x, y: e.y, isDead: false, type: gemType });
+        gems.push({ x: e.x, y: e.y, isDead: false, type: gemType, isMagnetized: false });
         
         let roll = Math.random();
         if(roll < 0.005) drops.push({ x: e.x, y: e.y, type: 'magnet', isDead: false });
@@ -472,7 +530,6 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
-    // 🎇 레이저 폭탄 (합성 스킬) 발동
     if (activeSkills.laser_bomb.level > 0) {
         activeTimers.laser_bomb--;
         if(activeTimers.laser_bomb <= 0) {
@@ -480,13 +537,29 @@ function handleActiveSkills() {
             let tx = n ? n.x : pX; let ty = n ? n.y : pY;
             projectiles.push({
                 x: tx, y: ty, type: 'laser_bomb', life: 180, angle: 0,
-                radius: 350, dmg: 100 + player.bonusDmg * 2, isDead: false
+                radius: 200, dmg: 100 + player.bonusDmg * 2, isDead: false
             });
-            activeTimers.laser_bomb = 240 * player.cdr; // 약 4초 쿨
+            activeTimers.laser_bomb = 240 * player.cdr; 
         }
     }
 
-    // 결합 스킬이 있으면 레이저, 폭탄은 발동 안함
+    if (activeSkills.thunder_shuriken.level > 0) {
+        activeTimers.thunder_shuriken--;
+        if(activeTimers.thunder_shuriken <= 0) {
+            let count = 4; 
+            let baseAng = Math.random() * Math.PI*2;
+            for(let i=0; i<count; i++) {
+                let ang = baseAng + (Math.PI*2/count)*i;
+                projectiles.push({ 
+                    x: pX, y: pY, dx: Math.cos(ang)*3, dy: Math.sin(ang)*3, 
+                    life: 300, type: 'thunder_shuriken', 
+                    dmg: 60 + player.bonusDmg * 2, isDead: false 
+                });
+            }
+            activeTimers.thunder_shuriken = 150 * player.cdr;
+        }
+    }
+
     if (activeSkills.missile.level > 0) {
         activeTimers.missile--;
         if(activeTimers.missile <= 0) {
@@ -508,6 +581,7 @@ function handleActiveSkills() {
             activeTimers.shield = 450 * player.cdr; 
         }
     }
+    
     if (activeSkills.bomb.level > 0 && activeSkills.laser_bomb.level === 0) {
         activeTimers.bomb--;
         if(activeTimers.bomb <= 0) {
@@ -523,7 +597,7 @@ function handleActiveSkills() {
             activeTimers.bomb = 90 * player.cdr;
         }
     }
-    if (activeSkills.shuriken.level > 0) {
+    if (activeSkills.shuriken.level > 0 && activeSkills.thunder_shuriken.level === 0) {
         activeTimers.shuriken--;
         if(activeTimers.shuriken <= 0) {
             let count = activeSkills.shuriken.level + 1; 
@@ -535,6 +609,24 @@ function handleActiveSkills() {
             activeTimers.shuriken = 150 * player.cdr;
         }
     }
+    if (activeSkills.lightning.level > 0 && activeSkills.thunder_shuriken.level === 0) {
+        activeTimers.lightning--;
+        if(activeTimers.lightning <= 0 && enemies.length > 0) {
+            let count = activeSkills.lightning.level;
+            for(let i=0; i<count; i++) {
+                let target = enemies[Math.floor(Math.random() * enemies.length)];
+                if(target && !target.isDead) {
+                    effects.push({ x: target.x, y: target.y, type: 'lightning', life: 15, maxLife: 15, radius: 30 });
+                    damageEnemy(target, 100 + activeSkills.lightning.level*50 + (player.bonusDmg*2), 0, 0, 0);
+                    for(let j=0; j<enemies.length; j++) {
+                        if(enemies[j] !== target && !enemies[j].isDead && getDistSq(target.x, target.y, enemies[j].x, enemies[j].y) < 6400) damageEnemy(enemies[j], 30 + player.bonusDmg, 0, 0, 0);
+                    }
+                }
+            }
+            activeTimers.lightning = 150 * player.cdr;
+        }
+    }
+
     if (activeSkills.dove.level > 0) {
         let reqDoves = Math.min(3, Math.ceil(activeSkills.dove.level / 2)); 
         while(dovesState.length < reqDoves) dovesState.push({ x: pX, y: pY, cd: 0 });
@@ -580,23 +672,7 @@ function handleActiveSkills() {
             activeTimers.poison = 100 * player.cdr;
         }
     }
-    if (activeSkills.lightning.level > 0) {
-        activeTimers.lightning--;
-        if(activeTimers.lightning <= 0 && enemies.length > 0) {
-            let count = activeSkills.lightning.level;
-            for(let i=0; i<count; i++) {
-                let target = enemies[Math.floor(Math.random() * enemies.length)];
-                if(target && !target.isDead) {
-                    effects.push({ x: target.x, y: target.y, type: 'lightning', life: 15, maxLife: 15, radius: 30 });
-                    damageEnemy(target, 100 + activeSkills.lightning.level*50 + (player.bonusDmg*2), 0, 0, 0);
-                    for(let j=0; j<enemies.length; j++) {
-                        if(enemies[j] !== target && !enemies[j].isDead && getDistSq(target.x, target.y, enemies[j].x, enemies[j].y) < 6400) damageEnemy(enemies[j], 30 + player.bonusDmg, 0, 0, 0);
-                    }
-                }
-            }
-            activeTimers.lightning = 150 * player.cdr;
-        }
-    }
+    
     if (activeSkills.nova.level > 0) {
         activeTimers.nova--;
         if(activeTimers.nova <= 0) {
@@ -642,17 +718,23 @@ function handleGemsAndDrops() {
     for (let i = 0; i < gems.length; i++) {
         const g = gems[i]; if (g.isDead) continue;
         const distSq = getDistSq(worldX, worldY, g.x, g.y);
+        
         if (activeMagnet > 0 || distSq < magnetSq) {
-            const dist = Math.sqrt(distSq) || 1;
-            g.x += ((worldX - g.x) / dist) * 12; g.y += ((worldY - g.y) / dist) * 12;
+            g.isMagnetized = true;
         }
+        
+        if (g.isMagnetized) {
+            const dist = Math.sqrt(distSq) || 1;
+            g.x += ((worldX - g.x) / dist) * 15; 
+            g.y += ((worldY - g.y) / dist) * 15;
+        }
+        
         if (getDistSq(worldX, worldY, g.x, g.y) < pickupSq) {
             g.isDead = true; 
-            let baseXP = 10;
+            let baseXP = 10; 
             if(g.type === 'big_gem') baseXP = 40;
             if(g.type === 'tiny_gem') baseXP = 1; 
-            
-            gainedXp += baseXP * (1 + (passiveSkills.xpGain.level * 0.2));
+            gainedXp += baseXP * (1 + (passiveSkills.xpGain.level * 0.8));
         }
     }
     
@@ -662,7 +744,7 @@ function handleGemsAndDrops() {
             d.isDead = true;
             if(d.type === 'chest') {
                 gameState = 'chest'; handleInputEnd();
-                currentChestRarity = d.rarity; // null 이면 랜덤 
+                currentChestRarity = d.rarity; 
                 ui.chestImage.innerText = '📦';
                 ui.chestScreen.classList.remove('hidden');
             }
@@ -674,7 +756,9 @@ function handleGemsAndDrops() {
     if (gainedXp > 0) {
         player.xp += gainedXp;
         if (player.xp >= player.maxXp) {
-            player.level++; player.xp -= player.maxXp; player.maxXp = Math.floor(player.maxXp * 1.2);
+            player.level++; player.xp -= player.maxXp; 
+            player.maxXp = Math.floor(player.maxXp * 1.2);
+            
             player.maxHp += 5; player.hp = player.maxHp; updateUI('hp'); updateUI('level');
             effects.push({ x: worldX, y: worldY, type: 'levelup', life: 30, maxLife: 30, radius: 50 });
             triggerLevelUp(false, 3);
@@ -690,19 +774,19 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
     ui.skillContainer.innerHTML = '';
     
     let pool = [];
-    let canCombo = (activeSkills.laser.level === activeSkills.laser.max && activeSkills.bomb.level === activeSkills.bomb.max && activeSkills.laser_bomb.level === 0);
     
-    if (canCombo) {
-        // 🎇 레이저 폭탄 (강제 선택지)
-        pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
-    } else {
-        for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
-        for(let k in activeSkills) {
-            if(k === 'laser_bomb') continue; // 일반 풀에서 제외
-            let sk = activeSkills[k];
-            if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
-            else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
-        }
+    let canComboLaser = (activeSkills.laser.level === activeSkills.laser.max && activeSkills.bomb.level === activeSkills.bomb.max && activeSkills.laser_bomb.level === 0);
+    let canComboThunder = (activeSkills.lightning.level === activeSkills.lightning.max && activeSkills.shuriken.level === activeSkills.shuriken.max && activeSkills.thunder_shuriken.level === 0);
+    
+    if (canComboLaser) pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
+    if (canComboThunder) pool.push({ key: 'thunder_shuriken', obj: activeSkills.thunder_shuriken, isAct: true, isCombo: true });
+
+    for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
+    for(let k in activeSkills) {
+        if(k === 'laser_bomb' || k === 'thunder_shuriken') continue; 
+        let sk = activeSkills[k];
+        if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
+        else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
     }
 
     if (pool.length === 0) {
@@ -711,20 +795,34 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
         card.onclick = () => { player.hp = player.maxHp; updateUI('hp'); resumeGame(); };
         ui.skillContainer.appendChild(card);
     } else {
-        for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
-        let choices = pool.slice(0, canCombo ? 1 : choiceCount); // 콤보면 1개만
+        let comboPool = pool.filter(c => c.isCombo);
+        let normalPool = pool.filter(c => !c.isCombo);
         
-        choices.forEach(c => {
+        for (let i = normalPool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [normalPool[i], normalPool[j]] = [normalPool[j], normalPool[i]]; }
+        
+        let finalChoices = comboPool.slice(); 
+        let remaining = (isChest ? choiceCount : 3) - finalChoices.length;
+        if(remaining > 0) {
+            finalChoices = finalChoices.concat(normalPool.slice(0, remaining));
+        }
+        
+        finalChoices.forEach(c => {
             let nextLvl = c.obj.level + 1; let lvlStr = nextLvl === c.obj.max ? `<span style="color:#f0f">[ MAX ]</span>` : `[ ${nextLvl} / ${c.obj.max} ]`;
             if (c.isCombo) lvlStr = `<span style="color:#ff55ff">[ EVOLUTION ]</span>`;
 
             let card = document.createElement('div'); 
             card.className = `skill-card ${c.isAct ? (c.isCombo ? 'combo-type' : 'active-type') : ''}`;
+            if(c.key === 'thunder_shuriken') card.style.borderColor = '#00ffff'; 
+            
             card.innerHTML = `<div class="skill-title"><span>${c.obj.icon} ${c.obj.name}</span> <span>${lvlStr}</span></div><div class="skill-desc">${c.obj.desc}</div>`;
             card.onclick = () => {
                 if (c.isCombo) {
                     c.obj.level = 1;
-                    myActiveSlots = myActiveSlots.filter(slot => slot !== 'laser' && slot !== 'bomb'); // 기존 스킬 슬롯에서 제거
+                    if (c.key === 'laser_bomb') {
+                        myActiveSlots = myActiveSlots.filter(slot => slot !== 'laser' && slot !== 'bomb');
+                    } else if (c.key === 'thunder_shuriken') {
+                        myActiveSlots = myActiveSlots.filter(slot => slot !== 'lightning' && slot !== 'shuriken');
+                    }
                     myActiveSlots.push(c.key);
                 } else {
                     c.obj.level++;
@@ -744,14 +842,23 @@ function updateActiveUI() {
         if(i < myActiveSlots.length) {
             let key = myActiveSlots[i]; let sk = activeSkills[key];
             slot.innerHTML = `${sk.icon}<div class="lvl">Lv.${sk.level}</div>`;
-            slot.style.borderColor = key === 'laser_bomb' ? '#ff55ff' : '#aa44ff';
-            if(key === 'laser_bomb') slot.style.boxShadow = '0 0 10px #ff55ff';
+            
+            if(key === 'laser_bomb') { slot.style.borderColor = '#ff55ff'; slot.style.boxShadow = '0 0 10px #ff55ff'; }
+            else if(key === 'thunder_shuriken') { slot.style.borderColor = '#00ffff'; slot.style.boxShadow = '0 0 10px #00ffff'; }
+            else { slot.style.borderColor = '#aa44ff'; slot.style.boxShadow = 'none'; }
+            
         } else { slot.innerHTML = ''; slot.style.borderColor = '#555'; slot.style.boxShadow = '0 0 5px #000'; }
     }
 }
 function resumeGame() { ui.levelUp.classList.add('hidden'); gameState = 'playing'; lastTime = performance.now(); }
 
-function checkDevMode() { if(gameState==='dev')return; openDevMode(); }
+function checkDevMode() { 
+    if(gameState === 'dev') return; 
+    const pwd = prompt("개발자 모드 비밀번호를 입력하세요 (4자리):");
+    if (pwd === "1563") { openDevMode(); } 
+    else if (pwd !== null) { alert("비밀번호가 일치하지 않습니다."); }
+}
+
 function openDevMode() {
     const prev = gameState; gameState = 'dev'; handleInputEnd();
     document.getElementById('devSpawnToggle').checked = devConfig.spawnPaused;
@@ -766,14 +873,14 @@ function openDevMode() {
     ui.devPassivesContainer.innerHTML = ''; ui.devActivesContainer.innerHTML = '';
     for(let k in passiveSkills) ui.devPassivesContainer.appendChild(makeRow(k, passiveSkills[k], false));
     for(let k in activeSkills) {
-        if(k === 'laser_bomb') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken') continue; 
         ui.devActivesContainer.appendChild(makeRow(k, activeSkills[k], true));
     }
     ui.devScreen.classList.remove('hidden'); ui.devScreen.dataset.prev = prev === 'dev' ? 'playing' : prev;
 }
 function closeDevMode() { ui.devScreen.classList.add('hidden'); gameState = ui.devScreen.dataset.prev || 'playing'; lastTime = performance.now(); }
 function toggleSpawn(cb) { devConfig.spawnPaused = cb.checked; }
-function killAllEnemies() { enemies.forEach(e => { e.isDead = true; spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave); gems.push({ x: e.x, y: e.y, isDead: false, type: e.isBoss||e.isMidBoss ? 'big_gem' : 'gem' }); }); if(bossMode){bossMode=false; isTimePaused=false; updateUI('boss');} }
+function killAllEnemies() { enemies.forEach(e => { e.isDead = true; spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave); gems.push({ x: e.x, y: e.y, isDead: false, type: e.isBoss||e.isMidBoss ? 'big_gem' : 'gem', isMagnetized: false }); }); if(bossMode){bossMode=false; isTimePaused=false; updateUI('boss');} }
 function modifySkill(k, amt, isAct) {
     let sk = isAct ? activeSkills[k] : passiveSkills[k];
     if(isAct && amt > 0 && sk.level === 0 && myActiveSlots.length >= 8) return; 
@@ -805,12 +912,11 @@ function update() {
         if (!isTimePaused) {
             gameSeconds++; updateUI('time');
             
-            // 🕒 3분마다 웨이브 진행
             if (gameSeconds > 0 && gameSeconds % 180 === 0 && gameSeconds % 300 !== 0) {
                 isTimePaused = true; waveInProgress = true; waveKilled = 0; midBossSpawned = false;
                 ui.warning.innerText = "⚠️ 포위망 형성! (10초 뒤 축소) ⚠️"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3;
                 
-                waveTotal = 30 + Math.floor(gameSeconds/60)*10 + (midBossKills*15); // 처치할수록 스케일업
+                waveTotal = 30 + Math.floor(gameSeconds/60)*10 + (midBossKills*15); 
                 if(waveTotal > 150) waveTotal = 150; 
                 
                 let dist = Math.max(vWidth, vHeight) * 0.7; 
@@ -828,7 +934,6 @@ function update() {
                 }
             }
             
-            // 🕒 5분(300초), 10분, 15분 대형 보스 (15분까지만)
             if (gameSeconds > 0 && gameSeconds % 300 === 0) {
                 bossMode = true; bossTimeLeft = 60; isTimePaused = true; spawnEnemy(false, true, false);
                 ui.warning.innerText = "🚨 거대 보스 출현! 1분 내 처치! 🚨"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3; updateUI('boss');
@@ -856,20 +961,17 @@ function update() {
         let p = projectiles[i]; if (p.isDead) continue;
         
         if(p.type === 'laser_bomb') {
-            p.angle += 0.05; // 궤도 회전
-            if(frameCount % 3 === 0) { // 타격 판정 최적화 (3프레임)
+            p.angle += 0.03; 
+            if(frameCount % 4 === 0) { 
                 for (let j = 0; j < enemies.length; j++) {
                     let e = enemies[j]; if (e.isDead) continue;
-                    let ex = e.x - p.x; let ey = e.y - p.y;
                     let hit = false;
                     for(let b=0; b<5; b++) {
                         let ang = p.angle + b*(Math.PI*2/5);
-                        let dirX = Math.cos(ang); let dirY = Math.sin(ang);
-                        let dot = ex*dirX + ey*dirY; // 투영
-                        if(dot > 0 && dot < p.radius) {
-                            if(getDistSq(ex, ey, dirX*dot, dirY*dot) < 900) { // 레이저 두께 충돌
-                                hit = true; break;
-                            }
+                        let px_center = p.x + Math.cos(ang) * p.radius;
+                        let py_center = p.y + Math.sin(ang) * p.radius;
+                        if(getDistSq(e.x, e.y, px_center, py_center) < 6400) { 
+                            hit = true; break;
                         }
                     }
                     if(hit) {
@@ -878,6 +980,17 @@ function update() {
                         damageEnemy(e, p.dmg * mult, 0, 0, 0);
                         effects.push({ x: e.x, y: e.y, type: 'spark', life: 10, maxLife: 10, radius: 8 });
                     }
+                }
+            }
+        }
+        else if (p.type === 'thunder_shuriken') {
+            p.x += p.dx; p.y += p.dy;
+            if(frameCount % 12 === 0) { 
+                let n = getNearestEnemy(p.x, p.y, 40000); 
+                if(n) {
+                    damageEnemy(n, p.dmg * 1.5, 0, 0, 0);
+                    effects.push({ x: n.x, y: n.y, type: 'lightning', life: 10, maxLife: 10, radius: 25 });
+                    effects.push({ x: p.x, y: p.y, targetX: n.x, targetY: n.y, type: 'chain_lightning', life: 10, maxLife: 10 });
                 }
             }
         }
@@ -907,7 +1020,7 @@ function update() {
             }
         }
 
-        if(p.type !== 'shuriken' && p.type !== 'laser_bomb') { p.x += p.dx || 0; p.y += p.dy || 0; }
+        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken') { p.x += p.dx || 0; p.y += p.dy || 0; }
         p.life--; 
         
         if (p.life <= 0) { 
@@ -931,7 +1044,8 @@ function update() {
             if(p.type==='big_orb') hitRadSq=900;
             if(p.type==='shield') hitRadSq=625; 
             if(p.type==='boomerang') hitRadSq=1600; 
-            if(p.type==='laser_bomb') hitRadSq=0; // 별도 판정
+            if(p.type==='thunder_shuriken') hitRadSq=1600; 
+            if(p.type==='laser_bomb') hitRadSq=0; 
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
                 let isBossTarget = (e.isBoss || e.isMidBoss);
@@ -949,12 +1063,12 @@ function update() {
                     damageEnemy(e, p.dmg*mult, p.kb || 5, 0, 0);
                     effects.push({ x: e.x, y: e.y, type: 'explosion', life: 12, maxLife: 12, radius: 30 });
                     p.isDead = true; break;
-                } else if(p.type === 'shuriken') {
+                } else if(p.type === 'shuriken' || p.type === 'thunder_shuriken') {
                     if(frameCount % 5 === 0) {
                         damageEnemy(e, p.dmg*mult, 0, 0, 0); 
                         effects.push({x: p.x + (Math.random()-0.5)*40, y: p.y + (Math.random()-0.5)*40, type: 'spark', life: 10, maxLife: 10, radius: 5});
                     }
-                    p.dx *= 0.8; p.dy *= 0.8; 
+                    if(p.type === 'shuriken') { p.dx *= 0.8; p.dy *= 0.8; }
                 } else if(p.type !== 'boomerang' && p.type !== 'shield') { 
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
                     damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
@@ -1108,6 +1222,14 @@ function draw() {
         else if(ef.type === 'nova') { ctx.strokeStyle = `rgba(100, 200, 255, ${p})`; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(ex, ey, ef.radius*invP, 0, Math.PI*2); ctx.stroke(); }
         else if(ef.type === 'freeze') { ctx.fillStyle = `rgba(150, 200, 255, 0.7)`; ctx.fillRect(ex - ef.radius, ey - ef.radius, ef.radius*2, ef.radius*2); }
         else if(ef.type === 'heal') { ctx.fillStyle = `rgba(100, 255, 100, ${p})`; ctx.font="bold 16px sans-serif"; ctx.fillText("+20", ex-10, ey-invP*20); }
+        else if(ef.type === 'chain_lightning') {
+            let tx = ef.targetX - worldX + cx; let ty = ef.targetY - worldY + cy;
+            ctx.strokeStyle = `rgba(150, 200, 255, ${p})`; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(ex, ey);
+            let midX = (ex+tx)/2 + (Math.random()-0.5)*40;
+            let midY = (ey+ty)/2 + (Math.random()-0.5)*40;
+            ctx.lineTo(midX, midY); ctx.lineTo(tx, ty); ctx.stroke();
+        }
     }
 
     for (let i=0; i<particles.length; i++) {
@@ -1118,16 +1240,40 @@ function draw() {
 
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
+        
         if (pr.type === 'laser_bomb') {
-            ctx.save(); ctx.translate(px, py); ctx.rotate(pr.angle);
+            ctx.save();
             ctx.strokeStyle = `rgba(255, 100, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`;
-            ctx.lineWidth = 20;
-            ctx.beginPath();
-            for(let b=0; b<5; b++) { ctx.moveTo(0,0); ctx.lineTo(Math.cos(b*Math.PI*2/5)*pr.radius, Math.sin(b*Math.PI*2/5)*pr.radius); }
-            ctx.stroke();
-            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0,0, 20, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = `rgba(255, 200, 255, ${pr.life > 20 ? 0.3 : pr.life/20})`;
+            
+            for(let b=0; b<5; b++) {
+                let ang = pr.angle + b*(Math.PI*2/5);
+                let bx = px + Math.cos(ang)*pr.radius;
+                let by = py + Math.sin(ang)*pr.radius;
+                
+                ctx.beginPath(); ctx.ellipse(bx, by, 40, 20, 0, 0, Math.PI*2); ctx.fill();
+                ctx.lineWidth = 30 + Math.sin(frameCount*0.2)*10;
+                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - vHeight); ctx.stroke();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
+                ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - vHeight); ctx.stroke();
+                
+                ctx.strokeStyle = `rgba(255, 100, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`;
+            }
             ctx.restore();
-        } else if(pr.type === 'missile') { 
+        } 
+        else if (pr.type === 'thunder_shuriken') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount*0.8);
+            ctx.fillStyle='#ccaaff'; 
+            ctx.beginPath(); 
+            ctx.moveTo(0, -25); ctx.lineTo(8, -8); ctx.lineTo(25, 0); ctx.lineTo(8, 8); 
+            ctx.lineTo(0, 25); ctx.lineTo(-8, 8); ctx.lineTo(-25, 0); ctx.lineTo(-8, -8); 
+            ctx.fill();
+            ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
+            ctx.strokeStyle = `rgba(100, 200, 255, ${0.5 + Math.random()*0.5})`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+        else if(pr.type === 'missile') { 
             ctx.fillStyle = '#ff4400'; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx)); 
             ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(-12, -8); ctx.lineTo(-8, 0); ctx.lineTo(-12, 8); ctx.fill(); 
             ctx.fillStyle = '#ffff00'; ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-16, -3); ctx.lineTo(-16, 3); ctx.fill(); 
@@ -1164,6 +1310,48 @@ function draw() {
         if (joystick.dx!==0 || joystick.dy!==0) { ctx.fillStyle = '#ff8800'; ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(-18, 4); ctx.lineTo(-18, -4); ctx.fill(); }
         ctx.restore();
     }
+    
+    // 🎯 보스 방향 내비게이터 (빨간 화살표)
+    if (bossMode) {
+        let boss = enemies.find(e => e.isBoss && !e.isDead);
+        if (boss) {
+            let dx = boss.x - worldX;
+            let dy = boss.y - worldY;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            
+            // 보스가 어느 정도 멀리 있을 때만 화살표 표시
+            if (dist > 150) { 
+                let ang = Math.atan2(dy, dx);
+                let arrowDist = 90; 
+                
+                ctx.save();
+                ctx.translate(cx + Math.cos(ang) * arrowDist, cy + Math.sin(ang) * arrowDist);
+                ctx.rotate(ang);
+                
+                // 크기가 커졌다 작아지는 펄스 효과
+                let pulse = 1 + Math.sin(frameCount * 0.15) * 0.2;
+                ctx.scale(pulse, pulse);
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.moveTo(15, 0);
+                ctx.lineTo(-12, 12);
+                ctx.lineTo(-4, 0);
+                ctx.lineTo(-12, -12);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+    }
+
     ctx.restore(); 
 
     if (joystick.active && gameState==='playing') {

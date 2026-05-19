@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v0.16.2 -->
-    <title>Space Survivor v0.16.2</title>
+    <title>Space Survivor v1.0.1</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #112211; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -31,16 +30,16 @@
         #xpBarContainer { flex-grow: 1; height: 12px; background: rgba(0,0,0,0.8); border: 1px solid #333; border-radius: 6px; overflow: hidden; }
         #xpFill { width: 0%; height: 100%; background: linear-gradient(90deg, #0055aa, #44aaff); transition: width 0.2s linear; }
 
-        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10,15,10,0.85); backdrop-filter: blur(8px); pointer-events: auto; z-index: 100; overflow-y: auto; }
-        h1 { font-size: 48px; margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255,255,255,0.5); text-align: center; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(10,15,10,0.85); backdrop-filter: blur(8px); pointer-events: auto; z-index: 100; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        h1 { font-size: 48px; margin-bottom: 20px; letter-spacing: 3px; text-shadow: 0 0 20px rgba(255,255,255,0.5); text-align: center; flex-shrink: 0; }
         .diff-selector { margin-bottom: 30px; font-size: 20px; font-weight: bold; color: #ffcc00; background: rgba(0,0,0,0.5); padding: 15px 30px; border-radius: 15px; border: 1px solid #555; text-align: center; }
         .diff-selector label { margin: 0 10px; cursor: pointer; color: #fff; display: inline-block; }
-        .btn { background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 1px solid #444; color: #fff; padding: 15px 30px; margin: 10px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; width: 280px; max-width: 90%; }
+        .btn { background: linear-gradient(135deg, #2a2a3a, #1a1a2a); border: 1px solid #444; color: #fff; padding: 15px 30px; margin: 10px; font-size: 18px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; width: 280px; max-width: 90%; flex-shrink: 0; }
         .btn:hover { background: linear-gradient(135deg, #3a3a4a, #2a2a3a); border-color: #888; transform: translateY(-2px); }
         .hidden { display: none !important; }
 
         #skillContainer { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; max-width: 1000px; width: 100%; padding: 10px; box-sizing: border-box; }
-        .skill-card { background: rgba(30,40,30,0.9); border: 2px solid #44aa44; border-radius: 16px; padding: 20px; width: 280px; max-width: 90%; cursor: pointer; text-align: left; transition: all 0.2s; position: relative; box-sizing: border-box; }
+        .skill-card { background: rgba(30,40,30,0.9); border: 2px solid #44aa44; border-radius: 16px; padding: 20px; width: 280px; max-width: 90%; cursor: pointer; text-align: left; transition: all 0.2s; position: relative; box-sizing: border-box; flex-shrink: 0; }
         .skill-card.active-type { border-color: #aa44ff; }
         .skill-card.combo-type { border-color: #ff00ff; box-shadow: 0 0 20px #ff00ff; background: rgba(50,10,50,0.9); }
         .skill-card:hover { transform: scale(1.05) translateY(-5px); border-color: #fff; box-shadow: 0 12px 25px rgba(255,255,255,0.2); }
@@ -51,7 +50,7 @@
 
         @keyframes chestShake { 0% { transform: translateX(0); } 25% { transform: translateX(-15px) rotate(-10deg); } 50% { transform: translateX(15px) rotate(10deg); } 75% { transform: translateX(-15px) rotate(-10deg); } 100% { transform: translateX(0); } }
         .shake-anim { animation: chestShake 0.4s infinite; }
-        #chestImage { font-size: 120px; cursor: pointer; user-select: none; transition: transform 0.2s; filter: drop-shadow(0 0 20px rgba(255,200,0,0.5)); }
+        #chestImage { font-size: 120px; cursor: pointer; user-select: none; transition: transform 0.2s; filter: drop-shadow(0 0 20px rgba(255,200,0,0.5)); flex-shrink: 0; }
         #chestImage:hover { transform: scale(1.1); }
         #chestFlash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; transition: opacity 0.1s; pointer-events: none; z-index: 1000; }
 
@@ -68,7 +67,7 @@
             #activeSkillsPanel { gap: 4px; }
             .skill-slot { width: 34px; height: 34px; font-size: 16px; }
             .skill-slot .lvl { font-size: 9px; padding: 1px 3px; bottom: -4px; right: -4px; }
-            .skill-card { padding: 15px; width: 45%; } 
+            .skill-card { padding: 15px; width: 100%; } 
             .skill-title { font-size: 14px; }
             .skill-desc { font-size: 12px; }
             #levelText { font-size: 18px; }
@@ -79,8 +78,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v0.16.2 -->
-        <div class="version">v0.16.2</div>
+        <div class="version">v1.0.1</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -116,22 +114,62 @@
             <button class="btn" onclick="startGame('magic')">✨ 초능력술사</button>
         </div>
 
-        <div id="recipeScreen" class="overlay hidden">
-            <h2 style="color: #ffcc00; font-size: 36px; text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 30px; text-align: center;">🔥 스킬 조합식</h2>
+        <div id="recipeScreen" class="overlay hidden" style="justify-content: flex-start; padding-top: 40px;">
+            <h2 style="color: #ffcc00; font-size: 32px; text-shadow: 0 0 20px rgba(255,200,0,0.5); margin-bottom: 20px; text-align: center; flex-shrink: 0;">🔥 스킬 조합식</h2>
             
-            <div class="skill-card combo-type" style="width: 450px; margin-bottom: 15px; cursor: default;">
-                <div class="skill-title"><span>🎇 레이저 폭탄</span> <span style="color:#ffcc00;">궁극기</span></div>
-                <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔦 레이저 빔 (Lv.5) + 💣 폭탄 (Lv.5)</div>
-                <div class="skill-desc">5개의 파멸적 궤도 레이저 기둥이 회전하며 적을 갈아버립니다. (시전 범위 대폭발)</div>
-            </div>
-            
-            <div class="skill-card combo-type" style="width: 450px; margin-bottom: 30px; cursor: default; border-color: #00ffff; box-shadow: 0 0 20px #00ffff;">
-                <div class="skill-title" style="color:#00ffff;"><span>⚡ 번개 수리검</span> <span style="color:#ffcc00;">궁극기</span></div>
-                <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🌩️ 낙뢰 (Lv.5) + ⭐ 수리검 (Lv.5)</div>
-                <div class="skill-desc">사방으로 날아가는 거대 수리검 4개가 주변 적들에게 지속적으로 연쇄 벼락을 내리칩니다.</div>
+            <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center;">
+                <!-- 평타 궁극기 3종 (v1.0.1) -->
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ff5555; box-shadow: 0 0 20px #ff5555; background: rgba(50,10,10,0.9);">
+                    <div class="skill-title" style="color:#ff8888;"><span>🗡️ 차원 절단검</span> <span style="color:#ffcc00;">평타 진화(근접)</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">초거대 차원의 틈을 날려 맵 끝까지 모든 적을 썰어버리는 무자비한 일격을 가합니다.</div>
+                </div>
+
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffff55; box-shadow: 0 0 20px #ffff55; background: rgba(50,50,10,0.9);">
+                    <div class="skill-title" style="color:#ffff88;"><span>🏹 광학 게틀링 보우</span> <span style="color:#ffcc00;">평타 진화(원거리)</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">공격 속도를 초월하여 적을 관통하는 수많은 빛의 화살을 기관총처럼 연사합니다.</div>
+                </div>
+
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #cc55ff; box-shadow: 0 0 20px #cc55ff; background: rgba(40,10,50,0.9);">
+                    <div class="skill-title" style="color:#dd88ff;"><span>✨ 붕괴의 블랙홀</span> <span style="color:#ffcc00;">평타 진화(마법사)</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">주변 몹을 강력히 빨아들이며 파괴하는 거대 중력의 특이점을 발사합니다.</div>
+                </div>
+
+                <!-- 기존 궁극기 -->
+                <div class="skill-card combo-type" style="width: 450px; cursor: default;">
+                    <div class="skill-title"><span>🎇 레이저 폭탄</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🔦 레이저 빔 (Lv.5) + 💣 폭탄 (Lv.5)</div>
+                    <div class="skill-desc">5개의 파멸적 궤도 레이저 기둥이 회전하며 적을 갈아버립니다. (시전 범위 대폭발)</div>
+                </div>
+                
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #00ffff; box-shadow: 0 0 20px #00ffff;">
+                    <div class="skill-title" style="color:#00ffff;"><span>⚡ 번개 수리검</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🌩️ 낙뢰 (Lv.5) + ⭐ 수리검 (Lv.5)</div>
+                    <div class="skill-desc">사방으로 날아가는 거대 수리검 4개가 주변 적들에게 지속적으로 연쇄 벼락을 내리칩니다.</div>
+                </div>
+
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #0088ff; box-shadow: 0 0 20px #0088ff; background: rgba(10,30,50,0.9);">
+                    <div class="skill-title" style="color:#00aaff;"><span>❄️ 절대 영도 지대</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: ❄️ 서리 폭발 (Lv.5) + 🧪 맹독 지대 (Lv.5)</div>
+                    <div class="skill-desc">맵 전체를 얼려버리는 영구적인 서리맹독 장판이 팽창하며 적을 끝없이 빙결시킵니다.</div>
+                </div>
+
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffaa00; box-shadow: 0 0 20px #ffaa00; background: rgba(50,30,10,0.9);">
+                    <div class="skill-title" style="color:#ffcc00;"><span>🦅 발키리 편대</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🕊️ 비둘기 (Lv.5) + 🚀 유도 미사일 (Lv.5)</div>
+                    <div class="skill-desc">최첨단 4기 타격 드론이 쉬지 않고 파괴적인 유도 미사일 폭격을 쏟아냅니다.</div>
+                </div>
+
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #55ff55; box-shadow: 0 0 20px #55ff55; background: rgba(10,50,20,0.9);">
+                    <div class="skill-title" style="color:#88ff88;"><span>🌪️ 회오리 톱날</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🌀 수호 방패 (Lv.5) + 🪃 부메랑 (Lv.5)</div>
+                    <div class="skill-desc">거대 톱날 5개가 팽창과 수축 궤도를 그리며 광역으로 적을 무자비하게 분쇄합니다.</div>
+                </div>
             </div>
 
-            <button class="btn" style="background: linear-gradient(135deg, #444, #222);" onclick="closeRecipe()">돌아가기 (게임 재개)</button>
+            <button class="btn" style="background: linear-gradient(135deg, #444, #222); margin-top: 20px; flex-shrink: 0;" onclick="closeRecipe()">돌아가기 (게임 재개)</button>
         </div>
 
         <div id="levelUpScreen" class="overlay hidden">
@@ -167,7 +205,6 @@
             <button class="btn" onclick="location.reload()">재도전</button>
         </div>
 
-        <!-- 🎯 신규 게임 클리어 화면 -->
         <div id="gameClearScreen" class="overlay hidden">
             <h1 style="color: #44ff44; text-shadow: 0 0 20px rgba(0,255,0,0.5);">MISSION CLEAR</h1>
             <h2 id="clearTimeResult" style="color: #aaa; margin-bottom: 40px;">클리어 시간: 15:00</h2>
@@ -187,7 +224,6 @@ const ui = {
     gameOver: document.getElementById('gameOverScreen'), result: document.getElementById('survivalTimeResult'), devScreen: document.getElementById('devScreen'), 
     devPassivesContainer: document.getElementById('devPassivesContainer'), devActivesContainer: document.getElementById('devActivesContainer'),
     recipeScreen: document.getElementById('recipeScreen'),
-    // 클리어 화면 UI 객체 매핑
     gameClear: document.getElementById('gameClearScreen'), clearResult: document.getElementById('clearTimeResult')
 };
 
@@ -218,8 +254,11 @@ const passiveSkills = {
 };
 
 const activeSkills = {
-    laser_bomb:       { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "위에서 꽂아 내리는 5개의 거대 기둥이 회전합니다." }, 
-    thunder_shuriken: { level: 0, max: 1, icon: "⚡", name: "번개 수리검", desc: "거대 수리검 4개가 비행하며 주변을 번개로 지집니다." },
+    laser_bomb:        { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "위에서 꽂아 내리는 5개의 거대 기둥이 회전합니다." }, 
+    thunder_shuriken:  { level: 0, max: 1, icon: "⚡", name: "번개 수리검", desc: "거대 수리검 4개가 비행하며 주변을 번개로 지집니다." },
+    absolute_zero:     { level: 0, max: 1, icon: "❄️", name: "절대 영도 지대", desc: "초거대 서리맹독 장판이 생성되어 접근을 차단합니다." },
+    valkyrie_swarm:    { level: 0, max: 1, icon: "🦅", name: "발키리 편대", desc: "4기 드론 편대가 쉴 새 없이 미사일 폭격을 가합니다." },
+    whirlwind_chakram: { level: 0, max: 1, icon: "🌪️", name: "회오리 톱날", desc: "거대 톱날들이 팽창 및 수축 궤도를 그리며 갈아버립니다." },
     
     missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사." },
     shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "주위를 도는 방패. 적을 밀쳐냅니다." }, 
@@ -247,7 +286,7 @@ const player = {
     bonusDmg: 0, cdr: 1.0 
 };
 
-let activeTimers = { missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0 };
+let activeTimers = { missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, whirlwind_chakram: 0 };
 let dovesState = []; 
 
 function resize() { 
@@ -428,12 +467,11 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
             bossMode = false; isTimePaused = false; updateUI('boss'); 
             drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false }); 
             
-            // 🎯 15분(900초) 이상 시점에 보스를 잡으면 클리어 처리
             if (gameSeconds >= 900) {
                 gameState = 'gameclear';
                 ui.clearResult.innerText = `클리어 시간: ${formatTime(gameSeconds)}`;
                 ui.gameClear.classList.remove('hidden');
-                return; // 클리어 시 나머지 잡다한 처리 중단
+                return; 
             }
         }
         if(e.isWave && !midBossSpawned) {
@@ -478,6 +516,10 @@ function getNearestEnemy(x, y, rangeSq) {
 
 function handleBasicAttacks() {
     if (player.currentCooldown > 0) { player.currentCooldown--; return; }
+    
+    // 🎯 평타 궁극기 진화 조건 확인
+    let isWeaponEvolved = (passiveSkills.weaponUpgrade.level === 5 && passiveSkills.attackPower.level === 8);
+    
     const rangeSq = player.range * player.range;
     let nearest = getNearestEnemy(worldX, worldY, rangeSq);
 
@@ -487,43 +529,65 @@ function handleBasicAttacks() {
         let wLvl = passiveSkills.weaponUpgrade.level;
 
         if (player.type === 'melee') {
-            let hits = wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1);
-            for(let i=0; i<enemies.length; i++) {
-                if(enemies[i].isDead) continue;
-                if(getDistSq(worldX, worldY, enemies[i].x, enemies[i].y) <= rangeSq) {
-                    const edx=enemies[i].x-worldX; const edy=enemies[i].y-worldY; const edist=Math.sqrt(edx*edx+edy*edy)||1;
-                    for(let h=0; h<hits; h++) {
-                        if(enemies[i].isDead) break;
-                        damageEnemy(enemies[i], player.damage, player.knockback, edx/edist, edy/edist);
+            if (isWeaponEvolved) {
+                // 🗡️ 차원 절단검
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*15, dy: Math.sin(angle)*15, angle: angle, life: 60, type: 'cleaver', dmg: player.damage * 5, kb: player.knockback * 2, isDead: false, hitTargets: [] });
+                player.currentCooldown = player.fireCooldown * 1.2; 
+            } else {
+                let hits = wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1);
+                for(let i=0; i<enemies.length; i++) {
+                    if(enemies[i].isDead) continue;
+                    if(getDistSq(worldX, worldY, enemies[i].x, enemies[i].y) <= rangeSq) {
+                        const edx=enemies[i].x-worldX; const edy=enemies[i].y-worldY; const edist=Math.sqrt(edx*edx+edy*edy)||1;
+                        for(let h=0; h<hits; h++) {
+                            if(enemies[i].isDead) break;
+                            damageEnemy(enemies[i], player.damage, player.knockback, edx/edist, edy/edist);
+                        }
                     }
                 }
+                effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle, life: 15, maxLife: 15, radius: player.range });
+                if(hits >= 2) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle+0.2, life: 15, maxLife: 15, radius: player.range*0.8 });
+                if(hits === 3) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle-0.2, life: 15, maxLife: 15, radius: player.range*0.6 });
+                player.currentCooldown = player.fireCooldown;
             }
-            effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle, life: 15, maxLife: 15, radius: player.range });
-            if(hits >= 2) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle+0.2, life: 15, maxLife: 15, radius: player.range*0.8 });
-            if(hits === 3) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle-0.2, life: 15, maxLife: 15, radius: player.range*0.6 });
         
         } else if (player.type === 'ranged') {
-            let arrows = 1 + wLvl; let spread = 0.15;
-            for(let a=0; a<arrows; a++) {
-                let ang = angle + (a - (arrows-1)/2) * spread;
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 30, type: 'arrow', dmg: player.damage, kb: player.knockback, isDead: false });
+            if (isWeaponEvolved) {
+                // 🏹 광학 게틀링 보우
+                let spread = (Math.random() - 0.5) * 0.2;
+                let ang = angle + spread;
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*25, dy: Math.sin(ang)*25, angle: ang, life: 40, type: 'gatling', dmg: player.damage * 0.7, kb: player.knockback, isDead: false, pierce: 3, hitTargets: [] });
+                player.currentCooldown = Math.max(2, player.fireCooldown * 0.2); // 초고속 연사
+            } else {
+                let arrows = 1 + wLvl; let spread = 0.15;
+                for(let a=0; a<arrows; a++) {
+                    let ang = angle + (a - (arrows-1)/2) * spread;
+                    projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 30, type: 'arrow', dmg: player.damage, kb: player.knockback, isDead: false });
+                }
+                player.currentCooldown = player.fireCooldown;
             }
         } else if (player.type === 'magic') {
-            player.attackCount++; 
-            let reqForBig = Math.max(1, 5 - wLvl); 
-            let isBig = (wLvl >= 4) || (player.attackCount % reqForBig === 0);
-            let orbCount = (wLvl === 5) ? 3 : 1;
-            
-            for(let a=0; a<orbCount; a++) {
-                let ang = angle + (a - Math.floor(orbCount/2)) * 0.2;
-                projectiles.push({ 
-                    x: worldX, y: worldY, dx: Math.cos(ang)*(isBig?6:10), dy: Math.sin(ang)*(isBig?6:10), 
-                    life: 60, type: isBig ? 'big_orb' : 'orb', 
-                    dmg: isBig ? player.damage*3 : player.damage, kb: player.knockback, isDead: false 
-                });
+            if (isWeaponEvolved) {
+                // ✨ 붕괴의 블랙홀
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*3, dy: Math.sin(angle)*3, life: 150, type: 'blackhole', dmg: player.damage * 0.6, kb: 0, isDead: false });
+                player.currentCooldown = player.fireCooldown * 2.5; 
+            } else {
+                player.attackCount++; 
+                let reqForBig = Math.max(1, 5 - wLvl); 
+                let isBig = (wLvl >= 4) || (player.attackCount % reqForBig === 0);
+                let orbCount = (wLvl === 5) ? 3 : 1;
+                
+                for(let a=0; a<orbCount; a++) {
+                    let ang = angle + (a - Math.floor(orbCount/2)) * 0.2;
+                    projectiles.push({ 
+                        x: worldX, y: worldY, dx: Math.cos(ang)*(isBig?6:10), dy: Math.sin(ang)*(isBig?6:10), 
+                        life: 60, type: isBig ? 'big_orb' : 'orb', 
+                        dmg: isBig ? player.damage*3 : player.damage, kb: player.knockback, isDead: false 
+                    });
+                }
+                player.currentCooldown = player.fireCooldown;
             }
         }
-        player.currentCooldown = player.fireCooldown;
     }
 }
 
@@ -560,7 +624,61 @@ function handleActiveSkills() {
         }
     }
 
-    if (activeSkills.missile.level > 0) {
+    if (activeSkills.absolute_zero.level > 0) {
+        if (frameCount % 15 === 0) { 
+            let radius = 250;
+            let dmg = 40 + player.bonusDmg; 
+            for(let i=0; i<enemies.length; i++) {
+                let e = enemies[i]; if(e.isDead) continue;
+                if(getDistSq(pX, pY, e.x, e.y) < radius*radius) {
+                    damageEnemy(e, dmg + (e.maxHp * 0.015), 0, 0, 0); 
+                    e.freezeTimer = 20; 
+                    effects.push({x: e.x, y: e.y, type: 'freeze', life: 10, maxLife: 10, radius: e.size*1.2});
+                }
+            }
+        }
+    }
+
+    if (activeSkills.valkyrie_swarm.level > 0) {
+        while(dovesState.length < 4) dovesState.push({ x: pX, y: pY, cd: 0 }); 
+        for(let i=0; i<dovesState.length; i++) {
+            let dv = dovesState[i];
+            let targetX = pX + Math.cos(frameCount*0.06 + i*(Math.PI/2))*60;
+            let targetY = pY + Math.sin(frameCount*0.06 + i*(Math.PI/2))*60;
+            dv.x += (targetX - dv.x) * 0.15; dv.y += (targetY - dv.y) * 0.15;
+            dv.cd--;
+            if(dv.cd <= 0) {
+                let ang = Math.random()*Math.PI*2;
+                projectiles.push({ x: dv.x, y: dv.y, dx: Math.cos(ang)*5, dy: Math.sin(ang)*5, life: 150, type: 'v_missile', dmg: 70 + player.bonusDmg*1.5, isDead: false });
+                dv.cd = 40 * player.cdr; 
+            }
+        }
+    }
+
+    if (activeSkills.whirlwind_chakram.level > 0) {
+        let baseRadius = 150 + Math.sin(frameCount * 0.05) * 80; 
+        let dmg = 60 + player.bonusDmg * 2;
+        if (frameCount % 4 === 0) {
+            for (let j = 0; j < enemies.length; j++) {
+                let e = enemies[j]; if (e.isDead) continue;
+                let hit = false;
+                for(let b=0; b<5; b++) {
+                    let ang = frameCount * 0.08 + b*(Math.PI*2/5);
+                    let bx = pX + Math.cos(ang)*baseRadius;
+                    let by = pY + Math.sin(ang)*baseRadius;
+                    if(getDistSq(e.x, e.y, bx, by) < 1600) { hit = true; break; }
+                }
+                if(hit) {
+                    let edx = e.x - pX; let edy = e.y - pY; let edist = Math.sqrt(edx*edx+edy*edy)||1;
+                    damageEnemy(e, dmg, 15, edx/edist, edy/edist); 
+                    effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
+                }
+            }
+        }
+    }
+
+
+    if (activeSkills.missile.level > 0 && activeSkills.valkyrie_swarm.level === 0) {
         activeTimers.missile--;
         if(activeTimers.missile <= 0) {
             let count = 1 + (activeSkills.missile.level * 2); 
@@ -571,7 +689,7 @@ function handleActiveSkills() {
             activeTimers.missile = (200 - activeSkills.missile.level * 25) * player.cdr; 
         }
     }
-    if (activeSkills.shield.level > 0) {
+    if (activeSkills.shield.level > 0 && activeSkills.whirlwind_chakram.level === 0) {
         activeTimers.shield--;
         if(activeTimers.shield <= 0) {
             let radius = 120 + activeSkills.shield.level*10; 
@@ -581,7 +699,6 @@ function handleActiveSkills() {
             activeTimers.shield = 450 * player.cdr; 
         }
     }
-    
     if (activeSkills.bomb.level > 0 && activeSkills.laser_bomb.level === 0) {
         activeTimers.bomb--;
         if(activeTimers.bomb <= 0) {
@@ -626,8 +743,7 @@ function handleActiveSkills() {
             activeTimers.lightning = 150 * player.cdr;
         }
     }
-
-    if (activeSkills.dove.level > 0) {
+    if (activeSkills.dove.level > 0 && activeSkills.valkyrie_swarm.level === 0) {
         let reqDoves = Math.min(3, Math.ceil(activeSkills.dove.level / 2)); 
         while(dovesState.length < reqDoves) dovesState.push({ x: pX, y: pY, cd: 0 });
         for(let i=0; i<dovesState.length; i++) {
@@ -664,7 +780,7 @@ function handleActiveSkills() {
             activeTimers.laser = 120 * player.cdr;
         }
     }
-    if (activeSkills.poison.level > 0) {
+    if (activeSkills.poison.level > 0 && activeSkills.absolute_zero.level === 0) {
         activeTimers.poison--;
         if(activeTimers.poison <= 0) {
             let pct = activeSkills.poison.level * 0.01; 
@@ -672,8 +788,7 @@ function handleActiveSkills() {
             activeTimers.poison = 100 * player.cdr;
         }
     }
-    
-    if (activeSkills.nova.level > 0) {
+    if (activeSkills.nova.level > 0 && activeSkills.absolute_zero.level === 0) {
         activeTimers.nova--;
         if(activeTimers.nova <= 0) {
             let radius = 150 + activeSkills.nova.level*30;
@@ -696,7 +811,7 @@ function handleActiveSkills() {
             activeTimers.nova = 180 * player.cdr;
         }
     }
-    if (activeSkills.boomerang.level > 0) {
+    if (activeSkills.boomerang.level > 0 && activeSkills.whirlwind_chakram.level === 0) {
         activeTimers.boomerang--;
         if(activeTimers.boomerang <= 0) {
             let n = getNearestEnemy(pX, pY, 40000); let dirX = 1, dirY = 0;
@@ -777,13 +892,19 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
     
     let canComboLaser = (activeSkills.laser.level === activeSkills.laser.max && activeSkills.bomb.level === activeSkills.bomb.max && activeSkills.laser_bomb.level === 0);
     let canComboThunder = (activeSkills.lightning.level === activeSkills.lightning.max && activeSkills.shuriken.level === activeSkills.shuriken.max && activeSkills.thunder_shuriken.level === 0);
+    let canComboAbsolute = (activeSkills.nova.level === activeSkills.nova.max && activeSkills.poison.level === activeSkills.poison.max && activeSkills.absolute_zero.level === 0);
+    let canComboValkyrie = (activeSkills.dove.level === activeSkills.dove.max && activeSkills.missile.level === activeSkills.missile.max && activeSkills.valkyrie_swarm.level === 0);
+    let canComboWhirlwind = (activeSkills.shield.level === activeSkills.shield.max && activeSkills.boomerang.level === activeSkills.boomerang.max && activeSkills.whirlwind_chakram.level === 0);
     
     if (canComboLaser) pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
     if (canComboThunder) pool.push({ key: 'thunder_shuriken', obj: activeSkills.thunder_shuriken, isAct: true, isCombo: true });
+    if (canComboAbsolute) pool.push({ key: 'absolute_zero', obj: activeSkills.absolute_zero, isAct: true, isCombo: true });
+    if (canComboValkyrie) pool.push({ key: 'valkyrie_swarm', obj: activeSkills.valkyrie_swarm, isAct: true, isCombo: true });
+    if (canComboWhirlwind) pool.push({ key: 'whirlwind_chakram', obj: activeSkills.whirlwind_chakram, isAct: true, isCombo: true });
 
     for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
     for(let k in activeSkills) {
-        if(k === 'laser_bomb' || k === 'thunder_shuriken') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram') continue; 
         let sk = activeSkills[k];
         if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
         else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
@@ -812,17 +933,21 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
 
             let card = document.createElement('div'); 
             card.className = `skill-card ${c.isAct ? (c.isCombo ? 'combo-type' : 'active-type') : ''}`;
+            
             if(c.key === 'thunder_shuriken') card.style.borderColor = '#00ffff'; 
+            else if(c.key === 'absolute_zero') { card.style.borderColor = '#0088ff'; card.style.boxShadow = '0 0 20px #0088ff'; }
+            else if(c.key === 'valkyrie_swarm') { card.style.borderColor = '#ffaa00'; card.style.boxShadow = '0 0 20px #ffaa00'; }
+            else if(c.key === 'whirlwind_chakram') { card.style.borderColor = '#55ff55'; card.style.boxShadow = '0 0 20px #55ff55'; }
             
             card.innerHTML = `<div class="skill-title"><span>${c.obj.icon} ${c.obj.name}</span> <span>${lvlStr}</span></div><div class="skill-desc">${c.obj.desc}</div>`;
             card.onclick = () => {
                 if (c.isCombo) {
                     c.obj.level = 1;
-                    if (c.key === 'laser_bomb') {
-                        myActiveSlots = myActiveSlots.filter(slot => slot !== 'laser' && slot !== 'bomb');
-                    } else if (c.key === 'thunder_shuriken') {
-                        myActiveSlots = myActiveSlots.filter(slot => slot !== 'lightning' && slot !== 'shuriken');
-                    }
+                    if (c.key === 'laser_bomb') myActiveSlots = myActiveSlots.filter(slot => slot !== 'laser' && slot !== 'bomb');
+                    else if (c.key === 'thunder_shuriken') myActiveSlots = myActiveSlots.filter(slot => slot !== 'lightning' && slot !== 'shuriken');
+                    else if (c.key === 'absolute_zero') myActiveSlots = myActiveSlots.filter(slot => slot !== 'nova' && slot !== 'poison');
+                    else if (c.key === 'valkyrie_swarm') myActiveSlots = myActiveSlots.filter(slot => slot !== 'dove' && slot !== 'missile');
+                    else if (c.key === 'whirlwind_chakram') myActiveSlots = myActiveSlots.filter(slot => slot !== 'shield' && slot !== 'boomerang');
                     myActiveSlots.push(c.key);
                 } else {
                     c.obj.level++;
@@ -845,6 +970,9 @@ function updateActiveUI() {
             
             if(key === 'laser_bomb') { slot.style.borderColor = '#ff55ff'; slot.style.boxShadow = '0 0 10px #ff55ff'; }
             else if(key === 'thunder_shuriken') { slot.style.borderColor = '#00ffff'; slot.style.boxShadow = '0 0 10px #00ffff'; }
+            else if(key === 'absolute_zero') { slot.style.borderColor = '#0088ff'; slot.style.boxShadow = '0 0 10px #0088ff'; }
+            else if(key === 'valkyrie_swarm') { slot.style.borderColor = '#ffaa00'; slot.style.boxShadow = '0 0 10px #ffaa00'; }
+            else if(key === 'whirlwind_chakram') { slot.style.borderColor = '#55ff55'; slot.style.boxShadow = '0 0 10px #55ff55'; }
             else { slot.style.borderColor = '#aa44ff'; slot.style.boxShadow = 'none'; }
             
         } else { slot.innerHTML = ''; slot.style.borderColor = '#555'; slot.style.boxShadow = '0 0 5px #000'; }
@@ -873,7 +1001,7 @@ function openDevMode() {
     ui.devPassivesContainer.innerHTML = ''; ui.devActivesContainer.innerHTML = '';
     for(let k in passiveSkills) ui.devPassivesContainer.appendChild(makeRow(k, passiveSkills[k], false));
     for(let k in activeSkills) {
-        if(k === 'laser_bomb' || k === 'thunder_shuriken') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram') continue; 
         ui.devActivesContainer.appendChild(makeRow(k, activeSkills[k], true));
     }
     ui.devScreen.classList.remove('hidden'); ui.devScreen.dataset.prev = prev === 'dev' ? 'playing' : prev;
@@ -960,7 +1088,29 @@ function update() {
     for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
-        if(p.type === 'laser_bomb') {
+        // 🎯 블랙홀 로직 (매 10프레임마다 흡입 및 지속 데미지)
+        if (p.type === 'blackhole') {
+            p.x += p.dx; p.y += p.dy;
+            if (frameCount % 10 === 0) { 
+                for(let j=0; j<enemies.length; j++){
+                    let e = enemies[j]; if(e.isDead) continue;
+                    let dSq = getDistSq(p.x, p.y, e.x, e.y);
+                    if (dSq < 62500) { // 반경 250
+                        let dist = Math.sqrt(dSq) || 1;
+                        e.x += (p.x - e.x)/dist * 6; // 강력한 흡입
+                        e.y += (p.y - e.y)/dist * 6;
+                        damageEnemy(e, p.dmg * 0.5, 0, 0, 0); 
+                    }
+                }
+            }
+            if (p.life <= 1) { // 수명이 다하면 대폭발
+                effects.push({x: p.x, y: p.y, type: 'explosion', life: 20, maxLife: 20, radius: 180});
+                for(let j=0; j<enemies.length; j++){
+                    if(!enemies[j].isDead && getDistSq(p.x, p.y, enemies[j].x, enemies[j].y) < 32400) damageEnemy(enemies[j], p.dmg * 8, 20, 0, 0);
+                }
+            }
+        }
+        else if(p.type === 'laser_bomb') {
             p.angle += 0.03; 
             if(frameCount % 4 === 0) { 
                 for (let j = 0; j < enemies.length; j++) {
@@ -970,9 +1120,7 @@ function update() {
                         let ang = p.angle + b*(Math.PI*2/5);
                         let px_center = p.x + Math.cos(ang) * p.radius;
                         let py_center = p.y + Math.sin(ang) * p.radius;
-                        if(getDistSq(e.x, e.y, px_center, py_center) < 6400) { 
-                            hit = true; break;
-                        }
+                        if(getDistSq(e.x, e.y, px_center, py_center) < 6400) { hit = true; break; }
                     }
                     if(hit) {
                         let isBossTarget = (e.isBoss || e.isMidBoss);
@@ -993,6 +1141,16 @@ function update() {
                     effects.push({ x: p.x, y: p.y, targetX: n.x, targetY: n.y, type: 'chain_lightning', life: 10, maxLife: 10 });
                 }
             }
+        }
+        else if (p.type === 'v_missile') {
+            let n = getNearestEnemy(p.x, p.y, 250000); 
+            if(n) { 
+                let dx=n.x-p.x; let dy=n.y-p.y; let dist=Math.sqrt(dx*dx+dy*dy); 
+                p.dx += (dx/dist)*1.5; p.dy += (dy/dist)*1.5; 
+                let speed = Math.sqrt(p.dx*p.dx + p.dy*p.dy);
+                if(speed > 16) { p.dx = (p.dx/speed)*16; p.dy = (p.dy/speed)*16; } 
+            }
+            if(frameCount % 3 === 0) effects.push({x:p.x, y:p.y, type:'spark', life:15, maxLife:15, radius:4});
         }
         else if(p.type === 'missile') { 
             let n = getNearestEnemy(p.x, p.y, 160000); 
@@ -1020,7 +1178,7 @@ function update() {
             }
         }
 
-        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken') { p.x += p.dx || 0; p.y += p.dy || 0; }
+        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole') { p.x += p.dx || 0; p.y += p.dy || 0; }
         p.life--; 
         
         if (p.life <= 0) { 
@@ -1036,22 +1194,46 @@ function update() {
             p.isDead = true; continue; 
         }
 
+        // 🎯 일반 투사체들의 적 충돌 체크 루프
         for (let j = 0; j < enemies.length; j++) {
             let e = enemies[j]; if (e.isDead) continue;
             let hitRadSq = 400; 
-            if(p.type==='missile') hitRadSq=625; 
+            if(p.type==='missile' || p.type==='v_missile') hitRadSq=625; 
             if(p.type==='bomb' || p.type==='bomb_frag') hitRadSq=400;
             if(p.type==='big_orb') hitRadSq=900;
             if(p.type==='shield') hitRadSq=625; 
-            if(p.type==='boomerang') hitRadSq=1600; 
-            if(p.type==='thunder_shuriken') hitRadSq=1600; 
-            if(p.type==='laser_bomb') hitRadSq=0; 
+            if(p.type==='boomerang' || p.type==='thunder_shuriken') hitRadSq=1600; 
+            if(p.type==='cleaver') hitRadSq=10000;  // 거대 차원 절단검
+            if(p.type==='gatling') hitRadSq=625;    // 관통 게틀링
+            
+            // 특수 판정 스킬들은 패스
+            if(p.type==='laser_bomb' || p.type==='blackhole') hitRadSq=0; 
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
                 let isBossTarget = (e.isBoss || e.isMidBoss);
                 let mult = (p.bossMult && isBossTarget) ? p.bossMult : 1;
 
-                if (p.type === 'big_orb') {
+                // 🎯 평타 궁극기 2종 타격 처리
+                if (p.type === 'cleaver') {
+                    if (!p.hitTargets) p.hitTargets = [];
+                    if (!p.hitTargets.includes(e)) {
+                        p.hitTargets.push(e);
+                        damageEnemy(e, p.dmg*mult, p.kb, Math.cos(p.angle), Math.sin(p.angle));
+                        effects.push({ x: e.x, y: e.y, type: 'slash', angle: p.angle, life: 10, maxLife: 10, radius: 40 });
+                    }
+                } 
+                else if (p.type === 'gatling') {
+                    if (!p.hitTargets) p.hitTargets = [];
+                    if (!p.hitTargets.includes(e)) {
+                        p.hitTargets.push(e);
+                        damageEnemy(e, p.dmg*mult, p.kb, Math.cos(p.angle), Math.sin(p.angle));
+                        effects.push({ x: e.x, y: e.y, type: 'spark', life: 8, maxLife: 8, radius: 8 });
+                        p.pierce--;
+                        if (p.pierce <= 0) { p.isDead = true; break; }
+                    }
+                }
+                // 기존 스킬 타격 처리
+                else if (p.type === 'big_orb') {
                     effects.push({ x: p.x, y: p.y, type: 'explosion', life: 20, maxLife: 20, radius: 120 });
                     for(let k=0; k<enemies.length; k++) { if(!enemies[k].isDead && getDistSq(p.x, p.y, enemies[k].x, enemies[k].y)<14400) damageEnemy(enemies[k], p.dmg*mult, p.kb, 0, 0); }
                     p.isDead = true; break;
@@ -1059,9 +1241,9 @@ function update() {
                     damageEnemy(e, p.dmg*mult, 5, 0, 0);
                     effects.push({x:p.x, y:p.y, type:'explosion', life:10, maxLife:10, radius:40});
                     p.isDead = true; break;
-                } else if(p.type === 'missile') { 
+                } else if(p.type === 'missile' || p.type === 'v_missile') { 
                     damageEnemy(e, p.dmg*mult, p.kb || 5, 0, 0);
-                    effects.push({ x: e.x, y: e.y, type: 'explosion', life: 12, maxLife: 12, radius: 30 });
+                    effects.push({ x: e.x, y: e.y, type: 'explosion', life: 12, maxLife: 12, radius: p.type==='v_missile'?40:30 });
                     p.isDead = true; break;
                 } else if(p.type === 'shuriken' || p.type === 'thunder_shuriken') {
                     if(frameCount % 5 === 0) {
@@ -1128,8 +1310,30 @@ function draw() {
     }
     ctx.stroke();
     
+    if (activeSkills.absolute_zero.level > 0) {
+        ctx.fillStyle = 'rgba(0, 150, 255, 0.15)';
+        ctx.beginPath(); ctx.arc(cx, cy, 250, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = 'rgba(100, 200, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 250 + Math.sin(frameCount*0.1)*10, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, 150 + Math.cos(frameCount*0.08)*20, 0, Math.PI*2); ctx.stroke();
+    }
+
     ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, player.magnetRange, 0, Math.PI*2); ctx.stroke();
     ctx.strokeStyle='rgba(255,100,100,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, player.range, 0, Math.PI*2); ctx.stroke();
+
+    if (activeSkills.whirlwind_chakram.level > 0) {
+        let baseRadius = 150 + Math.sin(frameCount * 0.05) * 80;
+        ctx.strokeStyle = '#55ff55'; ctx.lineWidth = 4;
+        for(let b=0; b<5; b++) {
+            let ang = frameCount * 0.08 + b*(Math.PI*2/5);
+            let bx = cx + Math.cos(ang)*baseRadius;
+            let by = cy + Math.sin(ang)*baseRadius;
+            ctx.save(); ctx.translate(bx, by); ctx.rotate(frameCount*0.5);
+            ctx.beginPath(); ctx.arc(0,0, 20, 0, Math.PI); ctx.stroke();
+            ctx.restore();
+        }
+    }
 
     for (let i=0; i<effects.length; i++) {
         let ef = effects[i]; let ex = ef.x-worldX+cx; let ey = ef.y-worldY+cy;
@@ -1241,22 +1445,48 @@ function draw() {
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
         
-        if (pr.type === 'laser_bomb') {
+        // 🎯 1. 🗡️ 차원 절단검 그리기
+        if (pr.type === 'cleaver') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(pr.angle);
+            ctx.strokeStyle = `rgba(255, 50, 50, ${pr.life > 10 ? 0.9 : pr.life/10})`;
+            ctx.lineWidth = 25; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.arc(0, 0, 100, -1, 1); ctx.stroke();
+            ctx.strokeStyle = `rgba(50, 0, 0, ${pr.life > 10 ? 0.9 : pr.life/10})`;
+            ctx.lineWidth = 8;
+            ctx.beginPath(); ctx.arc(0, 0, 100, -1, 1); ctx.stroke();
+            ctx.restore();
+        }
+        // 🎯 2. 🏹 광학 게틀링 보우 그리기
+        else if (pr.type === 'gatling') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(pr.angle);
+            ctx.fillStyle = '#00ffff'; ctx.fillRect(-25, -3, 50, 6);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(-20, -1, 40, 2);
+            ctx.restore();
+        }
+        // 🎯 3. ✨ 붕괴의 블랙홀 그리기
+        else if (pr.type === 'blackhole') {
+            ctx.save(); ctx.translate(px, py);
+            ctx.fillStyle = `rgba(30, 0, 60, ${0.4 + Math.sin(frameCount*0.2)*0.2})`;
+            ctx.beginPath(); ctx.arc(0,0, 70 + Math.sin(frameCount*0.5)*15, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.arc(0,0, 30, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#aa00ff'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0,0, 35, 0, Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+        else if (pr.type === 'laser_bomb') {
             ctx.save();
             ctx.strokeStyle = `rgba(255, 100, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`;
             ctx.fillStyle = `rgba(255, 200, 255, ${pr.life > 20 ? 0.3 : pr.life/20})`;
-            
             for(let b=0; b<5; b++) {
                 let ang = pr.angle + b*(Math.PI*2/5);
                 let bx = px + Math.cos(ang)*pr.radius;
                 let by = py + Math.sin(ang)*pr.radius;
-                
                 ctx.beginPath(); ctx.ellipse(bx, by, 40, 20, 0, 0, Math.PI*2); ctx.fill();
                 ctx.lineWidth = 30 + Math.sin(frameCount*0.2)*10;
                 ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - vHeight); ctx.stroke();
                 ctx.strokeStyle = '#fff'; ctx.lineWidth = 10;
                 ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - vHeight); ctx.stroke();
-                
                 ctx.strokeStyle = `rgba(255, 100, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`;
             }
             ctx.restore();
@@ -1271,6 +1501,12 @@ function draw() {
             ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,6,0,Math.PI*2); ctx.fill();
             ctx.strokeStyle = `rgba(100, 200, 255, ${0.5 + Math.random()*0.5})`; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(0,0,30,0,Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+        else if(pr.type === 'v_missile') { 
+            ctx.fillStyle = '#ffaa00'; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx)); 
+            ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-10, -10); ctx.lineTo(-5, 0); ctx.lineTo(-10, 10); ctx.fill(); 
+            ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-15, -4); ctx.lineTo(-15, 4); ctx.fill(); 
             ctx.restore();
         }
         else if(pr.type === 'missile') { 
@@ -1311,7 +1547,6 @@ function draw() {
         ctx.restore();
     }
     
-    // 🎯 보스 방향 내비게이터 (빨간 화살표)
     if (bossMode) {
         let boss = enemies.find(e => e.isBoss && !e.isDead);
         if (boss) {
@@ -1319,7 +1554,6 @@ function draw() {
             let dy = boss.y - worldY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            // 보스가 어느 정도 멀리 있을 때만 화살표 표시
             if (dist > 150) { 
                 let ang = Math.atan2(dy, dx);
                 let arrowDist = 90; 
@@ -1328,24 +1562,17 @@ function draw() {
                 ctx.translate(cx + Math.cos(ang) * arrowDist, cy + Math.sin(ang) * arrowDist);
                 ctx.rotate(ang);
                 
-                // 크기가 커졌다 작아지는 펄스 효과
                 let pulse = 1 + Math.sin(frameCount * 0.15) * 0.2;
                 ctx.scale(pulse, pulse);
                 
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+                ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-15, 18); ctx.lineTo(-5, 0); ctx.lineTo(-15, -18); ctx.closePath(); ctx.fill();
+                
                 ctx.fillStyle = '#ff0000';
-                ctx.shadowColor = '#ff0000';
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.moveTo(15, 0);
-                ctx.lineTo(-12, 12);
-                ctx.lineTo(-4, 0);
-                ctx.lineTo(-12, -12);
-                ctx.closePath();
-                ctx.fill();
+                ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-12, 12); ctx.lineTo(-4, 0); ctx.lineTo(-12, -12); ctx.closePath(); ctx.fill();
                 
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
-                ctx.shadowBlur = 0;
                 ctx.stroke();
                 ctx.restore();
             }

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.0.4 -->
-    <title>Space Survivor v1.0.4</title>
+    <!-- 버전 업데이트: v1.0.5 -->
+    <title>Space Survivor v1.0.5</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -79,8 +79,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.0.4 -->
-        <div class="version">v1.0.4</div>
+        <!-- 버전 v1.0.5 -->
+        <div class="version">v1.0.5</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -138,7 +138,6 @@
                     <div class="skill-desc">주변 몹을 강력히 빨아들이며 파괴하는 거대 중력의 특이점을 발사합니다.</div>
                 </div>
 
-                <!-- 🚀 신규 콤보: 회오리 펀치 -->
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffaa55; box-shadow: 0 0 20px #ffaa55; background: rgba(50,30,10,0.9);">
                     <div class="skill-title" style="color:#ffaa55;"><span>💥 회오리 펀치</span> <span style="color:#ffcc00;">궁극기</span></div>
                     <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 💨 회오리 (Lv.5) + 🥊 팡팡 펀치 (Lv.5)</div>
@@ -271,10 +270,10 @@ const activeSkills = {
     absolute_zero:     { level: 0, max: 1, icon: "❄️", name: "절대 영도 지대", desc: "초거대 서리맹독 장판이 생성되어 접근을 차단합니다." },
     valkyrie_swarm:    { level: 0, max: 1, icon: "🦅", name: "발키리 편대", desc: "4기 드론 편대가 쉴 새 없이 미사일 폭격을 가합니다." },
     whirlwind_chakram: { level: 0, max: 1, icon: "🌪️", name: "회오리 톱날", desc: "거대 톱날들이 팽창 및 수축 궤도를 그리며 갈아버립니다." },
-    tornado_punch:     { level: 0, max: 1, icon: "💥", name: "회오리 펀치", desc: "회오리가 감긴 거대 펀치. 적중 시 멈춰서 엄청난 틱데미지로 갈아버립니다." }, // 🚀 1.0.4 신규 콤보
+    tornado_punch:     { level: 0, max: 1, icon: "💥", name: "회오리 펀치", desc: "회오리가 감긴 거대 펀치. 적중 시 멈춰서 엄청난 틱데미지로 갈아버립니다." }, 
     
     punch:      { level: 0, max: 5, icon: "🥊", name: "팡팡 펀치", desc: "4방향으로 펀치를 날리며, 적중 시 주변에 연속 펀치를 날립니다." },
-    tornado:    { level: 0, max: 5, icon: "💨", name: "회오리", desc: "나선형으로 멀어지는 회오리바람을 생성합니다." }, // 🚀 1.0.4 신규 스킬
+    tornado:    { level: 0, max: 5, icon: "💨", name: "회오리", desc: "나선형으로 멀어지는 회오리바람을 생성합니다." }, 
     missile:    { level: 0, max: 5, icon: "🚀", name: "유도 미사일", desc: "적을 쫓는 미사일 다수 발사." },
     shield:     { level: 0, max: 5, icon: "🌀", name: "수호 방패", desc: "주위를 도는 방패. 적을 밀쳐냅니다." }, 
     bomb:       { level: 0, max: 5, icon: "💣", name: "폭탄", desc: "분열 폭탄. 보스에게 3배의 피해를 줍니다." }, 
@@ -288,10 +287,11 @@ const activeSkills = {
 };
 let myActiveSlots = []; 
 
+// 📈 캐릭터 기본 데미지 대폭 상향 (근접:45, 원거리:25, 마법:35)
 const charSpecs = {
-    melee:  { color: '#ff5555', range: 120, fireCooldown: 50, speed: 4.0, damage: 30, knockback: 15, baseMagnet: 100 },
-    ranged: { color: '#55ff55', range: 300, fireCooldown: 25, speed: 3.5, damage: 15, knockback: 5, baseMagnet: 100 },
-    magic:  { color: '#aa55ff', range: 220, fireCooldown: 60, speed: 3.3, damage: 25, knockback: 10, baseMagnet: 100 }
+    melee:  { color: '#ff5555', range: 120, fireCooldown: 50, speed: 4.0, damage: 45, knockback: 15, baseMagnet: 100 },
+    ranged: { color: '#55ff55', range: 300, fireCooldown: 25, speed: 3.5, damage: 25, knockback: 5, baseMagnet: 100 },
+    magic:  { color: '#aa55ff', range: 220, fireCooldown: 60, speed: 3.3, damage: 35, knockback: 10, baseMagnet: 100 }
 };
 
 const player = { 
@@ -319,7 +319,8 @@ function getDistSq(x1, y1, x2, y2) { const dx = x1 - x2; const dy = y1 - y2; ret
 
 function recalcStats() {
     const base = charSpecs[player.type];
-    player.bonusDmg = passiveSkills.attackPower.level * 5; 
+    // 📈 공격력 증가 패시브 대폭 상향 (레벨당 10증가 -> 만렙시 +80)
+    player.bonusDmg = passiveSkills.attackPower.level * 10; 
     player.cdr = Math.max(0.4, 1.0 - (passiveSkills.attackSpeed.level * 0.06)); 
 
     player.damage = base.damage + player.bonusDmg; 
@@ -394,7 +395,7 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     let e = {
         x: worldX + Math.cos(angle)*spawnRadius, y: worldY + Math.sin(angle)*spawnRadius,
         size: size, speed: baseSpeed, maxHp: maxHp, hp: maxHp, isBoss: isBoss, isMidBoss: isMidBoss, isWave: isWave, isDead: false,
-        slowStacks: 0, slowTimer: 0, freezeTimer: 0, waitTimer: 0
+        slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0, waitTimer: 0 // ❄️ 빙결 면역 타이머 추가
     };
     enemies.push(e);
 }
@@ -550,7 +551,8 @@ function handleBasicAttacks() {
 
         if (player.type === 'melee') {
             if (isWeaponEvolved) {
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*15, dy: Math.sin(angle)*15, angle: angle, life: 60, type: 'cleaver', dmg: player.damage * 5, kb: player.knockback * 2, isDead: false, hitTargets: [] });
+                // 📈 차원 절단검 데미지 대폭 상향 (기본피해 * 8)
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*15, dy: Math.sin(angle)*15, angle: angle, life: 60, type: 'cleaver', dmg: player.damage * 8, kb: player.knockback * 2, isDead: false, hitTargets: [] });
                 player.currentCooldown = player.fireCooldown * 1.2; 
             } else {
                 let hits = wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1);
@@ -574,7 +576,8 @@ function handleBasicAttacks() {
             if (isWeaponEvolved) {
                 let spread = (Math.random() - 0.5) * 0.2;
                 let ang = angle + spread;
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*25, dy: Math.sin(ang)*25, angle: ang, life: 40, type: 'gatling', dmg: player.damage * 0.7, kb: player.knockback, isDead: false, pierce: 3, hitTargets: [] });
+                // 📈 광학 게틀링 데미지 상향
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*25, dy: Math.sin(ang)*25, angle: ang, life: 40, type: 'gatling', dmg: player.damage * 1.0, kb: player.knockback, isDead: false, pierce: 3, hitTargets: [] });
                 player.currentCooldown = Math.max(2, player.fireCooldown * 0.2); 
             } else {
                 let arrows = 1 + wLvl; let spread = 0.15;
@@ -586,7 +589,8 @@ function handleBasicAttacks() {
             }
         } else if (player.type === 'magic') {
             if (isWeaponEvolved) {
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*3, dy: Math.sin(angle)*3, life: 150, type: 'blackhole', dmg: player.damage * 0.6, kb: 0, isDead: false });
+                // 📈 블랙홀 데미지 상향
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*3, dy: Math.sin(angle)*3, life: 150, type: 'blackhole', dmg: player.damage * 1.0, kb: 0, isDead: false });
                 player.currentCooldown = player.fireCooldown * 2.5; 
             } else {
                 player.attackCount++; 
@@ -611,12 +615,12 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
-    // 🚀 1.0.4 신규 콤보: 회오리 펀치
     if (activeSkills.tornado_punch.level > 0) {
         activeTimers.tornado_punch--;
         if(activeTimers.tornado_punch <= 0) {
-            let dmg = 80 + player.bonusDmg * 2; 
-            let size = 50; // 거대한 범위
+            // 📈 궁극기 데미지 대폭 상향
+            let dmg = 120 + player.bonusDmg * 2; 
+            let size = 50; 
             for(let i=0; i<4; i++) {
                 let ang = i * Math.PI/2; 
                 projectiles.push({ x: pX, y: pY, dx: Math.cos(ang)*8, dy: Math.sin(ang)*8, angle: ang, life: 180, type: 'tornado_punch_proj', dmg: dmg, size: size, isDead: false, hitTarget: false });
@@ -628,7 +632,7 @@ function handleActiveSkills() {
     if (activeSkills.punch.level > 0 && activeSkills.tornado_punch.level === 0) {
         activeTimers.punch--;
         if(activeTimers.punch <= 0) {
-            let dmg = 30 + activeSkills.punch.level*15 + player.bonusDmg; 
+            let dmg = 40 + activeSkills.punch.level*15 + player.bonusDmg; 
             let size = 10 + activeSkills.punch.level*3; 
             for(let i=0; i<4; i++) {
                 let ang = i * Math.PI/2; 
@@ -638,12 +642,11 @@ function handleActiveSkills() {
         }
     }
 
-    // 🚀 1.0.4 신규: 회오리
     if (activeSkills.tornado.level > 0 && activeSkills.tornado_punch.level === 0) {
         activeTimers.tornado--;
         if(activeTimers.tornado <= 0) {
             let count = activeSkills.tornado.level;
-            let dmg = 25 + activeSkills.tornado.level*10 + player.bonusDmg;
+            let dmg = 30 + activeSkills.tornado.level*10 + player.bonusDmg;
             for(let i=0; i<count; i++) {
                 let baseAng = (Math.PI*2/count)*i;
                 projectiles.push({ x: pX, y: pY, originX: pX, originY: pY, baseAng: baseAng, radiusDist: 0, life: 180, type: 'tornado', dmg: dmg, size: 25, isDead: false });
@@ -659,7 +662,8 @@ function handleActiveSkills() {
             let tx = n ? n.x : pX; let ty = n ? n.y : pY;
             projectiles.push({
                 x: tx, y: ty, type: 'laser_bomb', life: 180, angle: 0,
-                radius: 200, dmg: 100 + player.bonusDmg * 2, isDead: false
+                // 📈 데미지 상향
+                radius: 200, dmg: 150 + player.bonusDmg * 3, isDead: false
             });
             activeTimers.laser_bomb = 240 * player.cdr; 
         }
@@ -675,7 +679,8 @@ function handleActiveSkills() {
                 projectiles.push({ 
                     x: pX, y: pY, dx: Math.cos(ang)*3, dy: Math.sin(ang)*3, 
                     life: 300, type: 'thunder_shuriken', 
-                    dmg: 60 + player.bonusDmg * 2, isDead: false 
+                    // 📈 데미지 상향
+                    dmg: 90 + player.bonusDmg * 2.5, isDead: false 
                 });
             }
             activeTimers.thunder_shuriken = 150 * player.cdr;
@@ -685,13 +690,17 @@ function handleActiveSkills() {
     if (activeSkills.absolute_zero.level > 0) {
         if (frameCount % 15 === 0) { 
             let radius = 250;
-            let dmg = 40 + player.bonusDmg; 
+            let dmg = 80 + player.bonusDmg * 1.5; 
             for(let i=0; i<enemies.length; i++) {
                 let e = enemies[i]; if(e.isDead) continue;
                 if(getDistSq(pX, pY, e.x, e.y) < radius*radius) {
-                    damageEnemy(e, dmg + (e.maxHp * 0.015), 0, 0, 0); 
-                    e.freezeTimer = 20; 
-                    effects.push({x: e.x, y: e.y, type: 'freeze', life: 10, maxLife: 10, radius: e.size*1.2});
+                    // 📉 체퍼뎀 하향 (최대 1%)
+                    damageEnemy(e, dmg + (e.maxHp * 0.01), 0, 0, 0); 
+                    // ❄️ 빙결 면역 쿨타임 검사 적용
+                    if (e.freezeImmuneTimer <= 0) {
+                        e.freezeTimer = 20; 
+                        effects.push({x: e.x, y: e.y, type: 'freeze', life: 10, maxLife: 10, radius: e.size*1.2});
+                    }
                 }
             }
         }
@@ -707,7 +716,8 @@ function handleActiveSkills() {
             dv.cd--;
             if(dv.cd <= 0) {
                 let ang = Math.random()*Math.PI*2;
-                projectiles.push({ x: dv.x, y: dv.y, dx: Math.cos(ang)*5, dy: Math.sin(ang)*5, life: 150, type: 'v_missile', dmg: 70 + player.bonusDmg*1.5, isDead: false });
+                // 📈 데미지 상향
+                projectiles.push({ x: dv.x, y: dv.y, dx: Math.cos(ang)*5, dy: Math.sin(ang)*5, life: 150, type: 'v_missile', dmg: 100 + player.bonusDmg * 2, isDead: false });
                 dv.cd = 40 * player.cdr; 
             }
         }
@@ -715,7 +725,8 @@ function handleActiveSkills() {
 
     if (activeSkills.whirlwind_chakram.level > 0) {
         let baseRadius = 150 + Math.sin(frameCount * 0.05) * 80; 
-        let dmg = 60 + player.bonusDmg * 2;
+        // 📈 데미지 상향
+        let dmg = 100 + player.bonusDmg * 2;
         if (frameCount % 4 === 0) {
             for (let j = 0; j < enemies.length; j++) {
                 let e = enemies[j]; if (e.isDead) continue;
@@ -841,7 +852,9 @@ function handleActiveSkills() {
     if (activeSkills.poison.level > 0 && activeSkills.absolute_zero.level === 0) {
         activeTimers.poison--;
         if(activeTimers.poison <= 0) {
-            let pct = activeSkills.poison.level * 0.01; 
+            // 📉 틱 주기를 60프레임 단위로 너프 (기존 30프레임) - effects 안에서 판정
+            // 📉 체퍼뎀 하향 (최대 1%로 고정)
+            let pct = activeSkills.poison.level * 0.002; 
             effects.push({ x: pX, y: pY, type: 'poison', life: 180, maxLife: 180, radius: 120 + activeSkills.poison.level * 40, dmg: 10 + activeSkills.poison.level*5 + player.bonusDmg, hpPct: pct });
             activeTimers.poison = 100 * player.cdr;
         }
@@ -860,9 +873,12 @@ function handleActiveSkills() {
                     enemies[i].slowStacks = (enemies[i].slowStacks || 0) + 1;
                     enemies[i].slowTimer = 180; 
                     if(enemies[i].slowStacks >= 2) {
-                        enemies[i].freezeTimer = 30; 
                         enemies[i].slowStacks = 0; 
-                        effects.push({x: enemies[i].x, y: enemies[i].y, type: 'freeze', life: 30, maxLife: 30, radius: enemies[i].size*1.5});
+                        // ❄️ 빙결 면역 쿨타임 검사 적용
+                        if (enemies[i].freezeImmuneTimer <= 0) {
+                            enemies[i].freezeTimer = 30; 
+                            effects.push({x: enemies[i].x, y: enemies[i].y, type: 'freeze', life: 30, maxLife: 30, radius: enemies[i].size*1.5});
+                        }
                     }
                 }
             }
@@ -953,7 +969,6 @@ function triggerLevelUp(isChest = false, choiceCount = 3) {
     let canComboAbsolute = (activeSkills.nova.level === activeSkills.nova.max && activeSkills.poison.level === activeSkills.poison.max && activeSkills.absolute_zero.level === 0);
     let canComboValkyrie = (activeSkills.dove.level === activeSkills.dove.max && activeSkills.missile.level === activeSkills.missile.max && activeSkills.valkyrie_swarm.level === 0);
     let canComboWhirlwind = (activeSkills.shield.level === activeSkills.shield.max && activeSkills.boomerang.level === activeSkills.boomerang.max && activeSkills.whirlwind_chakram.level === 0);
-    // 🚀 1.0.4 신규 콤보 확인 로직
     let canComboTornadoPunch = (activeSkills.tornado.level === activeSkills.tornado.max && activeSkills.punch.level === activeSkills.punch.max && activeSkills.tornado_punch.level === 0);
     
     if (canComboLaser) pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
@@ -1132,7 +1147,7 @@ function update() {
                         x: worldX + Math.cos(ang)*dist, y: worldY + Math.sin(ang)*dist,
                         size: 16, speed: (1 + (gameSeconds/300)) * 0.4, 
                         maxHp: maxHp, hp: maxHp, isBoss: false, isMidBoss: false, isWave: true, isDead: false,
-                        slowStacks: 0, slowTimer: 0, freezeTimer: 0,
+                        slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0,
                         waitTimer: 600 
                     };
                     enemies.push(e);
@@ -1170,7 +1185,6 @@ function update() {
     for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
-        // 🚀 신규 스킬: 회오리 투사체 이동 로직 (나선형 팽창)
         if (p.type === 'tornado') {
             p.radiusDist += 1.5; 
             p.baseAng += 0.05; 
@@ -1188,11 +1202,9 @@ function update() {
                 }
             }
         }
-        // 🚀 신규 콤보: 회오리 펀치 이동 및 충돌 로직
         else if (p.type === 'tornado_punch_proj') {
             if (!p.hitTarget) {
                 p.x += p.dx; p.y += p.dy;
-                // 관통하지 않고 닿는 즉시 속도 감소 모드로 진입
                 for(let j=0; j<enemies.length; j++) {
                     let e = enemies[j]; if(e.isDead) continue;
                     if(getDistSq(p.x, p.y, e.x, e.y) < (p.size + e.size)**2) {
@@ -1201,12 +1213,10 @@ function update() {
                     }
                 }
             } else {
-                // 적중 후 거의 정지 상태로 전진
                 p.x += p.dx * 0.05; 
                 p.y += p.dy * 0.05;
             }
             
-            // 엄청난 틱데미지로 주변 갈아버리기
             if (frameCount % 6 === 0) { 
                 let hitRadiusSq = p.size * p.size * 1.5; 
                 for(let j=0; j<enemies.length; j++) {
@@ -1260,7 +1270,7 @@ function update() {
             if (p.life <= 1) { 
                 effects.push({x: p.x, y: p.y, type: 'explosion', life: 20, maxLife: 20, radius: 180});
                 for(let j=0; j<enemies.length; j++){
-                    if(!enemies[j].isDead && getDistSq(p.x, p.y, enemies[j].x, enemies[j].y) < 32400) damageEnemy(enemies[j], p.dmg * 8, 20, 0, 0);
+                    if(!enemies[j].isDead && getDistSq(p.x, p.y, enemies[j].x, enemies[j].y) < 32400) damageEnemy(enemies[j], p.dmg * 10, 20, 0, 0);
                 }
             }
         }
@@ -1417,7 +1427,8 @@ function update() {
 
     for (let i=0; i<effects.length; i++) {
         let ef = effects[i]; ef.life--;
-        if(ef.type === 'poison' && ef.life % 30 === 0) {
+        // 📉 맹독 지대 틱 변경 60단위
+        if(ef.type === 'poison' && ef.life % 60 === 0) {
             for(let j=0; j<enemies.length; j++) {
                 if(!enemies[j].isDead && getDistSq(ef.x, ef.y, enemies[j].x, enemies[j].y) < ef.radius*ef.radius) {
                     let totalDmg = ef.dmg + (enemies[j].maxHp * ef.hpPct);
@@ -1435,7 +1446,14 @@ function update() {
         const dx = worldX - e.x; const dy = worldY - e.y; const distSq = dx*dx + dy*dy;
         let currentSpeed = e.speed;
         
-        if (e.freezeTimer > 0) { e.freezeTimer--; currentSpeed = 0; } 
+        // ❄️ 빙결 면역 감소 로직
+        if (e.freezeImmuneTimer > 0) e.freezeImmuneTimer--;
+
+        if (e.freezeTimer > 0) { 
+            e.freezeTimer--; 
+            currentSpeed = 0; 
+            if (e.freezeTimer <= 0) e.freezeImmuneTimer = 150; // 2.5초 면역 부여
+        } 
         else if (e.slowTimer > 0) { e.slowTimer--; currentSpeed *= 0.4; if (e.slowTimer <= 0) e.slowStacks = 0; }
 
         if (distSq > 0 && currentSpeed > 0) { const dist = Math.sqrt(distSq); e.x += (dx/dist)*currentSpeed; e.y += (dy/dist)*currentSpeed; }
@@ -1608,7 +1626,6 @@ function draw() {
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
         
-        // 🚀 신규 스킬: 회오리 시각 효과
         if (pr.type === 'tornado') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount * -0.3);
             ctx.strokeStyle = `rgba(170, 255, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`; 
@@ -1618,14 +1635,12 @@ function draw() {
             }
             ctx.restore();
         }
-        // 🚀 신규 콤보: 회오리 펀치 시각 효과
         else if (pr.type === 'tornado_punch_proj') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(pr.angle);
             ctx.fillStyle = '#ff3333';
             ctx.beginPath(); ctx.arc(0, 0, pr.size, 0, Math.PI*2); ctx.fill();
             ctx.fillStyle = '#aa0000'; ctx.fillRect(-pr.size - 10, -pr.size+5, 20, pr.size*2-10);
             
-            // 회오리 이펙트 감싸기
             ctx.rotate(frameCount * 0.5);
             ctx.strokeStyle = `rgba(150, 255, 255, ${pr.life > 20 ? 0.9 : pr.life/20})`; 
             ctx.lineWidth = 6;

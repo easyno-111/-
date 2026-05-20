@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.0.7 -->
-    <title>Space Survivor v1.0.7</title>
+    <!-- 버전 업데이트: v1.0.8 -->
+    <title>Space Survivor v1.0.8</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -18,7 +18,6 @@
         #topBar { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: 90%; }
         #timer { font-size: 32px; font-weight: 900; font-family: monospace; background: rgba(0,0,0,0.6); padding: 5px 20px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
         #bossTimerContainer { color: #ff4444; font-size: 20px; font-weight: bold; margin-top: 8px; background: rgba(40,0,0,0.8); padding: 4px 15px; border-radius: 10px; border: 1px solid #f00; display: none; }
-        /* 신규: 웨이브 전용 타이머 */
         #waveTimerContainer { color: #ffaa00; font-size: 20px; font-weight: bold; margin-top: 8px; background: rgba(40,20,0,0.8); padding: 4px 15px; border-radius: 10px; border: 1px solid #fa0; display: none; box-shadow: 0 0 10px rgba(255,170,0,0.5); }
         
         #warningMessage { position: absolute; top: 25%; left: 50%; transform: translateX(-50%); font-size: 36px; color: #ff3333; font-weight: 900; text-shadow: 0 0 20px rgba(255,0,0,0.8); opacity: 0; transition: opacity 0.3s; background: rgba(0,0,0,0.7); padding: 10px 30px; border-radius: 15px; text-align: center; width: max-content; max-width: 90%; }
@@ -82,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.0.7 -->
-        <div class="version">v1.0.7</div>
+        <!-- 버전 v1.0.8 -->
+        <div class="version">v1.0.8</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -91,7 +90,6 @@
         <div id="topBar">
             <div id="timer">00:00</div>
             <div id="bossTimerContainer">보스 타임어택: <span id="bossTimer">60</span>초!</div>
-            <!-- 웨이브 전용 타이머 추가 -->
             <div id="waveTimerContainer">웨이브 버티기: <span id="waveTimer">60</span>초!</div>
         </div>
         <div id="warningMessage">⚠️ 중간 보스 접근 ⚠️</div>
@@ -137,6 +135,14 @@
                     <div class="skill-title" style="color:#dd88ff;"><span>✨ 붕괴의 블랙홀</span> <span style="color:#ffcc00;">평타 진화(마법사)</span></div>
                     <div class="skill-desc">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
                 </div>
+                
+                <!-- 🚀 신규 궁극기: 성검 엑스칼리버 -->
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffee55; box-shadow: 0 0 20px #ffee55; background: rgba(50,50,10,0.9);">
+                    <div class="skill-title" style="color:#ffee55;"><span>⚔️ 성검 엑스칼리버</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc" style="color: #fff; font-weight: bold; margin-bottom: 8px;">조건: 🗡️ 환영검무 (Lv.5) + ✨ 성스러운 오라 (Lv.5)</div>
+                    <div class="skill-desc">가장 체력이 높은 적을 향해 거대한 성검을 날립니다. 적중 시 영구적으로 35%의 피해량 증가 디버프를 겁니다.</div>
+                </div>
+
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffaa55; box-shadow: 0 0 20px #ffaa55; background: rgba(50,30,10,0.9);">
                     <div class="skill-title" style="color:#ffaa55;"><span>💥 회오리 펀치</span> <span style="color:#ffcc00;">궁극기</span></div>
                     <div class="skill-desc">조건: 💨 회오리 (Lv.5) + 🥊 팡팡 펀치 (Lv.5)</div>
@@ -236,13 +242,13 @@ let post5MinBossBuff = false;
 
 let isTimePaused = false; let waveInProgress = false; let waveTimeLeft = 0; 
 let midBossSpawned = false; let chestOpening = false; let currentChestRarity = null;
-let midBossKills = 0; let levelUpPicksRemaining = 1; // 👑 황금상자 2중 선택용 상태
+let midBossKills = 0; let levelUpPicksRemaining = 1; 
 
 let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
 
 const passiveSkills = {
-    weaponUpgrade:{ level: 0, max: 5, icon: "🔥", name: "특화 무기 진화", desc: "직업 고유의 평타가 강화됩니다. (범위/타수 등 증가)" },
+    weaponUpgrade:{ level: 0, max: 5, icon: "🔥", name: "특화 무기 진화", desc: "직업 고유의 평타가 강화됩니다." },
     attackPower:  { level: 0, max: 8, icon: "⚔️", name: "공격력 증가", desc: "모든 공격과 스킬 데미지가 상승합니다." },
     attackSpeed:  { level: 0, max: 8, icon: "⚡", name: "공격속도 증가", desc: "모든 스킬의 쿨타임이 감소합니다." },
     knockback:    { level: 0, max: 8, icon: "🛡️", name: "넉백 증가", desc: "기본 공격의 넉백이 늘어납니다." },
@@ -254,12 +260,17 @@ const passiveSkills = {
 };
 
 const activeSkills = {
+    // 🚀 신규 궁극기 및 스킬 추가
+    excalibur:         { level: 0, max: 1, icon: "⚔️", name: "성검 엑스칼리버", desc: "가장 강력한 적을 심판하며 받는 피해량을 35% 증가시킵니다." },
+    phantom_sword:     { level: 0, max: 5, icon: "🗡️", name: "환영검무", desc: "가장 가까운 적에게 날아가 화려하게 난도질합니다." },
+    holy_aura:         { level: 0, max: 5, icon: "✨", name: "성스러운 오라", desc: "일렁이는 오라를 생성해 내부 적의 받는 피해를 증가시킵니다." },
+    
     laser_bomb:        { level: 0, max: 1, icon: "🎇", name: "레이저 폭탄", desc: "위에서 꽂아 내리는 5개의 거대 기둥이 회전합니다." }, 
     thunder_shuriken:  { level: 0, max: 1, icon: "⚡", name: "번개 수리검", desc: "거대 수리검 4개가 비행하며 주변을 번개로 지집니다." },
     absolute_zero:     { level: 0, max: 1, icon: "❄️", name: "절대 영도 지대", desc: "초거대 서리맹독 장판이 생성되어 접근을 차단합니다." },
     valkyrie_swarm:    { level: 0, max: 1, icon: "🦅", name: "발키리 편대", desc: "4기 드론 편대가 쉴 새 없이 미사일 폭격을 가합니다." },
     whirlwind_chakram: { level: 0, max: 1, icon: "🌪️", name: "회오리 톱날", desc: "거대 톱날들이 팽창 및 수축 궤도를 그리며 갈아버립니다." },
-    tornado_punch:     { level: 0, max: 1, icon: "💥", name: "회오리 펀치", desc: "회오리가 감긴 거대 펀치. 적중 시 멈춰서 엄청난 틱데미지로 갈아버립니다." }, 
+    tornado_punch:     { level: 0, max: 1, icon: "💥", name: "회오리 펀치", desc: "회오리가 감긴 거대 펀치. 적중 시 엄청난 틱데미지로 분쇄합니다." }, 
     
     punch:      { level: 0, max: 5, icon: "🥊", name: "팡팡 펀치", desc: "4방향으로 펀치를 날리며, 적중 시 주변에 연속 펀치를 날립니다." },
     tornado:    { level: 0, max: 5, icon: "💨", name: "회오리", desc: "나선형으로 멀어지는 회오리바람을 생성합니다." }, 
@@ -289,7 +300,7 @@ const player = {
     bonusDmg: 0, cdr: 1.0 
 };
 
-let activeTimers = { punch: 0, tornado: 0, missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, whirlwind_chakram: 0, tornado_punch: 0 };
+let activeTimers = { phantom_sword: 0, holy_aura: 0, excalibur: 0, punch: 0, tornado: 0, missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, whirlwind_chakram: 0, tornado_punch: 0 };
 let dovesState = []; 
 
 function resize() { 
@@ -381,22 +392,22 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     const angle = Math.random() * Math.PI * 2; 
     const spawnRadius = Math.max(vWidth, vHeight) * 0.6; 
     
-    // 📈 적 체력 스케일링 상향
     let healthMultiplier = (1 + (gameSeconds / 60) * 1.5) * difficultyMult; 
     
     let size = isBoss ? 60 : (isMidBoss ? 40 : 14);
     let baseSpeed = isBoss ? 1.9 : (isMidBoss ? 2.4 : (1 + Math.random()*0.5 + (gameSeconds/300)));
     
     let maxHp;
-    if (isBoss) maxHp = (20000 + gameSeconds * 200) * difficultyMult; // 15분 하드모드 = 30만 체력
+    if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult; // 🚀 15분 보스 체력 20% 감소 
     else if (isMidBoss) maxHp = (4000 + gameSeconds * 50) * difficultyMult;
-    else if (isWave) maxHp = 600 * healthMultiplier; // 강력한 웨이브 몹
+    else if (isWave) maxHp = 600 * healthMultiplier; 
     else maxHp = 60 * healthMultiplier; 
     
     let e = {
         x: worldX + Math.cos(angle)*spawnRadius, y: worldY + Math.sin(angle)*spawnRadius,
         size: size, speed: baseSpeed, maxHp: maxHp, hp: maxHp, isBoss: isBoss, isMidBoss: isMidBoss, isWave: isWave, isDead: false,
-        slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0, waitTimer: 0
+        slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0, waitTimer: 0,
+        dmgMult: 1.0, excaliburDebuff: false // 🚀 성스러운 오라 & 엑스칼리버 디버프용 추가
     };
     enemies.push(e);
 }
@@ -477,7 +488,11 @@ async function startChestAnimation() {
 
 function openChest() { startChestAnimation(); }
 
+// 🚀 데미지 처리 함수에 dmgMult 반영
 function damageEnemy(e, dmg, knockback, dirX, dirY) {
+    // 디버프 적용 (성스러운 오라 + 엑스칼리버)
+    dmg *= (e.dmgMult || 1.0);
+    
     e.hp -= dmg;
     if (e.hp <= 0) {
         e.isDead = true;
@@ -498,12 +513,19 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
                 return; 
             }
         }
+        if(e.isWave && !midBossSpawned) {
+            waveKilled++;
+            if(waveKilled >= waveTotal * 0.8) {
+                spawnEnemy(false, false, true); 
+                midBossSpawned = true;
+                ui.warning.innerText = "⚠️ 포위망 돌파! 중간 보스 출현 ⚠️"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3;
+            }
+        }
         if(e.isMidBoss) {
             midBossKills++;
             drops.push({ x: e.x, y: e.y, type: 'chest', rarity: null, isDead: false }); 
         }
 
-        // 📈 웨이브 몹도 일반 gem을 드롭하여 폭풍 레벨업 유도
         let gemType = (e.isBoss || e.isMidBoss) ? 'big_gem' : 'gem';
         gems.push({ x: e.x, y: e.y, isDead: false, type: gemType, isMagnetized: false });
         
@@ -606,6 +628,63 @@ function handleBasicAttacks() {
 function handleActiveSkills() {
     const pX = worldX; const pY = worldY;
 
+    // 🚀 성스러운 오라 & 엑스칼리버 디버프 사전 갱신
+    for(let i=0; i<enemies.length; i++) {
+        enemies[i].dmgMult = 1.0;
+        if (enemies[i].excaliburDebuff) enemies[i].dmgMult += 0.35; // 엑스칼리버 영구 35% 디버프
+    }
+    // 오라 적용
+    if (activeSkills.holy_aura.level > 0 && activeSkills.excalibur.level === 0) {
+        let auraRadius = 100 + activeSkills.holy_aura.level * 25;
+        let auraBonus = activeSkills.holy_aura.level * 0.06; // 최대 30%
+        let auraRadiusSq = auraRadius * auraRadius;
+        for(let i=0; i<enemies.length; i++) {
+            if (getDistSq(pX, pY, enemies[i].x, enemies[i].y) < auraRadiusSq) {
+                enemies[i].dmgMult += auraBonus;
+            }
+        }
+    }
+
+    // 🚀 신규: 환영검무
+    if (activeSkills.phantom_sword.level > 0 && activeSkills.excalibur.level === 0) {
+        activeTimers.phantom_sword--;
+        if (activeTimers.phantom_sword <= 0) {
+            let count = Math.min(3, 1 + Math.floor(activeSkills.phantom_sword.level / 2)); // 최대 3개
+            let dmg = 60 + activeSkills.phantom_sword.level * 20 + player.bonusDmg;
+            for (let i=0; i<count; i++) {
+                let n = getNearestEnemy(pX, pY, 400000); 
+                if (n) {
+                    let ang = Math.atan2(n.y - pY, n.x - pX) + (Math.random()-0.5)*0.5;
+                    projectiles.push({
+                        x: pX, y: pY, target: n,
+                        dx: Math.cos(ang)*8, dy: Math.sin(ang)*8,
+                        life: 150, type: 'phantom_sword', dmg: dmg, isDead: false
+                    });
+                }
+            }
+            activeTimers.phantom_sword = (120 - activeSkills.phantom_sword.level*10) * player.cdr;
+        }
+    }
+
+    // 🚀 신규 궁극기: 성검 엑스칼리버
+    if (activeSkills.excalibur.level > 0) {
+        activeTimers.excalibur--;
+        if (activeTimers.excalibur <= 0) {
+            let target = null;
+            if (enemies.length > 0) {
+                target = enemies.reduce((prev, curr) => (prev.hp > curr.hp) ? prev : curr, enemies[0]);
+            }
+            if (target && !target.isDead) {
+                projectiles.push({
+                    x: pX, y: pY - 300, target: target,
+                    dx: 0, dy: 0,
+                    life: 300, type: 'excalibur_drop', dmg: 400 + player.bonusDmg * 8, isDead: false
+                });
+            }
+            activeTimers.excalibur = 240 * player.cdr; 
+        }
+    }
+
     if (activeSkills.tornado_punch.level > 0) {
         activeTimers.tornado_punch--;
         if(activeTimers.tornado_punch <= 0) {
@@ -676,7 +755,6 @@ function handleActiveSkills() {
     }
 
     if (activeSkills.absolute_zero.level > 0) {
-        // 📉 빙결 타격 주기 완화 (초당 2회) 및 보스 체퍼뎀 캡티브
         if (frameCount % 30 === 0) { 
             let radius = 250;
             let baseDmg = 80 + player.bonusDmg * 1.5; 
@@ -684,8 +762,8 @@ function handleActiveSkills() {
                 let e = enemies[i]; if(e.isDead) continue;
                 if(getDistSq(pX, pY, e.x, e.y) < radius*radius) {
                     
-                    // 💡 보스 체퍼뎀 상한: 일반 1%, 보스 0.05%
-                    let hpPct = (e.isBoss || e.isMidBoss) ? 0.0005 : 0.01;
+                    // 💡 보스 체퍼뎀 상한: 일반 0.5%, 보스 0.05%
+                    let hpPct = (e.isBoss || e.isMidBoss) ? 0.0005 : 0.005;
                     damageEnemy(e, baseDmg + (e.maxHp * hpPct), 0, 0, 0); 
                     
                     if (e.freezeImmuneTimer <= 0) {
@@ -694,6 +772,15 @@ function handleActiveSkills() {
                     }
                 }
             }
+        }
+    }
+// 2. 맹독 지대 (장판 독립 호출)
+    if (activeSkills.poison.level > 0 && activeSkills.absolute_zero.level === 0) {
+        activeTimers.poison--;
+        if(activeTimers.poison <= 0) {
+            let pct = activeSkills.poison.level * 0.001; 
+            effects.push({ x: pX, y: pY, type: 'poison', life: 180, maxLife: 180, radius: 120 + activeSkills.poison.level * 40, dmg: 10 + activeSkills.poison.level*5 + player.bonusDmg, hpPct: pct });
+            activeTimers.poison = 100 * player.cdr;
         }
     }
 
@@ -837,52 +924,6 @@ function handleActiveSkills() {
             activeTimers.laser = 120 * player.cdr;
         }
     }
-    if (activeSkills.poison.level > 0 && activeSkills.absolute_zero.level === 0) {
-        activeTimers.poison--;
-        if(activeTimers.poison <= 0) {
-            let pct = activeSkills.poison.level * 0.001; 
-            effects.push({ x: pX, y: pY, type: 'poison', life: 180, maxLife: 180, radius: 120 + activeSkills.poison.level * 40, dmg: 10 + activeSkills.poison.level*5 + player.bonusDmg, hpPct: pct });
-            activeTimers.poison = 100 * player.cdr;
-        }
-    }
-    if (activeSkills.nova.level > 0 && activeSkills.absolute_zero.level === 0) {
-        activeTimers.nova--;
-        if(activeTimers.nova <= 0) {
-            let radius = 150 + activeSkills.nova.level*30;
-            effects.push({ x: pX, y: pY, type: 'nova', life: 20, maxLife: 20, radius: radius });
-            for(let i=0; i<enemies.length; i++) {
-                if(enemies[i].isDead) continue;
-                if(getDistSq(pX, pY, enemies[i].x, enemies[i].y) < radius*radius) {
-                    let edx = enemies[i].x - pX; let edy = enemies[i].y - pY; let edist = Math.sqrt(edx*edx+edy*edy) || 1;
-                    damageEnemy(enemies[i], 20 + activeSkills.nova.level*15 + player.bonusDmg, 30, edx/edist, edy/edist);
-                    
-                    enemies[i].slowStacks = (enemies[i].slowStacks || 0) + 1;
-                    enemies[i].slowTimer = 180; 
-                    if(enemies[i].slowStacks >= 2) {
-                        enemies[i].slowStacks = 0; 
-                        if (enemies[i].freezeImmuneTimer <= 0) {
-                            enemies[i].freezeTimer = 30; 
-                            effects.push({x: enemies[i].x, y: enemies[i].y, type: 'freeze', life: 30, maxLife: 30, radius: enemies[i].size*1.5});
-                        }
-                    }
-                }
-            }
-            activeTimers.nova = 180 * player.cdr;
-        }
-    }
-    if (activeSkills.boomerang.level > 0 && activeSkills.whirlwind_chakram.level === 0) {
-        activeTimers.boomerang--;
-        if(activeTimers.boomerang <= 0) {
-            let n = getNearestEnemy(pX, pY, 40000); let dirX = 1, dirY = 0;
-            if(n) { let dx = n.x-pX; let dy = n.y-pY; let dist = Math.sqrt(dx*dx+dy*dy); dirX=dx/dist; dirY=dy/dist; }
-            let count = activeSkills.boomerang.level;
-            for(let i=0; i<count; i++) {
-                let ang = Math.atan2(dirY, dirX) + (i - Math.floor(count/2))*0.2;
-                projectiles.push({ x: pX, y: pY, dx: Math.cos(ang)*10, dy: Math.sin(ang)*10, life: 120, maxLife: 120, type: 'boomerang', dmg: 25 + activeSkills.boomerang.level*10 + player.bonusDmg, isDead: false });
-            }
-            activeTimers.boomerang = 120 * player.cdr;
-        }
-    }
 }
 
 function handleGemsAndDrops() {
@@ -944,7 +985,6 @@ function handleGemsAndDrops() {
 function triggerLevelUp(isChest = false, choiceCount = 3) {
     gameState = 'levelup'; handleInputEnd();
     
-    // 👑 1.0.7 황금상자 다중 선택 로직
     levelUpPicksRemaining = (isChest && currentChestRarity === 'legendary') ? 2 : 1;
     renderLevelUpOptions(isChest, choiceCount);
 }
@@ -962,6 +1002,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
     let canComboValkyrie = (activeSkills.dove.level === activeSkills.dove.max && activeSkills.missile.level === activeSkills.missile.max && activeSkills.valkyrie_swarm.level === 0);
     let canComboWhirlwind = (activeSkills.shield.level === activeSkills.shield.max && activeSkills.boomerang.level === activeSkills.boomerang.max && activeSkills.whirlwind_chakram.level === 0);
     let canComboTornadoPunch = (activeSkills.tornado.level === activeSkills.tornado.max && activeSkills.punch.level === activeSkills.punch.max && activeSkills.tornado_punch.level === 0);
+    let canComboExcalibur = (activeSkills.phantom_sword.level === activeSkills.phantom_sword.max && activeSkills.holy_aura.level === activeSkills.holy_aura.max && activeSkills.excalibur.level === 0);
     
     if (canComboLaser) pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
     if (canComboThunder) pool.push({ key: 'thunder_shuriken', obj: activeSkills.thunder_shuriken, isAct: true, isCombo: true });
@@ -969,10 +1010,11 @@ function renderLevelUpOptions(isChest, choiceCount) {
     if (canComboValkyrie) pool.push({ key: 'valkyrie_swarm', obj: activeSkills.valkyrie_swarm, isAct: true, isCombo: true });
     if (canComboWhirlwind) pool.push({ key: 'whirlwind_chakram', obj: activeSkills.whirlwind_chakram, isAct: true, isCombo: true });
     if (canComboTornadoPunch) pool.push({ key: 'tornado_punch', obj: activeSkills.tornado_punch, isAct: true, isCombo: true });
+    if (canComboExcalibur) pool.push({ key: 'excalibur', obj: activeSkills.excalibur, isAct: true, isCombo: true });
 
     for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
     for(let k in activeSkills) {
-        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch' || k === 'excalibur') continue; 
         let sk = activeSkills[k];
         if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
         else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
@@ -1007,6 +1049,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
             else if(c.key === 'valkyrie_swarm') { card.style.borderColor = '#ffaa00'; card.style.boxShadow = '0 0 20px #ffaa00'; }
             else if(c.key === 'whirlwind_chakram') { card.style.borderColor = '#55ff55'; card.style.boxShadow = '0 0 20px #55ff55'; }
             else if(c.key === 'tornado_punch') { card.style.borderColor = '#ffaa55'; card.style.boxShadow = '0 0 20px #ffaa55'; }
+            else if(c.key === 'excalibur') { card.style.borderColor = '#ffee55'; card.style.boxShadow = '0 0 20px #ffee55'; }
             
             card.innerHTML = `<div class="skill-title"><span>${c.obj.icon} ${c.obj.name}</span> <span>${lvlStr}</span></div><div class="skill-desc">${c.obj.desc}</div>`;
             card.onclick = () => {
@@ -1018,6 +1061,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
                     else if (c.key === 'valkyrie_swarm') myActiveSlots = myActiveSlots.filter(slot => slot !== 'dove' && slot !== 'missile');
                     else if (c.key === 'whirlwind_chakram') myActiveSlots = myActiveSlots.filter(slot => slot !== 'shield' && slot !== 'boomerang');
                     else if (c.key === 'tornado_punch') myActiveSlots = myActiveSlots.filter(slot => slot !== 'tornado' && slot !== 'punch');
+                    else if (c.key === 'excalibur') myActiveSlots = myActiveSlots.filter(slot => slot !== 'phantom_sword' && slot !== 'holy_aura');
                     myActiveSlots.push(c.key);
                 } else {
                     c.obj.level++;
@@ -1026,7 +1070,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
                 
                 levelUpPicksRemaining--;
                 if (levelUpPicksRemaining > 0) {
-                    card.style.display = 'none'; // 선택한 것 숨기기
+                    card.style.display = 'none'; 
                     ui.lvlUpTitle.innerText = `CHEST REWARD! (남은 선택: ${levelUpPicksRemaining})`;
                     recalcStats(); updateActiveUI();
                 } else {
@@ -1052,6 +1096,7 @@ function updateActiveUI() {
             else if(key === 'valkyrie_swarm') { slot.style.borderColor = '#ffaa00'; slot.style.boxShadow = '0 0 10px #ffaa00'; }
             else if(key === 'whirlwind_chakram') { slot.style.borderColor = '#55ff55'; slot.style.boxShadow = '0 0 10px #55ff55'; }
             else if(key === 'tornado_punch') { slot.style.borderColor = '#ffaa55'; slot.style.boxShadow = '0 0 10px #ffaa55'; }
+            else if(key === 'excalibur') { slot.style.borderColor = '#ffee55'; slot.style.boxShadow = '0 0 10px #ffee55'; }
             else { slot.style.borderColor = '#aa44ff'; slot.style.boxShadow = 'none'; }
             
         } else { slot.innerHTML = ''; slot.style.borderColor = '#555'; slot.style.boxShadow = '0 0 5px #000'; }
@@ -1092,7 +1137,7 @@ function openDevMode() {
     ui.devPassivesContainer.innerHTML = ''; ui.devActivesContainer.innerHTML = '';
     for(let k in passiveSkills) ui.devPassivesContainer.appendChild(makeRow(k, passiveSkills[k], false));
     for(let k in activeSkills) {
-        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch' || k === 'excalibur') continue; 
         ui.devActivesContainer.appendChild(makeRow(k, activeSkills[k], true));
     }
     ui.devScreen.classList.remove('hidden'); ui.devScreen.dataset.prev = prev === 'dev' ? 'playing' : prev;
@@ -1127,18 +1172,18 @@ function update() {
     if (gameState !== 'playing') return;
     frameCount++;
     
-    // 🚀 시간 흐름 (웨이브 중지 로직 분리 적용)
+    // 🚀 시간 흐름 및 웨이브 컨트롤
     if (!isTimePaused) {
         if (frameCount % FPS === 0) {
             gameSeconds++; updateUI('time');
             
-            // 🚀 중간 보스 자연 스폰 (2분, 4분, 6분... 시간이 멈추지 않고 등장)
+            // 중간 보스 (2,4,6,8..분)
             if (gameSeconds > 0 && gameSeconds % 120 === 0 && gameSeconds % 300 !== 0) {
                 spawnEnemy(false, false, true);
                 ui.warning.innerText = "⚠️ 중간 보스 출현! ⚠️"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3;
             }
 
-            // 🚀 3분, 6분, 9분, 12분 버티기 웨이브 (시간 정지, 1분 타이머)
+            // 1분 웨이브 미션 (3,6,9,12분)
             if (gameSeconds > 0 && gameSeconds % 180 === 0 && gameSeconds % 300 !== 0) {
                 isTimePaused = true; waveInProgress = true; waveTimeLeft = 60;
                 ui.waveTimerContainer.style.display = 'block';
@@ -1150,18 +1195,17 @@ function update() {
                 if(waveTotal > 250) waveTotal = 250; 
                 
                 for(let i=0; i<waveTotal; i++) { 
-                    spawnEnemy(true, false, false); // 거대 웨이브 1차 스폰
+                    spawnEnemy(true, false, false); 
                 }
             }
             
-            // 🚀 5분 단위 거대 보스
+            // 5분 단위 거대 보스
             if (gameSeconds > 0 && gameSeconds % 300 === 0) {
                 bossMode = true; bossTimeLeft = 60; isTimePaused = true; spawnEnemy(false, true, false);
                 ui.warning.innerText = "🚨 거대 보스 출현! 1분 내 처치! 🚨"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3; updateUI('boss');
             }
         }
     } 
-    // 웨이브 중 시간 타이머
     else if (waveInProgress) {
         if (frameCount % FPS === 0) {
             waveTimeLeft--;
@@ -1173,7 +1217,7 @@ function update() {
                 ui.warning.innerText = "✅ 포위망 돌파 성공!"; ui.warning.style.opacity = 1; waveWarningTimer = FPS * 3;
             }
         }
-        // 웨이브 도중에도 압박을 위해 몹이 꾸준히 조금씩 추가
+        // 웨이브 도중 추가 압박
         if (frameCount % 30 === 0 && enemies.length < 200) spawnEnemy(true, false, false);
     }
     
@@ -1186,22 +1230,22 @@ function update() {
 
     worldX += joystick.dx * player.speed; worldY += joystick.dy * player.speed;
 
-    // 🚀 이동 파티클 상향: 속도 레벨에 따라 입자 개수 및 화려한 색상 부여
+    // 🚀 드라마틱 대시 파티클 연출
     if (joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
         let speedLevel = passiveSkills.moveSpeed.level;
-        let emitRate = speedLevel >= 3 ? 1 : 2; 
-        let emitCount = 1 + Math.floor(speedLevel / 1.5);
-        let colors = ['#0088ff', '#00ffff', '#55ff55', '#ffaa00', '#ff00ff', '#ff3333'];
+        let emitRate = 1; 
+        let emitCount = 2 + Math.floor(speedLevel); // 이속 오를수록 개수 대폭 증가
+        let colors = ['#0088ff', '#00ffff', '#55ff55', '#ffaa00', '#ff00ff', '#ff3333', '#ffffff'];
         let colorIdx = Math.min(Math.floor(speedLevel/1.5), colors.length - 1);
         
         if (frameCount % emitRate === 0) {
             for(let i=0; i<emitCount; i++) {
                 particles.push({
-                    x: worldX - joystick.dx * 15 + (Math.random()-0.5)*15,
-                    y: worldY - joystick.dy * 15 + (Math.random()-0.5)*15,
-                    dx: -joystick.dx * (2 + speedLevel * 0.6) + (Math.random()-0.5)*3,
-                    dy: -joystick.dy * (2 + speedLevel * 0.6) + (Math.random()-0.5)*3,
-                    life: 15 + speedLevel * 3, maxLife: 15 + speedLevel * 3,
+                    x: worldX - joystick.dx * 15 + (Math.random()-0.5)*20,
+                    y: worldY - joystick.dy * 15 + (Math.random()-0.5)*20,
+                    dx: -joystick.dx * (3 + speedLevel * 1.0) + (Math.random()-0.5)*4,
+                    dy: -joystick.dy * (3 + speedLevel * 1.0) + (Math.random()-0.5)*4,
+                    life: 20 + speedLevel * 4, maxLife: 20 + speedLevel * 4,
                     color: colors[colorIdx]
                 });
             }
@@ -1211,7 +1255,6 @@ function update() {
     let baseSpawnRate = Math.max(10, FPS - Math.floor(gameSeconds / 10));
     let spawnRate = post5MinBossBuff ? Math.max(5, Math.floor(baseSpawnRate / 1.2)) : baseSpawnRate;
 
-    // 메인 시간이 흐를 때만 일반 몹 지속 스폰
     if (!isTimePaused && frameCount % spawnRate === 0 && enemies.length < 300) {
         spawnEnemy();
         if (post5MinBossBuff && Math.random() < 0.2) spawnEnemy();
@@ -1226,12 +1269,70 @@ function update() {
     for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
-        if (p.type === 'tornado') {
-            p.radiusDist += 1.5; 
-            p.baseAng += 0.05; 
-            p.x = p.originX + Math.cos(p.baseAng) * p.radiusDist;
-            p.y = p.originY + Math.sin(p.baseAng) * p.radiusDist;
-            
+        if (p.type === 'phantom_sword') {
+            if (p.target && !p.target.isDead) {
+                let dx = p.target.x - p.x; let dy = p.target.y - p.y;
+                let dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist < 30) {
+                    p.isDead = true;
+                    projectiles.push({ x: p.target.x, y: p.target.y, type: 'phantom_slash', life: 40, maxLife: 40, dmg: p.dmg, radius: 60, isDead: false });
+                } else {
+                    p.dx += (dx/dist)*2; p.dy += (dy/dist)*2;
+                    let speed = Math.sqrt(p.dx*p.dx + p.dy*p.dy);
+                    if(speed > 15) { p.dx = (p.dx/speed)*15; p.dy = (p.dy/speed)*15; }
+                }
+            } else {
+                p.target = getNearestEnemy(p.x, p.y, 100000);
+            }
+            p.x += p.dx; p.y += p.dy;
+        }
+        else if (p.type === 'phantom_slash') {
+            if (p.life % 10 === 0) { // 4 ticks
+                let hitRadiusSq = p.radius * p.radius;
+                for(let j=0; j<enemies.length; j++) {
+                    let e = enemies[j]; if(e.isDead) continue;
+                    if(getDistSq(p.x, p.y, e.x, e.y) < hitRadiusSq) {
+                        damageEnemy(e, p.dmg * 0.5, 0, 0, 0);
+                        effects.push({ x: e.x, y: e.y, type: 'hit', life: 5, maxLife: 5, radius: 10 });
+                    }
+                }
+            }
+        }
+        else if (p.type === 'excalibur_drop') {
+            if (p.target && !p.target.isDead) {
+                let dx = p.target.x - p.x; let dy = p.target.y - p.y;
+                let dist = Math.sqrt(dx*dx+dy*dy);
+                if (dist < 40) {
+                    p.isDead = true;
+                    projectiles.push({ x: p.target.x, y: p.target.y, type: 'excalibur_slash', life: 60, maxLife: 60, dmg: p.dmg, radius: 120, isDead: false, target: p.target });
+                    p.target.excaliburDebuff = true; 
+                } else {
+                    p.dx += (dx/dist)*3; p.dy += (dy/dist)*3;
+                    let speed = Math.sqrt(p.dx*p.dx + p.dy*p.dy);
+                    if(speed > 25) { p.dx = (p.dx/speed)*25; p.dy = (p.dy/speed)*25; }
+                }
+            } else {
+                p.target = getNearestEnemy(p.x, p.y, 400000);
+                if (!p.target) p.isDead = true;
+            }
+            p.x += p.dx; p.y += p.dy;
+        }
+        else if (p.type === 'excalibur_slash') {
+            let hitRadiusSq = p.radius * p.radius;
+            if (p.life % 10 === 0) { // 6 ticks
+                for(let j=0; j<enemies.length; j++) {
+                    let e = enemies[j]; if(e.isDead) continue;
+                    if(getDistSq(p.x, p.y, e.x, e.y) < hitRadiusSq) {
+                        e.excaliburDebuff = true;
+                        damageEnemy(e, p.dmg * 0.4, 0, 0, 0); 
+                    }
+                }
+            }
+            if (p.target && !p.target.isDead) { p.x = p.target.x; p.y = p.target.y; }
+        }
+        else if (p.type === 'tornado') {
+            p.radiusDist += 1.5; p.baseAng += 0.05; 
+            p.x = p.originX + Math.cos(p.baseAng) * p.radiusDist; p.y = p.originY + Math.sin(p.baseAng) * p.radiusDist;
             if (frameCount % 10 === 0) {
                 let hitRadiusSq = p.size * p.size;
                 for(let j=0; j<enemies.length; j++) {
@@ -1248,16 +1349,11 @@ function update() {
                 p.x += p.dx; p.y += p.dy;
                 for(let j=0; j<enemies.length; j++) {
                     let e = enemies[j]; if(e.isDead) continue;
-                    if(getDistSq(p.x, p.y, e.x, e.y) < (p.size + e.size)**2) {
-                        p.hitTarget = true;
-                        break;
-                    }
+                    if(getDistSq(p.x, p.y, e.x, e.y) < (p.size + e.size)**2) { p.hitTarget = true; break; }
                 }
             } else {
-                p.x += p.dx * 0.05; 
-                p.y += p.dy * 0.05;
+                p.x += p.dx * 0.05; p.y += p.dy * 0.05;
             }
-            
             if (frameCount % 6 === 0) { 
                 let hitRadiusSq = p.size * p.size * 1.5; 
                 for(let j=0; j<enemies.length; j++) {
@@ -1283,8 +1379,7 @@ function update() {
         }
         else if (p.type === 'punch_combo') {
             if (p.life % 30 === 0) { 
-                let hitRadius = p.size + 40; 
-                let hitRadiusSq = hitRadius * hitRadius;
+                let hitRadius = p.size + 40; let hitRadiusSq = hitRadius * hitRadius;
                 for(let j=0; j<enemies.length; j++) {
                     let e = enemies[j]; if(e.isDead) continue;
                     if(getDistSq(p.x, p.y, e.x, e.y) < hitRadiusSq) {
@@ -1294,12 +1389,8 @@ function update() {
                 }
             }
         }
-        else if (p.type === 'cleaver') {
-            p.x += p.dx; p.y += p.dy; 
-        }
-        else if (p.type === 'gatling') {
-            p.x += p.dx; p.y += p.dy; 
-        }
+        else if (p.type === 'cleaver') { p.x += p.dx; p.y += p.dy; }
+        else if (p.type === 'gatling') { p.x += p.dx; p.y += p.dy; }
         else if (p.type === 'blackhole') {
             p.x += p.dx; p.y += p.dy;
             if (frameCount % 10 === 0) { 
@@ -1308,8 +1399,7 @@ function update() {
                     let dSq = getDistSq(p.x, p.y, e.x, e.y);
                     if (dSq < 62500) { 
                         let dist = Math.sqrt(dSq) || 1;
-                        e.x += (p.x - e.x)/dist * 6; 
-                        e.y += (p.y - e.y)/dist * 6;
+                        e.x += (p.x - e.x)/dist * 6; e.y += (p.y - e.y)/dist * 6;
                         damageEnemy(e, p.dmg * 0.5, 0, 0, 0); 
                     }
                 }
@@ -1329,14 +1419,11 @@ function update() {
                     let hit = false;
                     for(let b=0; b<5; b++) {
                         let ang = p.angle + b*(Math.PI*2/5);
-                        let px_center = p.x + Math.cos(ang) * p.radius;
-                        let py_center = p.y + Math.sin(ang) * p.radius;
+                        let px_center = p.x + Math.cos(ang) * p.radius; let py_center = p.y + Math.sin(ang) * p.radius;
                         if(getDistSq(e.x, e.y, px_center, py_center) < 6400) { hit = true; break; }
                     }
                     if(hit) {
-                        let isBossTarget = (e.isBoss || e.isMidBoss);
-                        let mult = isBossTarget ? 2.0 : 1.0;
-                        damageEnemy(e, p.dmg * mult, 0, 0, 0);
+                        damageEnemy(e, p.dmg, 0, 0, 0);
                         effects.push({ x: e.x, y: e.y, type: 'spark', life: 10, maxLife: 10, radius: 8 });
                     }
                 }
@@ -1373,14 +1460,9 @@ function update() {
             }
             if(frameCount % 5 === 0) effects.push({x:p.x, y:p.y, type:'spark', life:15, maxLife:15, radius:4});
         } 
-        else if(p.type === 'shuriken') { 
-            p.x += p.dx; p.y += p.dy; 
-        } 
+        else if(p.type === 'shuriken') { p.x += p.dx; p.y += p.dy; } 
         else if(p.type === 'shield') {
-            p.angle += 0.1047; 
-            p.x = worldX + Math.cos(p.angle)*p.radius;
-            p.y = worldY + Math.sin(p.angle)*p.radius;
-            p.dx = 0; p.dy = 0;
+            p.angle += 0.1047; p.x = worldX + Math.cos(p.angle)*p.radius; p.y = worldY + Math.sin(p.angle)*p.radius; p.dx = 0; p.dy = 0;
         } 
         else if(p.type === 'boomerang') {
             if(p.life < p.maxLife/2) {
@@ -1389,7 +1471,7 @@ function update() {
             }
         }
 
-        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling') { p.x += p.dx || 0; p.y += p.dy || 0; }
+        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling' && p.type !== 'phantom_sword' && p.type !== 'phantom_slash' && p.type !== 'excalibur_drop' && p.type !== 'excalibur_slash') { p.x += p.dx || 0; p.y += p.dy || 0; }
         p.life--; 
         
         if (p.life <= 0) { 
@@ -1416,7 +1498,8 @@ function update() {
             if(p.type==='cleaver') hitRadSq=10000; 
             if(p.type==='gatling') hitRadSq=625;    
             
-            if(p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado') hitRadSq=0; 
+            // 특수 판정
+            if(p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado' || p.type==='phantom_sword' || p.type==='phantom_slash' || p.type==='excalibur_drop' || p.type==='excalibur_slash') hitRadSq=0; 
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
                 let isBossTarget = (e.isBoss || e.isMidBoss);
@@ -1472,7 +1555,7 @@ function update() {
         }
     }
 
-    // 🧪 1.0.7 독장판 보스 보정 추가: 일반 몹은 그대로, 보스는 0.05배 하향
+    // 🧪 1.0.6 하향: 독장판 보스 보정 
     for (let i=0; i<effects.length; i++) {
         let ef = effects[i]; ef.life--;
         if(ef.type === 'poison' && ef.life % 60 === 0) {
@@ -1545,6 +1628,16 @@ function draw() {
         ctx.beginPath(); ctx.arc(cx, cy, 250 + Math.sin(frameCount*0.1)*10, 0, Math.PI*2); ctx.stroke();
         ctx.beginPath(); ctx.arc(cx, cy, 150 + Math.cos(frameCount*0.08)*20, 0, Math.PI*2); ctx.stroke();
     }
+    
+    // ✨ 신규: 성스러운 오라 렌더링
+    if (activeSkills.holy_aura.level > 0 && activeSkills.excalibur.level === 0) {
+        let auraRadius = 100 + activeSkills.holy_aura.level * 25;
+        ctx.strokeStyle = 'rgba(255, 200, 50, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, auraRadius + Math.sin(frameCount*0.1)*10, 0, Math.PI*2); ctx.stroke();
+        ctx.fillStyle = 'rgba(255, 200, 50, 0.1)';
+        ctx.beginPath(); ctx.arc(cx, cy, auraRadius, 0, Math.PI*2); ctx.fill();
+    }
 
     ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, player.magnetRange, 0, Math.PI*2); ctx.stroke();
     ctx.strokeStyle='rgba(255,100,100,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, player.range, 0, Math.PI*2); ctx.stroke();
@@ -1594,6 +1687,12 @@ function draw() {
     for (let i=0; i<enemies.length; i++) {
         let e = enemies[i]; let ex = e.x-worldX+cx; let ey = e.y-worldY+cy;
         
+        // ⚔️ 엑스칼리버 디버프 표식
+        if (e.excaliburDebuff) {
+            ctx.strokeStyle = '#ffee55'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(ex, ey, e.size + 8 + Math.sin(frameCount*0.2)*4, 0, Math.PI*2); ctx.stroke();
+        }
+
         if (e.isBoss || e.isMidBoss) {
             ctx.save(); ctx.translate(ex, ey); ctx.rotate(frameCount * 0.05);
             let pulse = 1 + Math.sin(frameCount * 0.1)*0.1;
@@ -1684,7 +1783,41 @@ function draw() {
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
         
-        if (pr.type === 'tornado') {
+        // 🗡️ 신규: 환영검무 검 시각 효과
+        if (pr.type === 'phantom_sword') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx) + Math.PI/4);
+            ctx.fillStyle = '#aaaaff'; ctx.fillRect(-2, -15, 4, 30); 
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(-6, 5, 12, 3); 
+            ctx.restore();
+        }
+        // 🗡️ 신규: 환영검무 난도질(파티클 선) 시각 효과
+        else if (pr.type === 'phantom_slash') {
+            ctx.save(); ctx.translate(px, py);
+            ctx.strokeStyle = `rgba(170, 200, 255, ${pr.life/40})`; ctx.lineWidth = 2;
+            for(let k=0; k<3; k++) {
+                let ang = Math.random() * Math.PI*2; let r = Math.random() * pr.radius;
+                ctx.beginPath(); ctx.moveTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(Math.cos(ang+Math.PI)*r, Math.sin(ang+Math.PI)*r); ctx.stroke();
+            }
+            ctx.restore();
+        }
+        // ⚔️ 신규: 성검 엑스칼리버 투사체 시각 효과
+        else if (pr.type === 'excalibur_drop') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx) + Math.PI/4);
+            ctx.fillStyle = '#ffee55'; ctx.fillRect(-5, -40, 10, 80); 
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(-15, 20, 30, 6); 
+            ctx.restore();
+        }
+        // ⚔️ 신규: 성검 엑스칼리버 난도질 시각 효과
+        else if (pr.type === 'excalibur_slash') {
+            ctx.save(); ctx.translate(px, py);
+            ctx.strokeStyle = `rgba(255, 238, 85, ${pr.life/60})`; ctx.lineWidth = 5;
+            for(let k=0; k<4; k++) {
+                let ang = Math.random() * Math.PI*2; let r = Math.random() * pr.radius;
+                ctx.beginPath(); ctx.moveTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(Math.cos(ang+Math.PI)*r, Math.sin(ang+Math.PI)*r); ctx.stroke();
+            }
+            ctx.restore();
+        }
+        else if (pr.type === 'tornado') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount * -0.3);
             ctx.strokeStyle = `rgba(170, 255, 255, ${pr.life > 20 ? 0.8 : pr.life/20})`; 
             ctx.lineWidth = 2;

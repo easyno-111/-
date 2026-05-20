@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.0.9 -->
-    <title>Space Survivor v1.0.9</title>
+    <!-- 버전 업데이트: v1.0.10 -->
+    <title>Space Survivor v1.0.10</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -81,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.0.9 -->
-        <div class="version">v1.0.9</div>
+        <!-- 버전 v1.0.10 -->
+        <div class="version">v1.0.10</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -242,6 +242,7 @@ let post5MinBossBuff = false;
 let isTimePaused = false; let waveInProgress = false; let waveTimeLeft = 0; 
 let midBossSpawned = false; let chestOpening = false; let currentChestRarity = null;
 let midBossKills = 0; let levelUpPicksRemaining = 1; 
+let waveKilled = 0; let waveTotal = 0;
 
 let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
@@ -348,7 +349,7 @@ function startGame(type) {
     enemies = []; projectiles = []; effects = []; gems = []; drops = []; activeMagnet = 0; dovesState = []; bossMode = false;
     particles = []; 
     isTimePaused = false; waveInProgress = false; waveTimeLeft = 0; chestOpening = false;
-    midBossKills = 0; post5MinBossBuff = false;
+    midBossKills = 0; post5MinBossBuff = false; waveKilled = 0;
     
     gameState = 'playing'; ui.menu.classList.add('hidden'); updateUI(); requestAnimationFrame(gameLoop);
 }
@@ -386,7 +387,8 @@ canvas.addEventListener('mouseup', handleInputEnd);
 function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     if (devConfig.spawnPaused && !isWave && !isBoss && !isMidBoss) return;
     const angle = Math.random() * Math.PI * 2; 
-    const spawnRadius = Math.max(vWidth, vHeight) * 0.6; 
+    // 🚀 스폰 반경에 랜덤값을 더해 동시에 스폰 시 한 점으로 뭉치는 현상 방지
+    const spawnRadius = Math.max(vWidth, vHeight) * 0.6 + (Math.random() * 150); 
     
     let healthMultiplier = (1 + (gameSeconds / 60) * 1.5) * difficultyMult; 
     
@@ -396,7 +398,8 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     let maxHp;
     if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult; 
     else if (isMidBoss) maxHp = (4000 + gameSeconds * 50) * difficultyMult;
-    else if (isWave) maxHp = 600 * healthMultiplier; 
+    // 🚀 웨이브 몹 체력 대폭 하향 (600 -> 80) : 정상적으로 죽으면서 경험치를 뱉도록 수정
+    else if (isWave) maxHp = 80 * healthMultiplier; 
     else maxHp = 60 * healthMultiplier; 
     
     let e = {
@@ -530,7 +533,8 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
             player.hp = Math.min(player.maxHp, player.hp + (passiveSkills.lifeSteal.level * 0.5)); updateUI('hp');
         }
     } else {
-        let kbMod = e.isWave ? 0 : ((e.isBoss || e.isMidBoss) ? 0.1 : 1);
+        // 🚀 웨이브 몹도 약간의 넉백(0 -> 0.3)을 받게 하여 서로 겹치는 현상 해소
+        let kbMod = e.isWave ? 0.3 : ((e.isBoss || e.isMidBoss) ? 0.1 : 1);
         const kb = knockback * kbMod; 
         e.x += dirX*kb; e.y += dirY*kb;
     }
@@ -787,7 +791,7 @@ function handleActiveSkills() {
         }
     }
 
-    // 궁극기: 절대 영도 지대 (이 부분은 기존에도 정상 작동했으나 함께 묶여있음)
+    // 궁극기: 절대 영도 지대
     if (activeSkills.absolute_zero.level > 0) {
         if (frameCount % 30 === 0) { 
             let radius = 250;
@@ -967,7 +971,6 @@ function handleActiveSkills() {
     }
 }
 
-
 function handleGemsAndDrops() {
     let gainedXp = 0; const magnetSq = player.magnetRange * player.magnetRange; const pickupSq = player.size * player.size * 2;
     if(activeMagnet > 0) activeMagnet--;
@@ -1103,7 +1106,6 @@ function renderLevelUpOptions(isChest, choiceCount) {
                     else if (c.key === 'valkyrie_swarm') myActiveSlots = myActiveSlots.filter(slot => slot !== 'dove' && slot !== 'missile');
                     else if (c.key === 'whirlwind_chakram') myActiveSlots = myActiveSlots.filter(slot => slot !== 'shield' && slot !== 'boomerang');
                     else if (c.key === 'tornado_punch') myActiveSlots = myActiveSlots.filter(slot => slot !== 'tornado' && slot !== 'punch');
-                    // 🚀 1.0.9 수정: 오라는 유지하고 환영검무만 제거
                     else if (c.key === 'excalibur') myActiveSlots = myActiveSlots.filter(slot => slot !== 'phantom_sword');
                     myActiveSlots.push(c.key);
                 } else {
@@ -1263,7 +1265,6 @@ function update() {
         if (frameCount % 30 === 0 && enemies.length < 200) spawnEnemy(true, false, false);
     }
     
-    // 🚀 1.0.9 수정: 보스 타이머 로직 초 단위 정확한 게임오버 연계
     if (frameCount % FPS === 0) {
         if (passiveSkills.hpRegen.level > 0 && player.hp < player.maxHp) { player.hp = Math.min(player.maxHp, player.hp + passiveSkills.hpRegen.level); updateUI('hp'); }
         if (bossMode) { 
@@ -1326,7 +1327,6 @@ function update() {
                 let dist = Math.sqrt(dx*dx+dy*dy);
                 if (dist < 30) {
                     p.isDead = true;
-                    // 🚀 1.0.9 수정: 적중 시 렌더링에 필요한 선 궤적 배열 생성 (최적화 + 비주얼)
                     let slashes = [];
                     for(let k=0; k<5; k++) {
                         slashes.push({
@@ -1349,7 +1349,6 @@ function update() {
             p.x += p.dx; p.y += p.dy;
         }
         else if (p.type === 'phantom_slash') {
-            // 🚀 1.0.9 수정: 수명 증가에 맞게 데미지 틱 타이밍 재조정 (총 4번 타격)
             if (p.life % 15 === 0) { 
                 let hitRadiusSq = p.radius * p.radius;
                 for(let j=0; j<enemies.length; j++) {
@@ -1650,7 +1649,12 @@ function update() {
         } 
         else if (e.slowTimer > 0) { e.slowTimer--; currentSpeed *= 0.4; if (e.slowTimer <= 0) e.slowStacks = 0; }
 
-        if (distSq > 0 && currentSpeed > 0) { const dist = Math.sqrt(distSq); e.x += (dx/dist)*currentSpeed; e.y += (dy/dist)*currentSpeed; }
+        if (distSq > 0 && currentSpeed > 0) { 
+            const dist = Math.sqrt(distSq); 
+            // 🚀 이동 시 난수를 약간 더해 완벽하게 같은 픽셀에 겹치는 현상(Jitter) 방지
+            e.x += (dx/dist)*currentSpeed + (Math.random()-0.5)*0.8; 
+            e.y += (dy/dist)*currentSpeed + (Math.random()-0.5)*0.8; 
+        }
     }
 
     enemies = enemies.filter(e => !e.isDead); projectiles = projectiles.filter(p => !p.isDead);
@@ -1844,14 +1848,12 @@ function draw() {
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
         
-        // 🚀 1.0.9 수정: 환영검무 검 시각 효과
         if (pr.type === 'phantom_sword') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx) + Math.PI/4);
             ctx.fillStyle = '#aaaaff'; ctx.fillRect(-2, -15, 4, 30); 
             ctx.fillStyle = '#ffffff'; ctx.fillRect(-6, 5, 12, 3); 
             ctx.restore();
         }
-        // 🚀 1.0.9 수정: 환영검무 난도질 시각 효과 (굵기 및 방향 다양화)
         else if (pr.type === 'phantom_slash') {
             ctx.save(); ctx.translate(px, py);
             let alpha = pr.life / pr.maxLife;
@@ -1862,7 +1864,7 @@ function draw() {
                 ctx.lineWidth = s.thick;
                 ctx.lineCap = 'round';
                 ctx.beginPath();
-                let currentLen = s.len * Math.min(1, progress * 4); // 베는 속도
+                let currentLen = s.len * Math.min(1, progress * 4); 
                 let startX = s.ox - Math.cos(s.ang)*(s.len/2);
                 let startY = s.oy - Math.sin(s.ang)*(s.len/2);
                 let endX = startX + Math.cos(s.ang)*currentLen;

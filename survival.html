@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.1.0 -->
-    <title>Space Survivor v1.1.0</title>
+    <!-- 버전 업데이트: v1.1.1 -->
+    <title>Space Survivor v1.1.1</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -81,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.1.0 -->
-        <div class="version">v1.1.0</div>
+        <!-- 버전 v1.1.1 -->
+        <div class="version">v1.1.1</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -125,15 +125,15 @@
             <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; align-items: center;">
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ff5555; box-shadow: 0 0 20px #ff5555; background: rgba(50,10,10,0.9);">
                     <div class="skill-title" style="color:#ff8888;"><span>🗡️ 차원 절단검</span> <span style="color:#ffcc00;">평타 진화(근접)</span></div>
-                    <div class="skill-desc">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">조건: 🔥 무기 마스터리(Lv.10)</div>
                 </div>
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffff55; box-shadow: 0 0 20px #ffff55; background: rgba(50,50,10,0.9);">
                     <div class="skill-title" style="color:#ffff88;"><span>🏹 광학 게틀링 보우</span> <span style="color:#ffcc00;">평타 진화(원거리)</span></div>
-                    <div class="skill-desc">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">조건: 🔥 무기 마스터리(Lv.10)</div>
                 </div>
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #cc55ff; box-shadow: 0 0 20px #cc55ff; background: rgba(40,10,50,0.9);">
                     <div class="skill-title" style="color:#dd88ff;"><span>✨ 붕괴의 블랙홀</span> <span style="color:#ffcc00;">평타 진화(마법사)</span></div>
-                    <div class="skill-desc">조건: 🔥 특화 무기 진화(Lv.5) + ⚔️ 공격력 증가(Lv.8)</div>
+                    <div class="skill-desc">조건: 🔥 무기 마스터리(Lv.10)</div>
                 </div>
                 
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ffee55; box-shadow: 0 0 20px #ffee55; background: rgba(50,50,10,0.9);">
@@ -166,7 +166,7 @@
                 <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #55ff55; box-shadow: 0 0 20px #55ff55; background: rgba(10,50,20,0.9);">
                     <div class="skill-title" style="color:#88ff88;"><span>🌪️ 회오리 톱날</span> <span style="color:#ffcc00;">궁극기</span></div>
                     <div class="skill-desc">조건: 🌀 수호 방패 (Lv.5) + 🪃 부메랑 (Lv.5)</div>
-                    <div class="skill-desc" style="margin-top: 5px;">5개의 톱날이 주위를 돌며, 적과 닿으면 거대해진 채 3초간 갈아버립니다.</div>
+                    <div class="skill-desc" style="margin-top: 5px;">5개의 톱날이 적을 만나면 거대해진 채 3초간 갈아버립니다.</div>
                 </div>
             </div>
             <button class="btn" style="background: linear-gradient(135deg, #444, #222); margin-top: 20px; flex-shrink: 0;" onclick="closeRecipe()">돌아가기 (게임 재개)</button>
@@ -249,14 +249,12 @@ let waveKilled = 0; let waveTotal = 0;
 let devConfig = { spawnPaused: false };
 const joystick = { active: false, originX: 0, originY: 0, x: 0, y: 0, dx: 0, dy: 0, radius: 40 };
 
-// 🚀 v1.1.0: 회복/흡혈 통합 적용, 체력재생 삭제
+// 🚀 v1.1.1: 넉백, 공격력, 진화 스킬 통합 -> 무기 마스터리
 const passiveSkills = {
-    weaponUpgrade:{ level: 0, max: 5, icon: "🔥", name: "특화 무기 진화", desc: "직업 고유의 평타가 강화됩니다." },
-    attackPower:  { level: 0, max: 8, icon: "⚔️", name: "공격력 증가", desc: "모든 공격과 스킬 데미지가 상승합니다." },
+    weaponMastery:{ level: 0, max: 10, icon: "🔥", name: "무기 마스터리", desc: "공격력, 넉백, 공격범위가 증가하며 10레벨 달성 시 평타가 진화합니다." },
     attackSpeed:  { level: 0, max: 8, icon: "⚡", name: "공격속도 증가", desc: "모든 스킬의 쿨타임이 감소합니다." },
-    knockback:    { level: 0, max: 8, icon: "🛡️", name: "넉백 증가", desc: "기본 공격의 넉백이 늘어납니다." },
     lifeSteal:    { level: 0, max: 8, icon: "🧛", name: "체력 흡혈 및 회복", desc: "초당 체력을 회복하며 적 처치 시 체력을 흡수합니다." },
-    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 폭발적으로 증가합니다." },
+    xpGain:       { level: 0, max: 8, icon: "📈", name: "경험치 획득량", desc: "경험치 획득량이 폭발적으로 증가합니다(레벨당 80% 추가)." },
     magnet:       { level: 0, max: 8, icon: "🧲", name: "자석 범위 증가", desc: "경험치 획득 범위가 넓어집니다." },
     moveSpeed:    { level: 0, max: 8, icon: "👟", name: "이동속도 증가", desc: "이동 속도가 빨라집니다." }
 };
@@ -299,7 +297,6 @@ const player = {
     bonusDmg: 0, cdr: 1.0 
 };
 
-// 🚀 v1.1.0: 회오리 톱날의 새로운 궤도 관리를 위한 배열
 let chakramsState = [];
 let activeTimers = { phantom_sword: 0, holy_aura: 0, excalibur: 0, punch: 0, tornado: 0, missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, tornado_punch: 0 };
 let dovesState = []; 
@@ -328,18 +325,17 @@ function getDistSq(x1, y1, x2, y2) { const dx = x1 - x2; const dy = y1 - y2; ret
 
 function recalcStats() {
     const base = charSpecs[player.type];
-    player.bonusDmg = passiveSkills.attackPower.level * 10; 
+    // 🚀 v1.1.1: 통합 패시브(무기 마스터리) 스케일링
+    player.bonusDmg = passiveSkills.weaponMastery.level * 15; 
     player.cdr = Math.max(0.4, 1.0 - (passiveSkills.attackSpeed.level * 0.06)); 
 
     player.damage = base.damage + player.bonusDmg; 
     player.fireCooldown = Math.max(5, base.fireCooldown * player.cdr);
-    player.knockback = base.knockback + (passiveSkills.knockback.level * 3);
+    player.knockback = base.knockback + (passiveSkills.weaponMastery.level * 2);
     player.speed = base.speed + (passiveSkills.moveSpeed.level * 0.6);
-    
-    // 🚀 v1.1.0: 자석 범위 +20% 추가 상승
     player.magnetRange = (base.baseMagnet + (passiveSkills.magnet.level * 100)) * 1.2;
 
-    if(player.type === 'melee') player.range = base.range + (passiveSkills.weaponUpgrade.level * 25);
+    if(player.type === 'melee') player.range = base.range + (passiveSkills.weaponMastery.level * 15);
     else player.range = base.range;
 }
 
@@ -396,13 +392,10 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     const spawnRadius = Math.max(vWidth, vHeight) * 0.6 + (Math.random() * 150); 
     
     let healthMultiplier = (1 + (gameSeconds / 60) * 1.5) * difficultyMult; 
-    
     let size = isBoss ? 60 : (isMidBoss ? 40 : 14);
-    // 🚀 v1.1.0: 적 이동속도 5% 상승
     let baseSpeed = (isBoss ? 1.9 : (isMidBoss ? 2.4 : (1 + Math.random()*0.5 + (gameSeconds/300)))) * 1.05;
     
     let maxHp;
-    // 🚀 v1.1.0: 보스 체력 10% 상향
     if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult * 1.1; 
     else if (isMidBoss) maxHp = (4000 + gameSeconds * 50) * difficultyMult * 1.1;
     else if (isWave) maxHp = 80 * healthMultiplier; 
@@ -412,7 +405,8 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
         x: worldX + Math.cos(angle)*spawnRadius, y: worldY + Math.sin(angle)*spawnRadius,
         size: size, speed: baseSpeed, maxHp: maxHp, hp: maxHp, isBoss: isBoss, isMidBoss: isMidBoss, isWave: isWave, isDead: false,
         slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0, waitTimer: 0,
-        dmgMult: 1.0, excaliburDebuff: false 
+        dmgMult: 1.0, excaliburDebuff: false,
+        poisonDebuffTimer: 0, poisonHpPct: 0, poisonBaseDmg: 0 // 🚀 v1.1.1: 독 디버프 상태 변수
     };
     enemies.push(e);
 }
@@ -424,7 +418,6 @@ function checkPlayerHit() {
         if(enemies[i].isDead) continue;
         const hitRad = player.size + enemies[i].size;
         if (getDistSq(worldX, worldY, enemies[i].x, enemies[i].y) < hitRad*hitRad) {
-            // 🚀 v1.1.0: 적 공격력 대폭 강화 (기존 35/15 -> 50/25)
             player.hp -= (enemies[i].isBoss || enemies[i].isMidBoss) ? 50 : 25; 
             updateUI('hp'); hitCooldown = 15;
             effects.push({ x: worldX, y: worldY, type: 'blood', life: 15, maxLife: 15, radius: 25 });
@@ -533,7 +526,6 @@ function damageEnemy(e, dmg, knockback, dirX, dirY) {
         let gemType = (e.isBoss || e.isMidBoss) ? 'big_gem' : 'gem';
         gems.push({ x: e.x, y: e.y, isDead: false, type: gemType, isMagnetized: false });
         
-        // 🚀 v1.1.0: 자석 등장 확률 1/4로 대폭 너프 (기존 0.005 -> 0.00125)
         let roll = Math.random();
         if(roll < 0.00125) drops.push({ x: e.x, y: e.y, type: 'magnet', isDead: false });
         else if(roll < 0.01375) drops.push({ x: e.x, y: e.y, type: 'hp', isDead: false });
@@ -561,34 +553,39 @@ function getNearestEnemy(x, y, rangeSq) {
 function handleBasicAttacks() {
     if (player.currentCooldown > 0) { player.currentCooldown--; return; }
     
-    let isWeaponEvolved = (passiveSkills.weaponUpgrade.level === 5 && passiveSkills.attackPower.level === 8);
+    // 🚀 v1.1.1: 10레벨 달성 시 평타 진화
+    let isWeaponEvolved = (passiveSkills.weaponMastery.level === 10);
     const rangeSq = player.range * player.range;
     let nearest = getNearestEnemy(worldX, worldY, rangeSq);
 
     if (nearest) {
         const dx=nearest.x-worldX; const dy=nearest.y-worldY; const dist=Math.sqrt(dx*dx+dy*dy);
         const dirX=dx/dist; const dirY=dy/dist; const angle=Math.atan2(dy, dx);
-        let wLvl = passiveSkills.weaponUpgrade.level;
+        let wLvl = passiveSkills.weaponMastery.level;
 
         if (player.type === 'melee') {
             if (isWeaponEvolved) {
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*15, dy: Math.sin(angle)*15, angle: angle, life: 60, type: 'cleaver', dmg: player.damage * 8, kb: player.knockback * 2, isDead: false, hitTargets: [] });
+                // 🚀 v1.1.1: 진화된 근접공격 구조 변경, 무한 관통이지만 적중시 감속
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*15, dy: Math.sin(angle)*15, angle: angle, life: 90, type: 'cleaver', dmg: player.damage * 2.5, kb: player.knockback * 0.5, isDead: false, pierce: 999 });
                 player.currentCooldown = player.fireCooldown * 1.2; 
             } else {
-                let hits = wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1);
+                // 🚀 v1.1.1: 근접공격 다단히트 파티클 및 딜구조 상승
+                let hits = wLvl >= 8 ? 4 : (wLvl >= 5 ? 3 : (wLvl >= 3 ? 2 : 1));
                 for(let i=0; i<enemies.length; i++) {
                     if(enemies[i].isDead) continue;
                     if(getDistSq(worldX, worldY, enemies[i].x, enemies[i].y) <= rangeSq) {
                         const edx=enemies[i].x-worldX; const edy=enemies[i].y-worldY; const edist=Math.sqrt(edx*edx+edy*edy)||1;
                         for(let h=0; h<hits; h++) {
                             if(enemies[i].isDead) break;
-                            damageEnemy(enemies[i], player.damage, player.knockback, edx/edist, edy/edist);
+                            damageEnemy(enemies[i], player.damage * 1.5, player.knockback, edx/edist, edy/edist);
+                            for(let p=0; p<3; p++) particles.push({ x: enemies[i].x, y: enemies[i].y, dx: (Math.random()-0.5)*10, dy: (Math.random()-0.5)*10, life: 15, maxLife: 15, color: '#ffaaaa' });
                         }
                     }
                 }
                 effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle, life: 15, maxLife: 15, radius: player.range });
                 if(hits >= 2) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle+0.2, life: 15, maxLife: 15, radius: player.range*0.8 });
-                if(hits === 3) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle-0.2, life: 15, maxLife: 15, radius: player.range*0.6 });
+                if(hits >= 3) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle-0.2, life: 15, maxLife: 15, radius: player.range*0.6 });
+                if(hits >= 4) effects.push({ x: worldX, y: worldY, type: 'slash', angle: angle+0.4, life: 15, maxLife: 15, radius: player.range*0.9 });
                 player.currentCooldown = player.fireCooldown;
             }
         
@@ -596,32 +593,34 @@ function handleBasicAttacks() {
             if (isWeaponEvolved) {
                 let spread = (Math.random() - 0.5) * 0.2;
                 let ang = angle + spread;
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*25, dy: Math.sin(ang)*25, angle: ang, life: 40, type: 'gatling', dmg: player.damage * 1.0, kb: player.knockback, isDead: false, pierce: 3, hitTargets: [] });
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*25, dy: Math.sin(ang)*25, angle: ang, life: 40, type: 'gatling', dmg: player.damage * 1.5, kb: player.knockback, isDead: false, pierce: 3, hitTargets: [] });
                 player.currentCooldown = Math.max(2, player.fireCooldown * 0.2); 
             } else {
-                let arrows = 1 + wLvl; let spread = 0.15;
+                // 🚀 v1.1.1: 원거리 관통 및 데미지, 개수 상승
+                let arrows = 1 + Math.floor(wLvl/2); let spread = 0.15;
                 for(let a=0; a<arrows; a++) {
                     let ang = angle + (a - (arrows-1)/2) * spread;
-                    projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 30, type: 'arrow', dmg: player.damage, kb: player.knockback, isDead: false });
+                    projectiles.push({ x: worldX, y: worldY, dx: Math.cos(ang)*18, dy: Math.sin(ang)*18, angle: ang, life: 40, type: 'arrow', dmg: player.damage * 1.3, kb: player.knockback, isDead: false, pierce: 1 + Math.floor(wLvl/3), hitTargets: [] });
                 }
                 player.currentCooldown = player.fireCooldown;
             }
         } else if (player.type === 'magic') {
             if (isWeaponEvolved) {
-                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*3, dy: Math.sin(angle)*3, life: 150, type: 'blackhole', dmg: player.damage * 1.0, kb: 0, isDead: false });
+                projectiles.push({ x: worldX, y: worldY, dx: Math.cos(angle)*3, dy: Math.sin(angle)*3, life: 150, type: 'blackhole', dmg: player.damage * 1.5, kb: 0, isDead: false });
                 player.currentCooldown = player.fireCooldown * 2.5; 
             } else {
+                // 🚀 v1.1.1: 마법 데미지 소폭 상승
                 player.attackCount++; 
-                let reqForBig = Math.max(1, 5 - wLvl); 
-                let isBig = (wLvl >= 4) || (player.attackCount % reqForBig === 0);
-                let orbCount = (wLvl === 5) ? 3 : 1;
+                let reqForBig = Math.max(1, 10 - wLvl); 
+                let isBig = (wLvl >= 8) || (player.attackCount % reqForBig === 0);
+                let orbCount = (wLvl === 10) ? 3 : 1;
                 
                 for(let a=0; a<orbCount; a++) {
                     let ang = angle + (a - Math.floor(orbCount/2)) * 0.2;
                     projectiles.push({ 
                         x: worldX, y: worldY, dx: Math.cos(ang)*(isBig?6:10), dy: Math.sin(ang)*(isBig?6:10), 
                         life: 60, type: isBig ? 'big_orb' : 'orb', 
-                        dmg: isBig ? player.damage*3 : player.damage, kb: player.knockback, isDead: false 
+                        dmg: isBig ? player.damage*4 : player.damage*1.5, kb: player.knockback, isDead: false 
                     });
                 }
                 player.currentCooldown = player.fireCooldown;
@@ -828,7 +827,6 @@ function handleActiveSkills() {
         }
     }
 
-    // 🚀 v1.1.0: 회오리 톱날 전면 재수정 (부메랑처럼 빙글빙글 돌다가 적 발견시 커지면서 3초 틱뎀)
     if (activeSkills.whirlwind_chakram.level > 0) {
         while(chakramsState.length < 5) {
             chakramsState.push({ angleOffset: chakramsState.length * (Math.PI*2/5), state: 'orbit', target: null, timer: 0, x: pX, y: pY });
@@ -1299,7 +1297,6 @@ function update() {
     }
     
     if (frameCount % FPS === 0) {
-        // 🚀 v1.1.0: 체력 흡혈 패시브에 체력 재생을 통합
         if (passiveSkills.lifeSteal.level > 0 && player.hp < player.maxHp) { 
             player.hp = Math.min(player.maxHp, player.hp + passiveSkills.lifeSteal.level * 0.5); 
             updateUI('hp'); 
@@ -1493,7 +1490,24 @@ function update() {
                 }
             }
         }
-        else if (p.type === 'cleaver') { p.x += p.dx; p.y += p.dy; }
+        else if (p.type === 'cleaver') {
+            p.x += p.dx; p.y += p.dy; 
+            let hitRadSq = 10000;
+            let hitAny = false;
+            for (let j = 0; j < enemies.length; j++) {
+                let e = enemies[j]; if (e.isDead) continue;
+                if (getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
+                    hitAny = true;
+                    if (frameCount % 6 === 0) {
+                        let mult = (e.isBoss || e.isMidBoss) ? 1.0 : 1.0;
+                        damageEnemy(e, p.dmg * mult, p.kb, Math.cos(p.angle), Math.sin(p.angle));
+                        effects.push({ x: e.x, y: e.y, type: 'slash', angle: p.angle + (Math.random()-0.5)*0.5, life: 8, maxLife: 8, radius: 40 });
+                        for(let k=0; k<3; k++) particles.push({x: e.x, y: e.y, dx: (Math.random()-0.5)*15, dy: (Math.random()-0.5)*15, life: 15, maxLife: 15, color: '#ffaaaa'});
+                    }
+                }
+            }
+            if (hitAny) { p.dx *= 0.9; p.dy *= 0.9; } 
+        }
         else if (p.type === 'gatling') { p.x += p.dx; p.y += p.dy; }
         else if (p.type === 'blackhole') {
             p.x += p.dx; p.y += p.dy;
@@ -1547,6 +1561,31 @@ function update() {
                 }
             }
         }
+        else if (p.type === 'whirlwind_chakram_proj') {
+            if (p.state === 'fly') {
+                p.x += p.dx; p.y += p.dy;
+                for(let j=0; j<enemies.length; j++) {
+                    let e = enemies[j]; if(e.isDead) continue;
+                    if(getDistSq(p.x, p.y, e.x, e.y) < (p.size + e.size)**2) {
+                        p.state = 'grind';
+                        p.target = e;
+                        p.life = 120; 
+                        break;
+                    }
+                }
+            } else if (p.state === 'grind') {
+                if (p.target && !p.target.isDead) {
+                    p.x = p.target.x; p.y = p.target.y; 
+                    if (frameCount % 6 === 0) {
+                        damageEnemy(p.target, p.dmg, 2, 0, 0);
+                        effects.push({ x: p.x, y: p.y, type: 'hit', life: 5, maxLife: 5, radius: p.size });
+                        particles.push({ x: p.x, y: p.y, dx: (Math.random()-0.5)*10, dy: (Math.random()-0.5)*10, life: 10, maxLife: 10, color: '#55ff55' });
+                    }
+                } else {
+                    p.isDead = true; 
+                }
+            }
+        }
         else if (p.type === 'dove_shot') {
             p.x += p.dx; p.y += p.dy;
             if (frameCount % 2 === 0) {
@@ -1584,7 +1623,7 @@ function update() {
             }
         }
 
-        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling' && p.type !== 'phantom_sword' && p.type !== 'phantom_slash' && p.type !== 'excalibur_drop' && p.type !== 'excalibur_slash' && p.type !== 'dove_shot') { p.x += p.dx || 0; p.y += p.dy || 0; }
+        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling' && p.type !== 'phantom_sword' && p.type !== 'phantom_slash' && p.type !== 'excalibur_drop' && p.type !== 'excalibur_slash' && p.type !== 'whirlwind_chakram_proj' && p.type !== 'dove_shot') { p.x += p.dx || 0; p.y += p.dy || 0; }
         p.life--; 
         
         if (p.life <= 0) { 
@@ -1608,24 +1647,15 @@ function update() {
             if(p.type==='big_orb') hitRadSq=900;
             if(p.type==='shield') hitRadSq=625; 
             if(p.type==='boomerang' || p.type==='thunder_shuriken') hitRadSq=1600; 
-            if(p.type==='cleaver') hitRadSq=10000; 
             if(p.type==='gatling') hitRadSq=625;    
             
-            if(p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado' || p.type==='phantom_sword' || p.type==='phantom_slash' || p.type==='excalibur_drop' || p.type==='excalibur_slash') hitRadSq=0; 
+            if(p.type==='cleaver' || p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado' || p.type==='phantom_sword' || p.type==='phantom_slash' || p.type==='excalibur_drop' || p.type==='excalibur_slash' || p.type==='whirlwind_chakram_proj') hitRadSq=0; 
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
                 let isBossTarget = (e.isBoss || e.isMidBoss);
                 let mult = (p.bossMult && isBossTarget) ? p.bossMult : 1;
 
-                if (p.type === 'cleaver') {
-                    if (!p.hitTargets) p.hitTargets = [];
-                    if (!p.hitTargets.includes(e)) {
-                        p.hitTargets.push(e);
-                        damageEnemy(e, p.dmg*mult, p.kb, Math.cos(p.angle), Math.sin(p.angle));
-                        effects.push({ x: e.x, y: e.y, type: 'slash', angle: p.angle, life: 10, maxLife: 10, radius: 40 });
-                    }
-                } 
-                else if (p.type === 'gatling') {
+                if (p.type === 'gatling') {
                     if (!p.hitTargets) p.hitTargets = [];
                     if (!p.hitTargets.includes(e)) {
                         p.hitTargets.push(e);
@@ -1655,9 +1685,26 @@ function update() {
                     if(p.type === 'shuriken') { p.dx *= 0.8; p.dy *= 0.8; }
                 } else if(p.type !== 'boomerang' && p.type !== 'shield') { 
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
-                    damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
-                    effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
-                    if(p.type === 'dove_shot' || p.type === 'arrow') { p.isDead = true; break; }
+                    
+                    if(p.type === 'arrow') {
+                        if (!p.hitTargets) p.hitTargets = [];
+                        if (!p.hitTargets.includes(e)) {
+                            p.hitTargets.push(e);
+                            damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
+                            effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
+                            if (p.pierce !== undefined) {
+                                p.pierce--;
+                                if (p.pierce <= 0) { p.isDead = true; break; }
+                            } else { p.isDead = true; break; }
+                        }
+                    } else if (p.type === 'dove_shot') {
+                        damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
+                        effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
+                        p.isDead = true; break;
+                    } else {
+                        damageEnemy(e, p.dmg*mult, p.kb || 5, edx/edist, edy/edist);
+                        effects.push({ x: e.x, y: e.y, type: 'hit', life: 10, maxLife: 10, radius: 15 });
+                    }
                 } else {
                     let edx=e.x-p.x; let edy=e.y-p.y; let edist=Math.sqrt(edx*edx+edy*edy)||1;
                     damageEnemy(e, p.dmg*mult, p.kb || 0, edx/edist, edy/edist); 
@@ -1669,13 +1716,13 @@ function update() {
 
     for (let i=0; i<effects.length; i++) {
         let ef = effects[i]; ef.life--;
-        if(ef.type === 'poison' && ef.life % 60 === 0) {
+        if(ef.type === 'poison' && ef.life % 30 === 0) { 
             for(let j=0; j<enemies.length; j++) {
                 let e = enemies[j];
                 if(!e.isDead && getDistSq(ef.x, ef.y, e.x, e.y) < ef.radius*ef.radius) {
-                    let actualPct = (e.isBoss || e.isMidBoss) ? (ef.hpPct * 0.05) : ef.hpPct;
-                    let totalDmg = ef.dmg + (e.maxHp * actualPct);
-                    damageEnemy(e, totalDmg, 0, 0, 0);
+                    e.poisonDebuffTimer = 300; 
+                    e.poisonHpPct = (e.isBoss || e.isMidBoss) ? (ef.hpPct * 0.05) : ef.hpPct;
+                    e.poisonBaseDmg = ef.dmg;
                 }
             }
         }
@@ -1684,6 +1731,16 @@ function update() {
     for (let i = 0; i < enemies.length; i++) {
         let e = enemies[i]; if (e.isDead) continue;
         
+        if (e.poisonDebuffTimer > 0) {
+            e.poisonDebuffTimer--;
+            if (frameCount % 30 === 0) { 
+                let totalDmg = e.poisonBaseDmg + (e.maxHp * e.poisonHpPct);
+                damageEnemy(e, totalDmg, 0, 0, 0);
+                effects.push({ x: e.x, y: e.y, type: 'hit', life: 5, maxLife: 5, radius: e.size });
+                particles.push({x: e.x, y: e.y, dx: (Math.random()-0.5)*5, dy: (Math.random()-0.5)*5, life: 15, maxLife: 15, color: '#aa55ff'});
+            }
+        }
+
         if (e.isWave && e.waitTimer > 0) { e.waitTimer--; continue; }
 
         const dx = worldX - e.x; const dy = worldY - e.y; const distSq = dx*dx + dy*dy;
@@ -1756,7 +1813,6 @@ function draw() {
     ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx, cy, player.magnetRange, 0, Math.PI*2); ctx.stroke();
     ctx.strokeStyle='rgba(255,100,100,0.1)'; ctx.beginPath(); ctx.arc(cx, cy, player.range, 0, Math.PI*2); ctx.stroke();
 
-    // 🚀 v1.1.0: 회오리 톱날의 새로운 렌더링
     for(let i=0; i<chakramsState.length; i++) {
         let c = chakramsState[i];
         let cx_draw = c.x - worldX + cx;
@@ -1779,12 +1835,13 @@ function draw() {
         let ef = effects[i]; let ex = ef.x-worldX+cx; let ey = ef.y-worldY+cy;
         if(ef.type === 'poison') { 
             let p = ef.life / ef.maxLife;
-            ctx.fillStyle = `rgba(80, 200, 50, ${p * 0.3})`; ctx.beginPath(); ctx.arc(ex, ey, ef.radius, 0, Math.PI*2); ctx.fill(); 
+            ctx.fillStyle = `rgba(138, 43, 226, ${p * 0.3})`; 
+            ctx.beginPath(); ctx.arc(ex, ey, ef.radius, 0, Math.PI*2); ctx.fill(); 
             for(let b=0; b<5; b++) {
                 let bx = ex + Math.cos(b + frameCount*0.02) * (ef.radius * 0.5);
                 let by = ey + Math.sin(b*2 + frameCount*0.03) * (ef.radius * 0.5);
                 let br = 10 + Math.sin(frameCount*0.1 + b)*5;
-                ctx.fillStyle = `rgba(130, 255, 100, ${p * 0.5})`;
+                ctx.fillStyle = `rgba(180, 100, 255, ${p * 0.5})`; 
                 ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI*2); ctx.fill();
             }
         }
@@ -1807,6 +1864,12 @@ function draw() {
     for (let i=0; i<enemies.length; i++) {
         let e = enemies[i]; let ex = e.x-worldX+cx; let ey = e.y-worldY+cy;
         
+        if (e.poisonDebuffTimer > 0) {
+            ctx.strokeStyle = 'rgba(150, 50, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(ex, ey, e.size + 6, 0, Math.PI*2); ctx.stroke();
+        }
+
         if (e.excaliburDebuff) {
             ctx.strokeStyle = '#ffee55'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(ex, ey, e.size + 8 + Math.sin(frameCount*0.2)*4, 0, Math.PI*2); ctx.stroke();

@@ -396,7 +396,7 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     let baseSpeed = (isBoss ? 1.9 : (isMidBoss ? 2.4 : (1 + Math.random()*0.5 + (gameSeconds/300)))) * 1.05;
     
     let maxHp;
-    if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult * 1.1; 
+    if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult * 1.15; 
     else if (isMidBoss) maxHp = (4000 + gameSeconds * 50) * difficultyMult * 1.1;
     else if (isWave) maxHp = 80 * healthMultiplier; 
     else maxHp = 60 * healthMultiplier; 
@@ -443,6 +443,29 @@ function spawnDeathParticles(x, y, isBoss, isMidBoss, isWave) {
 }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+// 🚀 v1.1.2: 황금 상자 등장 시 스킬 레벨을 올려주는 함수 추가
+function applyGoldChestBuff() {
+    if (myActiveSlots.length < 3) {
+        // 스킬이 3개 미만이면 무기 마스터리를 3 올림
+        for(let i=0; i<3; i++) { if(passiveSkills.weaponMastery.level < 10) passiveSkills.weaponMastery.level++; }
+    } else {
+        // 가진 액티브 스킬 중 3번 랜덤하게 레벨업
+        for(let i=0; i<3; i++) {
+            let possibleSkills = myActiveSlots.map(k => activeSkills[k]).filter(s => s.level < s.max);
+            if(possibleSkills.length > 0) {
+                let randomSkill = possibleSkills[Math.floor(Math.random() * possibleSkills.length)];
+                randomSkill.level++;
+            } else if (passiveSkills.weaponMastery.level < 10) {
+                passiveSkills.weaponMastery.level++;
+            }
+        }
+    }
+    recalcStats();
+    updateActiveUI();
+}
+
 async function startChestAnimation() {
     if (chestOpening) return;
     chestOpening = true;
@@ -451,12 +474,24 @@ async function startChestAnimation() {
     let rarity = currentChestRarity; 
     let choices = 3;
     
-    if (!rarity) {
-        if (r < 0.10) { rarity = 'legendary'; }
-        else if (r < 0.30) { rarity = 'rare'; }
+    // 🚀 v1.1.2: 레벨업 보상 상자인 경우 (황금 상자 5% 확률 설정)
+    if (rarity === 'levelup_chest') {
+        if (r < 0.02) { rarity = 'legendary'; } 
+        else if (r < 0.07) { rarity = 'gold'; } // 5% 확률로 골드
+        else if (r < 0.25) { rarity = 'rare'; }
+        else { rarity = 'normal'; }
+    }
+    // 🚀 v1.1.2: 맵에서 주운 일반 상자인 경우
+    else if (!rarity) {
+        if (r < 0.05) { rarity = 'legendary'; }
+        else if (r < 0.15) { rarity = 'gold'; } // 10% 확률로 골드
+        else if (r < 0.35) { rarity = 'rare'; }
         else { rarity = 'normal'; }
     }
     
+    // 다중 선택(레전더리 2픽) 처리를 위해 전역 변수 갱신
+    currentChestRarity = rarity;
+
     if (rarity === 'legendary') choices = 5;
     else if (rarity === 'rare') choices = 4;
     else choices = 3;
@@ -465,7 +500,7 @@ async function startChestAnimation() {
     
     ui.chestImage.classList.add('shake-anim'); await sleep(400); ui.chestImage.classList.remove('shake-anim'); await sleep(500);
     
-    if (rarity === 'rare' || rarity === 'legendary') {
+    if (rarity === 'rare' || rarity === 'legendary' || rarity === 'gold') {
         ui.chestImage.classList.add('shake-anim'); await sleep(400); ui.chestImage.classList.remove('shake-anim'); await sleep(500);
     }
     
@@ -476,16 +511,42 @@ async function startChestAnimation() {
         ui.chestImage.innerText = '🌟'; 
         ui.chestFlash.style.opacity = 0;
         await sleep(500);
-    } else {
+    } 
+    else if (rarity === 'gold') {
+        ui.chestImage.classList.add('shake-anim'); await sleep(400); ui.chestImage.classList.remove('shake-anim'); await sleep(400);
+        ui.chestFlash.style.opacity = 1;
+        await sleep(150);
+        ui.chestImage.innerText = '✨'; 
+        ui.chestFlash.style.opacity = 0;
+        
+        applyGoldChestBuff(); 
+        
+        for(let i=0; i<40; i++) {
+            particles.push({
+                x: worldX, y: worldY, 
+                dx: (Math.random()-0.5)*25, dy: (Math.random()-0.5)*25, 
+                life: 40, maxLife: 40, color: '#ffcc00'
+            });
+        }
+        effects.push({ x: worldX, y: worldY, type: 'levelup', life: 40, maxLife: 40, radius: 120 });
+        await sleep(1000);
+    } 
+    else {
         ui.chestImage.innerText = rarity === 'rare' ? '💎' : '🎁';
         await sleep(300);
     }
     
     ui.chestScreen.classList.add('hidden');
     chestOpening = false;
-    triggerLevelUp(true, choices);
+    
+    if (rarity === 'gold') {
+        gameState = 'playing'; 
+        lastTime = performance.now();
+    } else {
+        triggerLevelUp(true, choices);
+    }
 }
-
+function openChest() { startChestAnimation(); }
 function openChest() { startChestAnimation(); }
 
 function damageEnemy(e, dmg, knockback, dirX, dirY) {
@@ -1048,7 +1109,7 @@ function handleGemsAndDrops() {
         }
     }
 
-    if (gainedXp > 0) {
+if (gainedXp > 0) {
         player.xp += gainedXp;
         if (player.xp >= player.maxXp) {
             player.level++; player.xp -= player.maxXp; 
@@ -1056,7 +1117,12 @@ function handleGemsAndDrops() {
             
             player.maxHp += 5; player.hp = player.maxHp; updateUI('hp'); updateUI('level');
             effects.push({ x: worldX, y: worldY, type: 'levelup', life: 30, maxLife: 30, radius: 50 });
-            triggerLevelUp(false, 3);
+            
+            // 🚀 v1.1.2: 레벨업 시 바로 스킬창을 띄우지 않고 상자 매커니즘 실행 ('levelup_chest' 식별자 전달)
+            gameState = 'chest'; handleInputEnd();
+            currentChestRarity = 'levelup_chest';
+            ui.chestImage.innerText = '📦';
+            ui.chestScreen.classList.remove('hidden');
         }
         updateUI('xp');
     }
@@ -1847,9 +1913,17 @@ function draw() {
         }
     }
 
-    for (let i=0; i<drops.length; i++) {
+for (let i=0; i<drops.length; i++) {
         let d = drops[i]; let dx = d.x-worldX+cx; let dy = d.y-worldY+cy;
-        if(d.type === 'chest') { ctx.font = "24px sans-serif"; ctx.fillText("📦", dx-12, dy+8); }
+        
+        if(d.type === 'chest') { 
+            // 🚀 v1.1.2: 보물상자 황금빛 아우라 추가
+            ctx.shadowBlur = 20; 
+            ctx.shadowColor = '#ffaa00'; 
+            ctx.font = "24px sans-serif"; 
+            ctx.fillText("📦", dx-12, dy+8); 
+            ctx.shadowBlur = 0; // 다른 아이템에 빛 번짐이 안 생기도록 초기화
+        }
         else if(d.type === 'magnet') { ctx.fillStyle = '#ff3333'; ctx.fillRect(dx-6, dy-6, 4, 12); ctx.fillStyle = '#3333ff'; ctx.fillRect(dx+2, dy-6, 4, 12); ctx.fillStyle = '#aaa'; ctx.fillRect(dx-6, dy-6, 12, 4); }
         else if(d.type === 'hp') { ctx.fillStyle = '#fff'; ctx.fillRect(dx-8, dy-8, 16, 16); ctx.fillStyle = '#0a0'; ctx.fillRect(dx-2, dy-6, 4, 12); ctx.fillRect(dx-6, dy-2, 12, 4); }
     }

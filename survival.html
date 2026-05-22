@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.1.3 -->
-    <title>Space Survivor v1.1.3</title>
+    <!-- 버전 업데이트: v1.1.4 -->
+    <title>Space Survivor v1.1.4</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -81,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.1.3 -->
-        <div class="version">v1.1.3</div>
+        <!-- 버전 v1.1.4 -->
+        <div class="version">v1.1.4</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -1357,6 +1357,17 @@ function update() {
     if (!isTimePaused) {
         if (frameCount % FPS === 0) {
             gameSeconds++; updateUI('time');
+
+// 🚀 1.1.4: 1분마다 맵에 무작위 상자 스폰
+            if (gameSeconds > 0 && gameSeconds % 60 === 0) {
+                let spawnAngle = Math.random() * Math.PI * 2;
+                let spawnDist = Math.max(vWidth, vHeight) * 1.2; // 화면 살짝 밖에 스폰
+                drops.push({
+                    x: worldX + Math.cos(spawnAngle) * spawnDist,
+                    y: worldY + Math.sin(spawnAngle) * spawnDist,
+                    type: 'chest', rarity: null, isDead: false
+                });
+            }
             
             if (gameSeconds > 0 && gameSeconds % 120 === 0 && gameSeconds % 300 !== 0) {
                 spawnEnemy(false, false, true);
@@ -2319,16 +2330,18 @@ for (let i=0; i<drops.length; i++) {
         ctx.restore();
     }
     
-    if (bossMode) {
-        let boss = enemies.find(e => e.isBoss && !e.isDead);
-        if (boss) {
-            let dx = boss.x - worldX;
-            let dy = boss.y - worldY;
+// 🚀 1.1.4: 화면 밖 보물상자를 가리키는 황금 화살표
+    for (let i = 0; i < drops.length; i++) {
+        let d = drops[i];
+        if (d.type === 'chest') {
+            let dx = d.x - worldX;
+            let dy = d.y - worldY;
             let dist = Math.sqrt(dx*dx + dy*dy);
             
-            if (dist > 150) { 
+            // 거리가 멀어 화면에 안 보일 때만 화살표 표시
+            if (dist > 300) { 
                 let ang = Math.atan2(dy, dx);
-                let arrowDist = 90; 
+                let arrowDist = 120; // 플레이어 주변 회전 반경
                 
                 ctx.save();
                 ctx.translate(cx + Math.cos(ang) * arrowDist, cy + Math.sin(ang) * arrowDist);
@@ -2337,15 +2350,13 @@ for (let i=0; i<drops.length; i++) {
                 let pulse = 1 + Math.sin(frameCount * 0.15) * 0.2;
                 ctx.scale(pulse, pulse);
                 
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.4)';
+                ctx.fillStyle = 'rgba(255, 200, 0, 0.4)';
                 ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-15, 18); ctx.lineTo(-5, 0); ctx.lineTo(-15, -18); ctx.closePath(); ctx.fill();
                 
-                ctx.fillStyle = '#ff0000';
+                ctx.fillStyle = '#ffcc00';
                 ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-12, 12); ctx.lineTo(-4, 0); ctx.lineTo(-12, -12); ctx.closePath(); ctx.fill();
                 
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
                 ctx.restore();
             }
         }
@@ -2357,7 +2368,49 @@ for (let i=0; i<drops.length; i++) {
         ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joystick.originX, joystick.originY, joystick.radius, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(joystick.x, joystick.y, 15, 0, Math.PI*2); ctx.fill();
     }
+// 🚀 1.1.4: 미니맵 (플레이어 파란색, 보스 빨간색 표시)
+    if (gameState === 'playing') {
+        const mapSize = 130; 
+        const mapX = width - mapSize - 20;  // 우측 하단 여백 20
+        const mapY = height - mapSize - 20;
+        const viewRadius = 2500; // 미니맵에 표시할 실제 맵 거리
+
+        // 미니맵 배경
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.fillRect(mapX, mapY, mapSize, mapSize);
+        ctx.strokeRect(mapX, mapY, mapSize, mapSize);
+
+        const mapCX = mapX + mapSize / 2;
+        const mapCY = mapY + mapSize / 2;
+
+        // 보스 및 중간보스 렌더링 (빨간 점)
+        for (let i = 0; i < enemies.length; i++) {
+            let e = enemies[i];
+            if (!e.isDead && (e.isBoss || e.isMidBoss)) {
+                let dx = e.x - worldX;
+                let dy = e.y - worldY;
+                
+                let mapDx = (dx / viewRadius) * (mapSize / 2);
+                let mapDy = (dy / viewRadius) * (mapSize / 2);
+                
+                // 미니맵 밖으로 나가면 테두리에 고정 (방향 파악 가능)
+                mapDx = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDx));
+                mapDy = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDy));
+
+                ctx.fillStyle = e.isBoss ? '#ff0000' : '#ff55ff'; // 거대보스는 빨강, 중간보스는 보라색
+                ctx.beginPath(); ctx.arc(mapCX + mapDx, mapCY + mapDy, 5, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // 플레이어 렌더링 (파란 점)
+        ctx.fillStyle = '#0088ff';
+        ctx.beginPath(); ctx.arc(mapCX, mapCY, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();
+    }
 }
+
 
 function gameLoop(timestamp) {
     requestAnimationFrame(gameLoop);

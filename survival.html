@@ -81,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.1.3 -->
-        <div class="version">v1.1.3</div>
+        <!-- 버전 v1.1.1 -->
+        <div class="version">v1.1.1</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -1667,7 +1667,7 @@ else if (p.type === 'thunder_shuriken') {
                     let chained = [n];
                     let maxChains = 8;
                     let successfulChains = 0;
-                    let chainDmg = baseDmg * 0.3; // 연쇄 데미지는 본 데미지의 30%
+                    let chainDmg = baseDmg * 0.5; // 연쇄 데미지는 본 데미지의 50%
 
                     for(let chain = 0; chain < maxChains; chain++) {
                         let nextTarget = null;
@@ -1691,11 +1691,12 @@ else if (p.type === 'thunder_shuriken') {
                     }
 
                     // 연쇄가 다 못 끝났으면, 남은 데미지를 마지막 놈한테 다 쏟아부음!
-                    let remainingChains = maxChains - successfulChains;
-                    if (remainingChains > 0 && currentTarget && !currentTarget.isDead) {
-                        damageEnemy(currentTarget, chainDmg * remainingChains, 0, 0, 0);
-                        effects.push({ x: currentTarget.x, y: currentTarget.y, type: 'explosion', life: 15, maxLife: 15, radius: 40 });
-                    }
+                   if (remainingChains > 0 && currentTarget && !currentTarget.isDead) {
+    // 보스면 잔여 데미지의 20%만 적용
+    let remainingDmg = currentTarget.isBoss ? (chainDmg * remainingChains * 0.2) : (chainDmg * remainingChains);
+    damageEnemy(currentTarget, remainingDmg, 0, 0, 0);
+    effects.push({ x: currentTarget.x, y: currentTarget.y, type: 'explosion', life: 15, maxLife: 15, radius: 40 });
+}
                 }
             }
         }

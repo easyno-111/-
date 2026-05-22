@@ -2368,11 +2368,11 @@ for (let i=0; i<drops.length; i++) {
         ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(joystick.originX, joystick.originY, joystick.radius, 0, Math.PI*2); ctx.stroke();
         ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(joystick.x, joystick.y, 15, 0, Math.PI*2); ctx.fill();
     }
-// 🚀 1.1.4: 미니맵 (플레이어 파란색, 보스 빨간색 표시)
+// 🚀 1.1.4 (수정): 미니맵 (위치 우측 상단, 상자 표시 추가)
     if (gameState === 'playing') {
         const mapSize = 130; 
-        const mapX = width - mapSize - 20;  // 우측 하단 여백 20
-        const mapY = height - mapSize - 20;
+        const mapX = width - mapSize - 20;  // 우측 여백 20
+        const mapY = 20;                    // 🚀 아래쪽(height - mapSize)에서 위쪽(20)으로 변경
         const viewRadius = 2500; // 미니맵에 표시할 실제 맵 거리
 
         // 미니맵 배경
@@ -2385,7 +2385,7 @@ for (let i=0; i<drops.length; i++) {
         const mapCX = mapX + mapSize / 2;
         const mapCY = mapY + mapSize / 2;
 
-        // 보스 및 중간보스 렌더링 (빨간 점)
+        // 1. 보스 및 중간보스 렌더링 (빨간/보라 점)
         for (let i = 0; i < enemies.length; i++) {
             let e = enemies[i];
             if (!e.isDead && (e.isBoss || e.isMidBoss)) {
@@ -2395,16 +2395,35 @@ for (let i=0; i<drops.length; i++) {
                 let mapDx = (dx / viewRadius) * (mapSize / 2);
                 let mapDy = (dy / viewRadius) * (mapSize / 2);
                 
-                // 미니맵 밖으로 나가면 테두리에 고정 (방향 파악 가능)
+                // 미니맵 밖으로 나가면 테두리에 고정
                 mapDx = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDx));
                 mapDy = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDy));
 
-                ctx.fillStyle = e.isBoss ? '#ff0000' : '#ff55ff'; // 거대보스는 빨강, 중간보스는 보라색
+                ctx.fillStyle = e.isBoss ? '#ff0000' : '#ff55ff'; 
                 ctx.beginPath(); ctx.arc(mapCX + mapDx, mapCY + mapDy, 5, 0, Math.PI * 2); ctx.fill();
             }
         }
 
-        // 플레이어 렌더링 (파란 점)
+        // 🚀 2. 보물상자 렌더링 (황금색 점 추가)
+        for (let i = 0; i < drops.length; i++) {
+            let d = drops[i];
+            if (!d.isDead && d.type === 'chest') {
+                let dx = d.x - worldX;
+                let dy = d.y - worldY;
+                
+                let mapDx = (dx / viewRadius) * (mapSize / 2);
+                let mapDy = (dy / viewRadius) * (mapSize / 2);
+                
+                // 미니맵 밖으로 나가면 테두리에 고정
+                mapDx = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDx));
+                mapDy = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDy));
+
+                ctx.fillStyle = '#ffcc00'; // 황금색
+                ctx.beginPath(); ctx.arc(mapCX + mapDx, mapCY + mapDy, 4, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // 3. 플레이어 렌더링 (파란 점)
         ctx.fillStyle = '#0088ff';
         ctx.beginPath(); ctx.arc(mapCX, mapCY, 4, 0, Math.PI * 2); ctx.fill();
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.stroke();

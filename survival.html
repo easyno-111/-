@@ -1361,7 +1361,7 @@ function update() {
 // 🚀 1.1.4: 1분마다 맵에 무작위 상자 스폰
             if (gameSeconds > 0 && gameSeconds % 60 === 0) {
                 let spawnAngle = Math.random() * Math.PI * 2;
-                let spawnDist = Math.max(vWidth, vHeight) * 1.2; // 화면 살짝 밖에 스폰
+                let spawnDist = Math.max(vWidth, vHeight) * 2.5; // 화면 살짝 밖에 스폰
                 drops.push({
                     x: worldX + Math.cos(spawnAngle) * spawnDist,
                     y: worldY + Math.sin(spawnAngle) * spawnDist,

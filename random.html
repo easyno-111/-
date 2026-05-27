@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>랜덤 뽑기 기계</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <style>
         :root {
             --bg-color: #f7f9fc;
@@ -15,7 +18,6 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
         
-        /* 화면 흔들림(타격감)을 위한 body 설정 */
         body { 
             background-color: var(--bg-color); color: #333; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -34,7 +36,7 @@
 
         .container {
             background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-            text-align: center; max-width: 500px; width: 100%; position: relative; z-index: 10;
+            text-align: center; max-width: 550px; width: 100%; position: relative; z-index: 10;
         }
 
         h1 { font-size: 24px; color: var(--accent); margin-bottom: 20px; }
@@ -44,10 +46,20 @@
         .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
         input[type="number"] { width: 80px; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center; outline: none; transition: 0.3s; }
         input[type="number"]:focus { border-color: var(--accent); }
-        .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 10px rgba(92, 107, 192, 0.3); }
+        
+        /* 버튼 스타일 */
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .btn { 
+            background: var(--accent); color: white; border: none; padding: 12px 24px; 
+            font-size: 16px; border-radius: 12px; cursor: pointer; font-weight: bold; 
+            transition: all 0.2s; box-shadow: 0 4px 10px rgba(92, 107, 192, 0.3); 
+        }
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 107, 192, 0.4); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
+        
+        .btn-screenshot { background: #94a3b8; box-shadow: 0 4px 10px rgba(148, 163, 184, 0.3); }
+        .btn-screenshot:hover { box-shadow: 0 6px 15px rgba(148, 163, 184, 0.4); }
 
         /* 뽑기 기계 화면 */
         #machine-screen { display: none; flex-direction: column; align-items: center; }
@@ -79,23 +91,29 @@
             transform-origin: center; will-change: transform;
         }
 
-        /* 💥 중앙 연출 (쪼는 맛 & 타격감) UI */
+        /* 💥 중앙 연출 (사각 배경 렌더링 버그 수정) */
         #presentation-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
             display: none; justify-content: center; align-items: center; z-index: 100;
             opacity: 0; transition: opacity 0.3s;
         }
-        .big-ball-container { perspective: 1500px; width: 220px; height: 220px; }
+        .big-ball-container { perspective: 1500px; width: 220px; height: 220px; border-radius: 50%; }
         .big-ball-inner {
             width: 100%; height: 100%; position: relative;
             transform-style: preserve-3d;
+            border-radius: 50%; /* 3D 회전 시 테두리 삐져나옴 방지 */
         }
         .big-ball-front, .big-ball-back {
             position: absolute; width: 100%; height: 100%; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-family: 'Poppins', sans-serif; font-size: 90px; font-weight: 800; color: #333;
-            backface-visibility: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            /* 사파리/크롬 3D 렌더링 버그 방어 코드 */
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden; 
+            -webkit-transform: translate3d(0,0,0);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            background-color: transparent; 
         }
         .big-ball-back {
             background: radial-gradient(circle at 30% 30%, #fff, #94a3b8);
@@ -103,7 +121,6 @@
         }
         .big-ball-front { transform: rotateY(0deg); }
 
-        /* 뽑힌 공이 터지는 임팩트 애니메이션 */
         @keyframes impactPulse {
             0% { transform: rotateY(0deg) scale(1); }
             30% { transform: rotateY(0deg) scale(1.4); box-shadow: 0 0 100px 40px rgba(255, 255, 255, 0.9); }
@@ -112,8 +129,8 @@
         .impact-active { animation: impactPulse 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important; }
 
         /* 결과 표시 영역 */
-        .result-area { margin-top: 20px; width: 100%; }
-        .result-title { font-size: 14px; color: #64748b; margin-bottom: 10px; font-weight: bold; }
+        .result-area { margin-top: 30px; width: 100%; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+        .result-title { font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: bold; }
         .result-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 50px; }
         .result-ball {
             width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -147,10 +164,14 @@
             <div class="balls-container" id="balls-container"></div>
             <div class="sphere" id="sphere-bg"></div>
         </div>
-        <button class="btn" id="draw-btn" onclick="drawBall()">번호 뽑기</button>
+        
+        <div class="btn-group">
+            <button class="btn" id="draw-btn" onclick="drawBall()">번호 뽑기</button>
+            <button class="btn btn-screenshot" id="capture-btn" onclick="takeScreenshot()"><i class="fa-solid fa-camera"></i> 캡처</button>
+        </div>
         
         <div class="result-area">
-            <div class="result-title">당첨 번호</div>
+            <div class="result-title">당첨 번호 기록</div>
             <div class="result-list" id="result-list"></div>
         </div>
     </div>
@@ -280,9 +301,11 @@
             if (isDrawing) return;
 
             isDrawing = true;
-            const btn = document.getElementById('draw-btn');
-            btn.disabled = true;
-            btn.innerText = "추출 중...";
+            const drawBtn = document.getElementById('draw-btn');
+            const captureBtn = document.getElementById('capture-btn');
+            drawBtn.disabled = true;
+            captureBtn.disabled = true;
+            drawBtn.innerText = "추출 중...";
 
             const randomIndex = Math.floor(Math.random() * bouncingBalls.length);
             const selectedBall = bouncingBalls[randomIndex];
@@ -290,26 +313,21 @@
             selectedBall.state = 'drawing';
             selectedBall.el.style.zIndex = "25";
 
-            // 1. 공이 원기둥으로 빨려들어가는 연출 대기
             setTimeout(() => {
                 balls = balls.filter(b => b !== selectedBall);
                 selectedBall.el.remove(); 
-                
-                // 2. 중앙 쪼는 맛 + 타격감 연출 시작
-                showPresentation(selectedBall, btn);
+                showPresentation(selectedBall, drawBtn, captureBtn);
             }, 800); 
         }
 
-        function showPresentation(ball, btn) {
+        function showPresentation(ball, drawBtn, captureBtn) {
             const overlay = document.getElementById('presentation-overlay');
             const inner = document.getElementById('big-ball-inner');
             const front = document.getElementById('big-ball-front');
             
-            // 뽑힌 공 데이터 세팅
             front.innerText = ball.num;
             front.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
             
-            // 초기화: 뒷면('?')이 보이고 크기가 작은 상태로 시작
             inner.style.transition = 'none';
             inner.style.transform = 'rotateY(180deg) scale(0.5)';
             inner.classList.remove('impact-active');
@@ -317,30 +335,25 @@
             
             overlay.style.display = 'flex';
             
-            // 페이드 인
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
-                // 1단계 등장: 뒷면인 상태로 쑥 커짐
                 setTimeout(() => {
                     inner.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
                     inner.style.transform = 'rotateY(180deg) scale(1)'; 
                 }, 50);
             });
 
-            // 2단계 쪼는 맛: 천천히 돌기 시작하다가 확 뒤집힘
             setTimeout(() => {
                 inner.style.transition = 'transform 1.2s cubic-bezier(0.68, -0.2, 0.265, 1.55)';
                 inner.style.transform = 'rotateY(0deg) scale(1)'; 
                 
-                // 3단계 임팩트: 앞면이 정확히 보이는 타이밍(약 800ms)에 화면 흔들림과 빛 폭발 효과
                 setTimeout(() => {
                     inner.classList.add('impact-active');
                     document.body.classList.add('shake-active');
                 }, 800); 
 
-            }, 1000); // 등장 후 1초 대기 후 회전 시작
+            }, 1000); 
 
-            // 4단계 마무리: 연출 종료 후 하단 결과창에 추가
             setTimeout(() => {
                 overlay.style.opacity = '0';
                 
@@ -349,11 +362,12 @@
                     addToResultList(ball);
                     
                     isDrawing = false;
-                    btn.disabled = false;
-                    btn.innerText = "번호 뽑기";
-                }, 300); // 페이드아웃 대기
+                    drawBtn.disabled = false;
+                    captureBtn.disabled = false;
+                    drawBtn.innerText = "번호 뽑기";
+                }, 300); 
 
-            }, 3800); // 전체 연출 길이
+            }, 3800); 
         }
 
         function addToResultList(ball) {
@@ -363,6 +377,29 @@
             resultEl.innerText = ball.num;
             resultEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
             resultList.appendChild(resultEl);
+        }
+
+        // 📸 스크린샷 기능 (html2canvas 활용)
+        function takeScreenshot() {
+            const captureArea = document.getElementById('machine-screen');
+            const captureBtn = document.getElementById('capture-btn');
+            
+            // 캡처 중 버튼 텍스트 변경
+            const originalText = captureBtn.innerHTML;
+            captureBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 캡처 중...';
+            captureBtn.disabled = true;
+
+            // 배경색이 투명하게 찍히지 않도록 하얀색 배경 강제 지정
+            html2canvas(captureArea, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = '당첨결과_스크린샷.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // 원상복구
+                captureBtn.innerHTML = originalText;
+                captureBtn.disabled = false;
+            });
         }
     </script>
 </body>

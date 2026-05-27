@@ -6,47 +6,80 @@
     <title>메인 대시보드</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
-        body { background-color: #f5f5f7; padding: 40px; color: #1d1d1f; }
+        body { background-color: #f7f9fc; padding: 40px; color: #333333; }
         
         .page-title {
-            font-size: 32px; font-weight: 800; margin-bottom: 10px; color: #1d1d1f;
-            text-align: center; letter-spacing: -0.5px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+            font-size: 32px;
+            font-weight: 800; 
+            margin-bottom: 10px; 
+            color: #5c6bc0;
+            text-align: center; 
+            letter-spacing: -0.5px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 5px;
         }
-        .page-title span { font-size: 16px; color: #86868b; font-weight: 500; font-family: 'Orbitron', sans-serif; }
-        .page-subtitle { font-size: 18px; color: #86868b; text-align: center; margin-bottom: 50px; }
+        .page-title span { font-size: 15px; color: #8e9aaf; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+        .page-subtitle { font-size: 17px; color: #64748b; text-align: center; margin-bottom: 50px; }
 
-        .category-section { margin-bottom: 50px; max-width: 1000px; margin-left: auto; margin-right: auto; }
+        .category-section { margin-bottom: 45px; max-width: 1000px; margin-left: auto; margin-right: auto; }
         .category-title {
-            font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #1d1d1f;
-            display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #e5e5ea; padding-bottom: 10px;
+            font-size: 21px;
+            font-weight: 700; 
+            margin-bottom: 20px; 
+            color: #475569;
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            border-bottom: 2px solid #e2e8f0; 
+            padding-bottom: 10px;
         }
 
         .card-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px;
         }
 
         .card {
-            background: #ffffff; border-radius: 18px; padding: 25px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04); cursor: pointer;
+            background: #ffffff;
+            border-radius: 20px; 
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015); 
+            cursor: pointer;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            border: 1px solid #f0f0f0; display: flex; flex-direction: column; gap: 10px;
+            border: 1px solid #edf2f7; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px;
         }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+        .card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.05);
+        }
         .card:active { transform: scale(0.98); }
 
-        .card-icon { font-size: 40px; }
-        .card-title { font-size: 20px; font-weight: 700; color: #1d1d1f; }
-        .card-desc { font-size: 15px; color: #86868b; line-height: 1.4; }
+        .card-icon { font-size: 36px; margin-bottom: 5px; }
+        .card-title { font-size: 19px; font-weight: 700; color: #1e293b; }
+        .card-desc { font-size: 14px; color: #64748b; line-height: 1.5; }
 
-        /* 요원 브리핑(수업) 특수 카드 */
-        .special-card { background: #f0f8ff; border: 1px solid #007aff; }
-        .special-card .card-title { color: #007aff; }
+        /* 그룹별 파스텔 포인트 보더 스타일 */
+        .section-mission .card { border-left: 5px solid #c7ceea; }
+        .section-tools .card { border-left: 5px solid #baffc9; }
+        .section-games .card { border-left: 5px solid #ffdac1; }
+        .section-coding .card { border-left: 5px solid #ffb3ba; }
+        .section-class .card { border-left: 5px solid #bae1ff; }
+
+        /* 특수 카드 스타일 (소프트 파스텔 블루 배색) */
+        .card.special-card { background: #f0f4ff; border: 1px solid #bfdbfe; border-left: 5px solid #5c6bc0; }
+        .card.special-card .card-title { color: #3f51b5; }
 
         @media (max-width: 600px) {
             body { padding: 20px 15px; } 
             .page-title { font-size: 26px; } 
-            .page-subtitle { font-size: 15px; margin-bottom: 30px; }
-            .category-title { font-size: 19px; }
+            .page-subtitle { font-size: 14px; margin-bottom: 30px; }
+            .category-title { font-size: 18px; }
             .card-grid { grid-template-columns: 1fr; gap: 15px; }
             .card { padding: 20px; }
         }
@@ -57,7 +90,7 @@
     <div class="page-title">수학 실험실 🚀 <span>made by Easy No</span></div>
     <div class="page-subtitle">원하는 활동을 선택하여 학습을 시작하세요!</div>
 
-    <div class="category-section">
+    <div class="category-section section-mission">
         <div class="category-title"><span>📡</span> 메인 미션 (수업)</div>
         <div class="card-grid">
             <div class="card special-card" onclick="openApp('lesson_start.html')">
@@ -68,7 +101,7 @@
         </div>
     </div>
 
-    <div class="category-section">
+    <div class="category-section section-tools">
         <div class="category-title"><span>📚</span> 정규 수업 도구</div>
         <div class="card-grid">
             <div class="card" onclick="openApp('quadratic.html')">
@@ -89,7 +122,7 @@
         </div>
     </div>
     
-    <div class="category-section">
+    <div class="category-section section-games">
         <div class="category-title"><span>🎮</span> 수학 게임 모음</div>
         <div class="card-grid">
             <div class="card" onclick="openApp('pig.html')">
@@ -115,7 +148,7 @@
         </div>
     </div>
 
-    <div class="category-section">
+    <div class="category-section section-coding">
         <div class="category-title"><span>💻</span> 코딩 및 실습</div>
         <div class="card-grid">
             <div class="card" onclick="openApp('editor.html')">
@@ -132,6 +165,27 @@
                 <div class="card-icon">🛡️</div>
                 <div class="card-title">서바이벌 게임</div>
                 <div class="card-desc">수학적 전략을 활용해 극한의 환경에서 끝까지 살아남으세요!</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="category-section section-class">
+        <div class="category-title"><span>🏫</span> 학급 활동</div>
+        <div class="card-grid">
+            <div class="card" onclick="openApp('seat.html')">
+                <div class="card-icon">🪑</div>
+                <div class="card-title">자리 배치</div>
+                <div class="card-desc">새로운 학급 자리 배치를 진행합니다.</div>
+            </div>
+            <div class="card" onclick="openApp('clean.html')">
+                <div class="card-icon">🧹</div>
+                <div class="card-title">청소 구역</div>
+                <div class="card-desc">공평하고 재미있게 청소 구역을 배정해 보세요.</div>
+            </div>
+            <div class="card" onclick="openApp('random.html')">
+                <div class="card-icon">🎲</div>
+                <div class="card-title">랜덤 뽑기</div>
+                <div class="card-desc">발표자나 당번을 랜덤으로 추첨합니다.</div>
             </div>
         </div>
     </div>

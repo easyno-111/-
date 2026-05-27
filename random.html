@@ -22,7 +22,7 @@
             background-color: var(--bg-color); color: #333; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             min-height: 100vh; overflow: hidden; padding: 20px; 
-            perspective: 1000px; /* 3D 원근감을 위한 부모 설정 */
+            perspective: 1000px;
         }
 
         /* 💥 강렬한 화면 흔들림 */
@@ -120,46 +120,34 @@
             100% { opacity: 0; }
         }
 
-        /* 혼돈의 페이크 공들 (원근감 비행) */
+        /* 혼돈의 페이크 공들 (번호 없음) */
         .fake-ball {
-            position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-weight: 800; color: rgba(0,0,0,0.3);
+            position: absolute; border-radius: 50%;
             box-shadow: inset -10px -10px 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
-            transform: translate3d(0, 100vh, -1000px); opacity: 0; will-change: transform, opacity;
+            will-change: transform, opacity;
+            left: 50%; top: 50%; /* 중앙 기준 */
         }
 
         /* 🎯 진짜 타겟 공 */
         .target-wrapper {
             position: absolute; z-index: 50; width: 150px; height: 150px;
-            transform: translate3d(0, 100vh, -500px); /* 화면 아래쪽 멀리서 대기 */
-            transition: transform 3s cubic-bezier(0.1, 0.9, 0.2, 1);
+            left: 50%; top: 50%; margin-left: -75px; margin-top: -75px;
+            transform-style: preserve-3d;
         }
         .target-ball {
             width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-size: 60px; font-weight: 800; color: #333;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset -15px -15px 30px rgba(0,0,0,0.1);
+            font-family: 'Poppins', sans-serif; font-size: 60px; font-weight: 800; color: #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset -15px -15px 30px rgba(0,0,0,0.2);
+            transition: background 0.1s, color 0.1s;
         }
 
         /* 🗡️ 던져지는 나이프 */
         .flying-knife {
             position: absolute; z-index: 60; width: 60px; height: 180px;
-            /* 정면에서 날아가는 느낌: 크고 가까운 곳(translateZ)에서 시작 */
-            transform: translate3d(0, 50vh, 1000px) rotate(15deg) scale(3); 
-            opacity: 0; will-change: transform;
+            left: 50%; top: 50%; margin-left: -30px; margin-top: -90px;
+            will-change: transform;
         }
         .flying-knife svg { width: 100%; height: 100%; filter: drop-shadow(0 15px 10px rgba(0,0,0,0.6)); }
-
-        /* 상태 애니메이션 클래스 */
-        .target-hang { transform: translate3d(0, 0, 0) !important; }
-        .target-zoom { transform: translate3d(0, 0, 300px) !important; }
-        
-        .knife-strike {
-            animation: strikeAnim 0.15s cubic-bezier(0.5, 0, 1, 1) forwards;
-        }
-        @keyframes strikeAnim {
-            0% { transform: translate3d(0, 50vh, 800px) rotate(5deg) scale(3); opacity: 1; }
-            100% { transform: translate3d(0, -50px, 10px) rotate(0deg) scale(1.2); opacity: 1; }
-        }
 
     </style>
 </head>
@@ -291,16 +279,7 @@
 
                     ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
                 } 
-                else if (ball.state === 'drawing') {
-                    const targetX = center.x;
-                    const targetY = -40; 
-                    
-                    ball.x += (targetX - ball.x) * 0.15;
-                    ball.y += (targetY - ball.y) * 0.15;
-                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
-                }
             });
-
             animationFrameId = requestAnimationFrame(animate);
         }
 
@@ -326,6 +305,7 @@
             selectedBall.state = 'drawing';
             selectedBall.el.style.zIndex = "25";
 
+            // 실린더로 올라간 직후 액션 실행
             setTimeout(() => {
                 balls = balls.filter(b => b !== selectedBall);
                 selectedBall.el.remove(); 
@@ -335,98 +315,123 @@
 
         function executeDynamicAction(ball, drawBtn, captureBtn) {
             const overlay = document.getElementById('action-overlay');
-            overlay.innerHTML = ''; // 이전 연출 요소 초기화
-            
+            overlay.innerHTML = ''; 
             overlay.style.display = 'flex';
             
-            // 1. 혼돈의 페이크 공들 생성 (배경)
-            for(let i = 0; i < 25; i++) {
+            // 1. 혼돈의 페이크 공들 (수직 중력 낙하)
+            for(let i = 0; i < 30; i++) {
                 let fake = document.createElement('div');
                 fake.className = 'fake-ball';
-                let size = Math.random() * 80 + 40; // 40~120px
+                let size = Math.random() * 60 + 40; 
                 fake.style.width = size + 'px';
                 fake.style.height = size + 'px';
-                fake.style.fontSize = (size * 0.4) + 'px';
-                fake.innerText = Math.floor(Math.random() * 30) + 1;
+                fake.style.marginLeft = -(size/2) + 'px';
+                fake.style.marginTop = -(size/2) + 'px';
+                // 번호 없이 빈 상태로 배경만 설정
                 fake.style.background = `radial-gradient(circle at 30% 30%, #fff, ${pastelColors[Math.floor(Math.random()*pastelColors.length)]})`;
                 
                 overlay.appendChild(fake);
                 
-                // 개별 랜덤 비행 애니메이션 (JS로 위치 이동)
                 let startX = (Math.random() - 0.5) * window.innerWidth;
-                let endX = startX + (Math.random() - 0.5) * 500;
-                let delay = Math.random() * 600;
+                let zPos = -Math.random() * 600 + 200; // 앞뒤 랜덤
+                let peakY = -Math.random() * 40 - 10;  // 최고점 높이
                 
+                // 완벽한 수직 움직임: X축 고정, Y축만 변화 (ease-out 상승, ease-in 하강)
                 fake.animate([
-                    { transform: `translate3d(${startX}px, 100vh, -1000px)`, opacity: 0 },
-                    { opacity: 1, offset: 0.1 },
-                    { transform: `translate3d(${(startX+endX)/2}px, -30vh, 200px)`, opacity: 1, offset: 0.5 },
-                    { transform: `translate3d(${endX}px, 100vh, 800px)`, opacity: 0 }
+                    { transform: `translate3d(${startX}px, 120vh, ${zPos}px)`, opacity: 0, offset: 0, easing: 'ease-out' },
+                    { transform: `translate3d(${startX}px, ${peakY}vh, ${zPos}px)`, opacity: 1, offset: 0.5, easing: 'ease-in' },
+                    { transform: `translate3d(${startX}px, 120vh, ${zPos}px)`, opacity: 0, offset: 1 }
                 ], {
-                    duration: 1500 + Math.random() * 1000,
-                    delay: delay,
-                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
-                    fill: 'forwards'
+                    duration: 1200 + Math.random() * 600,
+                    delay: Math.random() * 200,
+                    fill: 'both'
                 });
             }
 
-            // 2. 🎯 타겟 공 (진짜) 생성
+            // 2. 🎯 타겟 공 (번호가 숨겨진 상태)
             let targetWrapper = document.createElement('div');
             targetWrapper.className = 'target-wrapper';
             
             let targetBall = document.createElement('div');
             targetBall.className = 'target-ball';
-            targetBall.innerText = ball.num;
-            targetBall.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
+            targetBall.innerText = '?'; // 처음엔 물음표로 등장
+            targetBall.style.background = `radial-gradient(circle at 30% 30%, #cbd5e1, #64748b)`; // 잿빛 느낌
             
             targetWrapper.appendChild(targetBall);
             overlay.appendChild(targetWrapper);
 
-            // 3. 🗡️ 던질 나이프 (SVG 형태의 멋진 단검)
+            // 타겟 공 비행 (위로 솟구쳤다가 떨어짐)
+            let targetFlight = targetWrapper.animate([
+                { transform: `translate3d(0, 120vh, -400px)`, offset: 0, easing: 'ease-out' },
+                { transform: `translate3d(0, -35vh, -400px)`, offset: 0.7, easing: 'ease-in' }, // 정점(Peak)을 찍고 하강 시작
+                { transform: `translate3d(0, 10vh, -400px)`, offset: 1 } // T=1000ms: 하강 중에 피격!
+            ], {
+                duration: 1000,
+                fill: 'forwards'
+            });
+
+            // 3. 🗡️ 나이프
             let knife = document.createElement('div');
             knife.className = 'flying-knife';
             knife.innerHTML = `
                 <svg viewBox="0 0 100 200">
                     <path d="M50,10 L65,80 L50,120 L35,80 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                    <path d="M50,10 L65,80 L50,120 Z" fill="#f8fafc"/> <rect x="25" y="120" width="50" height="15" rx="5" fill="#334155"/>
+                    <path d="M50,10 L65,80 L50,120 Z" fill="#f8fafc"/>
+                    <rect x="25" y="120" width="50" height="15" rx="5" fill="#334155"/>
                     <rect x="40" y="135" width="20" height="50" rx="3" fill="#8b5a2b"/>
                     <circle cx="50" cy="190" r="10" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
                 </svg>
             `;
-            
-            // 4. 섬광 이펙트용 div
+            overlay.appendChild(knife);
+
+            // 나이프 궤적: 밑에서 위로 던져져서 타겟을 찍음
+            let knifeFlight = knife.animate([
+                { transform: `translate3d(0, 80vh, 500px) rotate(15deg) scale(3)`, opacity: 0, offset: 0 },
+                { transform: `translate3d(0, 80vh, 500px) rotate(15deg) scale(3)`, opacity: 1, offset: 0.1, easing: 'ease-in' }, // 투척 대기
+                { transform: `translate3d(0, -20px, -360px) rotate(0deg) scale(1.2)`, opacity: 1, offset: 1 } // 타겟(10vh, -400px)에 정확히 꽂힘
+            ], {
+                duration: 1000, // 타겟 공과 타이밍 일치
+                fill: 'forwards'
+            });
+
+            // 섬광 이펙트
             let flash = document.createElement('div');
             flash.className = 'flash-bang';
             overlay.appendChild(flash);
-            overlay.appendChild(knife);
 
-            // 🎬 애니메이션 타임라인 시작
+            // 🎬 하이라이트 (T = 1000ms 💥)
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
 
-                // T+0.5s : 타겟 공이 중앙으로 솟아올라 정지 (매트릭스 연출)
                 setTimeout(() => {
-                    targetWrapper.classList.add('target-hang');
-                }, 500);
+                    // 화면 지진 & 플래시
+                    document.body.classList.add('shake-active');
+                    flash.classList.add('flash-active');
 
-                // T+1.2s : 정면에서 칼 투척!
-                setTimeout(() => {
-                    knife.classList.add('knife-strike');
-                }, 1200);
+                    // 번호 및 색상 정체 공개!
+                    targetBall.innerText = ball.num;
+                    targetBall.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
+                    targetBall.style.color = '#333';
 
-                // T+1.35s : 💥 칼이 꽂히는 순간 (화면 흔들림 + 섬광 + 줌인)
-                setTimeout(() => {
-                    document.body.classList.add('shake-active'); // 화면 쾅!
-                    flash.classList.add('flash-active');         // 섬광 팍!
-                    
-                    // 칼이 꽂힌 채로 카메라 앞(유저)으로 서서히 확대
-                    targetWrapper.classList.add('target-zoom');
-                    knife.style.transform = "translate3d(0, -50px, 310px) rotate(0deg) scale(1.2)";
-                    knife.style.transition = "transform 3s cubic-bezier(0.1, 0.9, 0.2, 1)";
-                    
-                }, 1350); 
+                    // 카메라 줌인을 위해 나이프를 타겟 공 안으로 종속(Reparent)시킴
+                    // (그래야 줌인할 때 칼이 공에 붙은 채로 같이 커집니다)
+                    knife.style.transform = `translate3d(0, -60px, 40px) scale(1.2)`; 
+                    targetWrapper.appendChild(knife); 
 
-                // T+3.8s : 연출 종료 및 결과창 반영
+                    // 꽂힌 채로 유저 눈앞으로 확대
+                    targetWrapper.animate([
+                        { transform: `translate3d(0, 10vh, -400px)` },
+                        { transform: `translate3d(0, 10vh, -450px) rotateX(-15deg)`, offset: 0.1 }, // 타격의 반동으로 뒤로 살짝 밀림
+                        { transform: `translate3d(0, 0, 300px) rotateX(0deg)` } // 유저 눈앞으로 줌인
+                    ], {
+                        duration: 1200,
+                        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        fill: 'forwards'
+                    });
+
+                }, 1000); // 정확히 1초 뒤 임팩트 터짐
+
+                // 마무리
                 setTimeout(() => {
                     overlay.style.opacity = '0';
                     document.body.classList.remove('shake-active');
@@ -434,13 +439,11 @@
                     setTimeout(() => {
                         overlay.style.display = 'none';
                         addToResultList(ball);
-                        
                         isDrawing = false;
                         drawBtn.disabled = false;
                         captureBtn.disabled = false;
                         drawBtn.innerText = "번호 뽑기";
                     }, 300); 
-
                 }, 3800); 
             });
         }
@@ -454,7 +457,6 @@
             resultList.appendChild(resultEl);
         }
 
-        // 📸 스크린샷 캡처
         function takeScreenshot() {
             const captureArea = document.getElementById('machine-screen');
             const captureBtn = document.getElementById('capture-btn');

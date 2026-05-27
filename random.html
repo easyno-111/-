@@ -22,17 +22,20 @@
             background-color: var(--bg-color); color: #333; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             min-height: 100vh; overflow: hidden; padding: 20px; 
+            perspective: 1000px; /* 3D 원근감을 위한 부모 설정 */
         }
 
-        @keyframes screenShake {
+        /* 💥 강렬한 화면 흔들림 */
+        @keyframes violentShake {
             0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-5px, -5px) rotate(-1deg); }
-            20% { transform: translate(5px, 5px) rotate(1deg); }
-            30% { transform: translate(-5px, 5px) rotate(-1deg); }
-            40% { transform: translate(5px, -5px) rotate(1deg); }
-            50% { transform: translate(-2px, -2px) rotate(0deg); }
+            10% { transform: translate(-10px, -15px) rotate(-2deg); }
+            20% { transform: translate(15px, 10px) rotate(3deg); }
+            30% { transform: translate(-15px, 15px) rotate(-3deg); }
+            40% { transform: translate(10px, -10px) rotate(2deg); }
+            50% { transform: translate(-5px, -5px) rotate(-1deg); }
+            60% { transform: translate(5px, 5px) rotate(1deg); }
         }
-        .shake-active { animation: screenShake 0.4s ease-in-out; }
+        .shake-active { animation: violentShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
 
         .container {
             background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
@@ -41,13 +44,11 @@
 
         h1 { font-size: 24px; color: var(--accent); margin-bottom: 20px; }
 
-        /* 설정 화면 */
         #setup-screen { display: flex; flex-direction: column; gap: 15px; }
         .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
         input[type="number"] { width: 80px; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center; outline: none; transition: 0.3s; }
         input[type="number"]:focus { border-color: var(--accent); }
         
-        /* 버튼 스타일 */
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
         .btn { 
             background: var(--accent); color: white; border: none; padding: 12px 24px; 
@@ -57,20 +58,16 @@
         .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 107, 192, 0.4); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
-        
         .btn-screenshot { background: #94a3b8; box-shadow: 0 4px 10px rgba(148, 163, 184, 0.3); }
         .btn-screenshot:hover { box-shadow: 0 6px 15px rgba(148, 163, 184, 0.4); }
 
-        /* 뽑기 기계 화면 */
         #machine-screen { display: none; flex-direction: column; align-items: center; }
         .machine-wrapper { position: relative; margin: 20px 0 40px 0; width: 300px; height: 380px; }
         
         .cylinder {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 70px; height: 90px;
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 70px; height: 90px;
             background: linear-gradient(to right, rgba(255,255,255,0.6), rgba(255,255,255,0.9), rgba(255,255,255,0.6));
-            border: 3px solid var(--machine-border); border-bottom: none; border-radius: 10px 10px 0 0;
-            z-index: 15; backdrop-filter: blur(5px);
+            border: 3px solid var(--machine-border); border-bottom: none; border-radius: 10px 10px 0 0; z-index: 15; backdrop-filter: blur(5px);
         }
         .sphere {
             position: absolute; bottom: 0; left: 0; width: 300px; height: 300px;
@@ -80,8 +77,7 @@
             backdrop-filter: blur(2px); z-index: 10;
         }
         .balls-container {
-            position: absolute; bottom: 0; left: 0; width: 300px; height: 300px; border-radius: 50%;
-            z-index: 8; overflow: visible; 
+            position: absolute; bottom: 0; left: 0; width: 300px; height: 300px; border-radius: 50%; z-index: 8; overflow: visible; 
         }
         .ball {
             position: absolute; width: 40px; height: 40px; border-radius: 50%;
@@ -91,44 +87,6 @@
             transform-origin: center; will-change: transform;
         }
 
-        /* 💥 중앙 연출 (사각 배경 렌더링 버그 수정) */
-        #presentation-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 100;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .big-ball-container { perspective: 1500px; width: 220px; height: 220px; border-radius: 50%; }
-        .big-ball-inner {
-            width: 100%; height: 100%; position: relative;
-            transform-style: preserve-3d;
-            border-radius: 50%; /* 3D 회전 시 테두리 삐져나옴 방지 */
-        }
-        .big-ball-front, .big-ball-back {
-            position: absolute; width: 100%; height: 100%; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-size: 90px; font-weight: 800; color: #333;
-            /* 사파리/크롬 3D 렌더링 버그 방어 코드 */
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden; 
-            -webkit-transform: translate3d(0,0,0);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
-            background-color: transparent; 
-        }
-        .big-ball-back {
-            background: radial-gradient(circle at 30% 30%, #fff, #94a3b8);
-            color: white; transform: rotateY(180deg);
-        }
-        .big-ball-front { transform: rotateY(0deg); }
-
-        @keyframes impactPulse {
-            0% { transform: rotateY(0deg) scale(1); }
-            30% { transform: rotateY(0deg) scale(1.4); box-shadow: 0 0 100px 40px rgba(255, 255, 255, 0.9); }
-            100% { transform: rotateY(0deg) scale(1); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
-        }
-        .impact-active { animation: impactPulse 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important; }
-
-        /* 결과 표시 영역 */
         .result-area { margin-top: 30px; width: 100%; padding-top: 20px; border-top: 1px solid #e2e8f0; }
         .result-title { font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: bold; }
         .result-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 50px; }
@@ -138,10 +96,71 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.15); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        @keyframes popIn {
-            0% { transform: scale(0); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* =========================================
+           🎬 다이나믹 액션 연출 (오버레이)
+           ========================================= */
+        #action-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 100;
+            overflow: hidden; opacity: 0; transition: opacity 0.3s ease-out;
+            perspective: 1200px;
         }
+
+        /* 섬광 효과 */
+        .flash-bang {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; pointer-events: none; z-index: 200;
+        }
+        .flash-active { animation: flashAnim 0.8s ease-out forwards; }
+        @keyframes flashAnim {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* 혼돈의 페이크 공들 (원근감 비행) */
+        .fake-ball {
+            position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-family: 'Poppins', sans-serif; font-weight: 800; color: rgba(0,0,0,0.3);
+            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
+            transform: translate3d(0, 100vh, -1000px); opacity: 0; will-change: transform, opacity;
+        }
+
+        /* 🎯 진짜 타겟 공 */
+        .target-wrapper {
+            position: absolute; z-index: 50; width: 150px; height: 150px;
+            transform: translate3d(0, 100vh, -500px); /* 화면 아래쪽 멀리서 대기 */
+            transition: transform 3s cubic-bezier(0.1, 0.9, 0.2, 1);
+        }
+        .target-ball {
+            width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-family: 'Poppins', sans-serif; font-size: 60px; font-weight: 800; color: #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset -15px -15px 30px rgba(0,0,0,0.1);
+        }
+
+        /* 🗡️ 던져지는 나이프 */
+        .flying-knife {
+            position: absolute; z-index: 60; width: 60px; height: 180px;
+            /* 정면에서 날아가는 느낌: 크고 가까운 곳(translateZ)에서 시작 */
+            transform: translate3d(0, 50vh, 1000px) rotate(15deg) scale(3); 
+            opacity: 0; will-change: transform;
+        }
+        .flying-knife svg { width: 100%; height: 100%; filter: drop-shadow(0 15px 10px rgba(0,0,0,0.6)); }
+
+        /* 상태 애니메이션 클래스 */
+        .target-hang { transform: translate3d(0, 0, 0) !important; }
+        .target-zoom { transform: translate3d(0, 0, 300px) !important; }
+        
+        .knife-strike {
+            animation: strikeAnim 0.15s cubic-bezier(0.5, 0, 1, 1) forwards;
+        }
+        @keyframes strikeAnim {
+            0% { transform: translate3d(0, 50vh, 800px) rotate(5deg) scale(3); opacity: 1; }
+            100% { transform: translate3d(0, -50px, 10px) rotate(0deg) scale(1.2); opacity: 1; }
+        }
+
     </style>
 </head>
 <body>
@@ -176,14 +195,8 @@
         </div>
     </div>
 
-    <div id="presentation-overlay">
-        <div class="big-ball-container">
-            <div class="big-ball-inner" id="big-ball-inner">
-                <div class="big-ball-back">?</div>
-                <div class="big-ball-front" id="big-ball-front"></div>
-            </div>
+    <div id="action-overlay">
         </div>
-    </div>
 
     <script>
         const sphereRadius = 150; 
@@ -316,58 +329,120 @@
             setTimeout(() => {
                 balls = balls.filter(b => b !== selectedBall);
                 selectedBall.el.remove(); 
-                showPresentation(selectedBall, drawBtn, captureBtn);
+                executeDynamicAction(selectedBall, drawBtn, captureBtn);
             }, 800); 
         }
 
-        function showPresentation(ball, drawBtn, captureBtn) {
-            const overlay = document.getElementById('presentation-overlay');
-            const inner = document.getElementById('big-ball-inner');
-            const front = document.getElementById('big-ball-front');
-            
-            front.innerText = ball.num;
-            front.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
-            
-            inner.style.transition = 'none';
-            inner.style.transform = 'rotateY(180deg) scale(0.5)';
-            inner.classList.remove('impact-active');
-            document.body.classList.remove('shake-active');
+        function executeDynamicAction(ball, drawBtn, captureBtn) {
+            const overlay = document.getElementById('action-overlay');
+            overlay.innerHTML = ''; // 이전 연출 요소 초기화
             
             overlay.style.display = 'flex';
             
+            // 1. 혼돈의 페이크 공들 생성 (배경)
+            for(let i = 0; i < 25; i++) {
+                let fake = document.createElement('div');
+                fake.className = 'fake-ball';
+                let size = Math.random() * 80 + 40; // 40~120px
+                fake.style.width = size + 'px';
+                fake.style.height = size + 'px';
+                fake.style.fontSize = (size * 0.4) + 'px';
+                fake.innerText = Math.floor(Math.random() * 30) + 1;
+                fake.style.background = `radial-gradient(circle at 30% 30%, #fff, ${pastelColors[Math.floor(Math.random()*pastelColors.length)]})`;
+                
+                overlay.appendChild(fake);
+                
+                // 개별 랜덤 비행 애니메이션 (JS로 위치 이동)
+                let startX = (Math.random() - 0.5) * window.innerWidth;
+                let endX = startX + (Math.random() - 0.5) * 500;
+                let delay = Math.random() * 600;
+                
+                fake.animate([
+                    { transform: `translate3d(${startX}px, 100vh, -1000px)`, opacity: 0 },
+                    { opacity: 1, offset: 0.1 },
+                    { transform: `translate3d(${(startX+endX)/2}px, -30vh, 200px)`, opacity: 1, offset: 0.5 },
+                    { transform: `translate3d(${endX}px, 100vh, 800px)`, opacity: 0 }
+                ], {
+                    duration: 1500 + Math.random() * 1000,
+                    delay: delay,
+                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+                    fill: 'forwards'
+                });
+            }
+
+            // 2. 🎯 타겟 공 (진짜) 생성
+            let targetWrapper = document.createElement('div');
+            targetWrapper.className = 'target-wrapper';
+            
+            let targetBall = document.createElement('div');
+            targetBall.className = 'target-ball';
+            targetBall.innerText = ball.num;
+            targetBall.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
+            
+            targetWrapper.appendChild(targetBall);
+            overlay.appendChild(targetWrapper);
+
+            // 3. 🗡️ 던질 나이프 (SVG 형태의 멋진 단검)
+            let knife = document.createElement('div');
+            knife.className = 'flying-knife';
+            knife.innerHTML = `
+                <svg viewBox="0 0 100 200">
+                    <path d="M50,10 L65,80 L50,120 L35,80 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                    <path d="M50,10 L65,80 L50,120 Z" fill="#f8fafc"/> <rect x="25" y="120" width="50" height="15" rx="5" fill="#334155"/>
+                    <rect x="40" y="135" width="20" height="50" rx="3" fill="#8b5a2b"/>
+                    <circle cx="50" cy="190" r="10" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
+                </svg>
+            `;
+            
+            // 4. 섬광 이펙트용 div
+            let flash = document.createElement('div');
+            flash.className = 'flash-bang';
+            overlay.appendChild(flash);
+            overlay.appendChild(knife);
+
+            // 🎬 애니메이션 타임라인 시작
             requestAnimationFrame(() => {
                 overlay.style.opacity = '1';
-                setTimeout(() => {
-                    inner.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                    inner.style.transform = 'rotateY(180deg) scale(1)'; 
-                }, 50);
-            });
 
-            setTimeout(() => {
-                inner.style.transition = 'transform 1.2s cubic-bezier(0.68, -0.2, 0.265, 1.55)';
-                inner.style.transform = 'rotateY(0deg) scale(1)'; 
-                
+                // T+0.5s : 타겟 공이 중앙으로 솟아올라 정지 (매트릭스 연출)
                 setTimeout(() => {
-                    inner.classList.add('impact-active');
-                    document.body.classList.add('shake-active');
-                }, 800); 
+                    targetWrapper.classList.add('target-hang');
+                }, 500);
 
-            }, 1000); 
-
-            setTimeout(() => {
-                overlay.style.opacity = '0';
-                
+                // T+1.2s : 정면에서 칼 투척!
                 setTimeout(() => {
-                    overlay.style.display = 'none';
-                    addToResultList(ball);
+                    knife.classList.add('knife-strike');
+                }, 1200);
+
+                // T+1.35s : 💥 칼이 꽂히는 순간 (화면 흔들림 + 섬광 + 줌인)
+                setTimeout(() => {
+                    document.body.classList.add('shake-active'); // 화면 쾅!
+                    flash.classList.add('flash-active');         // 섬광 팍!
                     
-                    isDrawing = false;
-                    drawBtn.disabled = false;
-                    captureBtn.disabled = false;
-                    drawBtn.innerText = "번호 뽑기";
-                }, 300); 
+                    // 칼이 꽂힌 채로 카메라 앞(유저)으로 서서히 확대
+                    targetWrapper.classList.add('target-zoom');
+                    knife.style.transform = "translate3d(0, -50px, 310px) rotate(0deg) scale(1.2)";
+                    knife.style.transition = "transform 3s cubic-bezier(0.1, 0.9, 0.2, 1)";
+                    
+                }, 1350); 
 
-            }, 3800); 
+                // T+3.8s : 연출 종료 및 결과창 반영
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    document.body.classList.remove('shake-active');
+                    
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        addToResultList(ball);
+                        
+                        isDrawing = false;
+                        drawBtn.disabled = false;
+                        captureBtn.disabled = false;
+                        drawBtn.innerText = "번호 뽑기";
+                    }, 300); 
+
+                }, 3800); 
+            });
         }
 
         function addToResultList(ball) {
@@ -379,24 +454,21 @@
             resultList.appendChild(resultEl);
         }
 
-        // 📸 스크린샷 기능 (html2canvas 활용)
+        // 📸 스크린샷 캡처
         function takeScreenshot() {
             const captureArea = document.getElementById('machine-screen');
             const captureBtn = document.getElementById('capture-btn');
             
-            // 캡처 중 버튼 텍스트 변경
             const originalText = captureBtn.innerHTML;
             captureBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 캡처 중...';
             captureBtn.disabled = true;
 
-            // 배경색이 투명하게 찍히지 않도록 하얀색 배경 강제 지정
             html2canvas(captureArea, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
                 link.download = '당첨결과_스크린샷.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
-                // 원상복구
                 captureBtn.innerHTML = originalText;
                 captureBtn.disabled = false;
             });

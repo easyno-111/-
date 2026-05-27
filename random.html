@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>랜덤 뽑기 기계</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f7f9fc;
+            --accent: #5c6bc0;
+            --machine-glass: rgba(255, 255, 255, 0.4);
+            --machine-border: rgba(255, 255, 255, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
+        body { background-color: var(--bg-color); color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden; padding: 20px; }
+
+        .container {
+            background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; max-width: 500px; width: 100%; position: relative; z-index: 10;
+        }
+
+        h1 { font-size: 24px; color: var(--accent); margin-bottom: 20px; }
+
+        /* 설정 화면 */
+        #setup-screen { display: flex; flex-direction: column; gap: 15px; }
+        .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        input[type="number"] { width: 80px; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center; outline: none; transition: 0.3s; }
+        input[type="number"]:focus { border-color: var(--accent); }
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 12px; cursor: pointer; font-weight: bold; transition: all 0.2s; box-shadow: 0 4px 10px rgba(92, 107, 192, 0.3); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 107, 192, 0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
+
+        /* 뽑기 기계 화면 */
+        #machine-screen { display: none; flex-direction: column; align-items: center; }
+        
+        .machine-wrapper { position: relative; margin: 20px 0 40px 0; width: 300px; height: 380px; }
+        
+        /* 위쪽 원기둥 (추출구) */
+        .cylinder {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 70px; height: 90px;
+            background: linear-gradient(to right, rgba(255,255,255,0.6), rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+            border: 3px solid var(--machine-border);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            z-index: 5;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 유리구 (본체) */
+        .sphere {
+            position: absolute; bottom: 0; left: 0;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.2) 70%);
+            border: 5px solid var(--machine-border);
+            border-radius: 50%;
+            box-shadow: inset -10px -10px 30px rgba(0,0,0,0.05), 0 15px 25px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
+            z-index: 10;
+            overflow: visible; /* 공이 원기둥으로 올라가야 하므로 visible */
+        }
+
+        /* 기계 내부 공 컨테이너 (넘침 방지용 계산은 JS에서 처리) */
+        .balls-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            z-index: 2; /* 유리구보다는 뒤, 원기둥보단 앞 */
+        }
+
+        /* 개별 공 디자인 */
+        .ball {
+            position: absolute;
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 16px; color: #333;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.15), 0 3px 5px rgba(0,0,0,0.2);
+            /* 기준점을 공의 중앙으로 설정 */
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        /* 결과 표시 영역 */
+        .result-area { margin-top: 20px; width: 100%; }
+        .result-title { font-size: 14px; color: #64748b; margin-bottom: 10px; font-weight: bold; }
+        .result-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 50px; }
+        .result-ball {
+            width: 45px; height: 45px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 18px; color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="setup-screen">
+        <h1>🎲 랜덤 뽑기 범위 설정</h1>
+        <p style="color: #64748b; font-size: 14px; margin-bottom: 10px;">시작 번호와 끝 번호를 입력하세요.</p>
+        <div class="input-group">
+            <input type="number" id="min-num" value="1" min="1">
+            <span>~</span>
+            <input type="number" id="max-num" value="30" min="2">
+        </div>
+        <button class="btn" style="margin-top: 20px;" onclick="startMachine()">다음 단계로 <i class="fa-solid fa-arrow-right"></i></button>
+    </div>
+
+    <div class="container" id="machine-screen">
+        <h1 style="margin-bottom: 5px;">🚀 추첨기 가동</h1>
+        <div class="machine-wrapper">
+            <div class="cylinder"></div>
+            <div class="sphere" id="sphere-bg"></div>
+            <div class="balls-container" id="balls-container"></div>
+        </div>
+        <button class="btn" id="draw-btn" onclick="drawBall()">번호 뽑기</button>
+        
+        <div class="result-area">
+            <div class="result-title">당첨 번호</div>
+            <div class="result-list" id="result-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const sphereRadius = 150; // 유리구 반지름
+        const ballRadius = 20;    // 공 반지름
+        const boundary = sphereRadius - ballRadius - 5; // 벽 두께 고려한 최대 이동 반경
+        const center = { x: sphereRadius, y: sphereRadius };
+        
+        let balls = [];
+        let animationFrameId;
+        let isDrawing = false; // 현재 공을 뽑고 있는 중인지 (중복 클릭 방지)
+
+        // 파스텔 톤 색상 배열
+        const pastelColors = ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e2cbff', '#f3e8ff', '#c7ceea'];
+
+        function startMachine() {
+            const min = parseInt(document.getElementById('min-num').value);
+            const max = parseInt(document.getElementById('max-num').value);
+
+            if (min >= max || isNaN(min) || isNaN(max)) {
+                alert("올바른 숫자 범위를 입력해주세요!");
+                return;
+            }
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('machine-screen').style.display = 'flex';
+
+            initBalls(min, max);
+            animate();
+        }
+
+        function initBalls(min, max) {
+            const container = document.getElementById('balls-container');
+            container.innerHTML = '';
+            balls = [];
+
+            for (let i = min; i <= max; i++) {
+                const ballEl = document.createElement('div');
+                ballEl.className = 'ball';
+                ballEl.innerText = i;
+                
+                const color = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+                ballEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${color})`;
+                
+                container.appendChild(ballEl);
+
+                // 초기 위치 (구의 중심 부근)
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * (boundary - 20);
+                
+                balls.push({
+                    el: ballEl,
+                    num: i,
+                    color: color,
+                    x: center.x + Math.cos(angle) * r,
+                    y: center.y + Math.sin(angle) * r,
+                    // 무작위 초기 속도
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    state: 'bouncing' // bouncing, drawing
+                });
+            }
+        }
+
+        function animate() {
+            balls.forEach(ball => {
+                if (ball.state === 'bouncing') {
+                    // 바람 부는 효과 (랜덤한 미세 진동 및 위로 향하는 부력)
+                    ball.vx += (Math.random() - 0.5) * 1.5;
+                    ball.vy += (Math.random() - 0.5) * 1.5 - 0.1; // 약간 위로 뜨는 힘
+
+                    // 속도 제한
+                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                    if (speed > 12) {
+                        ball.vx = (ball.vx / speed) * 12;
+                        ball.vy = (ball.vy / speed) * 12;
+                    }
+
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+
+                    // 원형 테두리 충돌 체크 (중심으로부터의 거리)
+                    const dx = ball.x - center.x;
+                    const dy = ball.y - center.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > boundary) {
+                        // 튕겨나오기 (반사 벡터 계산)
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        
+                        const dot = ball.vx * nx + ball.vy * ny;
+                        
+                        ball.vx = ball.vx - 2 * dot * nx;
+                        ball.vy = ball.vy - 2 * dot * ny;
+                        
+                        // 벽 밖으로 나가지 않게 위치 보정
+                        ball.x = center.x + nx * boundary;
+                        ball.y = center.y + ny * boundary;
+                        
+                        // 충돌 시 에너지 손실/게인 약간 부여
+                        ball.vx *= 0.95; 
+                        ball.vy *= 0.95;
+                    }
+
+                    // CSS 위치 적용 (top/left 기준이 아닌 transform 사용으로 성능 최적화)
+                    // ball.x, ball.y는 중심점 좌표이므로 -ballRadius를 해줌
+                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
+                } 
+                else if (ball.state === 'drawing') {
+                    // 뽑히는 중: 원기둥 안쪽(상단)으로 스르륵 이동
+                    const targetX = center.x;
+                    const targetY = -40; // 유리구 밖 원기둥 위치
+                    
+                    // Lerp(선형 보간)로 부드럽게 이동
+                    ball.x += (targetX - ball.x) * 0.1;
+                    ball.y += (targetY - ball.y) * 0.1;
+                    
+                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
+                }
+            });
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function drawBall() {
+            const bouncingBalls = balls.filter(b => b.state === 'bouncing');
+            
+            if (bouncingBalls.length === 0) {
+                alert("모든 번호를 뽑았습니다!");
+                return;
+            }
+            if (isDrawing) return;
+
+            isDrawing = true;
+            const btn = document.getElementById('draw-btn');
+            btn.disabled = true;
+            btn.innerText = "추출 중...";
+
+            // 튀고 있는 공 중에서 랜덤으로 하나 선택
+            const randomIndex = Math.floor(Math.random() * bouncingBalls.length);
+            const selectedBall = bouncingBalls[randomIndex];
+            
+            // 상태 변경하여 통통 튀는 걸 멈추고 원기둥으로 빨려들어가게 함
+            selectedBall.state = 'drawing';
+            selectedBall.el.style.zIndex = "20"; // 다른 공들 위로 오게
+
+            // 원기둥으로 이동하는 애니메이션 시간 대기 후 결과창에 추가
+            setTimeout(() => {
+                // 기계 안의 배열에서 완전히 제거
+                balls = balls.filter(b => b !== selectedBall);
+                selectedBall.el.remove(); // 유리구 화면에서는 삭제
+
+                // 결과창에 동그라미 추가
+                const resultList = document.getElementById('result-list');
+                const resultEl = document.createElement('div');
+                resultEl.className = 'result-ball';
+                resultEl.innerText = selectedBall.num;
+                resultEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${selectedBall.color})`;
+                resultList.appendChild(resultEl);
+
+                // 상태 초기화
+                isDrawing = false;
+                btn.disabled = false;
+                btn.innerText = "번호 뽑기";
+            }, 1000); // 1초 동안 빨려들어가는 연출 대기
+        }
+    </script>
+</body>
+</html>

@@ -195,4 +195,86 @@
 
                     const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
                     if (speed > 12) {
-                        ball.vx =
+                        ball.vx = (ball.vx / speed) * 12;
+                        ball.vy = (ball.vy / speed) * 12;
+                    }
+
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+
+                    const dx = ball.x - center.x;
+                    const dy = ball.y - center.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    // 벽에 부딪혔을 때 반사
+                    if (dist > boundary) {
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        
+                        const dot = ball.vx * nx + ball.vy * ny;
+                        
+                        ball.vx = ball.vx - 2 * dot * nx;
+                        ball.vy = ball.vy - 2 * dot * ny;
+                        
+                        ball.x = center.x + nx * boundary;
+                        ball.y = center.y + ny * boundary;
+                        
+                        ball.vx *= 0.95; 
+                        ball.vy *= 0.95;
+                    }
+
+                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
+                } 
+                else if (ball.state === 'drawing') {
+                    const targetX = center.x;
+                    const targetY = -40; 
+                    
+                    ball.x += (targetX - ball.x) * 0.15;
+                    ball.y += (targetY - ball.y) * 0.15;
+                    
+                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
+                }
+            });
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function drawBall() {
+            const bouncingBalls = balls.filter(b => b.state === 'bouncing');
+            
+            if (bouncingBalls.length === 0) {
+                alert("모든 번호를 뽑았습니다!");
+                return;
+            }
+            if (isDrawing) return;
+
+            isDrawing = true;
+            const btn = document.getElementById('draw-btn');
+            btn.disabled = true;
+            btn.innerText = "추출 중...";
+
+            const randomIndex = Math.floor(Math.random() * bouncingBalls.length);
+            const selectedBall = bouncingBalls[randomIndex];
+            
+            selectedBall.state = 'drawing';
+            selectedBall.el.style.zIndex = "25"; // 실린더 앞쪽으로 확실히 빼주기
+
+            setTimeout(() => {
+                balls = balls.filter(b => b !== selectedBall);
+                selectedBall.el.remove(); 
+
+                const resultList = document.getElementById('result-list');
+                const resultEl = document.createElement('div');
+                resultEl.className = 'result-ball';
+                resultEl.innerText = selectedBall.num;
+                resultEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${selectedBall.color})`;
+                resultList.appendChild(resultEl);
+
+                isDrawing = false;
+                btn.disabled = false;
+                btn.innerText = "번호 뽑기";
+            }, 800); 
+        }
+    </script>
+</body>
+</html>

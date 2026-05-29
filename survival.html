@@ -168,6 +168,11 @@
                     <div class="skill-desc">조건: 🌀 수호 방패 (Lv.5) + 🪃 부메랑 (Lv.5)</div>
                     <div class="skill-desc" style="margin-top: 5px;">5개의 톱날이 적을 만나면 거대해진 채 3초간 갈아버립니다.</div>
                 </div>
+                <div class="skill-card combo-type" style="width: 450px; cursor: default; border-color: #ff3300; box-shadow: 0 0 20px #ff3300; background: rgba(50,10,10,0.9);">
+                    <div class="skill-title" style="color:#ff5533;"><span>☄️🪃 홍염의 부메랑</span> <span style="color:#ffcc00;">궁극기</span></div>
+                    <div class="skill-desc">조건: ☄️ 화염탄 (Lv.5) + 🪃 부메랑 (Lv.5)</div>
+                    <div class="skill-desc" style="margin-top: 5px;">20방향으로 거대한 불부메랑을 쏘아보냅니다. 적에게 닿으면 속도를 늦추고 사정없이 갈아버립니다.</div>
+                </div>
             </div>
             <button class="btn" style="background: linear-gradient(135deg, #444, #222); margin-top: 20px; flex-shrink: 0;" onclick="closeRecipe()">돌아가기 (게임 재개)</button>
         </div>
@@ -260,6 +265,8 @@ const passiveSkills = {
 };
 
 const activeSkills = {
+    fire_boomerang:    { level: 0, max: 1, icon: "☄️🪃", name: "홍염의 부메랑", desc: "거대 불부메랑 20개를 사방으로 흩뿌립니다. 적에게 닿으면 들러붙어 갈아버립니다." },
+    fire:              { level: 0, max: 5, icon: "☄️", name: "화염탄", desc: "사방으로 화염탄을 발사합니다. (레벨에 따라 발사 개수 5~20개로 증가)" },
     excalibur:         { level: 0, max: 1, icon: "⚔️", name: "성검 엑스칼리버", desc: "가장 강력한 적을 심판하며 받는 피해량을 35% 증가시킵니다." },
     phantom_sword:     { level: 0, max: 5, icon: "🗡️", name: "환영검무", desc: "가장 가까운 적에게 날아가 화려하게 난도질합니다." },
     holy_aura:         { level: 0, max: 5, icon: "✨", name: "성스러운 오라", desc: "일렁이는 오라를 생성해 내부 적의 받는 피해를 증가시킵니다." },
@@ -298,7 +305,7 @@ const player = {
 };
 
 let chakramsState = [];
-let activeTimers = { phantom_sword: 0, holy_aura: 0, excalibur: 0, punch: 0, tornado: 0, missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, tornado_punch: 0 };
+let activeTimers = { fire: 0, fire_boomerang: 0, phantom_sword: 0, holy_aura: 0, excalibur: 0, punch: 0, tornado: 0, missile: 0, shield: 0, bomb: 0, shuriken: 0, dove: 0, laser: 0, poison: 0, lightning: 0, nova: 0, boomerang: 0, laser_bomb: 0, thunder_shuriken: 0, absolute_zero: 0, valkyrie_swarm: 0, tornado_punch: 0 };
 let dovesState = []; 
 
 function resize() { 
@@ -1191,6 +1198,41 @@ if (activeSkills.lightning.level > 0 && activeSkills.thunder_shuriken.level === 
             activeTimers.laser = 120 * player.cdr;
         }
     }
+// 🚀 화염탄 (5방향 ~ 20방향)
+    if (activeSkills.fire.level > 0 && activeSkills.fire_boomerang.level === 0) {
+        activeTimers.fire--;
+        if (activeTimers.fire <= 0) {
+            let counts = [0, 5, 9, 13, 16, 20]; // 레벨 1~5에 따른 발사 개수
+            let count = counts[activeSkills.fire.level];
+            let dmg = 40 + activeSkills.fire.level * 20 + player.bonusDmg;
+            for(let i=0; i<count; i++) {
+                let ang = (Math.PI * 2 / count) * i;
+                projectiles.push({ 
+                    x: pX, y: pY, dx: Math.cos(ang) * 8, dy: Math.sin(ang) * 8, 
+                    life: 60, type: 'fire', dmg: dmg, isDead: false 
+                });
+            }
+            activeTimers.fire = 150 * player.cdr;
+        }
+    }
+
+    // 🚀 홍염의 부메랑 (20방향 거대 불부메랑 콤보)
+    if (activeSkills.fire_boomerang.level > 0) {
+        activeTimers.fire_boomerang--;
+        if (activeTimers.fire_boomerang <= 0) {
+            let count = 20; // 콤보는 무조건 20방향!
+            let dmg = 120 + player.bonusDmg * 3;
+            for(let i=0; i<count; i++) {
+                let ang = (Math.PI * 2 / count) * i;
+                projectiles.push({ 
+                    x: pX, y: pY, dx: Math.cos(ang) * 10, dy: Math.sin(ang) * 10, 
+                    angle: ang, life: 180, type: 'fire_boomerang_proj', dmg: dmg, 
+                    state: 'fly', target: null, isDead: false 
+                });
+            }
+            activeTimers.fire_boomerang = 240 * player.cdr;
+        }
+    }
 }
 
 function handleGemsAndDrops() {
@@ -1275,7 +1317,9 @@ function renderLevelUpOptions(isChest, choiceCount) {
     let canComboWhirlwind = (activeSkills.shield.level === activeSkills.shield.max && activeSkills.boomerang.level === activeSkills.boomerang.max && activeSkills.whirlwind_chakram.level === 0);
     let canComboTornadoPunch = (activeSkills.tornado.level === activeSkills.tornado.max && activeSkills.punch.level === activeSkills.punch.max && activeSkills.tornado_punch.level === 0);
     let canComboExcalibur = (activeSkills.phantom_sword.level === activeSkills.phantom_sword.max && activeSkills.holy_aura.level === activeSkills.holy_aura.max && activeSkills.excalibur.level === 0);
+    let canComboFireBoomerang = (activeSkills.fire.level === activeSkills.fire.max && activeSkills.boomerang.level === activeSkills.boomerang.max && activeSkills.fire_boomerang.level === 0);
     
+    if (canComboFireBoomerang) pool.push({ key: 'fire_boomerang', obj: activeSkills.fire_boomerang, isAct: true, isCombo: true }); 
     if (canComboLaser) pool.push({ key: 'laser_bomb', obj: activeSkills.laser_bomb, isAct: true, isCombo: true });
     if (canComboThunder) pool.push({ key: 'thunder_shuriken', obj: activeSkills.thunder_shuriken, isAct: true, isCombo: true });
     if (canComboAbsolute) pool.push({ key: 'absolute_zero', obj: activeSkills.absolute_zero, isAct: true, isCombo: true });
@@ -1286,8 +1330,12 @@ function renderLevelUpOptions(isChest, choiceCount) {
 
     for(let k in passiveSkills) { if(passiveSkills[k].level < passiveSkills[k].max) pool.push({ key: k, obj: passiveSkills[k], isAct: false }); }
     for(let k in activeSkills) {
-        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch' || k === 'excalibur') continue; 
+        if(k === 'laser_bomb' || k === 'thunder_shuriken' || k === 'absolute_zero' || k === 'valkyrie_swarm' || k === 'whirlwind_chakram' || k === 'tornado_punch' || k === 'excalibur' || k === 'fire_boomerang') continue; 
         let sk = activeSkills[k];
+        
+        // 🚀 화염탄은 50% 확률로만 풀에 추가되어 다른 스킬보다 등장 확률이 절반으로 낮아짐
+        if (k === 'fire' && Math.random() < 0.5) continue;
+
         if(sk.level === 0) { if(myActiveSlots.length < 8) pool.push({ key: k, obj: sk, isAct: true }); } 
         else if(sk.level < sk.max) { pool.push({ key: k, obj: sk, isAct: true }); }
     }
@@ -1322,6 +1370,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
             else if(c.key === 'whirlwind_chakram') { card.style.borderColor = '#55ff55'; card.style.boxShadow = '0 0 20px #55ff55'; }
             else if(c.key === 'tornado_punch') { card.style.borderColor = '#ffaa55'; card.style.boxShadow = '0 0 20px #ffaa55'; }
             else if(c.key === 'excalibur') { card.style.borderColor = '#ffee55'; card.style.boxShadow = '0 0 20px #ffee55'; }
+            else if(c.key === 'fire_boomerang') { card.style.borderColor = '#ff3300'; card.style.boxShadow = '0 0 20px #ff3300'; }
             
             card.innerHTML = `<div class="skill-title"><span>${c.obj.icon} ${c.obj.name}</span> <span>${lvlStr}</span></div><div class="skill-desc">${c.obj.desc}</div>`;
             card.onclick = () => {
@@ -1334,6 +1383,7 @@ function renderLevelUpOptions(isChest, choiceCount) {
                     else if (c.key === 'whirlwind_chakram') myActiveSlots = myActiveSlots.filter(slot => slot !== 'shield' && slot !== 'boomerang');
                     else if (c.key === 'tornado_punch') myActiveSlots = myActiveSlots.filter(slot => slot !== 'tornado' && slot !== 'punch');
                     else if (c.key === 'excalibur') myActiveSlots = myActiveSlots.filter(slot => slot !== 'phantom_sword');
+                    else if (c.key === 'fire_boomerang') myActiveSlots = myActiveSlots.filter(slot => slot !== 'fire' && slot !== 'boomerang');
                     myActiveSlots.push(c.key);
                 } else {
                     c.obj.level++;
@@ -1369,6 +1419,7 @@ function updateActiveUI() {
             else if(key === 'whirlwind_chakram') { slot.style.borderColor = '#55ff55'; slot.style.boxShadow = '0 0 10px #55ff55'; }
             else if(key === 'tornado_punch') { slot.style.borderColor = '#ffaa55'; slot.style.boxShadow = '0 0 10px #ffaa55'; }
             else if(key === 'excalibur') { slot.style.borderColor = '#ffee55'; slot.style.boxShadow = '0 0 10px #ffee55'; }
+            else if(key === 'fire_boomerang') { slot.style.borderColor = '#ff3300'; slot.style.boxShadow = '0 0 10px #ff3300'; }
             else { slot.style.borderColor = '#aa44ff'; slot.style.boxShadow = 'none'; }
             
         } else { slot.innerHTML = ''; slot.style.borderColor = '#555'; slot.style.boxShadow = '0 0 5px #000'; }
@@ -1823,7 +1874,7 @@ else if (p.type === 'thunder_shuriken') {
                 }
             }
         }
-        else if (p.type === 'whirlwind_chakram_proj') {
+else if (p.type === 'whirlwind_chakram_proj') {
             if (p.state === 'fly') {
                 p.x += p.dx; p.y += p.dy;
                 for(let j=0; j<enemies.length; j++) {
@@ -1848,7 +1899,39 @@ else if (p.type === 'thunder_shuriken') {
                 }
             }
         }
-        else if (p.type === 'dove_shot') {
+        else if (p.type === 'fire_boomerang_proj') {
+            if (p.state === 'fly') {
+                p.x += p.dx; p.y += p.dy;
+                // 날아가는 중에 적과 충돌 검사
+                for(let j=0; j<enemies.length; j++) {
+                    let e = enemies[j]; if(e.isDead) continue;
+                    if(getDistSq(p.x, p.y, e.x, e.y) < (35 + e.size)**2) {
+                        p.state = 'grind'; // 갈아버리기 모드 돌입
+                        p.target = e;
+                        p.life = 120; // 지속 시간 리셋
+                        break;
+                    }
+                }
+            } else if (p.state === 'grind') {
+                if (p.target && !p.target.isDead) {
+                    p.x = p.target.x; p.y = p.target.y; // 적에게 딱 붙음!
+                    if (frameCount % 6 === 0) {
+                        damageEnemy(p.target, p.dmg * 0.4, 0, 0, 0); // 사정없이 갉아버림
+                        effects.push({ x: p.x, y: p.y, type: 'hit', life: 5, maxLife: 5, radius: 45 });
+                    }
+                } else {
+                    // 적이 죽으면 원래 궤적대로 느리게 관통 비행
+                    p.x += p.dx * 0.15; p.y += p.dy * 0.15;
+                    if (frameCount % 6 === 0) {
+                        for(let j=0; j<enemies.length; j++) {
+                            let e = enemies[j]; if(e.isDead) continue;
+                            if(getDistSq(p.x, p.y, e.x, e.y) < 12000) damageEnemy(e, p.dmg * 0.4, 0, 0, 0);
+                        }
+                    }
+                }
+            }
+        }
+       else if (p.type === 'dove_shot') {
             p.x += p.dx; p.y += p.dy;
             if (frameCount % 2 === 0) {
                 particles.push({ x: p.x, y: p.y, dx: -p.dx*0.2 + (Math.random()-0.5)*2, dy: -p.dy*0.2 + (Math.random()-0.5)*2, life: 20, maxLife: 20, color: '#aaaaff' });
@@ -1885,7 +1968,7 @@ else if (p.type === 'thunder_shuriken') {
             }
         }
 
-        if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling' && p.type !== 'phantom_sword' && p.type !== 'phantom_slash' && p.type !== 'excalibur_drop' && p.type !== 'excalibur_slash' && p.type !== 'whirlwind_chakram_proj' && p.type !== 'dove_shot') { p.x += p.dx || 0; p.y += p.dy || 0; }
+if(p.type !== 'shuriken' && p.type !== 'laser_bomb' && p.type !== 'thunder_shuriken' && p.type !== 'blackhole' && p.type !== 'punch_proj' && p.type !== 'punch_combo' && p.type !== 'tornado_punch_proj' && p.type !== 'tornado' && p.type !== 'cleaver' && p.type !== 'gatling' && p.type !== 'phantom_sword' && p.type !== 'phantom_slash' && p.type !== 'excalibur_drop' && p.type !== 'excalibur_slash' && p.type !== 'whirlwind_chakram_proj' && p.type !== 'dove_shot' && p.type !== 'fire_boomerang_proj') { p.x += p.dx || 0; p.y += p.dy || 0; }
         p.life--; 
         
         if (p.life <= 0) { 
@@ -1911,7 +1994,7 @@ else if (p.type === 'thunder_shuriken') {
             if(p.type==='boomerang' || p.type==='thunder_shuriken') hitRadSq=1600; 
             if(p.type==='gatling') hitRadSq=625;    
             
-            if(p.type==='cleaver' || p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado' || p.type==='phantom_sword' || p.type==='phantom_slash' || p.type==='excalibur_drop' || p.type==='excalibur_slash' || p.type==='whirlwind_chakram_proj') hitRadSq=0; 
+if(p.type==='cleaver' || p.type==='laser_bomb' || p.type==='blackhole' || p.type==='punch_proj' || p.type==='punch_combo' || p.type==='tornado_punch_proj' || p.type==='tornado' || p.type==='phantom_sword' || p.type==='phantom_slash' || p.type==='excalibur_drop' || p.type==='excalibur_slash' || p.type==='whirlwind_chakram_proj' || p.type==='fire_boomerang_proj') hitRadSq=0;
 
             if(hitRadSq > 0 && getDistSq(p.x, p.y, e.x, e.y) < hitRadSq) {
                 let isBossTarget = (e.isBoss || e.isMidBoss);
@@ -2283,6 +2366,20 @@ for (let i=0; i<drops.length; i++) {
             continue;
         } // 👈 🚀 여기에 닫는 중괄호 '}' 를 추가해 주세요!
 
+else if (pr.type === 'fire') {
+            ctx.fillStyle = '#ff4400';
+            ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffcc00';
+            ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill();
+        }
+        else if (pr.type === 'fire_boomerang_proj') {
+            ctx.save(); ctx.translate(px, py); ctx.rotate(frameCount * 0.6); // 빠르게 회전
+            ctx.strokeStyle = '#ff3300'; ctx.lineWidth = 12;
+            ctx.beginPath(); ctx.arc(0,0, 35, 0, Math.PI); ctx.stroke();
+            ctx.strokeStyle = '#ffcc00'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(0,0, 35, 0, Math.PI); ctx.stroke();
+            ctx.restore();
+        }
         if (pr.type === 'phantom_sword') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx) + Math.PI/4);
             ctx.fillStyle = '#aaaaff'; ctx.fillRect(-2, -15, 4, 30); 

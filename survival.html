@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 버전 업데이트: v1.1.4 -->
-    <title>Space Survivor v1.1.4</title>
+    <!-- 버전 업데이트: v1.1.6 -->
+    <title>Space Survivor v1.1.6</title>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #050a15; color: #fff; overflow: hidden; font-family: 'Pretendard', sans-serif; touch-action: none; user-select: none; }
         #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -81,8 +81,8 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="uiLayer">
-        <!-- 버전 v1.1.4 -->
-        <div class="version">v1.1.4</div>
+        <!-- 버전 v1.1.6 -->
+        <div class="version">v1.1.6</div>
         <button id="recipeBtn" onclick="openRecipe()">📜 조합식</button>
         
         <div id="devTrigger" onclick="checkDevMode()"></div>
@@ -338,7 +338,92 @@ function recalcStats() {
     if(player.type === 'melee') player.range = base.range + (passiveSkills.weaponMastery.level * 15);
     else player.range = base.range;
 }
+// 🚀 동서남북 수호자 소환 함수
+function spawnGuardians() {
+    const D = 4000; // 중심으로부터의 거리 (꽤 멀리 배치)
+    const guardians = [
+        { dir: 'N', x: 0, y: -D, color: '#ff5555', hp: 1000000 }, // 북쪽
+        { dir: 'E', x: D, y: 0, color: '#55ff55', hp: 1000000 },  // 동쪽
+        { dir: 'W', x: -D, y: 0, color: '#5555ff', hp: 1000000 }, // 서쪽
+        { dir: 'S', x: 0, y: D, color: '#ff00ff', hp: 3000000 }   // 남쪽 (체력 3배)
+    ];
+    
+    guardians.forEach(g => {
+        enemies.push({
+            x: g.x, y: g.y, size: 120, speed: 0, maxHp: g.hp, hp: g.hp, 
+            isBoss: false, isMidBoss: false, isWave: false, isDead: false,
+            isGuardian: true, guardianDir: g.dir, guardianColor: g.color,
+            slowStacks: 0, slowTimer: 0, freezeTimer: 0, freezeImmuneTimer: 0, waitTimer: 0,
+            dmgMult: 1.0, excaliburDebuff: false,
+            poisonDebuffTimer: 0, poisonHpPct: 0, poisonBaseDmg: 0,
+            attackCooldown: 0 // 수호자 전용 공격 쿨타임
+        });
+    });
+}
 
+// 🚀 수호자 처치 시 보상 로직
+function handleGuardianDeath(dir) {
+    if (dir === 'N') {
+        passiveSkills.weaponMastery.level = Math.min(10, passiveSkills.weaponMastery.level + 3);
+        alert("⚔️ 북쪽 수호자 처치!\n무기 마스터리가 3 증가했습니다.");
+        recalcStats();
+    } else if (dir === 'E') {
+        passiveSkills.moveSpeed.level = Math.min(8, passiveSkills.moveSpeed.level + 3);
+        alert("👟 동쪽 수호자 처치!\n이동속도가 3 증가했습니다.");
+        recalcStats();
+    } else if (dir === 'W') {
+        if (myActiveSlots.length > 0) {
+            let randomKey = myActiveSlots[Math.floor(Math.random() * myActiveSlots.length)];
+            let sk = activeSkills[randomKey];
+            sk.level = Math.min(sk.max, sk.level + 3);
+            alert(`✨ 서쪽 수호자 처치!\n보유 중인 [${sk.name}] 레벨이 3 증가했습니다.`);
+            recalcStats(); updateActiveUI();
+        } else {
+            alert("✨ 서쪽 수호자 처치!\n하지만 보유한 액티브 스킬이 없어 스킬이 오르지 않았습니다.");
+        }
+    } else if (dir === 'S') {
+        triggerSouthReward();
+    }
+}
+
+// 🚀 남쪽 수호자 선택 보상 UI 호출
+function triggerSouthReward() {
+    gameState = 'levelup'; handleInputEnd();
+    ui.lvlUpTitle.innerText = "🏆 남쪽 최강 수호자의 보상 (스킬 선택 +5)";
+    ui.lvlUpTitle.style.color = "#ff00ff";
+    ui.skillContainer.innerHTML = '';
+    
+    let pool = [];
+    myActiveSlots.forEach(k => {
+        if (activeSkills[k].level < activeSkills[k].max) pool.push({key: k, obj: activeSkills[k], isAct: true});
+    });
+    for(let k in passiveSkills) {
+        if (passiveSkills[k].level > 0 && passiveSkills[k].level < passiveSkills[k].max) {
+            pool.push({key: k, obj: passiveSkills[k], isAct: false});
+        }
+    }
+
+    if (pool.length === 0) {
+        let card = document.createElement('div');
+        card.className = 'skill-card';
+        card.innerHTML = `<div class="skill-title"><span>❤️ 최대 체력 회복</span></div><div class="skill-desc">모든 스킬이 만렙입니다! 체력을 회복합니다.</div>`;
+        card.onclick = () => { player.hp = player.maxHp; updateUI('hp'); resumeGame(); };
+        ui.skillContainer.appendChild(card);
+    } else {
+        pool.forEach(c => {
+            let card = document.createElement('div');
+            card.className = `skill-card ${c.isAct ? 'active-type' : ''}`;
+            card.style.borderColor = "#ff00ff"; card.style.boxShadow = "0 0 20px #ff00ff";
+            card.innerHTML = `<div class="skill-title"><span>${c.obj.icon} ${c.obj.name}</span><span style="color:#ffcc00;">[ +5 UP ]</span></div><div class="skill-desc">이 스킬의 레벨을 단번에 5 올립니다!</div>`;
+            card.onclick = () => {
+                c.obj.level = Math.min(c.obj.max, c.obj.level + 5);
+                recalcStats(); updateActiveUI(); resumeGame();
+            };
+            ui.skillContainer.appendChild(card);
+        });
+    }
+    ui.levelUp.classList.remove('hidden');
+}
 function startGame(type) {
     difficultyMult = parseFloat(document.querySelector('input[name="difficulty"]:checked').value);
     player.type = type; player.hp = player.maxHp = 100; player.level = 1; player.xp = 0; player.maxXp = 30; player.attackCount = 0;
@@ -352,7 +437,7 @@ function startGame(type) {
     particles = []; 
     isTimePaused = false; waveInProgress = false; waveTimeLeft = 0; chestOpening = false;
     midBossKills = 0; post5MinBossBuff = false; waveKilled = 0;
-    
+    spawnGuardians();
     gameState = 'playing'; ui.menu.classList.add('hidden'); updateUI(); requestAnimationFrame(gameLoop);
 }
 
@@ -396,7 +481,7 @@ function spawnEnemy(isWave=false, isBoss=false, isMidBoss=false) {
     let baseSpeed = (isBoss ? 1.9 : (isMidBoss ? 2.4 : (1 + Math.random()*0.5 + (gameSeconds/300)))) * 1.05;
     
     let maxHp;
-    if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult * 1.15; 
+    if (isBoss) maxHp = (16000 + gameSeconds * 160) * difficultyMult * 1.15 *1.5; 
     else if (isMidBoss) maxHp = (4000 + gameSeconds * 50) * difficultyMult * 1.1;
     else if (isWave) maxHp = 80 * healthMultiplier; 
     else maxHp = 60 * healthMultiplier; 
@@ -418,7 +503,7 @@ function checkPlayerHit() {
         if(enemies[i].isDead) continue;
         const hitRad = player.size + enemies[i].size;
         if (getDistSq(worldX, worldY, enemies[i].x, enemies[i].y) < hitRad*hitRad) {
-            player.hp -= (enemies[i].isBoss || enemies[i].isMidBoss) ? 50 : 25; 
+            player.hp -= enemies[i].isGuardian ? 150 : ((enemies[i].isBoss || enemies[i].isMidBoss) ? 50 : 25);
             updateUI('hp'); hitCooldown = 15;
             effects.push({ x: worldX, y: worldY, type: 'blood', life: 15, maxLife: 15, radius: 25 });
             if (player.hp <= 0) { gameState = 'gameover'; ui.result.innerText = `버틴 시간: ${formatTime(gameSeconds)}`; ui.gameOver.classList.remove('hidden'); }
@@ -488,17 +573,17 @@ async function startChestAnimation() {
     let rarity = currentChestRarity; 
     let choices = 3;
     
-    // 🚀 v1.1.2: 레벨업 보상 상자인 경우 (황금 상자 5% 확률 설정)
+// 🚀 v1.1.2: 레벨업 보상 상자인 경우 (황금 상자 3% 확률로 변경)
     if (rarity === 'levelup_chest') {
         if (r < 0.02) { rarity = 'legendary'; } 
-        else if (r < 0.07) { rarity = 'gold'; } // 5% 확률로 골드
+        else if (r < 0.05) { rarity = 'gold'; } // 기존 0.07(5%) -> 0.05(3%)로 수정
         else if (r < 0.25) { rarity = 'rare'; }
         else { rarity = 'normal'; }
     }
-    // 🚀 v1.1.2: 맵에서 주운 일반 상자인 경우
+    // 🚀 v1.1.2: 맵에서 주운 일반 상자인 경우 (마찬가지로 3%로 하향)
     else if (!rarity) {
         if (r < 0.05) { rarity = 'legendary'; }
-        else if (r < 0.15) { rarity = 'gold'; } // 10% 확률로 골드
+        else if (r < 0.08) { rarity = 'gold'; } // 기존 0.15(10%) -> 0.08(3%)로 수정
         else if (r < 0.35) { rarity = 'rare'; }
         else { rarity = 'normal'; }
     }
@@ -566,18 +651,21 @@ function openChest() { startChestAnimation(); }
 function damageEnemy(e, dmg, knockback, dirX, dirY) {
     dmg *= (e.dmgMult || 1.0);
     e.hp -= dmg;
-    if (e.hp <= 0) {
+if (e.hp <= 0) {
         e.isDead = true;
         spawnDeathParticles(e.x, e.y, e.isBoss, e.isMidBoss, e.isWave);
 
-        if(e.isBoss) { 
-            bossMode = false; isTimePaused = false; updateUI('boss'); 
-            drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false }); 
-            
-            if (gameSeconds >= 300 && gameSeconds < 900) {
-                post5MinBossBuff = true;
-            }
-
+        // 🚀 추가할 부분: 수호자 처치 시 로직
+        if (e.isGuardian) {
+            drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false });
+            handleGuardianDeath(e.guardianDir);
+        }
+        // 원래 있던 보스 체크 로직 (수호자가 아닐 때만 작동하도록 변경)
+        else if (e.isBoss && !e.isGuardian) { 
+            bossMode = false; isTimePaused = false;
+            updateUI('boss'); 
+            drops.push({ x: e.x, y: e.y, type: 'chest', rarity: 'legendary', isDead: false });
+            if (gameSeconds >= 300 && gameSeconds < 900) { post5MinBossBuff = true; }
             if (gameSeconds >= 900) {
                 gameState = 'gameclear';
                 ui.clearResult.innerText = `클리어 시간: ${formatTime(gameSeconds)}`;
@@ -743,14 +831,16 @@ function handleActiveSkills() {
         }
     }
 
-    if (activeSkills.excalibur.level > 0) {
+if (activeSkills.excalibur.level > 0) {
         activeTimers.excalibur--;
         if (activeTimers.excalibur <= 0) {
+            // 🚀 수정: 너무 멀리 있는 수호자에게 떨어지지 않도록 1000픽셀 반경 내의 적만 타겟팅
+            let validTargets = enemies.filter(e => !e.isDead && getDistSq(pX, pY, e.x, e.y) < 1000000); 
             let target = null;
-            if (enemies.length > 0) {
-                target = enemies.reduce((prev, curr) => (prev.hp > curr.hp) ? prev : curr, enemies[0]);
+            if (validTargets.length > 0) {
+                target = validTargets.reduce((prev, curr) => (prev.hp > curr.hp) ? prev : curr, validTargets[0]);
             }
-            if (target && !target.isDead) {
+            if (target) {
                 projectiles.push({
                     x: target.x, y: target.y - 600, target: target, targetY: target.y,
                     dx: 0, dy: 45, 
@@ -1465,10 +1555,32 @@ function update() {
         let p = particles[i]; p.x += p.dx; p.y += p.dy; p.dx *= 0.9; p.dy *= 0.9; p.life--;
     }
 
-    for (let i = 0; i < projectiles.length; i++) {
+for (let i = 0; i < projectiles.length; i++) {
         let p = projectiles[i]; if (p.isDead) continue;
         
-        if (p.type === 'phantom_sword') {
+        // 🚀 추가: 수호자의 발사체가 플레이어를 때리는 로직
+        if (p.isEnemyProj) {
+            p.x += p.dx; p.y += p.dy; p.life--;
+            
+            // 플레이어와 충돌했는지 검사
+            if (getDistSq(p.x, p.y, worldX, worldY) < (15 + player.size) * (15 + player.size)) {
+                player.hp -= p.dmg;
+                updateUI('hp');
+                effects.push({ x: worldX, y: worldY, type: 'blood', life: 15, maxLife: 15, radius: 25 });
+                if (player.hp <= 0) { 
+                    gameState = 'gameover'; 
+                    ui.result.innerText = `버틴 시간: ${formatTime(gameSeconds)}`; 
+                    ui.gameOver.classList.remove('hidden'); 
+                }
+                p.isDead = true;
+                effects.push({ x: p.x, y: p.y, type: 'explosion', life: 15, maxLife: 15, radius: 30 });
+            }
+            if (p.life <= 0) p.isDead = true;
+            continue; // 아래에 있는 플레이어 발사체 로직은 건너뜀
+        }
+        
+        // 아래부터는 기존 코드 (if (p.type === 'phantom_sword') { ...)       
+       if (p.type === 'phantom_sword') {
             if (p.target && !p.target.isDead) {
                 let dx = p.target.x - p.x; let dy = p.target.y - p.y;
                 let dist = Math.sqrt(dx*dx+dy*dy);
@@ -1895,7 +2007,25 @@ else if (p.type === 'thunder_shuriken') {
 
         const dx = worldX - e.x; const dy = worldY - e.y; const distSq = dx*dx + dy*dy;
         let currentSpeed = e.speed;
-        
+// 🚀 추가할 부분: 수호자 로직 (제자리 고정 및 다가가면 포격)
+        if (e.isGuardian) {
+            currentSpeed = 0; // 항상 제자리
+            if (distSq < 640000) { // 800픽셀 내로 접근하면
+                if (e.attackCooldown <= 0) {
+                    let ang = Math.atan2(dy, dx);
+                    projectiles.push({
+                        x: e.x, y: e.y, dx: Math.cos(ang)*12, dy: Math.sin(ang)*12,
+                        // 🚀 수정: 적 전용 발사체(guardian_bomb)로 변경하고 데미지 무지막지하게 설정 (남쪽 150, 그외 90)
+                        life: 150, type: 'guardian_bomb', dmg: (e.guardianDir === 'S') ? 150 : 90, isEnemyProj: true, isDead: false
+                    });
+                    // 남쪽은 0.5초(30프레임), 나머지는 1초(60프레임)마다 맹공격
+                    e.attackCooldown = (e.guardianDir === 'S') ? 30 : 60; 
+                } else {
+                    e.attackCooldown--;
+                }
+            }
+        }
+        // ----------------------------------------
         if (e.freezeImmuneTimer > 0) e.freezeImmuneTimer--;
 
         if (e.freezeTimer > 0) { 
@@ -2032,8 +2162,30 @@ for (let i=0; i<drops.length; i++) {
             ctx.strokeStyle = '#ffee55'; ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(ex, ey, e.size + 8 + Math.sin(frameCount*0.2)*4, 0, Math.PI*2); ctx.stroke();
         }
-
-        if (e.isBoss || e.isMidBoss) {
+// 🚀 수호자 외형 렌더링
+        if (e.isGuardian) {
+            ctx.save();
+            ctx.translate(ex, ey);
+            
+            let pulse = 1 + Math.sin(frameCount * 0.1) * 0.1;
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = e.guardianColor;
+            ctx.beginPath(); ctx.arc(0, 0, e.size * 1.5 * pulse, 0, Math.PI*2); ctx.fill();
+            
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.fill();
+            
+            ctx.lineWidth = 10; ctx.strokeStyle = e.guardianColor;
+            ctx.beginPath(); ctx.arc(0, 0, e.size, 0, Math.PI*2); ctx.stroke();
+            
+            ctx.fillStyle = e.guardianColor;
+            ctx.font = 'bold 100px Pretendard, sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(e.guardianDir, 0, 5);
+            ctx.restore();
+        } 
+        else if (e.isBoss || e.isMidBoss) { // 기존 코드는 else if로 연결
             ctx.save(); ctx.translate(ex, ey); ctx.rotate(frameCount * 0.05);
             let pulse = 1 + Math.sin(frameCount * 0.1)*0.1;
             ctx.globalAlpha = 0.3;
@@ -2122,7 +2274,15 @@ for (let i=0; i<drops.length; i++) {
 
     for (let i=0; i<projectiles.length; i++) {
         let pr = projectiles[i]; let px = pr.x-worldX+cx; let py = pr.y-worldY+cy;
-        
+// 🚀 추가: 수호자의 치명적인 폭탄 렌더링
+        if (pr.type === 'guardian_bomb') {
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath(); ctx.arc(px, py, 15, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath(); ctx.arc(px, py, 8 + Math.sin(frameCount*0.5)*4, 0, Math.PI*2); ctx.fill();
+            continue;
+        } // 👈 🚀 여기에 닫는 중괄호 '}' 를 추가해 주세요!
+
         if (pr.type === 'phantom_sword') {
             ctx.save(); ctx.translate(px, py); ctx.rotate(Math.atan2(pr.dy, pr.dx) + Math.PI/4);
             ctx.fillStyle = '#aaaaff'; ctx.fillRect(-2, -15, 4, 30); 
@@ -2385,22 +2545,26 @@ for (let i=0; i<drops.length; i++) {
         const mapCX = mapX + mapSize / 2;
         const mapCY = mapY + mapSize / 2;
 
-        // 1. 보스 및 중간보스 렌더링 (빨간/보라 점)
+// 1. 보스, 중간보스, 수호자 렌더링
         for (let i = 0; i < enemies.length; i++) {
             let e = enemies[i];
-            if (!e.isDead && (e.isBoss || e.isMidBoss)) {
+            // 조건문에 e.isGuardian 추가
+            if (!e.isDead && (e.isBoss || e.isMidBoss || e.isGuardian)) {
                 let dx = e.x - worldX;
                 let dy = e.y - worldY;
-                
                 let mapDx = (dx / viewRadius) * (mapSize / 2);
                 let mapDy = (dy / viewRadius) * (mapSize / 2);
                 
-                // 미니맵 밖으로 나가면 테두리에 고정
                 mapDx = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDx));
                 mapDy = Math.max(-mapSize/2 + 5, Math.min(mapSize/2 - 5, mapDy));
 
-                ctx.fillStyle = e.isBoss ? '#ff0000' : '#ff55ff'; 
-                ctx.beginPath(); ctx.arc(mapCX + mapDx, mapCY + mapDy, 5, 0, Math.PI * 2); ctx.fill();
+                // 색상 결정 로직 수정
+                ctx.fillStyle = e.isGuardian ? e.guardianColor : (e.isBoss ? '#ff0000' : '#ff55ff'); 
+                
+                ctx.beginPath();
+                // 수호자는 점을 좀 더 크게 (7), 보스는 작게 (5)
+                ctx.arc(mapCX + mapDx, mapCY + mapDy, e.isGuardian ? 7 : 5, 0, Math.PI * 2); 
+                ctx.fill();
             }
         }
 

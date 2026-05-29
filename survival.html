@@ -2064,9 +2064,10 @@ if(p.type==='cleaver' || p.type==='laser_bomb' || p.type==='blackhole' || p.type
         if(ef.type === 'poison' && ef.life % 30 === 0) { 
             for(let j=0; j<enemies.length; j++) {
                 let e = enemies[j];
-                if(!e.isDead && getDistSq(ef.x, ef.y, e.x, e.y) < ef.radius*ef.radius) {
+                    if(!e.isDead && getDistSq(ef.x, ef.y, e.x, e.y) < ef.radius*ef.radius) {
                     e.poisonDebuffTimer = 300; 
-                    e.poisonHpPct = (e.isBoss || e.isMidBoss) ? (ef.hpPct * 0.05) : ef.hpPct;
+                    // 🚀 수정: 수호자(isGuardian)에게도 최대 체력 비례 데미지 대폭 감소 (0.05배)
+                    e.poisonHpPct = (e.isBoss || e.isMidBoss || e.isGuardian) ? (ef.hpPct * 0.05) : ef.hpPct;
                     e.poisonBaseDmg = ef.dmg;
                 }
             }

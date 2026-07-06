@@ -145,6 +145,12 @@
                 <div class="card-title">마이너스 경매</div>
                 <div class="card-desc">음수 개념을 완벽하게 이해할 수 있는 치열한 경매 게임!</div>
             </div>
+
+            <div class="card special-card" onclick="openApp('https://easyno-111.github.io/stock/')">
+                <div class="card-icon">📊</div>
+                <div class="card-title">주식게임(관리자)</div>
+                <div class="card-desc">정보 카드와 주가 변동을 활용하는 주식 투자 게임 관리자 화면을 엽니다.</div>
+            </div>
         </div>
     </div>
 
@@ -192,8 +198,10 @@
 
     <script>
         function openApp(url) {
-            if(window.parent && window.parent.loadApp) {
+            if(window.parent && window.parent !== window && window.parent.loadApp) {
                 window.parent.loadApp(url);
+            } else {
+                window.location.href = url;
             }
         }
     </script>

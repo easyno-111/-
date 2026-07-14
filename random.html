@@ -1,480 +1,1261 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>랜덤 뽑기 기계</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <style>
-        :root {
-            --bg-color: #f7f9fc;
-            --accent: #5c6bc0;
-            --machine-glass: rgba(255, 255, 255, 0.4);
-            --machine-border: rgba(255, 255, 255, 0.8);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>핀볼 랜덤 레이스</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Poppins:wght@700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:#0d1b2e;
+      --panel2:#10233d;
+      --line:rgba(255,255,255,.12);
+      --text:#f8fafc;
+      --muted:#a9b8ca;
+      --cyan:#36d7ff;
+      --purple:#8b5cf6;
+      --pink:#ff4fa3;
+      --gold:#ffd84d;
+      --green:#31e6a1;
+      --danger:#ff5c72;
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; }
-        
-        body { 
-            background-color: var(--bg-color); color: #333; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            min-height: 100vh; overflow: hidden; padding: 20px; 
-            perspective: 1000px;
-        }
+    *{box-sizing:border-box;margin:0;padding:0;font-family:"Noto Sans KR",sans-serif}
+    html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text)}
+    body{
+      min-height:100vh;
+      padding:18px;
+      background:
+        radial-gradient(circle at 15% 5%,rgba(54,215,255,.16),transparent 28%),
+        radial-gradient(circle at 88% 90%,rgba(139,92,246,.18),transparent 35%),
+        linear-gradient(145deg,#050b14,#0b1730 58%,#070d18);
+      overflow-x:hidden;
+    }
 
-        /* 💥 강렬한 화면 흔들림 */
-        @keyframes violentShake {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            10% { transform: translate(-10px, -15px) rotate(-2deg); }
-            20% { transform: translate(15px, 10px) rotate(3deg); }
-            30% { transform: translate(-15px, 15px) rotate(-3deg); }
-            40% { transform: translate(10px, -10px) rotate(2deg); }
-            50% { transform: translate(-5px, -5px) rotate(-1deg); }
-            60% { transform: translate(5px, 5px) rotate(1deg); }
-        }
-        .shake-active { animation: violentShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both; }
+    button,input{font:inherit}
+    button{border:0;cursor:pointer}
 
-        .container {
-            background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-            text-align: center; max-width: 550px; width: 100%; position: relative; z-index: 10;
-        }
+    .app{
+      width:min(1180px,100%);
+      margin:0 auto;
+      border:1px solid var(--line);
+      border-radius:28px;
+      background:linear-gradient(180deg,rgba(15,31,53,.95),rgba(8,18,32,.97));
+      box-shadow:0 30px 90px rgba(0,0,0,.45);
+      overflow:hidden;
+      position:relative;
+    }
 
-        h1 { font-size: 24px; color: var(--accent); margin-bottom: 20px; }
+    .app::before{
+      content:"";
+      position:absolute;
+      left:0;right:0;top:0;height:5px;
+      background:linear-gradient(90deg,var(--cyan),var(--purple),var(--pink),var(--gold));
+      z-index:5;
+    }
 
-        #setup-screen { display: flex; flex-direction: column; gap: 15px; }
-        .input-group { display: flex; align-items: center; justify-content: center; gap: 10px; }
-        input[type="number"] { width: 80px; padding: 10px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 16px; text-align: center; outline: none; transition: 0.3s; }
-        input[type="number"]:focus { border-color: var(--accent); }
-        
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-        .btn { 
-            background: var(--accent); color: white; border: none; padding: 12px 24px; 
-            font-size: 16px; border-radius: 12px; cursor: pointer; font-weight: bold; 
-            transition: all 0.2s; box-shadow: 0 4px 10px rgba(92, 107, 192, 0.3); 
-        }
-        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(92, 107, 192, 0.4); }
-        .btn:active { transform: translateY(0); }
-        .btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
-        .btn-screenshot { background: #94a3b8; box-shadow: 0 4px 10px rgba(148, 163, 184, 0.3); }
-        .btn-screenshot:hover { box-shadow: 0 6px 15px rgba(148, 163, 184, 0.4); }
+    .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      padding:24px 26px 18px;
+      border-bottom:1px solid var(--line);
+      background:rgba(255,255,255,.025);
+    }
 
-        #machine-screen { display: none; flex-direction: column; align-items: center; }
-        .machine-wrapper { position: relative; margin: 20px 0 40px 0; width: 300px; height: 380px; }
-        
-        .cylinder {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 70px; height: 90px;
-            background: linear-gradient(to right, rgba(255,255,255,0.6), rgba(255,255,255,0.9), rgba(255,255,255,0.6));
-            border: 3px solid var(--machine-border); border-bottom: none; border-radius: 10px 10px 0 0; z-index: 15; backdrop-filter: blur(5px);
-        }
-        .sphere {
-            position: absolute; bottom: 0; left: 0; width: 300px; height: 300px;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(255,255,255,0.2) 70%);
-            border: 5px solid var(--machine-border); border-radius: 50%;
-            box-shadow: inset -10px -10px 30px rgba(0,0,0,0.05), 0 15px 25px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px); z-index: 10;
-        }
-        .balls-container {
-            position: absolute; bottom: 0; left: 0; width: 300px; height: 300px; border-radius: 50%; z-index: 8; overflow: visible; 
-        }
-        .ball {
-            position: absolute; width: 40px; height: 40px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 16px; color: #333;
-            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.15), 0 3px 5px rgba(0,0,0,0.2);
-            transform-origin: center; will-change: transform;
-        }
+    .brand-kicker{
+      color:var(--cyan);
+      font-size:11px;
+      font-weight:900;
+      letter-spacing:2.6px;
+      margin-bottom:5px;
+    }
 
-        .result-area { margin-top: 30px; width: 100%; padding-top: 20px; border-top: 1px solid #e2e8f0; }
-        .result-title { font-size: 14px; color: #64748b; margin-bottom: 15px; font-weight: bold; }
-        .result-list { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 50px; }
-        .result-ball {
-            width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 18px; color: #333;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15); animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
+    h1{
+      font-size:clamp(25px,4vw,39px);
+      font-weight:900;
+      letter-spacing:-1.5px;
+      line-height:1.1;
+    }
 
-        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .top-desc{
+      color:var(--muted);
+      font-size:13px;
+      margin-top:8px;
+    }
 
-        /* =========================================
-           🎬 다이나믹 액션 연출 (오버레이)
-           ========================================= */
-        #action-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center; z-index: 100;
-            overflow: hidden; opacity: 0; transition: opacity 0.3s ease-out;
-            perspective: 1200px;
-        }
+    .sound-chip{
+      padding:10px 14px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      color:#d7e3f3;
+      background:rgba(255,255,255,.05);
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
 
-        /* 섬광 효과 */
-        .flash-bang {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; opacity: 0; pointer-events: none; z-index: 200;
-        }
-        .flash-active { animation: flashAnim 0.8s ease-out forwards; }
-        @keyframes flashAnim {
-            0% { opacity: 1; }
-            100% { opacity: 0; }
-        }
+    .content{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 310px;
+      gap:18px;
+      padding:18px;
+    }
 
-        /* 혼돈의 페이크 공들 (번호 없음) */
-        .fake-ball {
-            position: absolute; border-radius: 50%;
-            box-shadow: inset -10px -10px 20px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
-            will-change: transform, opacity;
-            left: 50%; top: 50%; /* 중앙 기준 */
-        }
+    .game-panel{
+      min-width:0;
+      border:1px solid var(--line);
+      border-radius:22px;
+      overflow:hidden;
+      background:#050b13;
+      box-shadow:inset 0 0 60px rgba(54,215,255,.04);
+      position:relative;
+    }
 
-        /* 🎯 진짜 타겟 공 */
-        .target-wrapper {
-            position: absolute; z-index: 50; width: 150px; height: 150px;
-            left: 50%; top: 50%; margin-left: -75px; margin-top: -75px;
-            transform-style: preserve-3d;
-        }
-        .target-ball {
-            width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-family: 'Poppins', sans-serif; font-size: 60px; font-weight: 800; color: #fff;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), inset -15px -15px 30px rgba(0,0,0,0.2);
-            transition: background 0.1s, color 0.1s;
-        }
+    .game-header{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      border-bottom:1px solid var(--line);
+      background:rgba(255,255,255,.035);
+    }
 
-        /* 🗡️ 던져지는 나이프 */
-        .flying-knife {
-            position: absolute; z-index: 60; width: 60px; height: 180px;
-            left: 50%; top: 50%; margin-left: -30px; margin-top: -90px;
-            will-change: transform;
-        }
-        .flying-knife svg { width: 100%; height: 100%; filter: drop-shadow(0 15px 10px rgba(0,0,0,0.6)); }
+    .stat{
+      padding:12px 8px;
+      text-align:center;
+      border-right:1px solid var(--line);
+    }
+    .stat:last-child{border-right:0}
+    .stat-label{display:block;color:var(--muted);font-size:10px;font-weight:900;margin-bottom:3px}
+    .stat-value{font-family:"Poppins",sans-serif;font-size:18px;font-weight:900;color:white}
+    .stat-value.live{color:var(--green)}
+    .stat-value.gold{color:var(--gold)}
 
-    </style>
+    .canvas-wrap{
+      position:relative;
+      width:100%;
+      height:min(72vh,720px);
+      min-height:560px;
+      overflow:hidden;
+      background:
+        linear-gradient(rgba(54,215,255,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(54,215,255,.035) 1px,transparent 1px),
+        radial-gradient(circle at 50% 20%,rgba(54,215,255,.08),transparent 38%),
+        linear-gradient(180deg,#071321,#04090f);
+      background-size:30px 30px,30px 30px,auto,auto;
+    }
+
+    canvas{width:100%;height:100%;display:block}
+
+    .stage-label{
+      position:absolute;
+      top:14px;left:50%;transform:translateX(-50%);
+      z-index:3;
+      padding:8px 15px;
+      border-radius:999px;
+      background:rgba(3,10,18,.72);
+      border:1px solid rgba(54,215,255,.26);
+      color:#d9f8ff;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.3px;
+      backdrop-filter:blur(8px);
+      pointer-events:none;
+    }
+
+    .countdown-overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      place-items:center;
+      z-index:12;
+      background:radial-gradient(circle,rgba(18,34,60,.18),rgba(1,5,10,.72));
+      backdrop-filter:blur(2px);
+    }
+    .countdown-overlay.show{display:grid}
+    .countdown-number{
+      font-family:"Poppins",sans-serif;
+      font-size:clamp(110px,20vw,210px);
+      font-weight:900;
+      color:white;
+      text-shadow:0 0 25px var(--cyan),0 0 70px var(--purple);
+      animation:countPop .72s cubic-bezier(.16,1,.3,1);
+    }
+    @keyframes countPop{
+      0%{opacity:0;transform:scale(.15) rotate(-14deg)}
+      55%{opacity:1;transform:scale(1.18) rotate(3deg)}
+      100%{opacity:1;transform:scale(1)}
+    }
+
+    .winner-overlay{
+      position:absolute;
+      inset:0;
+      display:none;
+      place-items:center;
+      z-index:20;
+      background:
+        radial-gradient(circle at center,rgba(255,216,77,.2),rgba(3,7,15,.84) 58%),
+        rgba(2,6,14,.35);
+      backdrop-filter:blur(4px);
+    }
+    .winner-overlay.show{display:grid}
+    .winner-card{text-align:center;position:relative;z-index:2}
+    .winner-small{
+      color:#fff4b6;
+      font-weight:900;
+      letter-spacing:5px;
+      font-size:12px;
+      margin-bottom:14px;
+    }
+    .winner-ball{
+      width:clamp(180px,28vw,245px);
+      aspect-ratio:1;
+      margin:0 auto 18px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      font-family:"Poppins",sans-serif;
+      font-size:clamp(72px,12vw,112px);
+      font-weight:900;
+      color:#402c00;
+      background:
+        radial-gradient(circle at 31% 23%,#fffbe0 0 12%,#ffe778 31%,#ffbd29 67%,#d77900);
+      box-shadow:
+        0 0 0 12px rgba(255,255,255,.08),
+        0 0 55px #ffd84d,
+        0 0 120px rgba(255,122,36,.75),
+        inset -18px -26px 30px rgba(105,55,0,.28);
+      animation:winnerBoom 1s cubic-bezier(.12,1.35,.25,1);
+      position:relative;
+    }
+    .winner-ball::after{
+      content:"";
+      position:absolute;
+      inset:12px;
+      border-radius:50%;
+      border:3px solid rgba(255,255,255,.7);
+    }
+    @keyframes winnerBoom{
+      0%{opacity:0;transform:scale(.08) rotate(-480deg)}
+      55%{opacity:1;transform:scale(1.3) rotate(12deg)}
+      75%{transform:scale(.9) rotate(-5deg)}
+      100%{transform:scale(1) rotate(0)}
+    }
+    .winner-title{
+      font-size:clamp(24px,5vw,42px);
+      font-weight:900;
+      letter-spacing:-1px;
+      text-shadow:0 4px 22px rgba(0,0,0,.5);
+    }
+    .winner-sub{color:#d9e3ef;font-size:13px;margin-top:8px}
+
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:17px;
+      background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));
+    }
+
+    .card-title{
+      font-size:13px;
+      color:#eaf3ff;
+      font-weight:900;
+      margin-bottom:13px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .setup-grid{
+      display:grid;
+      grid-template-columns:1fr 24px 1fr;
+      gap:8px;
+      align-items:center;
+    }
+
+    .num-input{
+      width:100%;
+      height:48px;
+      border:1px solid rgba(255,255,255,.15);
+      border-radius:12px;
+      background:#071321;
+      color:white;
+      text-align:center;
+      outline:none;
+      font-family:"Poppins",sans-serif;
+      font-size:20px;
+      font-weight:900;
+    }
+    .num-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(54,215,255,.1)}
+    .dash{text-align:center;color:#71839a;font-weight:900}
+
+    .btn{
+      width:100%;
+      min-height:48px;
+      border-radius:13px;
+      font-weight:900;
+      transition:.18s;
+    }
+    .btn:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.07)}
+    .btn:active:not(:disabled){transform:translateY(0)}
+    .btn:disabled{opacity:.42;cursor:not-allowed}
+
+    .btn-primary{
+      color:#03111a;
+      background:linear-gradient(135deg,#5de6ff,#35c5ff);
+      box-shadow:0 10px 28px rgba(54,215,255,.22);
+    }
+    .btn-start{
+      color:#241400;
+      background:linear-gradient(135deg,#ffe66d,#ffad2f);
+      box-shadow:0 10px 28px rgba(255,185,47,.22);
+      font-size:16px;
+    }
+    .btn-secondary{
+      color:#e6edf7;
+      background:#17263a;
+      border:1px solid rgba(255,255,255,.11);
+    }
+    .btn-danger{
+      color:#ffeef1;
+      background:#612033;
+      border:1px solid rgba(255,92,114,.28);
+    }
+
+    .button-stack{display:grid;gap:9px;margin-top:12px}
+
+    .tip{
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.6;
+      margin-top:10px;
+    }
+
+    .result-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      min-height:52px;
+    }
+
+    .result-chip{
+      width:46px;height:46px;border-radius:50%;
+      display:grid;place-items:center;
+      font-family:"Poppins",sans-serif;
+      font-size:17px;font-weight:900;color:#321e00;
+      background:radial-gradient(circle at 30% 25%,#fff9cd,#ffd84d 55%,#f49a11);
+      box-shadow:0 7px 15px rgba(0,0,0,.25);
+      animation:chipIn .5s cubic-bezier(.15,1.3,.25,1);
+    }
+    @keyframes chipIn{
+      from{opacity:0;transform:scale(.1) translateY(-20px) rotate(-40deg)}
+      to{opacity:1;transform:scale(1) translateY(0) rotate(0)}
+    }
+
+    .log{
+      max-height:150px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .log-line{
+      padding:8px 0;
+      border-bottom:1px solid rgba(255,255,255,.07);
+      color:#b8c5d7;
+      font-size:11px;
+      line-height:1.4;
+    }
+    .log-line strong{color:white}
+    .log-line.hot{color:#ffe891}
+
+    .confetti{
+      position:fixed;
+      top:-30px;
+      width:12px;
+      height:20px;
+      z-index:9999;
+      pointer-events:none;
+      animation:confettiFall linear forwards;
+    }
+    @keyframes confettiFall{
+      to{transform:translate3d(var(--drift),110vh,0) rotate(var(--spin));opacity:.95}
+    }
+
+    .firework{
+      position:fixed;
+      width:8px;height:8px;border-radius:50%;
+      z-index:9998;pointer-events:none;
+      background:currentColor;
+      box-shadow:0 0 12px currentColor;
+      animation:fireworkFly .95s ease-out forwards;
+    }
+    @keyframes fireworkFly{
+      from{transform:translate(0,0) scale(1);opacity:1}
+      to{transform:translate(var(--x),var(--y)) scale(.2);opacity:0}
+    }
+
+    .flash{
+      position:fixed;inset:0;background:white;opacity:0;pointer-events:none;z-index:9997;
+    }
+    .flash.fire{animation:flash .55s ease-out}
+    @keyframes flash{0%{opacity:1}100%{opacity:0}}
+
+    @media(max-width:900px){
+      .content{grid-template-columns:1fr}
+      .side{display:grid;grid-template-columns:1fr 1fr}
+      .side .card:last-child{grid-column:1/-1}
+      .canvas-wrap{height:660px}
+    }
+
+    @media(max-width:620px){
+      body{padding:7px}
+      .app{border-radius:18px}
+      .top{padding:20px 15px 15px;align-items:flex-start}
+      .sound-chip{display:none}
+      .content{padding:9px;gap:9px}
+      .side{display:flex}
+      .game-header{grid-template-columns:repeat(2,1fr)}
+      .stat:nth-child(2){border-right:0}
+      .stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
+      .canvas-wrap{height:590px;min-height:590px}
+      .game-panel{border-radius:15px}
+    }
+  </style>
 </head>
 <body>
+  <div class="app" id="capture-area">
+    <header class="top">
+      <div>
+        <div class="brand-kicker">PINBALL RANDOM RACE</div>
+        <h1>핀볼 랜덤 레이스</h1>
+        <p class="top-desc">모든 번호가 동시에 질주합니다. 마지막 황금 홀에 도착한 번호가 당첨됩니다.</p>
+      </div>
+      <div class="sound-chip">물리 레이스 · 결승 슬로모션 · 폭죽 피날레</div>
+    </header>
 
-    <div class="container" id="setup-screen">
-        <h1>🎲 랜덤 뽑기 범위 설정</h1>
-        <p style="color: #64748b; font-size: 14px; margin-bottom: 10px;">시작 번호와 끝 번호를 입력하세요.</p>
-        <div class="input-group">
-            <input type="number" id="min-num" value="1" min="1">
-            <span>~</span>
-            <input type="number" id="max-num" value="30" min="2">
+    <div class="content">
+      <section class="game-panel">
+        <div class="game-header">
+          <div class="stat"><span class="stat-label">참가 번호</span><span id="stat-total" class="stat-value">0</span></div>
+          <div class="stat"><span class="stat-label">레이스 상태</span><span id="stat-state" class="stat-value live">대기</span></div>
+          <div class="stat"><span class="stat-label">남은 시간</span><span id="stat-time" class="stat-value">--</span></div>
+          <div class="stat"><span class="stat-label">당첨 기록</span><span id="stat-wins" class="stat-value gold">0</span></div>
         </div>
-        <button class="btn" style="margin-top: 20px;" onclick="startMachine()">다음 단계로 <i class="fa-solid fa-arrow-right"></i></button>
+
+        <div class="canvas-wrap">
+          <div id="stage-label" class="stage-label">번호를 설정하고 레이스를 준비하세요</div>
+          <canvas id="game-canvas"></canvas>
+
+          <div id="countdown-overlay" class="countdown-overlay">
+            <div id="countdown-number" class="countdown-number">3</div>
+          </div>
+
+          <div id="winner-overlay" class="winner-overlay">
+            <div class="winner-card">
+              <div class="winner-small">GOLDEN WINNER</div>
+              <div id="winner-ball" class="winner-ball">?</div>
+              <div id="winner-title" class="winner-title">당첨!</div>
+              <div class="winner-sub">황금 홀에 가장 먼저 도착했습니다.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card">
+          <div class="card-title"><span>레이스 설정</span><span style="color:var(--cyan)">1회 1명 추첨</span></div>
+          <div class="setup-grid">
+            <input id="min-num" class="num-input" type="number" min="1" value="1" aria-label="시작 번호">
+            <div class="dash">~</div>
+            <input id="max-num" class="num-input" type="number" min="2" value="30" aria-label="끝 번호">
+          </div>
+          <div class="button-stack">
+            <button id="prepare-btn" class="btn btn-primary" onclick="prepareRace()">레이스 준비</button>
+            <button id="start-btn" class="btn btn-start" onclick="startRace()" disabled>핀볼 레이스 시작!</button>
+          </div>
+          <p class="tip">이번 버전은 미리 당첨 번호를 정하지 않습니다. 실제 물리 레이스에서 황금 홀에 가장 먼저 들어간 공이 즉시 당첨되며, 이미 뽑힌 번호는 다음 레이스에서 제외됩니다.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">게임 관리</div>
+          <div class="button-stack">
+            <button id="capture-btn" class="btn btn-secondary" onclick="takeScreenshot()">결과 화면 캡처</button>
+            <button id="replay-btn" class="btn btn-secondary" onclick="prepareNextRace()" disabled>다음 번호 레이스</button>
+            <button class="btn btn-danger" onclick="resetAll()">전체 초기화</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>당첨 번호</span><span id="remain-label" style="color:var(--muted)">남은 0명</span></div>
+          <div id="result-list" class="result-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">레이스 중계</div>
+          <div id="log" class="log">
+            <div class="log-line">번호를 설정한 뒤 레이스를 준비하세요.</div>
+          </div>
+        </div>
+      </aside>
     </div>
+  </div>
 
-    <div class="container" id="machine-screen">
-        <h1 style="margin-bottom: 5px;">🚀 추첨기 가동</h1>
-        <div class="machine-wrapper">
-            <div class="cylinder"></div>
-            <div class="balls-container" id="balls-container"></div>
-            <div class="sphere" id="sphere-bg"></div>
-        </div>
-        
-        <div class="btn-group">
-            <button class="btn" id="draw-btn" onclick="drawBall()">번호 뽑기</button>
-            <button class="btn btn-screenshot" id="capture-btn" onclick="takeScreenshot()"><i class="fa-solid fa-camera"></i> 캡처</button>
-        </div>
-        
-        <div class="result-area">
-            <div class="result-title">당첨 번호 기록</div>
-            <div class="result-list" id="result-list"></div>
-        </div>
-    </div>
+  <div id="flash" class="flash"></div>
 
-    <div id="action-overlay">
-        </div>
+  <script>
+    const canvas = document.getElementById("game-canvas");
+    const ctx = canvas.getContext("2d");
 
-    <script>
-        const sphereRadius = 150; 
-        const ballRadius = 20;    
-        const boundary = sphereRadius - ballRadius - 5; 
-        const center = { x: sphereRadius, y: sphereRadius };
-        
-        let balls = [];
-        let animationFrameId;
-        let isDrawing = false; 
+    let W = 0;
+    let H = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-        const pastelColors = ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e2cbff', '#f3e8ff', '#c7ceea'];
+    let balls = [];
+    let pegs = [];
+    let bumpers = [];
+    let rotors = [];
+    let particles = [];
+    let eligibleNumbers = [];
+    let drawnNumbers = [];
+    let originalRange = null;
 
-        function startMachine() {
-            const min = parseInt(document.getElementById('min-num').value);
-            const max = parseInt(document.getElementById('max-num').value);
+    let prepared = false;
+    let racing = false;
+    let finished = false;
+    let animationId = null;
+    let lastTime = 0;
+    let raceStart = 0;
+    let raceDuration = 11500;
+    let winnerRevealTimer = null;
 
-            if (min >= max || isNaN(min) || isNaN(max)) {
-                alert("올바른 숫자 범위를 입력해주세요!");
-                return;
+    const colors = [
+      ["#dbeafe","#60a5fa","#2563eb"],
+      ["#fce7f3","#f472b6","#db2777"],
+      ["#dcfce7","#4ade80","#16a34a"],
+      ["#fef3c7","#fbbf24","#d97706"],
+      ["#ede9fe","#a78bfa","#7c3aed"],
+      ["#cffafe","#22d3ee","#0891b2"],
+      ["#fee2e2","#fb7185","#e11d48"]
+    ];
+
+    function resizeCanvas(){
+      const rect = canvas.parentElement.getBoundingClientRect();
+      W = Math.max(320, rect.width);
+      H = Math.max(560, rect.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W*dpr);
+      canvas.height = Math.round(H*dpr);
+      canvas.style.width = W+"px";
+      canvas.style.height = H+"px";
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      buildBoard();
+      if(prepared && !racing) placeBallsAtStart();
+    }
+
+    function buildBoard(){
+      pegs = [];
+      bumpers = [];
+      rotors = [];
+
+      const margin = 34;
+      const top = 120;
+      const bottom = H - 135;
+      const rows = 9;
+      const cols = W < 520 ? 7 : 9;
+
+      for(let r=0;r<rows;r++){
+        const y = top + r*((bottom-top)/rows);
+        const offset = r%2 ? (W/(cols+1))/2 : 0;
+        for(let c=1;c<=cols;c++){
+          const x = c*(W/(cols+1))+offset;
+          if(x>margin && x<W-margin) pegs.push({x,y,r:5.5});
+        }
+      }
+
+      bumpers.push(
+        {x:W*.28,y:H*.34,r:24,pulse:0,color:"#36d7ff"},
+        {x:W*.72,y:H*.34,r:24,pulse:0,color:"#ff4fa3"},
+        {x:W*.5,y:H*.52,r:28,pulse:0,color:"#8b5cf6"}
+      );
+
+      rotors.push(
+        {x:W*.36,y:H*.62,len:72,angle:0,speed:1.9},
+        {x:W*.64,y:H*.62,len:72,angle:Math.PI,speed:-1.7}
+      );
+    }
+
+    function prepareRace(){
+      if(racing) return;
+
+      const min = Number(document.getElementById("min-num").value);
+      const max = Number(document.getElementById("max-num").value);
+
+      if(!Number.isInteger(min)||!Number.isInteger(max)||min>=max){
+        alert("시작 번호보다 끝 번호가 더 크게 입력되어야 합니다.");
+        return;
+      }
+      if(max-min+1>40){
+        alert("핀볼 화면 가독성을 위해 최대 40명까지만 설정할 수 있습니다.");
+        return;
+      }
+
+      originalRange = {min,max};
+      drawnNumbers = [];
+      eligibleNumbers = [];
+      for(let n=min;n<=max;n++) eligibleNumbers.push(n);
+
+      document.getElementById("result-list").innerHTML = "";
+      prepareNextRace(true);
+      addLog(`<strong>${min}번부터 ${max}번까지</strong> 참가 준비 완료.`, true);
+    }
+
+    function prepareNextRace(initial=false){
+      if(racing) return;
+      if(!eligibleNumbers.length){
+        alert("모든 번호를 뽑았습니다.");
+        return;
+      }
+
+      clearTimeout(winnerRevealTimer);
+      document.getElementById("winner-overlay").classList.remove("show");
+      finished = false;
+      prepared = true;
+      winnerNumber = null;
+      particles = [];
+      buildBoard();
+      createBalls();
+      placeBallsAtStart();
+
+      document.getElementById("start-btn").disabled = false;
+      document.getElementById("replay-btn").disabled = true;
+      document.getElementById("stat-state").textContent = "준비";
+      document.getElementById("stat-time").textContent = "--";
+      document.getElementById("stage-label").textContent = "출발 게이트 대기 중";
+      updateStats();
+      drawScene();
+
+      if(!initial) addLog("다음 레이스 참가 공이 출발 게이트에 배치되었습니다.");
+    }
+
+    function createBalls(){
+      // 번호와 출발 위치의 상관관계를 없애기 위해 매 경기 순서를 무작위로 섞습니다.
+      const shuffled = [...eligibleNumbers].sort(() => Math.random() - .5);
+
+      balls = shuffled.map((num,i)=>{
+        const palette = colors[i%colors.length];
+        return {
+          num,
+          x:0,y:0,
+          vx:0,vy:0,
+          r:W<520?12.5:14,
+          color:palette,
+          active:true,
+          trail:[],
+          glow:0
+        };
+      });
+    }
+
+    function placeBallsAtStart(){
+      const cols = Math.min(10, Math.max(5, Math.floor(W/48)));
+      const gap = W/(cols+1);
+      balls.forEach((b,i)=>{
+        const row = Math.floor(i/cols);
+        const col = i%cols;
+        b.x = gap*(col+1)+(row%2?gap*.25:-gap*.25)+(Math.random()-.5)*10;
+        b.y = 50-row*26+(Math.random()-.5)*5;
+        b.vx = 0;
+        b.vy = 0;
+        b.trail = [];
+      });
+    }
+
+    async function startRace(){
+      if(!prepared||racing||!eligibleNumbers.length) return;
+
+      racing = true;
+      finished = false;
+      document.getElementById("prepare-btn").disabled = true;
+      document.getElementById("start-btn").disabled = true;
+      document.getElementById("capture-btn").disabled = true;
+      document.getElementById("stat-state").textContent = "카운트";
+      document.getElementById("stage-label").textContent = "출발 준비!";
+      addLog("출발 게이트가 잠겼습니다. 카운트다운 시작!", true);
+
+      await countdown();
+
+      raceStart = performance.now();
+      lastTime = raceStart;
+      document.getElementById("stat-state").textContent = "질주";
+      document.getElementById("stage-label").textContent = "PINBALL RACE LIVE";
+      addLog("모든 번호 공이 동시에 출발했습니다!");
+
+      balls.forEach((b,i)=>{
+        b.vx = (Math.random()-.5)*105;
+        b.vy = 72+Math.random()*58;
+      });
+
+      cancelAnimationFrame(animationId);
+      animationId = requestAnimationFrame(loop);
+    }
+
+    async function countdown(){
+      const overlay = document.getElementById("countdown-overlay");
+      const num = document.getElementById("countdown-number");
+      overlay.classList.add("show");
+      for(const v of ["3","2","1","GO!"]){
+        num.textContent = v;
+        num.style.animation = "none";
+        void num.offsetWidth;
+        num.style.animation = "countPop .72s cubic-bezier(.16,1,.3,1)";
+        await wait(v==="GO!"?620:760);
+      }
+      overlay.classList.remove("show");
+    }
+
+    function loop(now){
+      const dt = Math.min((now-lastTime)/1000,.022);
+      lastTime = now;
+      const elapsed = now-raceStart;
+      const remain = Math.max(0,(raceDuration-elapsed)/1000);
+      document.getElementById("stat-time").textContent = remain.toFixed(1)+"초";
+
+      updatePhysics(dt,elapsed);
+      drawScene();
+
+      if(!finished){
+        animationId = requestAnimationFrame(loop);
+      }
+    }
+
+    function updatePhysics(dt,elapsed){
+      const gravity = 300;
+      const centerX = W/2;
+      const targetY = H-62;
+
+      rotors.forEach(r=>r.angle+=r.speed*dt);
+      bumpers.forEach(b=>b.pulse=Math.max(0,b.pulse-dt*2.5));
+
+      for(const b of balls){
+        if(!b.active) continue;
+
+        b.vy += gravity*dt;
+
+        // 모든 공에 동일한 물리 규칙을 적용합니다.
+        // 너무 오래 결승이 나지 않을 때만 전체 보드를 중앙으로 아주 약하게 기울입니다.
+        const progress = Math.min(1,elapsed/raceDuration);
+        if(progress>.78){
+          const overtimePull = (centerX-b.x)*(progress-.78)*1.15;
+          b.vx += overtimePull*dt;
+          b.glow = Math.min(1,b.glow+dt*.7);
+        }
+
+        b.x += b.vx*dt;
+        b.y += b.vy*dt;
+
+        // 좌우 벽
+        if(b.x-b.r<18){b.x=18+b.r;b.vx=Math.abs(b.vx)*.82}
+        if(b.x+b.r>W-18){b.x=W-18-b.r;b.vx=-Math.abs(b.vx)*.82}
+
+        // 상단
+        if(b.y-b.r<34){b.y=34+b.r;b.vy=Math.abs(b.vy)}
+
+        // 핀 충돌
+        for(const p of pegs){
+          collideCircle(b,p.x,p.y,p.r,.82);
+        }
+
+        // 범퍼 충돌
+        for(const bp of bumpers){
+          if(collideCircle(b,bp.x,bp.y,bp.r,1.25)){
+            bp.pulse=1;
+            spawnSpark(bp.x,bp.y,bp.color,10);
+            if(Math.random()<.08) addLog(`${b.num}번 공이 파워 범퍼에 강하게 튕겼습니다.`);
+          }
+        }
+
+        // 회전문 충돌
+        for(const r of rotors){
+          collideRotor(b,r);
+        }
+
+        // 공끼리의 충돌도 계산해 레이스가 더 자연스럽게 보이도록 합니다.
+        for(const other of balls){
+          if(other===b || !other.active) continue;
+          const dx=b.x-other.x;
+          const dy=b.y-other.y;
+          const dist=Math.hypot(dx,dy);
+          const minDist=b.r+other.r;
+
+          if(dist>0 && dist<minDist){
+            const nx=dx/dist;
+            const ny=dy/dist;
+            const overlap=(minDist-dist)*.5;
+            b.x+=nx*overlap;
+            b.y+=ny*overlap;
+            other.x-=nx*overlap;
+            other.y-=ny*overlap;
+
+            const rvx=b.vx-other.vx;
+            const rvy=b.vy-other.vy;
+            const relative=rvx*nx+rvy*ny;
+
+            if(relative<0){
+              const impulse=-relative*.86;
+              b.vx+=nx*impulse;
+              b.vy+=ny*impulse;
+              other.vx-=nx*impulse;
+              other.vy-=ny*impulse;
             }
-
-            document.getElementById('setup-screen').style.display = 'none';
-            document.getElementById('machine-screen').style.display = 'flex';
-
-            initBalls(min, max);
-            animate();
+          }
         }
 
-        function initBalls(min, max) {
-            const container = document.getElementById('balls-container');
-            container.innerHTML = '';
-            balls = [];
-
-            for (let i = min; i <= max; i++) {
-                const ballEl = document.createElement('div');
-                ballEl.className = 'ball';
-                ballEl.innerText = i;
-                
-                const color = pastelColors[Math.floor(Math.random() * pastelColors.length)];
-                ballEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${color})`;
-                
-                container.appendChild(ballEl);
-
-                const angle = Math.random() * Math.PI * 2;
-                const r = Math.random() * (boundary - 20);
-                
-                balls.push({
-                    el: ballEl,
-                    num: i,
-                    color: color,
-                    x: center.x + Math.cos(angle) * r,
-                    y: center.y + Math.sin(angle) * r,
-                    vx: (Math.random() - 0.5) * 15,
-                    vy: (Math.random() - 0.5) * 15,
-                    state: 'bouncing' 
-                });
-            }
+        // 결승 깔때기 벽
+        const funnelTop = H-165;
+        if(b.y>funnelTop){
+          const t=(b.y-funnelTop)/(H-funnelTop);
+          const left=20+(centerX-58-20)*t;
+          const right=W-20-(W-20-(centerX+58))*t;
+          if(b.x-b.r<left){
+            b.x=left+b.r;b.vx=Math.abs(b.vx)*.74;
+          }
+          if(b.x+b.r>right){
+            b.x=right-b.r;b.vx=-Math.abs(b.vx)*.74;
+          }
         }
 
-        function animate() {
-            balls.forEach(ball => {
-                if (ball.state === 'bouncing') {
-                    ball.vx += (Math.random() - 0.5) * 1.5;
-                    ball.vy += (Math.random() - 0.5) * 1.5 - 0.1; 
+        // 황금 홀 센서: 어떤 번호든 실제로 먼저 들어오면 즉시 당첨됩니다.
+        const holeWidth = elapsed > raceDuration ? 56 : 43;
+        const crossedFinishLine = b.y + b.r >= H - 31;
+        const inHole = Math.abs(b.x-centerX) < holeWidth;
 
-                    const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-                    if (speed > 12) {
-                        ball.vx = (ball.vx / speed) * 12;
-                        ball.vy = (ball.vy / speed) * 12;
-                    }
-
-                    ball.x += ball.vx;
-                    ball.y += ball.vy;
-
-                    const dx = ball.x - center.x;
-                    const dy = ball.y - center.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-
-                    if (dist > boundary) {
-                        const nx = dx / dist;
-                        const ny = dy / dist;
-                        const dot = ball.vx * nx + ball.vy * ny;
-                        
-                        ball.vx = ball.vx - 2 * dot * nx;
-                        ball.vy = ball.vy - 2 * dot * ny;
-                        ball.x = center.x + nx * boundary;
-                        ball.y = center.y + ny * boundary;
-                        ball.vx *= 0.95; 
-                        ball.vy *= 0.95;
-                    }
-
-                    ball.el.style.transform = `translate(${ball.x - ballRadius}px, ${ball.y - ballRadius}px)`;
-                } 
-            });
-            animationFrameId = requestAnimationFrame(animate);
+        if(crossedFinishLine && inHole){
+          b.active=false;
+          b.y=targetY;
+          finishRace(b);
+          return;
         }
 
-        function drawBall() {
-            const bouncingBalls = balls.filter(b => b.state === 'bouncing');
-            
-            if (bouncingBalls.length === 0) {
-                alert("모든 번호를 뽑았습니다!");
-                return;
-            }
-            if (isDrawing) return;
-
-            isDrawing = true;
-            const drawBtn = document.getElementById('draw-btn');
-            const captureBtn = document.getElementById('capture-btn');
-            drawBtn.disabled = true;
-            captureBtn.disabled = true;
-            drawBtn.innerText = "추출 중...";
-
-            const randomIndex = Math.floor(Math.random() * bouncingBalls.length);
-            const selectedBall = bouncingBalls[randomIndex];
-            
-            selectedBall.state = 'drawing';
-            selectedBall.el.style.zIndex = "25";
-
-            // 실린더로 올라간 직후 액션 실행
-            setTimeout(() => {
-                balls = balls.filter(b => b !== selectedBall);
-                selectedBall.el.remove(); 
-                executeDynamicAction(selectedBall, drawBtn, captureBtn);
-            }, 800); 
+        // 황금 홀 바깥 바닥에 닿은 공은 다시 튕겨 올라갑니다.
+        if(b.y+b.r>H-24){
+          b.y=H-24-b.r;
+          b.vy=-Math.abs(b.vy)*.64;
+          b.vx+=(Math.random()-.5)*70;
         }
 
-        function executeDynamicAction(ball, drawBtn, captureBtn) {
-            const overlay = document.getElementById('action-overlay');
-            overlay.innerHTML = ''; 
-            overlay.style.display = 'flex';
-            
-            // 1. 혼돈의 페이크 공들 (수직 중력 낙하)
-            for(let i = 0; i < 30; i++) {
-                let fake = document.createElement('div');
-                fake.className = 'fake-ball';
-                let size = Math.random() * 60 + 40; 
-                fake.style.width = size + 'px';
-                fake.style.height = size + 'px';
-                fake.style.marginLeft = -(size/2) + 'px';
-                fake.style.marginTop = -(size/2) + 'px';
-                // 번호 없이 빈 상태로 배경만 설정
-                fake.style.background = `radial-gradient(circle at 30% 30%, #fff, ${pastelColors[Math.floor(Math.random()*pastelColors.length)]})`;
-                
-                overlay.appendChild(fake);
-                
-                let startX = (Math.random() - 0.5) * window.innerWidth;
-                let zPos = -Math.random() * 600 + 200; // 앞뒤 랜덤
-                let peakY = -Math.random() * 40 - 10;  // 최고점 높이
-                
-                // 완벽한 수직 움직임: X축 고정, Y축만 변화 (ease-out 상승, ease-in 하강)
-                fake.animate([
-                    { transform: `translate3d(${startX}px, 120vh, ${zPos}px)`, opacity: 0, offset: 0, easing: 'ease-out' },
-                    { transform: `translate3d(${startX}px, ${peakY}vh, ${zPos}px)`, opacity: 1, offset: 0.5, easing: 'ease-in' },
-                    { transform: `translate3d(${startX}px, 120vh, ${zPos}px)`, opacity: 0, offset: 1 }
-                ], {
-                    duration: 1200 + Math.random() * 600,
-                    delay: Math.random() * 200,
-                    fill: 'both'
-                });
-            }
+        b.vx*=.997;
+        b.vy*=.999;
 
-            // 2. 🎯 타겟 공 (번호가 숨겨진 상태)
-            let targetWrapper = document.createElement('div');
-            targetWrapper.className = 'target-wrapper';
-            
-            let targetBall = document.createElement('div');
-            targetBall.className = 'target-ball';
-            targetBall.innerText = '?'; // 처음엔 물음표로 등장
-            targetBall.style.background = `radial-gradient(circle at 30% 30%, #cbd5e1, #64748b)`; // 잿빛 느낌
-            
-            targetWrapper.appendChild(targetBall);
-            overlay.appendChild(targetWrapper);
+        b.trail.push({x:b.x,y:b.y});
+        if(b.trail.length>8)b.trail.shift();
+      }
 
-            // 타겟 공 비행 (위로 솟구쳤다가 떨어짐)
-            let targetFlight = targetWrapper.animate([
-                { transform: `translate3d(0, 120vh, -400px)`, offset: 0, easing: 'ease-out' },
-                { transform: `translate3d(0, -35vh, -400px)`, offset: 0.7, easing: 'ease-in' }, // 정점(Peak)을 찍고 하강 시작
-                { transform: `translate3d(0, 10vh, -400px)`, offset: 1 } // T=1000ms: 하강 중에 피격!
-            ], {
-                duration: 1000,
-                fill: 'forwards'
-            });
+      // 연장전에는 모든 공에 같은 중앙 기울기와 넓어진 홀을 적용합니다.
+      // 특정 번호를 강제로 선택하지 않습니다.
+    }
 
-            // 3. 🗡️ 나이프
-            let knife = document.createElement('div');
-            knife.className = 'flying-knife';
-            knife.innerHTML = `
-                <svg viewBox="0 0 100 200">
-                    <path d="M50,10 L65,80 L50,120 L35,80 Z" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                    <path d="M50,10 L65,80 L50,120 Z" fill="#f8fafc"/>
-                    <rect x="25" y="120" width="50" height="15" rx="5" fill="#334155"/>
-                    <rect x="40" y="135" width="20" height="50" rx="3" fill="#8b5a2b"/>
-                    <circle cx="50" cy="190" r="10" fill="#cbd5e1" stroke="#475569" stroke-width="2"/>
-                </svg>
-            `;
-            overlay.appendChild(knife);
+    function collideCircle(ball,cx,cy,cr,bounce){
+      const dx=ball.x-cx,dy=ball.y-cy;
+      const dist=Math.hypot(dx,dy);
+      const min=ball.r+cr;
+      if(dist>0&&dist<min){
+        const nx=dx/dist,ny=dy/dist;
+        const overlap=min-dist;
+        ball.x+=nx*overlap;
+        ball.y+=ny*overlap;
+        const dot=ball.vx*nx+ball.vy*ny;
+        if(dot<0){
+          ball.vx-=(1+bounce)*dot*nx;
+          ball.vy-=(1+bounce)*dot*ny;
+        }
+        return true;
+      }
+      return false;
+    }
 
-            // 나이프 궤적: 밑에서 위로 던져져서 타겟을 찍음
-            let knifeFlight = knife.animate([
-                { transform: `translate3d(0, 80vh, 500px) rotate(15deg) scale(3)`, opacity: 0, offset: 0 },
-                { transform: `translate3d(0, 80vh, 500px) rotate(15deg) scale(3)`, opacity: 1, offset: 0.1, easing: 'ease-in' }, // 투척 대기
-                { transform: `translate3d(0, -20px, -360px) rotate(0deg) scale(1.2)`, opacity: 1, offset: 1 } // 타겟(10vh, -400px)에 정확히 꽂힘
-            ], {
-                duration: 1000, // 타겟 공과 타이밍 일치
-                fill: 'forwards'
-            });
+    function collideRotor(ball,r){
+      const x1=r.x-Math.cos(r.angle)*r.len/2;
+      const y1=r.y-Math.sin(r.angle)*r.len/2;
+      const x2=r.x+Math.cos(r.angle)*r.len/2;
+      const y2=r.y+Math.sin(r.angle)*r.len/2;
 
-            // 섬광 이펙트
-            let flash = document.createElement('div');
-            flash.className = 'flash-bang';
-            overlay.appendChild(flash);
+      const vx=x2-x1,vy=y2-y1;
+      const wx=ball.x-x1,wy=ball.y-y1;
+      const c1=vx*wx+vy*wy;
+      const c2=vx*vx+vy*vy;
+      const t=Math.max(0,Math.min(1,c1/c2));
+      const px=x1+t*vx,py=y1+t*vy;
+      const dx=ball.x-px,dy=ball.y-py;
+      const dist=Math.hypot(dx,dy);
+      const thickness=7;
 
-            // 🎬 하이라이트 (T = 1000ms 💥)
-            requestAnimationFrame(() => {
-                overlay.style.opacity = '1';
+      if(dist>0&&dist<ball.r+thickness){
+        const nx=dx/dist,ny=dy/dist;
+        const push=ball.r+thickness-dist;
+        ball.x+=nx*push;
+        ball.y+=ny*push;
+        ball.vx+=nx*100+(-Math.sin(r.angle))*r.speed*45;
+        ball.vy+=ny*100+(Math.cos(r.angle))*r.speed*45;
+        spawnSpark(px,py,"#ffffff",5);
+      }
+    }
 
-                setTimeout(() => {
-                    // 화면 지진 & 플래시
-                    document.body.classList.add('shake-active');
-                    flash.classList.add('flash-active');
+    function spawnSpark(x,y,color,count){
+      for(let i=0;i<count;i++){
+        particles.push({
+          x,y,
+          vx:(Math.random()-.5)*180,
+          vy:(Math.random()-.5)*180,
+          life:.5+Math.random()*.45,
+          max:.95,
+          color,
+          size:2+Math.random()*3
+        });
+      }
+    }
 
-                    // 번호 및 색상 정체 공개!
-                    targetBall.innerText = ball.num;
-                    targetBall.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
-                    targetBall.style.color = '#333';
+    function finishRace(ball){
+      if(finished)return;
+      finished=true;
+      racing=false;
+      cancelAnimationFrame(animationId);
 
-                    // 카메라 줌인을 위해 나이프를 타겟 공 안으로 종속(Reparent)시킴
-                    // (그래야 줌인할 때 칼이 공에 붙은 채로 같이 커집니다)
-                    knife.style.transform = `translate3d(0, -60px, 40px) scale(1.2)`; 
-                    targetWrapper.appendChild(knife); 
+      document.getElementById("stat-state").textContent="당첨";
+      document.getElementById("stat-time").textContent="0.0초";
+      document.getElementById("stage-label").textContent="GOLDEN HOLE IN!";
+      addLog(`<strong>${ball.num}번</strong> 공이 황금 홀에 도착했습니다!`,true);
 
-                    // 꽂힌 채로 유저 눈앞으로 확대
-                    targetWrapper.animate([
-                        { transform: `translate3d(0, 10vh, -400px)` },
-                        { transform: `translate3d(0, 10vh, -450px) rotateX(-15deg)`, offset: 0.1 }, // 타격의 반동으로 뒤로 살짝 밀림
-                        { transform: `translate3d(0, 0, 300px) rotateX(0deg)` } // 유저 눈앞으로 줌인
-                    ], {
-                        duration: 1200,
-                        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-                        fill: 'forwards'
-                    });
+      const index=eligibleNumbers.indexOf(ball.num);
+      if(index>=0)eligibleNumbers.splice(index,1);
+      drawnNumbers.push(ball.num);
+      addResult(ball.num);
+      updateStats();
 
-                }, 1000); // 정확히 1초 뒤 임팩트 터짐
+      fireFinale(ball.num);
 
-                // 마무리
-                setTimeout(() => {
-                    overlay.style.opacity = '0';
-                    document.body.classList.remove('shake-active');
-                    
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                        addToResultList(ball);
-                        isDrawing = false;
-                        drawBtn.disabled = false;
-                        captureBtn.disabled = false;
-                        drawBtn.innerText = "번호 뽑기";
-                    }, 300); 
-                }, 3800); 
-            });
+      document.getElementById("prepare-btn").disabled=false;
+      document.getElementById("capture-btn").disabled=false;
+      document.getElementById("replay-btn").disabled=eligibleNumbers.length===0;
+
+      drawScene();
+    }
+
+    function fireFinale(num){
+      const overlay=document.getElementById("winner-overlay");
+      document.getElementById("winner-ball").textContent=num;
+      document.getElementById("winner-title").textContent=`${num}번 당첨!`;
+      fireFlash();
+      createConfetti(150);
+      createFireworks(7);
+
+      overlay.classList.add("show");
+      winnerRevealTimer=setTimeout(()=>overlay.classList.remove("show"),4200);
+    }
+
+    function drawScene(){
+      ctx.clearRect(0,0,W,H);
+
+      drawNeonRails();
+      drawFinishZone();
+
+      for(const p of pegs){
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle="#dff8ff";
+        ctx.shadowColor="#36d7ff";
+        ctx.shadowBlur=10;
+        ctx.fill();
+        ctx.shadowBlur=0;
+      }
+
+      for(const bp of bumpers){
+        const scale=1+bp.pulse*.25;
+        const grd=ctx.createRadialGradient(bp.x-bp.r*.3,bp.y-bp.r*.35,3,bp.x,bp.y,bp.r*scale);
+        grd.addColorStop(0,"#ffffff");
+        grd.addColorStop(.25,bp.color);
+        grd.addColorStop(1,"#111827");
+        ctx.beginPath();
+        ctx.arc(bp.x,bp.y,bp.r*scale,0,Math.PI*2);
+        ctx.fillStyle=grd;
+        ctx.shadowColor=bp.color;
+        ctx.shadowBlur=bp.pulse?34:18;
+        ctx.fill();
+        ctx.shadowBlur=0;
+        ctx.lineWidth=3;
+        ctx.strokeStyle="rgba(255,255,255,.65)";
+        ctx.stroke();
+      }
+
+      for(const r of rotors){
+        ctx.save();
+        ctx.translate(r.x,r.y);
+        ctx.rotate(r.angle);
+        const grd=ctx.createLinearGradient(-r.len/2,0,r.len/2,0);
+        grd.addColorStop(0,"#36d7ff");
+        grd.addColorStop(.5,"#ffffff");
+        grd.addColorStop(1,"#ff4fa3");
+        ctx.strokeStyle=grd;
+        ctx.lineWidth=11;
+        ctx.lineCap="round";
+        ctx.shadowColor="#8b5cf6";
+        ctx.shadowBlur=15;
+        ctx.beginPath();
+        ctx.moveTo(-r.len/2,0);
+        ctx.lineTo(r.len/2,0);
+        ctx.stroke();
+        ctx.restore();
+        ctx.shadowBlur=0;
+      }
+
+      for(const b of balls){
+        if(!b.active&&!b.winner)continue;
+
+        if(racing && b.glow>.2){
+          for(let i=0;i<b.trail.length;i++){
+            const t=b.trail[i];
+            ctx.beginPath();
+            ctx.arc(t.x,t.y,b.r*(i/b.trail.length)*.42,0,Math.PI*2);
+            ctx.fillStyle=`rgba(54,215,255,${i/b.trail.length*.13*b.glow})`;
+            ctx.fill();
+          }
         }
 
-        function addToResultList(ball) {
-            const resultList = document.getElementById('result-list');
-            const resultEl = document.createElement('div');
-            resultEl.className = 'result-ball';
-            resultEl.innerText = ball.num;
-            resultEl.style.background = `radial-gradient(circle at 30% 30%, #fff, ${ball.color})`;
-            resultList.appendChild(resultEl);
-        }
+        drawBall(b);
+      }
 
-        function takeScreenshot() {
-            const captureArea = document.getElementById('machine-screen');
-            const captureBtn = document.getElementById('capture-btn');
-            
-            const originalText = captureBtn.innerHTML;
-            captureBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 캡처 중...';
-            captureBtn.disabled = true;
+      particles=particles.filter(p=>{
+        p.life-=.016;
+        p.x+=p.vx*.016;
+        p.y+=p.vy*.016;
+        p.vx*=.97;p.vy*=.97;
+        if(p.life<=0)return false;
+        ctx.globalAlpha=Math.max(0,p.life/p.max);
+        ctx.fillStyle=p.color;
+        ctx.fillRect(p.x,p.y,p.size,p.size);
+        ctx.globalAlpha=1;
+        return true;
+      });
+    }
 
-            html2canvas(captureArea, { backgroundColor: '#ffffff', scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = '당첨결과_스크린샷.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                captureBtn.innerHTML = originalText;
-                captureBtn.disabled = false;
-            });
-        }
-    </script>
+    function drawBall(b){
+      const grd=ctx.createRadialGradient(b.x-b.r*.35,b.y-b.r*.4,2,b.x,b.y,b.r);
+      grd.addColorStop(0,"#ffffff");
+      grd.addColorStop(.28,b.color[0]);
+      grd.addColorStop(.67,b.color[1]);
+      grd.addColorStop(1,b.color[2]);
+
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fillStyle=grd;
+      ctx.shadowColor=b.glow>.2&&racing?"#36d7ff":"rgba(0,0,0,.7)";
+      ctx.shadowBlur=b.glow>.2&&racing?10+12*b.glow:7;
+      ctx.fill();
+      ctx.shadowBlur=0;
+
+      ctx.beginPath();
+      ctx.arc(b.x,b.y,b.r-2,0,Math.PI*2);
+      ctx.strokeStyle="rgba(255,255,255,.7)";
+      ctx.lineWidth=1.5;
+      ctx.stroke();
+
+      ctx.fillStyle="#0f172a";
+      ctx.font=`900 ${Math.max(10,b.r*.9)}px Poppins`;
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.fillText(b.num,b.x,b.y+.5);
+    }
+
+    function drawNeonRails(){
+      ctx.lineWidth=3;
+      ctx.strokeStyle="rgba(54,215,255,.55)";
+      ctx.shadowColor="#36d7ff";
+      ctx.shadowBlur=10;
+      ctx.beginPath();
+      ctx.moveTo(18,34);
+      ctx.lineTo(18,H-24);
+      ctx.moveTo(W-18,34);
+      ctx.lineTo(W-18,H-24);
+      ctx.stroke();
+      ctx.shadowBlur=0;
+
+      ctx.fillStyle="rgba(54,215,255,.08)";
+      ctx.fillRect(18,34,W-36,64);
+      ctx.strokeStyle="rgba(255,255,255,.08)";
+      ctx.strokeRect(18,34,W-36,64);
+    }
+
+    function drawFinishZone(){
+      const center=W/2;
+      const top=H-165;
+
+      const grad=ctx.createLinearGradient(0,top,0,H);
+      grad.addColorStop(0,"rgba(139,92,246,.03)");
+      grad.addColorStop(1,"rgba(255,216,77,.16)");
+      ctx.fillStyle=grad;
+      ctx.beginPath();
+      ctx.moveTo(20,top);
+      ctx.lineTo(center-58,H);
+      ctx.lineTo(center+58,H);
+      ctx.lineTo(W-20,top);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle="rgba(255,216,77,.65)";
+      ctx.lineWidth=4;
+      ctx.shadowColor="#ffd84d";
+      ctx.shadowBlur=13;
+      ctx.beginPath();
+      ctx.moveTo(20,top);
+      ctx.lineTo(center-58,H-28);
+      ctx.moveTo(W-20,top);
+      ctx.lineTo(center+58,H-28);
+      ctx.stroke();
+      ctx.shadowBlur=0;
+
+      const hole=ctx.createRadialGradient(center,H-24,4,center,H-24,47);
+      hole.addColorStop(0,"#000");
+      hole.addColorStop(.52,"#2a1800");
+      hole.addColorStop(.7,"#ffd84d");
+      hole.addColorStop(1,"rgba(255,216,77,0)");
+      ctx.fillStyle=hole;
+      ctx.beginPath();
+      ctx.ellipse(center,H-24,50,20,0,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle="#fff0a6";
+      ctx.font="900 12px Noto Sans KR";
+      ctx.textAlign="center";
+      ctx.fillText("GOLDEN HOLE",center,H-54);
+    }
+
+    function addResult(num){
+      const chip=document.createElement("div");
+      chip.className="result-chip";
+      chip.textContent=num;
+      document.getElementById("result-list").appendChild(chip);
+    }
+
+    function updateStats(){
+      document.getElementById("stat-total").textContent=originalRange?originalRange.max-originalRange.min+1:0;
+      document.getElementById("stat-wins").textContent=drawnNumbers.length;
+      document.getElementById("remain-label").textContent=`남은 ${eligibleNumbers.length}명`;
+    }
+
+    function addLog(html,hot=false){
+      const log=document.getElementById("log");
+      const line=document.createElement("div");
+      line.className="log-line"+(hot?" hot":"");
+      line.innerHTML=html;
+      log.prepend(line);
+      while(log.children.length>10)log.lastChild.remove();
+    }
+
+    function resetAll(){
+      if(racing&&!confirm("진행 중인 레이스를 중단하고 초기화할까요?"))return;
+      cancelAnimationFrame(animationId);
+      clearTimeout(winnerRevealTimer);
+      balls=[];particles=[];eligibleNumbers=[];drawnNumbers=[];
+      originalRange=null;prepared=false;racing=false;finished=false;
+
+      document.getElementById("winner-overlay").classList.remove("show");
+      document.getElementById("result-list").innerHTML="";
+      document.getElementById("log").innerHTML='<div class="log-line">번호를 설정한 뒤 레이스를 준비하세요.</div>';
+      document.getElementById("start-btn").disabled=true;
+      document.getElementById("replay-btn").disabled=true;
+      document.getElementById("prepare-btn").disabled=false;
+      document.getElementById("capture-btn").disabled=false;
+      document.getElementById("stat-state").textContent="대기";
+      document.getElementById("stat-time").textContent="--";
+      document.getElementById("stage-label").textContent="번호를 설정하고 레이스를 준비하세요";
+      updateStats();
+      buildBoard();
+      drawScene();
+    }
+
+    function fireFlash(){
+      const flash=document.getElementById("flash");
+      flash.classList.remove("fire");
+      void flash.offsetWidth;
+      flash.classList.add("fire");
+    }
+
+    function createConfetti(count){
+      const colors=["#ffd84d","#ff4fa3","#36d7ff","#31e6a1","#8b5cf6","#ff7a24","#ffffff"];
+      for(let i=0;i<count;i++){
+        const p=document.createElement("div");
+        p.className="confetti";
+        p.style.left=Math.random()*100+"vw";
+        p.style.background=colors[Math.floor(Math.random()*colors.length)];
+        p.style.borderRadius=Math.random()>.55?"50%":"2px";
+        p.style.width=6+Math.random()*10+"px";
+        p.style.height=10+Math.random()*18+"px";
+        p.style.setProperty("--drift",(Math.random()-.5)*420+"px");
+        p.style.setProperty("--spin",(Math.random()*1500-750)+"deg");
+        p.style.animationDuration=2.2+Math.random()*2.5+"s";
+        p.style.animationDelay=Math.random()*.5+"s";
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),5200);
+      }
+    }
+
+    function createFireworks(count){
+      const colors=["#ffd84d","#ff4fa3","#36d7ff","#31e6a1","#c084fc","#ffffff"];
+      for(let b=0;b<count;b++){
+        setTimeout(()=>{
+          const ox=15+Math.random()*70;
+          const oy=15+Math.random()*42;
+          const color=colors[Math.floor(Math.random()*colors.length)];
+          for(let i=0;i<28;i++){
+            const a=Math.PI*2*i/28+Math.random()*.08;
+            const dist=70+Math.random()*110;
+            const s=document.createElement("div");
+            s.className="firework";
+            s.style.left=ox+"vw";
+            s.style.top=oy+"vh";
+            s.style.color=color;
+            s.style.setProperty("--x",Math.cos(a)*dist+"px");
+            s.style.setProperty("--y",Math.sin(a)*dist+"px");
+            document.body.appendChild(s);
+            setTimeout(()=>s.remove(),1200);
+          }
+        },b*260);
+      }
+    }
+
+    async function takeScreenshot(){
+      const btn=document.getElementById("capture-btn");
+      const old=btn.textContent;
+      btn.disabled=true;btn.textContent="캡처 중...";
+      try{
+        const shot=await html2canvas(document.getElementById("capture-area"),{
+          backgroundColor:"#07111f",
+          scale:2,
+          useCORS:true
+        });
+        const a=document.createElement("a");
+        a.download="핀볼랜덤레이스_결과.png";
+        a.href=shot.toDataURL("image/png");
+        a.click();
+      }catch(e){
+        console.error(e);
+        alert("캡처에 실패했습니다.");
+      }finally{
+        btn.disabled=false;btn.textContent=old;
+      }
+    }
+
+    function wait(ms){return new Promise(r=>setTimeout(r,ms))}
+
+    window.addEventListener("resize",resizeCanvas);
+    resizeCanvas();
+    drawScene();
+  </script>
 </body>
 </html>

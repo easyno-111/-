@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>로그라이트 화력 슈팅 (V56 성능 안정화)</title>
+    <title>로그라이트 화력 슈팅 (V57 타격 이펙트 강화)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', sans-serif; user-select: none; }
         body { background-color: #050510; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; position: relative; }
@@ -199,7 +199,8 @@
         let bossTimer = 30; 
         const BOSS_SPAWN_INTERVAL = 1800; 
         let bossSpawnTimer = BOSS_SPAWN_INTERVAL; 
-        let globalShakeTimer = 0; 
+        let globalShakeTimer = 0;
+        let globalShakePower = 15; 
         
         let isSwarm = false;
         let swarmWarningTimer = 0;
@@ -210,18 +211,26 @@
         let p = {}; let bullets = []; let enemies = []; let particles = []; let activeSkills = []; 
         let shurikens = []; let orbitals = []; let lightnings = []; let bossBullets = []; let homingBullets = [];
         let swords = []; let blackholes = []; let fireBooms = [];
+        let visualEffects = [];
 
-        // V56 성능 안정화: 객체 수/충돌/삭제를 한곳에서 관리한다.
+        // V57: V56 최적화를 유지하면서 저비용 대형 이펙트와 타격감을 추가한다.
         const MAX_BLACKHOLES = 5;
         const MAX_BULLETS = 220;
         const MAX_HOMING_BULLETS = 80;
         const MAX_PARTICLES = 70;
+        const MAX_VISUAL_EFFECTS = 48;
         const ENEMY_GRID_SIZE = 72;
         const enemyGrid = new Map();
         let nextEnemyId = 1;
         let deadEnemiesPending = false;
         let performanceMode = false;
         let smoothedFrameMs = 16.7;
+        let screenFlashTimer = 0;
+        let screenFlashMax = 1;
+        let screenFlashStrength = 0;
+        let screenFlashColor = '#ffffff';
+        let shakeThrottle = 0;
+        let effectsSpawnedThisFrame = 0;
 
         function fastRemove(arr, index) {
             const last = arr.length - 1;
@@ -329,6 +338,161 @@
             cx.beginPath(); cx.roundRect(0, 0, w, h * 0.2, [6, 6, 0, 0]); cx.fill();
             effectSpriteCache.set(key, c);
             return c;
+        }
+
+
+        // 큰 도형과 짧은 수명의 충격파를 이용한다. 객체 수와 프레임당 생성량을 제한해 성능을 보존한다.
+        function triggerShake(frames, power = 8) {
+            globalShakeTimer = Math.max(globalShakeTimer, frames);
+            globalShakePower = Math.max(globalShakePower || 0, power);
+        }
+
+        function triggerScreenFlash(color = '#ffffff', strength = 0.18, frames = 4) {
+            if (performanceMode) strength *= 0.65;
+            if (strength >= screenFlashStrength || screenFlashTimer <= 1) {
+                screenFlashColor = color;
+                screenFlashStrength = strength;
+            }
+            screenFlashTimer = Math.max(screenFlashTimer, frames);
+            screenFlashMax = Math.max(screenFlashMax, frames);
+        }
+
+        function pushVisualEffect(type, x, y, color, size, life, angle = 0, extra = 0) {
+            const limit = performanceMode ? 26 : MAX_VISUAL_EFFECTS;
+            if (effectsSpawnedThisFrame >= (performanceMode ? 3 : 8)) return;
+            effectsSpawnedThisFrame++;
+            const effect = { type, x, y, color, size, life, maxLife: life, angle, extra };
+            if (visualEffects.length < limit) {
+                visualEffects.push(effect);
+                return;
+            }
+            // 새 배열을 만들지 않고 수명이 가장 짧은 슬롯을 재사용한다.
+            let replaceIndex = 0;
+            for (let i = 1; i < visualEffects.length; i++) {
+                if (visualEffects[i].life < visualEffects[replaceIndex].life) replaceIndex = i;
+            }
+            visualEffects[replaceIndex] = effect;
+        }
+
+        function spawnImpact(x, y, color, size = 30, power = 1, kind = 'burst') {
+            pushVisualEffect('ring', x, y, color, size * 0.55, 13 + Math.floor(power * 3), 0, size);
+            if (!performanceMode || power >= 1) pushVisualEffect(kind, x, y, color, size, 9 + Math.floor(power * 3), Math.random() * Math.PI, power);
+            if (power >= 1.15 && shakeThrottle <= 0) {
+                triggerShake(Math.min(12, 3 + Math.floor(power * 4)), Math.min(13, 4 + power * 3));
+                shakeThrottle = 3;
+            }
+            if (power >= 2) triggerScreenFlash(color, Math.min(0.28, 0.08 + power * 0.05), 3);
+        }
+
+        function spawnCastEffect(x, y, color, size = 75, power = 1) {
+            pushVisualEffect('cast', x, y, color, size, 18, 0, power);
+            pushVisualEffect('ring', x, y, '#ffffff', size * 0.35, 12, 0, size * 0.9);
+        }
+
+        function drawBoomerangEffect(x, y, size, color, rotation, vx = 0, vy = 0, alpha = 1) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (let t = 2; t >= 1; t--) {
+                ctx.save();
+                ctx.translate(x - vx * t * 0.45, y - vy * t * 0.45);
+                ctx.rotate(rotation - t * 0.22);
+                ctx.globalAlpha = alpha * (0.08 + (2 - t) * 0.05);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = Math.max(6, size * 0.11);
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 0.36, -0.8, 1.6);
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.globalAlpha = alpha * 0.28;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.max(12, size * 0.18);
+            ctx.beginPath(); ctx.arc(0, 0, size * 0.36, -0.85, 1.65); ctx.stroke();
+            ctx.rotate(Math.PI);
+            ctx.beginPath(); ctx.arc(0, 0, size * 0.36, -0.85, 1.65); ctx.stroke();
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = Math.max(5, size * 0.07);
+            ctx.strokeStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(0, 0, size * 0.36, -0.85, 1.65); ctx.stroke();
+            ctx.rotate(Math.PI);
+            ctx.beginPath(); ctx.arc(0, 0, size * 0.36, -0.85, 1.65); ctx.stroke();
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(0, 0, Math.max(5, size * 0.07), 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        function renderVisualEffects() {
+            if (!visualEffects.length) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            for (let i = visualEffects.length - 1; i >= 0; i--) {
+                const fx = visualEffects[i];
+                fx.life--;
+                const progress = 1 - Math.max(0, fx.life) / fx.maxLife;
+                const fade = Math.max(0, 1 - progress);
+                ctx.save();
+                ctx.translate(fx.x, fx.y);
+                ctx.rotate(fx.angle);
+                ctx.globalAlpha = fade;
+                ctx.strokeStyle = fx.color;
+                ctx.fillStyle = fx.color;
+
+                if (fx.type === 'ring') {
+                    const endSize = fx.extra || fx.size * 2.3;
+                    const r = fx.size + (endSize - fx.size) * progress;
+                    ctx.lineWidth = Math.max(2, 9 * fade);
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+                    ctx.globalAlpha = fade * 0.45;
+                    ctx.lineWidth = Math.max(1, 3 * fade);
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2); ctx.stroke();
+                } else if (fx.type === 'burst') {
+                    const rays = performanceMode ? 5 : 8;
+                    const inner = fx.size * (0.12 + progress * 0.25);
+                    const outer = fx.size * (0.75 + progress * 0.65);
+                    ctx.lineWidth = Math.max(2, 8 * fade);
+                    ctx.beginPath();
+                    for (let r = 0; r < rays; r++) {
+                        const a = r * Math.PI * 2 / rays;
+                        ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+                        ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+                    }
+                    ctx.stroke();
+                    ctx.globalAlpha = fade * 0.55;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(0, 0, fx.size * 0.28 * fade, 0, Math.PI * 2); ctx.fill();
+                } else if (fx.type === 'slash') {
+                    ctx.lineWidth = Math.max(3, fx.size * 0.13 * fade);
+                    ctx.beginPath(); ctx.arc(0, 0, fx.size * (0.55 + progress * 0.3), -1.1, 1.25); ctx.stroke();
+                    ctx.globalAlpha = fade * 0.75;
+                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(1, fx.size * 0.035);
+                    ctx.beginPath(); ctx.arc(0, 0, fx.size * (0.5 + progress * 0.28), -1.05, 1.2); ctx.stroke();
+                } else if (fx.type === 'cross') {
+                    const len = fx.size * (0.5 + progress * 0.5);
+                    ctx.lineWidth = Math.max(2, 7 * fade);
+                    ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(len, 0); ctx.moveTo(0, -len); ctx.lineTo(0, len); ctx.stroke();
+                } else if (fx.type === 'cast') {
+                    const r = fx.size * (0.25 + progress * 0.95);
+                    ctx.globalAlpha = fade * 0.5;
+                    ctx.lineWidth = Math.max(3, 12 * fade);
+                    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+                    const spikes = performanceMode ? 4 : 6;
+                    ctx.globalAlpha = fade * 0.75;
+                    ctx.lineWidth = Math.max(2, 5 * fade);
+                    ctx.beginPath();
+                    for (let n = 0; n < spikes; n++) {
+                        const a = n * Math.PI * 2 / spikes + progress * 1.5;
+                        ctx.moveTo(Math.cos(a) * r * 0.35, Math.sin(a) * r * 0.35);
+                        ctx.lineTo(Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15);
+                    }
+                    ctx.stroke();
+                }
+                ctx.restore();
+                if (fx.life <= 0) fastRemove(visualEffects, i);
+            }
+            ctx.restore();
         }
 
         const colorLevels = {
@@ -714,7 +878,7 @@
             });
 
             recalculateStats();
-            bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = []; fireBooms = [];
+            bullets = []; homingBullets = []; enemies = []; particles = []; activeSkills = []; shurikens = []; orbitals = []; lightnings = []; bossBullets = []; swords = []; blackholes = []; fireBooms = []; visualEffects = []; screenFlashTimer = 0;
             score = 0; bossKills = 0; frameCount = 0; isBossStage = false; isBossWarning = false; isSwarm = false;
             nextEnemyId = 1; deadEnemiesPending = false; enemyGrid.clear(); lastTime = performance.now();
             bossSpawnTimer = BOSS_SPAWN_INTERVAL; 
@@ -910,6 +1074,9 @@
             
             if(p.activeSkillType === 'boomerang') {
                 let sd = 30 * p.skill_mult;
+                const castColor = colorLevels.boomerang[Math.min(5, p.lvl_boom_split||0)];
+                spawnCastEffect(p.x, p.y - 35, castColor, 95, 1.1);
+                triggerShake(5, 5);
                 activeSkills.push({ 
                     type: 'boomerang', level: 1, x: p.x, y: p.y - 40, w: 120, 
                     vx: p.vx*0.3, vy: -15, state: 'flying_out', 
@@ -917,16 +1084,23 @@
                 });
             }
             else if(p.activeSkillType === 'laser') { 
-                let sd = 2 * p.skill_mult; 
+                let sd = 2 * p.skill_mult;
+                const castColor = colorLevels.laser[Math.min(5, p.lvl_laser_split||0)];
+                spawnCastEffect(p.x, p.y - 25, castColor, 125, 1.6);
+                triggerScreenFlash(castColor, 0.16, 5);
+                triggerShake(8, 7); 
                 let splits = (1 + p.lvl_laser_split * 2) + p.cheat_extra_proj;
                 let maxSpreadAngle = Math.min(Math.PI * 0.8, splits * 0.15); 
                 for(let i=0; i<splits; i++) {
                     let angleOffset = splits > 1 ? (i - (splits-1)/2) * (maxSpreadAngle / splits) : 0;
-                    activeSkills.push({ type: 'laser', angleOffset: angleOffset, x: p.x, y: p.y - 20, life: 90, w: 25, dmg: sd }); 
+                    activeSkills.push({ type: 'laser', angleOffset: angleOffset, x: p.x, y: p.y - 20, life: 90, maxLife: 90, w: 25, dmg: sd, lastImpactFrame: -99 }); 
                 }
             }
             else if(p.activeSkillType === 'punch') { 
                 let sd = 25 * p.skill_mult;
+                const castColor = colorLevels.punch[Math.min(5, p.lvl_punch_count||0)];
+                spawnCastEffect(p.x, p.y - 30, castColor, 105, 1.3);
+                triggerShake(6, 6);
                 let count = (1 + p.lvl_punch_count) + p.cheat_extra_proj;
                 for(let i=0; i<count; i++) {
                     let angleCalc = count > 1 ? (i - (count-1)/2) * 0.4 : 0;
@@ -973,6 +1147,8 @@
             let uiNeedsUpdate = false;
             let homingSpawnedThisFrame = 0;
             let lightningSpawnedThisFrame = 0;
+            effectsSpawnedThisFrame = 0;
+            if (shakeThrottle > 0) shakeThrottle--;
 
             if (p.lvl_regen > 0 && frameCount % 60 === 0 && p.hp < p.maxHp) { 
                 p.hp = Math.min(p.maxHp, p.hp + p.lvl_regen * 1.5); 
@@ -995,7 +1171,12 @@
             ctx.globalAlpha = 1;
 
             ctx.save();
-            if(globalShakeTimer > 0) { ctx.translate((Math.random()-0.5)*15, (Math.random()-0.5)*15); globalShakeTimer--; }
+            if(globalShakeTimer > 0) {
+                const shake = Math.min(performanceMode ? 10 : 16, globalShakePower || 15) * Math.min(1, globalShakeTimer / 4);
+                ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+                globalShakeTimer--;
+                if (globalShakeTimer <= 0) globalShakePower = 0;
+            }
             if(p.skillTimer > 0) { p.skillTimer--; if(p.skillTimer <= 0) { p.skillTimer=0; uiNeedsUpdate = true; } else if(p.skillTimer%60===0) uiNeedsUpdate = true; }
             if(p.iframe > 0) { p.iframe--; }
 
@@ -1080,6 +1261,8 @@
                         angle = Math.atan2(t.y - p.y, t.x - p.x);
                     }
 
+                    const fireColor = '#ff6b35';
+                    spawnCastEffect(p.x, p.y - 25, fireColor, 115 + p.lvl_fire_boom * 12, 1.4);
                     fireBooms.push({
                         x: p.x, y: p.y,
                         angle: angle,
@@ -1087,7 +1270,7 @@
                         speed: 10 + p.lvl_fire_boom,
                         w: 150 + p.lvl_fire_boom * 30,
                         dmg: 2 * p.skill_mult * (1 + p.lvl_fire_boom * 0.5),
-                        life: 200,
+                        life: 200, spin: 0, lastImpactFrame: -99,
                         vibrateX: 0, vibrateY: 0
                     });
                 }
@@ -1113,7 +1296,7 @@
                         let distLimit = fbRadius + e.w/2;
                         if (dx*dx + dy*dy < distLimit*distLimit) {
                             hitAny = true;
-                            e.hp -= actualDmg;
+                            e.hp -= actualDmg; e.hitFlash = Math.max(e.hitFlash || 0, 3);
                             e.burnTimer = 300;
                             if (frameCount % 12 === 0) spawnParticles(e.x, e.y, '#e74c3c', 1);
                             if (e.isBoss && !e.isDevTest) e.iframe = 2;
@@ -1122,7 +1305,11 @@
                 }
 
                 if (hitAny) {
-                    fb.speed = fb.baseSpeed * 0.15; 
+                    fb.speed = fb.baseSpeed * 0.15;
+                    if (frameCount - fb.lastImpactFrame > 5) {
+                        spawnImpact(fb.x, fb.y, '#ff6b35', Math.min(90, fb.w * 0.38), 0.85, 'burst');
+                        fb.lastImpactFrame = frameCount;
+                    } 
                     fb.vibrateX = (Math.random() - 0.5) * 15; 
                     fb.vibrateY = (Math.random() - 0.5) * 15;
                 } else {
@@ -1130,21 +1317,32 @@
                     fb.vibrateX = 0; fb.vibrateY = 0;
                 }
 
+                fb.spin += 0.24;
                 ctx.save();
-                ctx.translate(fb.x + fb.vibrateX, fb.y + fb.vibrateY);
-                ctx.rotate(fb.angle + Math.PI/2);
-                
-                ctx.fillStyle = '#ff6b81';
-                ctx.beginPath();
-                ctx.arc(0, 0, fbRadius, Math.PI, 0, false); 
-                ctx.arc(0, -fbRadius*0.4, fbRadius, 0, Math.PI, true); 
-                ctx.closePath(); ctx.fill();
-
-                ctx.fillStyle = '#ffa502';
-                ctx.beginPath();
-                ctx.arc(0, -fbRadius*0.1, fbRadius*0.7, Math.PI, 0, false);
-                ctx.arc(0, -fbRadius*0.4, fbRadius*0.7, 0, Math.PI, true);
-                ctx.closePath(); ctx.fill();
+                ctx.globalCompositeOperation = 'lighter';
+                const fx = fb.x + fb.vibrateX, fy = fb.y + fb.vibrateY;
+                const backX = Math.cos(fb.angle), backY = Math.sin(fb.angle);
+                for (let t = 3; t >= 1; t--) {
+                    ctx.save();
+                    ctx.translate(fx - backX * t * 24, fy - backY * t * 24);
+                    ctx.rotate(fb.spin - t * 0.35);
+                    ctx.globalAlpha = 0.05 + (3 - t) * 0.045;
+                    ctx.strokeStyle = t === 1 ? '#fff1a8' : '#ff3f34';
+                    ctx.lineWidth = Math.max(10, fbRadius * 0.22);
+                    ctx.beginPath(); ctx.arc(0, 0, fbRadius * (0.54 - t * 0.04), 0.2, Math.PI * 1.75); ctx.stroke();
+                    ctx.restore();
+                }
+                ctx.translate(fx, fy);
+                ctx.rotate(fb.spin);
+                ctx.globalAlpha = 0.28;
+                ctx.strokeStyle = '#ff3f34'; ctx.lineWidth = Math.max(18, fbRadius * 0.28);
+                ctx.beginPath(); ctx.arc(0, 0, fbRadius * 0.58, 0, Math.PI * 1.65); ctx.stroke();
+                ctx.globalAlpha = 0.9;
+                ctx.strokeStyle = '#ffa502'; ctx.lineWidth = Math.max(10, fbRadius * 0.16);
+                ctx.beginPath(); ctx.arc(0, 0, fbRadius * 0.58, 0, Math.PI * 1.65); ctx.stroke();
+                ctx.strokeStyle = '#fff4c2'; ctx.lineWidth = Math.max(3, fbRadius * 0.055);
+                ctx.beginPath(); ctx.arc(0, 0, fbRadius * 0.58, 0.05, Math.PI * 1.55); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, Math.max(6, fbRadius * 0.12), 0, Math.PI*2); ctx.fill();
                 ctx.restore();
 
                 if (fb.life <= 0 || fb.x < -200 || fb.x > canvasWidth + 200 || fb.y < -200 || fb.y > canvasHeight + 200) {
@@ -1159,10 +1357,21 @@
                 ctx.save(); ctx.translate(bh.x, bh.y); ctx.rotate(frameCount * 0.1);
                 const blackholeSprite = getBlackholeSprite(bh.r);
                 ctx.drawImage(blackholeSprite, -bh.r, -bh.r);
+                const pulse = 0.92 + Math.sin(frameCount * 0.16 + i) * 0.08;
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath(); ctx.ellipse(0, 0, bh.r*0.72*pulse, bh.r*0.24, frameCount*0.05, 0, Math.PI*2);
+                ctx.strokeStyle = 'rgba(255, 190, 90, 0.82)'; ctx.lineWidth = performanceMode ? 3 : 5; ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, bh.r * (0.82 + Math.sin(frameCount*0.1)*0.05), 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(150, 70, 255, 0.3)'; ctx.lineWidth = 8; ctx.stroke();
                 if (!performanceMode) {
-                    ctx.beginPath(); ctx.ellipse(0, 0, bh.r*0.6, bh.r*0.2, frameCount*0.05, 0, Math.PI*2);
-                    ctx.strokeStyle = 'rgba(255, 200, 100, 0.8)'; ctx.lineWidth = 4; ctx.stroke();
+                    for (let dot = 0; dot < 5; dot++) {
+                        const a = frameCount * 0.08 + dot * Math.PI * 0.4;
+                        ctx.fillStyle = dot % 2 ? '#ff9f43' : '#a29bfe';
+                        ctx.globalAlpha = 0.7;
+                        ctx.beginPath(); ctx.arc(Math.cos(a)*bh.r*0.78, Math.sin(a)*bh.r*0.34, 3 + dot%2, 0, Math.PI*2); ctx.fill();
+                    }
                 }
+                ctx.globalAlpha = 1;
                 ctx.beginPath(); ctx.arc(0, 0, bh.r * 0.3, 0, Math.PI * 2); ctx.fillStyle = 'black'; ctx.fill(); ctx.restore();
 
                 let pullRadius = bh.r * 2.5;
@@ -1193,7 +1402,8 @@
                         let hitEnemy = null;
                         forEachEnemyNear(sk.x, sk.y, sk.w/2 + 60, e => {
                             if(!sk.hitLog.has(e.id) && Math.abs(e.x-sk.x)<sk.w/2 && Math.abs(e.y-sk.y)<sk.w/2) {
-                                e.hp -= sk.dmg; sk.hitLog.add(e.id);
+                                e.hp -= sk.dmg; e.hitFlash = Math.max(e.hitFlash || 0, 5); sk.hitLog.add(e.id);
+                                spawnImpact(e.x, e.y, c_boom, Math.min(70, sk.w * 0.48), 1.05, 'slash');
                                 if(e.isBoss && !e.isDevTest) e.iframe = 2;
                                 hitEnemy = e;
                                 return false;
@@ -1218,7 +1428,7 @@
                             let aoeSq = (sk.w/2) * (sk.w/2);
                             forEachEnemyNear(sk.x, sk.y, sk.w/2 + 60, e => {
                                 let dx = e.x - sk.x; let dy = e.y - sk.y;
-                                if (dx*dx + dy*dy < aoeSq) { e.hp -= sk.dmg * 0.5; }
+                                if (dx*dx + dy*dy < aoeSq) { e.hp -= sk.dmg * 0.5; e.hitFlash = Math.max(e.hitFlash || 0, 4); }
                             });
                         }
                         
@@ -1245,7 +1455,8 @@
                         let hitAny = false;
                         forEachEnemyNear(sk.x, sk.y, sk.w/2 + 60, e => {
                             if (!sk.hitLog.has(e.id) && Math.abs(e.x - sk.x) < sk.w/2 && Math.abs(e.y - sk.y) < sk.w/2) {
-                                e.hp -= sk.dmg; sk.hitLog.add(e.id); hitAny = true;
+                                e.hp -= sk.dmg; e.hitFlash = Math.max(e.hitFlash || 0, 3); sk.hitLog.add(e.id); hitAny = true;
+                                if (frameCount % 4 === 0) spawnImpact(e.x, e.y, c_boom, Math.min(52, sk.w * 0.42), 0.55, 'slash');
                             }
                         });
                         
@@ -1281,7 +1492,8 @@
                         let hitAny = false;
                         forEachEnemyNear(sk.x, sk.y, sk.w/2 + 60, e => {
                             if (!sk.hitLog.has(e.id) && Math.abs(e.x - sk.x) < sk.w/2 && Math.abs(e.y - sk.y) < sk.w/2) {
-                                e.hp -= sk.dmg; sk.hitLog.add(e.id); hitAny = true;
+                                e.hp -= sk.dmg; e.hitFlash = Math.max(e.hitFlash || 0, 3); sk.hitLog.add(e.id); hitAny = true;
+                                if (frameCount % 4 === 0) spawnImpact(e.x, e.y, c_boom, Math.min(58, sk.w * 0.45), 0.65, 'slash');
                             }
                         });
                         if (hitAny) {
@@ -1305,20 +1517,28 @@
                         }
                     }
 
-                    ctx.save(); 
-                    ctx.translate(sk.x + (sk.vibrateX||0), sk.y + (sk.vibrateY||0)); 
-                    ctx.rotate(frameCount*0.4); 
-                    ctx.fillStyle=c_boom; 
-                    ctx.fillRect(-sk.w/2, -8, sk.w, 16); 
-                    ctx.fillRect(-8, -sk.w/2, 16, sk.w); 
-                    ctx.restore();
+                    drawBoomerangEffect(
+                        sk.x + (sk.vibrateX||0), sk.y + (sk.vibrateY||0), sk.w,
+                        c_boom, frameCount * (sk.level === 2 ? 0.55 : 0.36), sk.vx || 0, sk.vy || 0,
+                        sk.state === 'hit_freeze' ? 1 : 0.92
+                    );
 
                 } else if(sk.type==='laser') {
                     sk.life--; sk.x = p.x; sk.y = p.y - 20;
-                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angleOffset); 
-                    ctx.globalAlpha=0.7; ctx.fillStyle=c_laser; 
-                    ctx.fillRect(-sk.w/2, -canvasHeight*1.5, sk.w, canvasHeight*1.5); 
-                    ctx.globalAlpha=1; ctx.restore();
+                    const laserPulse = 1 + Math.sin((sk.maxLife - sk.life) * 0.55) * 0.16;
+                    const beamLength = canvasHeight * 1.55;
+                    ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angleOffset);
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = 0.12; ctx.fillStyle = c_laser;
+                    ctx.fillRect(-sk.w * 2.2 * laserPulse, -beamLength, sk.w * 4.4 * laserPulse, beamLength);
+                    ctx.globalAlpha = 0.34; ctx.fillRect(-sk.w * 1.1 * laserPulse, -beamLength, sk.w * 2.2 * laserPulse, beamLength);
+                    ctx.globalAlpha = 0.92; ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-sk.w * 0.28, -beamLength, sk.w * 0.56, beamLength);
+                    ctx.globalAlpha = 0.8; ctx.fillStyle = c_laser;
+                    ctx.beginPath(); ctx.arc(0, 0, sk.w * (1.45 + Math.sin(frameCount*0.4)*0.15), 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff';
+                    ctx.beginPath(); ctx.arc(0, 0, sk.w * 0.45, 0, Math.PI*2); ctx.fill();
+                    ctx.restore();
 
                     if (frameCount % 2 === 0) {
                         let dirX = Math.sin(sk.angleOffset); let dirY = -Math.cos(sk.angleOffset);
@@ -1331,7 +1551,13 @@
                             if (dot > 0) {
                                 let px = dirX * dot; let py = dirY * dot;
                                 let distSq = (dx - px)*(dx - px) + (dy - py)*(dy - py);
-                                if (distSq < (sk.w/2 + e.w/2)*(sk.w/2 + e.w/2)) { e.hp -= sk.dmg * 2; }
+                                if (distSq < (sk.w/2 + e.w/2)*(sk.w/2 + e.w/2)) {
+                                    e.hp -= sk.dmg * 2; e.hitFlash = Math.max(e.hitFlash || 0, 2);
+                                    if (frameCount - sk.lastImpactFrame > 4) {
+                                        spawnImpact(e.x, e.y, c_laser, Math.min(62, e.w + sk.w), 0.7, 'cross');
+                                        sk.lastImpactFrame = frameCount;
+                                    }
+                                }
                             }
                         }
                     }
@@ -1374,14 +1600,28 @@
                         }
                         
                         if (hitEnemy) {
+                            spawnImpact(hitEnemy.x, hitEnemy.y, c_punch, Math.min(85, sk.w * 0.65), 1.25, 'burst');
                             sk.state = 'combo';
                             sk.targetX = hitEnemy.x;
                             sk.targetY = hitEnemy.y;
                             sk.comboStep = 0;
                             sk.timer = 0; 
                         } else if(sk.state === 'flying') { 
-                            ctx.save(); ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0); 
-                            ctx.drawImage(getSprite('paw', c_punch, sk.w * 0.8), -sk.w*0.8, -sk.w*0.8);
+                            ctx.save();
+                            ctx.globalCompositeOperation = 'lighter';
+                            for (let ghost = 2; ghost >= 1; ghost--) {
+                                ctx.save();
+                                ctx.translate(sk.x - sk.vx * ghost * 0.7, sk.y - sk.vy * ghost * 0.7);
+                                ctx.rotate(sk.angle || 0); ctx.globalAlpha = ghost === 1 ? 0.16 : 0.08;
+                                const gs = sk.w * (0.82 - ghost * 0.05);
+                                ctx.drawImage(getSprite('paw', c_punch, gs), -gs, -gs);
+                                ctx.restore();
+                            }
+                            ctx.translate(sk.x, sk.y); ctx.rotate(sk.angle || 0);
+                            ctx.globalAlpha = 0.28; ctx.fillStyle = c_punch;
+                            ctx.beginPath(); ctx.arc(0, 0, sk.w * 0.68, 0, Math.PI*2); ctx.fill();
+                            ctx.globalAlpha = 1;
+                            ctx.drawImage(getSprite('paw', c_punch, sk.w * 0.92), -sk.w*0.92, -sk.w*0.92);
                             ctx.restore(); 
                         }
                     }
@@ -1405,12 +1645,15 @@
                                 const hitY = sk.targetY + offsetY;
                                 forEachEnemyNear(hitX, hitY, aoe + 60, e => {
                                     if((e.x-hitX)*(e.x-hitX) + (e.y-hitY)*(e.y-hitY) < aoeSq){
-                                        e.hp -= sk.dmg * 0.5;
+                                        e.hp -= sk.dmg * 0.5; e.hitFlash = Math.max(e.hitFlash || 0, 4);
                                     }
                                 });
+                                spawnImpact(hitX, hitY, c_punch, Math.min(68, sk.w * 0.62), 0.8, 'burst');
                                 sk.timer = 6; 
                             } else {
-                                globalShakeTimer = 35; 
+                                triggerShake(32, 14);
+                                triggerScreenFlash(c_punch, 0.24, 6);
+                                spawnImpact(sk.targetX, sk.targetY, c_punch, Math.min(180, sk.w * 1.5), 2.7, 'cross'); 
                                 
                                 if (particles.length < MAX_PARTICLES) particles.push({
                                     x: sk.targetX, y: sk.targetY, vx:0, vy:0,
@@ -1421,7 +1664,7 @@
                                 let megaDmg = sk.dmg * (3 + p.lvl_punch_split * 2);
                                 enemies.forEach(e=>{ 
                                     if(e.isDead) return;
-                                    e.hp -= megaDmg; 
+                                    e.hp -= megaDmg; e.hitFlash = Math.max(e.hitFlash || 0, 7); 
                                     if(e.isBoss && !e.isDevTest) e.iframe=4; 
                                 });
                                 sk.state = 'done';
@@ -1443,6 +1686,7 @@
                         if (!candidate.isDead && (!target || candidate.hp > target.hp)) target = candidate;
                     }
                     if (target) {
+                            spawnCastEffect(target.x, target.y, c_sword, 105 + p.lvl_sword * 10, 1.2);
                             let swordCount = 3 + p.lvl_sword * 2; 
                             let swordDmg = 150 * p.skill_mult; 
                             for (let k = 0; k < swordCount; k++) {
@@ -1477,7 +1721,8 @@
                         let dx = s.target.x - s.x; let dy = s.target.y - s.y; angleToTarget = Math.atan2(dy, dx);
                         s.x += Math.cos(angleToTarget) * 30; s.y += Math.sin(angleToTarget) * 30;
                         if (dx*dx + dy*dy < (s.target.w/2 + 20)*(s.target.w/2 + 20)) {
-                            s.target.hp -= s.dmg; s.hit = true; spawnParticles(s.x, s.y, c_sword, 3, 2); 
+                            s.target.hp -= s.dmg; s.target.hitFlash = Math.max(s.target.hitFlash || 0, 7); s.hit = true; spawnParticles(s.x, s.y, c_sword, 3, 2);
+                            spawnImpact(s.target.x, s.target.y, c_sword, 82, 1.35, 'slash'); 
                             if(s.target.isBoss && !s.target.isDevTest) s.target.iframe = 2;
                         }
                     } else {
@@ -1487,8 +1732,17 @@
                 }
 
                 if (!s.hit) {
-                    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); 
-                    ctx.drawImage(getSprite('sword', c_sword, 0), -20, -40);
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    if (s.state === 'strike') {
+                        ctx.globalAlpha = 0.18; ctx.strokeStyle = c_sword; ctx.lineWidth = 16;
+                        ctx.beginPath(); ctx.moveTo(s.x - Math.cos(angleToTarget)*58, s.y - Math.sin(angleToTarget)*58); ctx.lineTo(s.x, s.y); ctx.stroke();
+                        ctx.globalAlpha = 0.8; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.moveTo(s.x - Math.cos(angleToTarget)*48, s.y - Math.sin(angleToTarget)*48); ctx.lineTo(s.x, s.y); ctx.stroke();
+                    }
+                    ctx.translate(s.x, s.y); ctx.rotate(angleToTarget + Math.PI/2); ctx.scale(1.28, 1.28);
+                    ctx.globalAlpha = 0.35; ctx.drawImage(getSprite('sword', c_sword, 0), -20, -40);
+                    ctx.globalAlpha = 1; ctx.drawImage(getSprite('sword', c_sword, 0), -20, -40);
                     ctx.restore();
                 } else { fastRemove(swords, i); }
             }
@@ -1504,7 +1758,8 @@
                     }
                     if(t) {
                         let orbDmg = 250 * p.skill_mult * (1 + p.lvl_orbital * 0.8);
-                        orbitals.push({ x: t.x, y: t.y, timer: 60, state: 'aim', r: 80 + p.lvl_orbital*25, dmg: orbDmg });
+                        orbitals.push({ x: t.x, y: t.y, timer: 60, state: 'aim', r: 80 + p.lvl_orbital*25, dmg: orbDmg, exploded: false });
+                        spawnCastEffect(t.x, t.y, colorLevels.meteor[Math.min(5, p.lvl_orbital||0)], 90, 0.8);
                     }
                 }
             }
@@ -1513,11 +1768,19 @@
                 let o = orbitals[i];
                 if(o.state === 'aim') {
                     o.timer--; 
-                    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.05);
-                    ctx.fillStyle = 'rgba(255, 50, 50, 0.2)'; ctx.beginPath(); ctx.arc(0, 0, o.r, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = `rgba(255, 0, 0, ${0.5 + Math.sin(frameCount*0.2)*0.5})`; ctx.lineWidth = 3; 
-                    ctx.beginPath(); ctx.arc(0, 0, o.r, 0, Math.PI*2); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(20, 0); ctx.moveTo(0, -20); ctx.lineTo(0, 20); ctx.stroke();
+                    ctx.save(); ctx.translate(o.x, o.y); ctx.rotate(frameCount * 0.055);
+                    const aimPulse = 0.92 + Math.sin(frameCount*0.22) * 0.08;
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = 'rgba(255, 45, 20, 0.12)'; ctx.beginPath(); ctx.arc(0, 0, o.r*aimPulse, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = c_meteor; ctx.globalAlpha = 0.8; ctx.lineWidth = 6;
+                    ctx.beginPath(); ctx.arc(0, 0, o.r*aimPulse, 0, Math.PI*2); ctx.stroke();
+                    ctx.globalAlpha = 0.42; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.arc(0, 0, o.r*0.68, 0, Math.PI*2); ctx.stroke();
+                    ctx.globalAlpha = 0.95; ctx.lineWidth = 4;
+                    for (let seg = 0; seg < 4; seg++) {
+                        ctx.rotate(Math.PI/2); ctx.beginPath(); ctx.moveTo(o.r*0.72, 0); ctx.lineTo(o.r*1.18, 0); ctx.stroke();
+                    }
+                    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(0, 0, 5 + Math.sin(frameCount*0.3)*2, 0, Math.PI*2); ctx.fill();
                     ctx.restore();
                     if(o.timer<=0) { o.state='fall'; o.timer=15; }
                 } else if (o.state === 'fall') {
@@ -1527,20 +1790,26 @@
                     let currentX = startX + (o.x - startX) * progress;
                     let currentY = startY + (o.y - startY) * progress;
                     
-                    ctx.save(); ctx.translate(currentX, currentY); 
+                    ctx.save(); ctx.translate(currentX, currentY);
                     ctx.rotate(Math.atan2(o.y - startY, o.x - startX));
-                    ctx.fillStyle = 'rgba(255, 100, 0, 0.6)'; 
-                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-100, -25); ctx.lineTo(-100, 25); ctx.fill();
-                    ctx.fillStyle = c_meteor; 
-                    ctx.beginPath(); ctx.arc(0, 0, 30 + (p.lvl_orbital||0)*5, 0, Math.PI*2); ctx.fill();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = 0.16; ctx.fillStyle = '#ff3f34';
+                    ctx.beginPath(); ctx.moveTo(20, 0); ctx.lineTo(-190, -58); ctx.lineTo(-190, 58); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.48; ctx.fillStyle = '#ff9f43';
+                    ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-135, -32); ctx.lineTo(-135, 32); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 1; ctx.fillStyle = c_meteor;
+                    ctx.beginPath(); ctx.arc(0, 0, 38 + (p.lvl_orbital||0)*6, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff4c2'; ctx.beginPath(); ctx.arc(8, -7, 15 + (p.lvl_orbital||0)*2, 0, Math.PI*2); ctx.fill();
                     ctx.restore();
                     
                     if(o.timer <= 0) {
-                        o.state = 'explode'; o.timer = 30; globalShakeTimer = 40;
+                        o.state = 'explode'; o.timer = 30; o.exploded = true;
+                        triggerShake(38, 16); triggerScreenFlash('#ff9f43', 0.25, 6);
+                        spawnImpact(o.x, o.y, c_meteor, Math.min(210, o.r * 1.15), 3, 'burst');
                         let rSq = o.r * o.r;
                         forEachEnemyNear(o.x, o.y, o.r + 60, e => {
                             if((e.x - o.x)*(e.x - o.x) + (e.y - o.y)*(e.y - o.y) < rSq) {
-                                e.hp -= o.dmg; if(e.isBoss && !e.isDevTest) e.iframe = 4;
+                                e.hp -= o.dmg; e.hitFlash = Math.max(e.hitFlash || 0, 8); if(e.isBoss && !e.isDevTest) e.iframe = 4;
                             }
                         });
                     }
@@ -1548,10 +1817,16 @@
                     o.timer--;
                     let a = o.timer / 30;
                     ctx.save(); ctx.translate(o.x, o.y);
-                    ctx.fillStyle = `rgba(0, 0, 0, ${a * 0.6})`; 
-                    ctx.beginPath(); ctx.ellipse(0, 0, o.r, o.r*0.6, 0, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = `rgba(255, ${Math.random()*150 + 50}, 0, ${a})`; 
-                    ctx.beginPath(); ctx.arc(0, 0, o.r * (1.5 - a*0.5), 0, Math.PI*2); ctx.fill();
+                    ctx.globalCompositeOperation = 'lighter';
+                    const exp = 1 - a;
+                    ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#ff3f34';
+                    ctx.beginPath(); ctx.arc(0, 0, o.r * (0.7 + exp * 1.25), 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = a * 0.78; ctx.fillStyle = '#ff9f43';
+                    ctx.beginPath(); ctx.arc(0, 0, o.r * (0.38 + exp * 0.72), 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = a; ctx.fillStyle = '#fff4c2';
+                    ctx.beginPath(); ctx.arc(0, 0, o.r * (0.14 + exp * 0.25), 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = a * 0.9; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = Math.max(2, 10*a);
+                    ctx.beginPath(); ctx.arc(0, 0, o.r * (0.75 + exp * 1.5), 0, Math.PI*2); ctx.stroke();
                     ctx.restore();
                     
                     if(frameCount % 4 === 0) spawnParticles(o.x + (Math.random()-0.5)*o.r, o.y + (Math.random()-0.5)*o.r, c_meteor, 1, 2);
@@ -1563,7 +1838,7 @@
             if(p.lvl_shuriken_active) {
                 if(frameCount % 60 === 0) {
                     let activeCount = 0; for(let j=0; j<shurikens.length; j++) if(shurikens[j].state==='orbit') activeCount++;
-                    if (activeCount < p.shurikenLimit) shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: new Set() }); 
+                    if (activeCount < p.shurikenLimit) shurikens.push({ x: p.x, y: p.y, spin: 0, state: 'orbit', vx: 0, vy: 0, hitLog: new Set(), lastImpactFrame: -99 }); 
                 }
                 
                 let activeCount = 0; for(let j=0; j<shurikens.length; j++) if(shurikens[j].state==='orbit') activeCount++;
@@ -1593,16 +1868,28 @@
                     
                     forEachEnemyNear(s.x, s.y, 70, e => {
                         if(!s.hitLog.has(e.id) && Math.abs(e.x-s.x) < e.w/2+15 && Math.abs(e.y-s.y) < e.h/2+15) {
-                            e.hp -= shuDmg;
+                            e.hp -= shuDmg; e.hitFlash = Math.max(e.hitFlash || 0, 3);
                             s.hitLog.add(e.id);
+                            if (frameCount - s.lastImpactFrame > 3) {
+                                spawnImpact(e.x, e.y, c_shuri, 42, 0.55, 'slash');
+                                s.lastImpactFrame = frameCount;
+                            }
                             if(frameCount%5===0) spawnParticles(s.x, s.y, c_shuri, 1);
                         }
                     });
                     if(s.x<-50||s.x>canvasWidth+50||s.y<-50||s.y>canvasHeight+50) fastRemove(shurikens, i);
                 }
                 if(shurikens[i]) {
-                    ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.spin); 
-                    ctx.drawImage(getSprite('shuriken', c_shuri, 0), -20, -20);
+                    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                    if (s.state !== 'orbit') {
+                        ctx.save();
+                        ctx.globalAlpha = 0.13; ctx.translate(s.x - s.vx*1.1, s.y - s.vy*1.1); ctx.rotate(s.spin - 0.5); ctx.scale(1.25, 1.25);
+                        ctx.drawImage(getSprite('shuriken', c_shuri, 0), -20, -20);
+                        ctx.restore();
+                    }
+                    ctx.translate(s.x, s.y); ctx.rotate(s.spin); ctx.scale(1.35, 1.35);
+                    ctx.globalAlpha = 0.35; ctx.drawImage(getSprite('shuriken', c_shuri, 0), -20, -20);
+                    ctx.globalAlpha = 1; ctx.drawImage(getSprite('shuriken', c_shuri, 0), -20, -20);
                     ctx.restore();
                 }
             }
@@ -1644,13 +1931,19 @@
                 let b = bullets[i]; b.x+=b.vx; b.y+=b.vy; 
                 
                 if(b.isBhSeed) {
+                    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = 0.22; ctx.fillStyle = '#9c88ff'; ctx.beginPath(); ctx.arc(b.x - b.vx*0.7, b.y - b.vy*0.7, b.r*1.7, 0, Math.PI*2); ctx.fill();
+                    ctx.globalAlpha = 1;
                     ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
-                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.strokeStyle = 'purple'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
                 } else if (b.isLightningSeed) {
-                    ctx.fillStyle = b.color;
+                    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = 0.25; ctx.strokeStyle = b.color; ctx.lineWidth = b.r*1.3;
+                    ctx.beginPath(); ctx.moveTo(b.x - b.vx*1.6, b.y - b.vy*1.6); ctx.lineTo(b.x, b.y); ctx.stroke();
+                    ctx.globalAlpha = 1; ctx.fillStyle = b.color;
                     ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill();
                     ctx.fillStyle = '#fff';
-                    ctx.beginPath(); ctx.arc(b.x, b.y, b.r*0.5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(b.x, b.y, b.r*0.5, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 } else {
                     ctx.fillStyle=b.color; 
                     if (b.pierce > 0 && !b.enhanced && !b.isBhSeed) {
@@ -1672,6 +1965,7 @@
                             let bh_life = 60 + p.lvl_blackhole * 20;
                             if (blackholes.length < MAX_BLACKHOLES) {
                                 blackholes.push({x: b.x, y: b.y, r: bh_radius, life: bh_life, maxLife: bh_life, dmg: 0, vy: -1.5});
+                                spawnImpact(b.x, b.y, '#9c88ff', Math.min(120, bh_radius * 0.65), 1.5, 'cross');
                             } else {
                                 // 화면에 블랙홀이 가득 찬 경우 가장 오래된 하나를 강화하여 객체 폭증을 막는다.
                                 let oldest = blackholes[0];
@@ -1682,8 +1976,11 @@
                             fastRemove(bullets, i); removed = true; return false;
                         }
 
-                        e.hp -= b.dmg;
+                        e.hp -= b.dmg; e.hitFlash = Math.max(e.hitFlash || 0, b.enhanced ? 4 : 2);
                         if (b.hitLog) b.hitLog.add(e.id);
+                        if (b.enhanced || b.isLightningSeed || Math.random() < 0.18) {
+                            spawnImpact(e.x, e.y, b.color || c_atk, b.enhanced ? 40 : 28, b.enhanced ? 0.65 : 0.3, b.isLightningSeed ? 'cross' : 'burst');
+                        }
 
                         if (b.enhanced && homingBullets.length < MAX_HOMING_BULLETS && homingSpawnedThisFrame < 12) {
                             let homingDmg = p.base_dmg * (0.8 + p.lvl_homing * 0.5);
@@ -1736,12 +2033,15 @@
                 }
                 hb.x += hb.vx; hb.y += hb.vy;
                 
-                ctx.fillStyle = c_homing; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(hb.x, hb.y, 8, 0, Math.PI*2); ctx.fill();
-                ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill();
+                ctx.save(); ctx.globalCompositeOperation = 'lighter';
+                ctx.strokeStyle = c_homing; ctx.globalAlpha = 0.24; ctx.lineWidth = 9;
+                ctx.beginPath(); ctx.moveTo(hb.x - hb.vx*2.4, hb.y - hb.vy*2.4); ctx.lineTo(hb.x, hb.y); ctx.stroke();
+                ctx.fillStyle = c_homing; ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.arc(hb.x, hb.y, 10, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(hb.x, hb.y, 4, 0, Math.PI*2); ctx.fill(); ctx.restore();
                 
                 forEachEnemyNear(hb.x, hb.y, 70, e => {
                     if (e !== hb.ignore && !hb.hitLog.has(e.id) && Math.abs(hb.x - e.x) < e.w/2 + 5 && Math.abs(hb.y - e.y) < e.h/2 + 5) {
-                        e.hp -= hb.dmg; hb.hitLog.add(e.id); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 1);
+                        e.hp -= hb.dmg; e.hitFlash = Math.max(e.hitFlash || 0, 4); hb.hitLog.add(e.id); hb.pierce--; hb.target = null; spawnParticles(e.x, e.y, c_homing, 1); spawnImpact(e.x, e.y, c_homing, 34, 0.48, 'cross');
                         if (hb.pierce <= 0) return false;
                     }
                 });
@@ -1756,8 +2056,9 @@
                     l.currentJump++;
                     let tNode = l.chain[l.currentJump];
                     if (tNode.enemy && !tNode.enemy.isDead) { // 극한 최적화 O(1) 처리
-                        tNode.enemy.hp -= l.dmg;
+                        tNode.enemy.hp -= l.dmg; tNode.enemy.hitFlash = Math.max(tNode.enemy.hitFlash || 0, 5);
                         spawnParticles(tNode.enemy.x, tNode.enemy.y, `rgb(${l.c_light})`, 1);
+                        spawnImpact(tNode.enemy.x, tNode.enemy.y, `rgb(${l.c_light})`, 48, 0.9, 'cross');
                     }
                 }
 
@@ -1785,20 +2086,21 @@
                         ctx.lineTo(x2, y2);
                     }
                     
-                    ctx.strokeStyle = `rgba(${l.c_light}, ${Math.max(0, l.life/l.maxLife) * 0.8})`;
-                    ctx.lineWidth = 6;
-                    ctx.stroke();
-                    
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0, l.life/l.maxLife)})`;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
+                    const boltAlpha = Math.max(0, l.life/l.maxLife);
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.strokeStyle = `rgba(${l.c_light}, ${boltAlpha * 0.22})`;
+                    ctx.lineWidth = performanceMode ? 12 : 18; ctx.stroke();
+                    ctx.strokeStyle = `rgba(${l.c_light}, ${boltAlpha * 0.9})`;
+                    ctx.lineWidth = 7; ctx.stroke();
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${boltAlpha})`;
+                    ctx.lineWidth = 2; ctx.stroke();
                     
                     ctx.fillStyle = '#fff';
                     for(let j=0; j<=l.currentJump; j++) {
                         let p = l.chain[j];
                         let px = (p.enemy && !p.enemy.isDead) ? p.enemy.x : p.x;
                         let py = (p.enemy && !p.enemy.isDead) ? p.enemy.y : p.y;
-                        ctx.beginPath(); ctx.arc(px, py, 2 + Math.random()*3, 0, Math.PI*2); ctx.fill();
+                        ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(px, py, 12 + Math.random()*5, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; ctx.beginPath(); ctx.arc(px, py, 3 + Math.random()*3, 0, Math.PI*2); ctx.fill();
                     }
                     ctx.restore();
                 }
@@ -1808,28 +2110,36 @@
 
             let c_storm = colorLevels.storm[Math.min(5, p.lvl_storm||0)];
             if (p.lvl_storm > 0) {
-                let sk_r = 60 + p.lvl_storm * 20; 
-                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.15);
-                ctx.globalAlpha = 0.6; ctx.strokeStyle = c_storm; ctx.lineWidth = 4;
-                ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.stroke();
-                
-                for(let j=0; j<4; j++) {
-                    ctx.save(); ctx.rotate((Math.PI*2/4)*j); 
-                    ctx.fillStyle = '#fff'; ctx.beginPath(); 
-                    ctx.moveTo(sk_r-10, 0); ctx.lineTo(sk_r+10, -25); ctx.lineTo(sk_r+30, 0); ctx.fill(); 
-                    ctx.restore(); 
+                let sk_r = 60 + p.lvl_storm * 20;
+                ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(frameCount * 0.18);
+                ctx.globalCompositeOperation = 'lighter';
+                const stormPulse = 1 + Math.sin(frameCount*0.16) * 0.06;
+                ctx.globalAlpha = 0.18; ctx.fillStyle = c_storm; ctx.beginPath(); ctx.arc(0, 0, sk_r*stormPulse, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 0.52; ctx.strokeStyle = c_storm; ctx.lineWidth = 10;
+                ctx.beginPath(); ctx.arc(0, 0, sk_r*0.92, 0, Math.PI*2); ctx.stroke();
+                ctx.globalAlpha = 0.92; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, 0, sk_r*1.03, 0, Math.PI*2); ctx.stroke();
+                const bladeCount = performanceMode ? 5 : 8;
+                for(let j=0; j<bladeCount; j++) {
+                    ctx.save(); ctx.rotate((Math.PI*2/bladeCount)*j);
+                    ctx.globalAlpha = 0.24; ctx.fillStyle = c_storm; ctx.beginPath();
+                    ctx.moveTo(sk_r-22, 0); ctx.lineTo(sk_r+18, -30); ctx.lineTo(sk_r+45, 0); ctx.lineTo(sk_r+18, 12); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha = 0.95; ctx.fillStyle = '#ffffff'; ctx.beginPath();
+                    ctx.moveTo(sk_r-8, 0); ctx.lineTo(sk_r+18, -13); ctx.lineTo(sk_r+34, 0); ctx.closePath(); ctx.fill();
+                    ctx.restore();
                 }
-                ctx.fillStyle = c_storm; ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(0, 0, sk_r, 0, Math.PI * 2); ctx.fill(); 
                 ctx.restore();
                 
                 if (frameCount % 15 === 0) {
                     let stormDmg = 8 * p.skill_mult * (1 + p.lvl_storm * 0.5);
+                    let stormImpactMade = false;
                     forEachEnemyNear(p.x, p.y, sk_r + 60, e => {
                         let dx = e.x - p.x; let dy = e.y - p.y;
                         if (dx*dx + dy*dy < (sk_r + e.w/2)*(sk_r + e.w/2)) {
-                            e.hp -= stormDmg; e.y -= 15; e.x += (e.x > p.x ? 10 : -10);
+                            e.hp -= stormDmg; e.hitFlash = Math.max(e.hitFlash || 0, 4); e.y -= 15; e.x += (e.x > p.x ? 10 : -10);
                             if(e.isBoss && !e.isDevTest) e.iframe = 4;
                             spawnParticles(e.x, e.y, c_storm, 1);
+                            if (!stormImpactMade) { spawnImpact(e.x, e.y, c_storm, 50, 0.65, 'slash'); stormImpactMade = true; }
                         }
                     });
                 }
@@ -1886,6 +2196,20 @@
                     }
                 }
 
+                if (e.hitFlash > 0) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = Math.min(0.82, e.hitFlash / 8);
+                    ctx.fillStyle = '#ffffff';
+                    if (e.isBoss) {
+                        ctx.beginPath(); ctx.roundRect(e.x-e.w/2, e.y-e.h/2, e.w, e.h, 15); ctx.fill();
+                    } else {
+                        ctx.beginPath(); ctx.arc(e.x, e.y, e.w * 0.48, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.restore();
+                    e.hitFlash--;
+                }
+
                 if(e.isBoss) { ctx.fillStyle='#333'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w, 8); ctx.fillStyle='#ff4757'; ctx.fillRect(e.x-e.w/2, e.y-e.h/2-15, e.w*Math.max(0, e.hp/e.maxHp), 8); }
                 
                 if(e.hp<=0) { 
@@ -1893,7 +2217,13 @@
                     score+=e.isBoss?1000:10; 
                     if (p.lvl_vampire > 0 && Math.random() < p.vampire_chance && p.hp < p.maxHp) { p.hp = Math.min(p.maxHp, p.hp + 1 + p.lvl_vampire); spawnParticles(p.x, p.y, '#2ecc71', 2); uiNeedsUpdate = true; }
                     
-                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?15:3); 
+                    spawnParticles(e.x,e.y,e.isBoss?'#8e44ad':(e.color || '#ff4757'), e.isBoss?15:3);
+                    if (e.isBoss) {
+                        spawnImpact(e.x, e.y, '#a29bfe', 190, 3.2, 'burst');
+                        triggerShake(42, 16); triggerScreenFlash('#a29bfe', 0.3, 8);
+                    } else if (Math.random() < 0.4) {
+                        spawnImpact(e.x, e.y, e.color || '#ff4757', 32, 0.35, 'burst');
+                    } 
 
                     if(e.isBoss && !e.isDevTest){
                         bossKills++; isBossStage=false; document.getElementById('boss-timer-display').style.display='none'; 
@@ -1957,6 +2287,8 @@
                 ctx.globalAlpha = 1; if (pt.life <= 0) fastRemove(particles, i);
             }
 
+            renderVisualEffects();
+
             if (!(p.iframe > 0 && Math.floor(frameCount / 5) % 2 === 0)) {
                 let dp = false;
                 if(customPlayerImg && customPlayerImg.complete) { ctx.drawImage(customPlayerImg, p.x - p.w/2, p.y - p.h/2, p.w, p.h); dp=true; }
@@ -1966,6 +2298,14 @@
             }
 
             ctx.restore();
+
+            if (screenFlashTimer > 0) {
+                const flashRatio = screenFlashTimer / Math.max(1, screenFlashMax);
+                ctx.save(); ctx.globalAlpha = screenFlashStrength * flashRatio;
+                ctx.fillStyle = screenFlashColor; ctx.fillRect(0, 0, canvasWidth, canvasHeight); ctx.restore();
+                screenFlashTimer--;
+                if (screenFlashTimer <= 0) screenFlashStrength = 0;
+            }
 
             // 새 배열을 매 프레임 만들지 않고, 죽은 적이 생긴 프레임에만 제자리 압축한다.
             compactDeadEnemies();

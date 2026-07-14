@@ -215,24 +215,78 @@
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-    <iframe id="app-frame" src="home.html"></iframe>
+    <iframe id="app-frame" title="수학 실험실 콘텐츠"></iframe>
 
     <script>
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         const appFrame = document.getElementById('app-frame');
 
+        const DEFAULT_PAGE = 'home.html';
+
         function toggleMenu() {
             sidebar.classList.toggle('open');
             overlay.classList.toggle('show');
         }
 
-        function loadApp(url) {
-            appFrame.src = url;
+        function isExternalUrl(url) {
+            try {
+                const parsed = new URL(url, window.location.href);
+                return parsed.origin !== window.location.origin;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        function getSavedPage() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('page') || DEFAULT_PAGE;
+        }
+
+        function updateBrowserUrl(url, replace = false) {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('page', url);
+
+            if (replace) {
+                history.replaceState({ page: url }, '', nextUrl);
+            } else {
+                history.pushState({ page: url }, '', nextUrl);
+            }
+        }
+
+        function showPage(url, saveHistory = true) {
+            const target = url || DEFAULT_PAGE;
+
+            // 외부 Firebase 페이지는 iframe 차단 가능성이 있으므로 현재 창에서 직접 엽니다.
+            if (isExternalUrl(target)) {
+                window.location.href = target;
+                return;
+            }
+
+            appFrame.src = target;
+
+            if (saveHistory) {
+                updateBrowserUrl(target);
+            }
+
             if (sidebar.classList.contains('open')) {
                 toggleMenu();
             }
         }
+
+        function loadApp(url) {
+            showPage(url, true);
+        }
+
+        window.addEventListener('popstate', function(event) {
+            const page = event.state?.page || getSavedPage();
+            showPage(page, false);
+        });
+
+        // 새로고침 시 주소에 저장된 페이지를 다시 불러옵니다.
+        const initialPage = getSavedPage();
+        updateBrowserUrl(initialPage, true);
+        showPage(initialPage, false);
     </script>
 </body>
 </html>

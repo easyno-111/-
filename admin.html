@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172a4d">
+  <meta name="robots" content="noindex,nofollow">
+  <title>앱 포털 관리자</title>
+  <link rel="stylesheet" href="assets/portal.css">
+</head>
+<body class="admin-body">
+  <div id="loginScreen" class="login-screen">
+    <section class="login-card">
+      <div class="login-logo">M</div>
+      <h1>포털 관리자 로그인</h1>
+      <p>Firebase Authentication에 등록한 관리자 계정으로 로그인하세요.</p>
+      <form id="loginForm" class="form-stack">
+        <div class="field">
+          <label for="loginEmail">이메일</label>
+          <input id="loginEmail" type="email" autocomplete="username" required placeholder="teacher@example.com">
+        </div>
+        <div class="field">
+          <label for="loginPassword">비밀번호</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="비밀번호">
+        </div>
+        <div id="loginError" class="form-error" role="alert"></div>
+        <button id="loginButton" class="primary-button full-button" type="submit">로그인</button>
+        <a class="ghost-button full-button" href="index.html">홈으로 돌아가기</a>
+      </form>
+    </section>
+  </div>
+
+  <div id="adminScreen" class="admin-shell hidden">
+    <header class="admin-header">
+      <div class="admin-header-inner">
+        <div class="admin-brand"><span>M</span><span>앱 포털 관리자</span></div>
+        <div class="admin-user">
+          <span id="adminEmail"></span>
+          <a class="ghost-button small-button" href="index.html">홈 보기</a>
+          <button id="logoutButton" class="ghost-button small-button" type="button">로그아웃</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="admin-main">
+      <section class="admin-hero">
+        <div>
+          <h1>앱 관리</h1>
+          <p>코드를 수정하지 않고 앱 카드와 홈페이지 정보를 관리합니다.</p>
+        </div>
+        <div class="admin-hero-actions">
+          <button id="seedButton" class="soft-button" type="button">현재 앱 한 번에 불러오기</button>
+          <button id="newAppButton" class="primary-button" type="button">＋ 새 앱 추가</button>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat-card"><span>전체 앱</span><strong id="statTotal">0</strong></div>
+        <div class="stat-card"><span>공개 앱</span><strong id="statVisible">0</strong></div>
+        <div class="stat-card"><span>상단 고정</span><strong id="statFeatured">0</strong></div>
+        <div class="stat-card"><span>카테고리</span><strong id="statCategories">0</strong></div>
+      </section>
+
+      <section class="admin-layout">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>등록된 앱</h2>
+            <span id="adminListCount" class="result-count"></span>
+          </div>
+          <div id="adminAppList" class="app-list">
+            <div class="empty-admin">데이터를 불러오는 중입니다.</div>
+          </div>
+        </div>
+
+        <aside class="edit-panel">
+          <section class="panel">
+            <div class="panel-header"><h2 id="formTitle">새 앱 추가</h2></div>
+            <div class="panel-body">
+              <form id="appForm">
+                <input id="appId" type="hidden">
+                <div class="form-grid">
+                  <div class="field span-2">
+                    <label for="appTitle">앱 이름 *</label>
+                    <input id="appTitle" required maxlength="50" placeholder="예: 교실 주식게임">
+                  </div>
+                  <div class="field span-2">
+                    <label for="appDescription">설명</label>
+                    <textarea id="appDescription" maxlength="180" placeholder="홈 화면에 표시할 짧은 설명"></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="appCategory">카테고리 *</label>
+                    <select id="appCategory" required></select>
+                  </div>
+                  <div class="field">
+                    <label for="appIcon">아이콘</label>
+                    <input id="appIcon" maxlength="8" placeholder="🎲">
+                  </div>
+                  <div class="field">
+                    <label for="appColor">대표 색상</label>
+                    <input id="appColor" type="color" value="#36588e">
+                  </div>
+                  <div class="field">
+                    <label for="appOpenMode">열기 방식</label>
+                    <select id="appOpenMode">
+                      <option value="new">새 탭</option>
+                      <option value="same">현재 탭</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="primaryLabel">첫 번째 버튼 이름 *</label>
+                    <input id="primaryLabel" required maxlength="20" value="실행">
+                  </div>
+                  <div class="field">
+                    <label for="primaryUrl">첫 번째 주소 *</label>
+                    <input id="primaryUrl" required maxlength="500" placeholder="game.html 또는 https://...">
+                  </div>
+                  <div class="field">
+                    <label for="secondaryLabel">두 번째 버튼 이름</label>
+                    <input id="secondaryLabel" maxlength="20" placeholder="학생용">
+                  </div>
+                  <div class="field">
+                    <label for="secondaryUrl">두 번째 주소</label>
+                    <input id="secondaryUrl" maxlength="500" placeholder="비워두면 버튼 1개만 표시">
+                  </div>
+                  <div class="field span-2">
+                    <div class="check-grid">
+                      <label class="check-card"><input id="appVisible" type="checkbox" checked> 홈페이지 공개</label>
+                      <label class="check-card"><input id="appFeatured" type="checkbox"> 상단 고정</label>
+                      <label class="check-card"><input id="appIsNew" type="checkbox"> NEW 표시</label>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button id="saveAppButton" class="primary-button" type="submit">저장하기</button>
+                  <button id="cancelEditButton" class="ghost-button" type="button">초기화</button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <section class="panel" style="margin-top:18px">
+            <div class="panel-header"><h2>카테고리 관리</h2></div>
+            <div class="panel-body">
+              <div id="categoryManager" class="category-manager"></div>
+              <form id="categoryForm" class="add-category">
+                <input id="newCategoryName" required maxlength="30" placeholder="새 카테고리 이름">
+                <button class="soft-button small-button" type="submit">추가</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="panel" style="margin-top:18px">
+            <div class="panel-header"><h2>홈페이지 설정</h2></div>
+            <div class="panel-body">
+              <form id="settingsForm" class="settings-form">
+                <div class="field"><label for="settingTitle">사이트 이름</label><input id="settingTitle" maxlength="40"></div>
+                <div class="field"><label for="settingSubtitle">소개 문구</label><textarea id="settingSubtitle" maxlength="160"></textarea></div>
+                <div class="field"><label for="settingNotice">공지 문구</label><textarea id="settingNotice" maxlength="160" placeholder="비워두면 공지가 숨겨집니다."></textarea></div>
+                <div class="field"><label for="settingFooter">하단 문구</label><input id="settingFooter" maxlength="80"></div>
+                <button class="primary-button" type="submit">홈페이지 설정 저장</button>
+              </form>
+            </div>
+          </section>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

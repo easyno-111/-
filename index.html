@@ -1,291 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>수학 실험실 - 대시보드</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #f7f9fc;
-            --panel-bg: #ffffff;
-            --text-main: #333333;
-            --text-muted: #8e9aaf;
-            --accent-color: #5c6bc0;
-            --menu-hover: #f0f3ff;
-            --border-color: #eef2f7;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans KR', 'Poppins', sans-serif; }
-        body, html { width: 100%; height: 100%; overflow: hidden; background-color: var(--bg-color); color: var(--text-main); }
-
-        .top-bar {
-            width: 100%;
-            height: 60px; 
-            background-color: var(--panel-bg);
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            padding: 0 20px; 
-            position: relative; 
-            z-index: 10;
-        }
-        
-        .menu-btn {
-            position: absolute;
-            left: 20px; 
-            background: none; 
-            border: none;
-            color: var(--accent-color); 
-            font-size: 24px; 
-            cursor: pointer; 
-            padding: 5px;
-            transition: transform 0.2s;
-        }
-        .menu-btn:hover { transform: scale(1.1); color: #3f51b5; }
-
-        .header-title { 
-            font-size: 20px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            color: var(--accent-color); 
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0; 
-            left: -320px; 
-            width: 320px; 
-            height: 100%;
-            background-color: var(--panel-bg); 
-            border-right: 1px solid var(--border-color);
-            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.05);
-            transition: left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-            z-index: 20;
-            display: flex;
-            flex-direction: column;
-        }
-        .sidebar.open { left: 0; }
-
-        .sidebar-header {
-            padding: 25px 20px;
-            font-size: 18px; 
-            font-weight: 700; 
-            color: var(--accent-color); 
-            border-bottom: 1px solid var(--border-color); 
-            display: flex; 
-            justify-content: space-between;
-            align-items: center;
-        }
-        .close-btn { background: none; border: none; font-size: 26px; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        .close-btn:hover { color: var(--accent-color); }
-
-        .menu-list { flex: 1; padding: 20px; overflow-y: auto; }
-        .menu-group { margin-bottom: 20px; }
-        .menu-label { 
-            font-size: 11px;
-            font-weight: 700; 
-            color: var(--text-muted); 
-            margin-bottom: 8px; 
-            padding-left: 10px; 
-            letter-spacing: 1px;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center; 
-            width: 100%; 
-            padding: 11px 15px; 
-            margin-bottom: 5px;
-            text-align: left; 
-            background: none; 
-            border: 1px solid transparent; 
-            border-radius: 12px;
-            font-size: 14px; 
-            color: #4a5568; 
-            cursor: pointer; 
-            transition: all 0.2s; 
-            font-weight: 500;
-        }
-        .menu-item:hover, .menu-item:active { 
-            background-color: var(--menu-hover);
-            color: var(--accent-color);
-            font-weight: 600;
-        }
-        .menu-icon { margin-right: 12px; font-size: 16px; width: 22px; text-align: center; }
-
-        .footer { 
-            padding: 15px;
-            text-align: center; 
-            font-size: 11px; 
-            color: var(--text-muted); 
-            border-top: 1px solid var(--border-color); 
-            background-color: #fafbfc; 
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background-color: rgba(0,0,0,0.1); 
-            opacity: 0; 
-            visibility: hidden;
-            transition: opacity 0.3s ease; 
-            z-index: 15;
-            backdrop-filter: blur(2px);
-        }
-        .overlay.show { opacity: 1; visibility: visible; }
-
-        #app-frame { width: 100%; height: calc(100% - 60px); border: none; background-color: var(--bg-color); }
-
-        @media (max-width: 600px) {
-            .sidebar { width: 280px; left: -280px; }
-            .sidebar.open { left: 0; }
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172a4d">
+  <meta name="description" content="수업과 학급 운영에 필요한 웹 도구 모음">
+  <title>수학 실험실</title>
+  <link rel="stylesheet" href="assets/portal.css">
 </head>
 <body>
-
-    <div class="top-bar">
-        <button class="menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
-        <div class="header-title" onclick="loadApp('home.html')">수학 실험실 🚀</div>
-    </div>
-
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <span><i class="fa-solid fa-folder-open" style="margin-right: 8px;"></i> 메뉴 탐색기</span>
-            <button class="close-btn" onclick="toggleMenu()">×</button>
+  <div class="portal-shell">
+    <header class="portal-header">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div class="brand-copy">
+            <h1 class="brand-title" id="brandTitle">수학 실험실</h1>
+            <p class="brand-caption">TEACHER APP PORTAL</p>
+          </div>
         </div>
-        
-        <div class="menu-list">
-            <button class="menu-item" onclick="loadApp('home.html')" style="background: #e8f0fe; color: #1a73e8; font-weight: 600; margin-bottom: 15px;">
-                <span class="menu-icon"><i class="fa-solid fa-house"></i></span> 메인 화면으로
-            </button>
-
-            <button class="menu-item" onclick="loadApp('lesson_start.html')" style="margin-bottom: 15px; background: #f3e8ff; color: #9333ea; font-weight: 600;">
-                <span class="menu-icon"><i class="fa-solid fa-chalkboard-user"></i></span> 요원 브리핑 (수업)
-            </button>
-
-            <div class="menu-group">
-                <div class="menu-label">수업 도구 TRAINING</div>
-                <button class="menu-item" onclick="loadApp('quadratic.html')"><span class="menu-icon">📈</span> 데이터 시뮬레이터</button>
-                <button class="menu-item" onclick="loadApp('lock.html')"><span class="menu-icon">🔐</span> 암호 해독 (방탈출)</button>
-                <button class="menu-item" onclick="loadApp('fence.html')"><span class="menu-icon">🏠</span> 필드 테스트 (울타리)</button>
-            </div>
-
-            <div class="menu-group">
-                <div class="menu-label">수학 게임 SIMULATION</div>
-                <button class="menu-item" onclick="loadApp('pig.html')"><span class="menu-icon">🐷</span> PIG 프로젝트 (기본)</button>
-                <button class="menu-item" onclick="loadApp('pig2.html')"><span class="menu-icon">🐽</span> PIG 프로젝트 (심화)</button>
-                <button class="menu-item" onclick="loadApp('nunchi.html')"><span class="menu-icon">👀</span> 심리전 시뮬레이터</button>
-                <button class="menu-item" onclick="loadApp('auction.html')"><span class="menu-icon">🔨</span> 마이너스 옥션</button>
-                <button class="menu-item" onclick="loadApp('https://fir-stock-game.web.app/teacher.html')"><span class="menu-icon">📊</span> 주식게임(관리자)</button>
-                <button class="menu-item" onclick="loadApp('https://classroom-mafia-6fd9e.web.app/admin.html')"><span class="menu-icon">🕵️</span> 교실 마피아(관리자)</button>
-                <button class="menu-item" onclick="loadApp('https://classroom-mafia-6fd9e.web.app/')"><span class="menu-icon">🎭</span> 교실 마피아(학생)</button>
-            </div>
-
-            <div class="menu-group">
-                <div class="menu-label">코딩 실습 CODING LAB</div>
-                <button class="menu-item" onclick="loadApp('editor.html')"><span class="menu-icon">⌨️</span> 라이브 코드 에디터</button>
-                <button class="menu-item" onclick="loadApp('shooter.html')"><span class="menu-icon">🚀</span> 화력 슈팅 서바이버</button>
-                <button class="menu-item" onclick="loadApp('survival.html')"><span class="menu-icon">🛡️</span> 서바이벌 게임</button>
-            </div>
-
-            <div class="menu-group">
-                <div class="menu-label">학급 활동 CLASS ACTIVITY</div>
-                <button class="menu-item" onclick="loadApp('seat.html')"><span class="menu-icon">🪑</span> 교실 관리</button>
-                <button class="menu-item" onclick="loadApp('random.html')"><span class="menu-icon">🎲</span> 랜덤 뽑기</button>
-            </div>
+        <div class="header-actions">
+          <a class="icon-link" href="admin.html" aria-label="관리자 화면">
+            <span>⚙</span><span class="header-admin-label">관리</span>
+          </a>
         </div>
-        
-        <div class="footer">
-            MATHEMATICS LAB by <b>Easy NO</b>
+      </div>
+    </header>
+
+    <main class="portal-main">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">CLASSROOM DIGITAL TOOLBOX</p>
+          <h2 id="heroTitle">수학 실험실</h2>
+          <p id="heroSubtitle">수업과 학급 운영에 필요한 도구를 한곳에서 시작하세요.</p>
         </div>
-    </div>
+        <div class="hero-stat" aria-label="공개 앱 수">
+          <strong id="appCount">—</strong>
+          <span>사용 가능한 도구</span>
+        </div>
+      </section>
 
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+      <div id="notice" class="notice hidden"></div>
 
-    <iframe id="app-frame" title="수학 실험실 콘텐츠"></iframe>
+      <section class="toolbar" aria-label="앱 검색과 분류">
+        <div class="search-wrap">
+          <input id="searchInput" class="search-input" type="search" placeholder="앱 이름이나 설명으로 검색" autocomplete="off">
+        </div>
+        <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="카테고리">
+          <button class="category-tab active" type="button" data-category="all">전체</button>
+        </div>
+      </section>
 
-    <script>
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const appFrame = document.getElementById('app-frame');
+      <div class="section-heading">
+        <div>
+          <h3 id="sectionTitle">전체 도구</h3>
+          <p>카드의 버튼을 눌러 원하는 활동을 시작하세요.</p>
+        </div>
+        <div id="resultCount" class="result-count"></div>
+      </div>
 
-        const DEFAULT_PAGE = 'home.html';
+      <section id="appGrid" class="app-grid" aria-live="polite">
+        <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+      </section>
+    </main>
 
-        function toggleMenu() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
-        }
+    <footer class="portal-footer">
+      <span id="footerText">MATHEMATICS LAB · Easy NO</span>
+      <a href="admin.html">관리자</a>
+    </footer>
+  </div>
 
-        function isExternalUrl(url) {
-            try {
-                const parsed = new URL(url, window.location.href);
-                return parsed.origin !== window.location.origin;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        function getSavedPage() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('page') || DEFAULT_PAGE;
-        }
-
-        function updateBrowserUrl(url, replace = false) {
-            const nextUrl = new URL(window.location.href);
-            nextUrl.searchParams.set('page', url);
-
-            if (replace) {
-                history.replaceState({ page: url }, '', nextUrl);
-            } else {
-                history.pushState({ page: url }, '', nextUrl);
-            }
-        }
-
-        function showPage(url, saveHistory = true) {
-            const target = url || DEFAULT_PAGE;
-
-            // 외부 Firebase 페이지는 iframe 차단 가능성이 있으므로 현재 창에서 직접 엽니다.
-            if (isExternalUrl(target)) {
-                window.location.href = target;
-                return;
-            }
-
-            appFrame.src = target;
-
-            if (saveHistory) {
-                updateBrowserUrl(target);
-            }
-
-            if (sidebar.classList.contains('open')) {
-                toggleMenu();
-            }
-        }
-
-        function loadApp(url) {
-            showPage(url, true);
-        }
-
-        window.addEventListener('popstate', function(event) {
-            const page = event.state?.page || getSavedPage();
-            showPage(page, false);
-        });
-
-        // 새로고침 시 주소에 저장된 페이지를 다시 불러옵니다.
-        const initialPage = getSavedPage();
-        updateBrowserUrl(initialPage, true);
-        showPage(initialPage, false);
-    </script>
+  <script type="module" src="js/portal.js"></script>
 </body>
 </html>

@@ -270,3 +270,443 @@ a { color: inherit; }
 .add-category input:focus { border-color: #7e9bc8; box-shadow: 0 0 0 3px rgba(54,88,142,.1); }
 .row-actions { flex-wrap: wrap; }
 .row-action:disabled { opacity: .35; cursor: not-allowed; }
+
+/* =========================================================
+   방문자 포털 전용 파스텔 테마
+   관리자 화면(.admin-body)은 기존 디자인을 유지합니다.
+   ========================================================= */
+body.portal-view {
+  --bg: #fff8fb;
+  --surface: rgba(255, 255, 255, .9);
+  --surface-solid: #ffffff;
+  --surface-soft: #fff0f5;
+  --line: rgba(116, 91, 143, .14);
+  --text: #443c52;
+  --muted: #81778e;
+  --primary: #9a82d0;
+  --primary-2: #8268be;
+  --pastel-pink: #ffdce8;
+  --pastel-lilac: #e9dcff;
+  --pastel-blue: #dff2ff;
+  --pastel-mint: #dcf5e9;
+  --header-bg: rgba(255, 250, 252, .78);
+  --hero-start: #f0e4ff;
+  --hero-mid: #ffe4ed;
+  --hero-end: #e1f4ff;
+  --hero-text: #4e435d;
+  --hero-muted: #756b80;
+  --input-bg: rgba(255, 255, 255, .88);
+  --soft-button-bg: #f1eaff;
+  --soft-button-text: #715aaa;
+  --shadow: 0 20px 55px rgba(117, 91, 143, .13);
+  --card-shadow: 0 12px 30px rgba(117, 91, 143, .09);
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(255, 211, 229, .55), transparent 24%),
+    radial-gradient(circle at 91% 18%, rgba(209, 234, 255, .65), transparent 26%),
+    radial-gradient(circle at 78% 82%, rgba(222, 245, 232, .52), transparent 28%),
+    var(--bg);
+  color: var(--text);
+  font-family: "Nunito", "Gowun Dodum", Pretendard, "Noto Sans KR", sans-serif;
+  transition: background-color .28s ease, color .28s ease;
+}
+
+html[data-theme="dark"] body.portal-view {
+  --bg: #17141f;
+  --surface: rgba(38, 32, 50, .88);
+  --surface-solid: #282233;
+  --surface-soft: #30293d;
+  --line: rgba(236, 225, 255, .11);
+  --text: #f8f3fb;
+  --muted: #b9afc4;
+  --primary: #c7b5f3;
+  --primary-2: #ae99e1;
+  --pastel-pink: #543544;
+  --pastel-lilac: #483d61;
+  --pastel-blue: #304556;
+  --pastel-mint: #304a42;
+  --header-bg: rgba(23, 20, 31, .78);
+  --hero-start: #3b3050;
+  --hero-mid: #4a3040;
+  --hero-end: #283f50;
+  --hero-text: #fff8ff;
+  --hero-muted: #d5c9de;
+  --input-bg: rgba(42, 36, 54, .94);
+  --soft-button-bg: #3b3150;
+  --soft-button-text: #dfd1ff;
+  --shadow: 0 22px 60px rgba(0, 0, 0, .28);
+  --card-shadow: 0 14px 34px rgba(0, 0, 0, .22);
+  background:
+    radial-gradient(circle at 8% 12%, rgba(116, 71, 105, .28), transparent 24%),
+    radial-gradient(circle at 91% 18%, rgba(67, 91, 122, .28), transparent 26%),
+    radial-gradient(circle at 78% 82%, rgba(64, 103, 88, .22), transparent 28%),
+    var(--bg);
+}
+
+body.portal-view .portal-shell { position: relative; overflow: hidden; }
+body.portal-view .portal-shell::before,
+body.portal-view .portal-shell::after {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  filter: blur(12px);
+  opacity: .45;
+  pointer-events: none;
+}
+body.portal-view .portal-shell::before { left: -150px; top: 38%; background: var(--pastel-lilac); }
+body.portal-view .portal-shell::after { right: -155px; bottom: 6%; background: var(--pastel-mint); }
+
+body.portal-view .portal-header {
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 8px 28px rgba(96, 73, 120, .045);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+}
+body.portal-view .header-inner { min-height: 78px; }
+body.portal-view .brand { gap: 13px; }
+body.portal-view .brand-mark {
+  width: 47px;
+  height: 47px;
+  border-radius: 17px;
+  color: #fff;
+  font-family: "Nunito", sans-serif;
+  font-size: 19px;
+  background: linear-gradient(145deg, #b69bea, #8db9e7);
+  box-shadow: 0 10px 24px rgba(147, 120, 203, .27), inset 0 1px 0 rgba(255,255,255,.5);
+  transform: rotate(-3deg);
+}
+body.portal-view .brand-title {
+  font-family: "Gowun Dodum", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
+body.portal-view .brand-caption {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+body.portal-view .header-actions { gap: 9px; }
+body.portal-view .icon-link {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 7px 20px rgba(91, 70, 114, .07);
+}
+body.portal-view .icon-link:hover {
+  background: var(--surface-solid);
+  box-shadow: 0 10px 26px rgba(91, 70, 114, .12);
+}
+
+body.portal-view .theme-toggle {
+  min-height: 44px;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 7px 20px rgba(91, 70, 114, .07);
+  transition: transform .18s ease, background .22s ease, box-shadow .18s ease;
+}
+body.portal-view .theme-toggle:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(91, 70, 114, .12); }
+body.portal-view .theme-toggle-track {
+  position: relative;
+  width: 54px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: linear-gradient(135deg, #ffe3ae, #f6c9df);
+  color: #876f62;
+  overflow: hidden;
+  transition: background .25s ease;
+}
+body.portal-view .theme-toggle-sun,
+body.portal-view .theme-toggle-moon { position: relative; z-index: 1; font-size: 14px; line-height: 1; }
+body.portal-view .theme-toggle-thumb {
+  position: absolute;
+  z-index: 2;
+  left: 3px;
+  top: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fffaf5;
+  box-shadow: 0 3px 10px rgba(91, 62, 76, .2);
+  transition: transform .28s cubic-bezier(.2,.8,.2,1), background .25s ease;
+}
+body.portal-view .theme-toggle-label { min-width: 39px; font-size: 12px; font-weight: 900; }
+html[data-theme="dark"] body.portal-view .theme-toggle-track { background: linear-gradient(135deg, #484064, #304760); color: #e6dcff; }
+html[data-theme="dark"] body.portal-view .theme-toggle-thumb { transform: translateX(22px); background: #eee8ff; }
+
+body.portal-view .portal-main { padding-top: 38px; }
+body.portal-view .hero {
+  min-height: 260px;
+  align-items: center;
+  padding: 43px 46px;
+  border: 1px solid rgba(255,255,255,.58);
+  border-radius: 38px;
+  background: linear-gradient(135deg, var(--hero-start) 0%, var(--hero-mid) 51%, var(--hero-end) 100%);
+  color: var(--hero-text);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.55);
+  isolation: isolate;
+}
+body.portal-view .hero::before,
+body.portal-view .hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+body.portal-view .hero::before {
+  width: 210px;
+  height: 210px;
+  right: 8%;
+  top: -95px;
+  background: rgba(255,255,255,.30);
+  box-shadow: -190px 190px 0 -62px rgba(255,255,255,.19);
+}
+body.portal-view .hero::after {
+  width: 112px;
+  height: 112px;
+  right: -22px;
+  bottom: -32px;
+  border: 26px solid rgba(255,255,255,.24);
+  background: transparent;
+}
+html[data-theme="dark"] body.portal-view .hero { border-color: rgba(255,255,255,.08); box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.08); }
+body.portal-view .hero-copy { max-width: 720px; }
+body.portal-view .eyebrow {
+  margin-bottom: 13px;
+  color: #8c72a7;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .18em;
+}
+html[data-theme="dark"] body.portal-view .eyebrow { color: #d6c4ed; }
+body.portal-view .hero h2 {
+  font-family: "Gowun Dodum", sans-serif;
+  color: var(--hero-text);
+  font-size: clamp(34px, 4.6vw, 58px);
+  font-weight: 700;
+  letter-spacing: -.055em;
+}
+body.portal-view .hero p { color: var(--hero-muted); font-size: 16px; font-weight: 700; }
+body.portal-view .hero-stat {
+  min-width: 145px;
+  padding: 20px 22px;
+  border: 1px solid rgba(255,255,255,.48);
+  border-radius: 25px;
+  text-align: center;
+  background: rgba(255,255,255,.30);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+  backdrop-filter: blur(12px);
+}
+html[data-theme="dark"] body.portal-view .hero-stat { border-color: rgba(255,255,255,.09); background: rgba(23,18,31,.2); }
+body.portal-view .hero-stat strong { font-family: "Nunito", sans-serif; color: var(--hero-text); font-size: 46px; }
+body.portal-view .hero-stat span { color: var(--hero-muted); font-weight: 800; }
+body.portal-view .notice {
+  margin-top: 18px;
+  padding: 15px 20px;
+  border: 1px solid rgba(222, 178, 83, .25);
+  border-radius: 20px;
+  color: #735d2f;
+  background: rgba(255, 247, 216, .82);
+  box-shadow: 0 8px 24px rgba(111, 86, 41, .07);
+}
+html[data-theme="dark"] body.portal-view .notice { border-color: rgba(244,205,116,.16); color: #f0dca7; background: rgba(83,67,38,.42); }
+
+body.portal-view .toolbar { margin-top: 31px; }
+body.portal-view .search-wrap::before { left: 19px; color: var(--muted); }
+body.portal-view .search-input {
+  height: 55px;
+  padding-left: 51px;
+  border: 1px solid var(--line);
+  border-radius: 21px;
+  background: var(--input-bg);
+  color: var(--text);
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(102, 77, 126, .07);
+  backdrop-filter: blur(12px);
+}
+body.portal-view .search-input::placeholder { color: color-mix(in srgb, var(--muted) 76%, transparent); }
+body.portal-view .search-input:focus { border-color: #b69fe0; box-shadow: 0 0 0 5px rgba(169, 140, 217, .14), 0 12px 30px rgba(102,77,126,.08); }
+body.portal-view .category-tabs { gap: 9px; }
+body.portal-view .category-tab {
+  height: 46px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 7px 18px rgba(100, 77, 123, .05);
+  transition: transform .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+body.portal-view .category-tab:hover { transform: translateY(-1px); color: var(--text); }
+body.portal-view .category-tab.active {
+  border-color: transparent;
+  background: linear-gradient(135deg, #a98cdb, #8faddf);
+  color: #fff;
+  box-shadow: 0 9px 22px rgba(144, 118, 197, .26);
+}
+html[data-theme="dark"] body.portal-view .category-tab.active { background: linear-gradient(135deg, #8f79c1, #647fae); }
+
+body.portal-view .section-heading { margin-top: 43px; }
+body.portal-view .section-heading h3 {
+  font-family: "Gowun Dodum", sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--text);
+}
+body.portal-view .section-heading p,
+body.portal-view .result-count { color: var(--muted); font-weight: 700; }
+body.portal-view .result-count {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+body.portal-view .app-grid { gap: 21px; }
+body.portal-view .app-card {
+  min-height: 265px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 29px;
+  background: var(--surface);
+  box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,.46);
+  backdrop-filter: blur(13px);
+  -webkit-backdrop-filter: blur(13px);
+  transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s ease, border-color .22s ease;
+}
+html[data-theme="dark"] body.portal-view .app-card { box-shadow: var(--card-shadow), inset 0 1px 0 rgba(255,255,255,.045); }
+body.portal-view .app-card:hover {
+  transform: translateY(-7px) rotate(-.15deg);
+  border-color: color-mix(in srgb, var(--app-color, #9a82d0) 32%, var(--line));
+  box-shadow: 0 23px 48px rgba(91, 66, 117, .15);
+}
+html[data-theme="dark"] body.portal-view .app-card:hover { box-shadow: 0 25px 50px rgba(0,0,0,.32); }
+body.portal-view .app-card::before {
+  inset: -52px -44px auto auto;
+  width: 135px;
+  height: 135px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--app-color, #9a82d0) 17%, transparent);
+}
+body.portal-view .app-card::after {
+  content: "";
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  left: -38px;
+  bottom: -34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--app-color, #9a82d0) 10%, transparent);
+  pointer-events: none;
+}
+body.portal-view .card-head,
+body.portal-view .card-category,
+body.portal-view .app-title,
+body.portal-view .app-description,
+body.portal-view .card-actions { position: relative; z-index: 1; }
+body.portal-view .app-icon {
+  width: 59px;
+  height: 59px;
+  border-radius: 21px;
+  background: color-mix(in srgb, var(--app-color, #9a82d0) 15%, var(--surface-solid));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 8px 20px color-mix(in srgb, var(--app-color, #9a82d0) 13%, transparent);
+  font-size: 29px;
+}
+html[data-theme="dark"] body.portal-view .app-icon { background: color-mix(in srgb, var(--app-color, #9a82d0) 24%, var(--surface-solid)); box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+body.portal-view .badge { padding: 6px 9px; border-radius: 999px; font-size: 10px; }
+body.portal-view .badge-featured { background: var(--pastel-lilac); color: #6b50a0; }
+body.portal-view .badge-new { background: var(--pastel-pink); color: #a24f6d; }
+html[data-theme="dark"] body.portal-view .badge-featured { color: #e5d8ff; }
+html[data-theme="dark"] body.portal-view .badge-new { color: #ffd6e5; }
+body.portal-view .card-category { margin-top: 20px; font-size: 12px; letter-spacing: .02em; }
+body.portal-view .app-title {
+  font-family: "Gowun Dodum", sans-serif;
+  color: var(--text);
+  font-size: 21px;
+  font-weight: 700;
+}
+body.portal-view .app-description { color: var(--muted); font-weight: 700; line-height: 1.65; }
+body.portal-view .card-actions { gap: 10px; }
+body.portal-view .launch-button {
+  min-height: 47px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--app-color, #9a82d0) 14%, transparent);
+}
+body.portal-view .launch-primary {
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--app-color, #9a82d0) 84%, white), var(--app-color, #9a82d0));
+}
+body.portal-view .launch-secondary {
+  color: var(--app-color, #8268be);
+  background: color-mix(in srgb, var(--app-color, #9a82d0) 12%, var(--surface-solid));
+  box-shadow: none;
+}
+html[data-theme="dark"] body.portal-view .launch-secondary { color: color-mix(in srgb, var(--app-color, #c7b5f3) 55%, white); background: color-mix(in srgb, var(--app-color, #9a82d0) 18%, var(--surface-solid)); }
+body.portal-view .launch-button:hover { filter: brightness(1.025); transform: translateY(-2px); }
+body.portal-view .empty-state,
+body.portal-view .error-state {
+  padding: 58px 25px;
+  border: 1px dashed var(--line);
+  border-radius: 27px;
+  background: var(--surface);
+  color: var(--muted);
+}
+body.portal-view .empty-state strong,
+body.portal-view .error-state strong { color: var(--text); font-family: "Gowun Dodum", sans-serif; }
+body.portal-view .skeleton {
+  min-height: 265px;
+  border-radius: 29px;
+  background: linear-gradient(90deg, var(--surface-soft) 25%, var(--surface-solid) 50%, var(--surface-soft) 75%);
+  background-size: 200% 100%;
+}
+body.portal-view .portal-footer { color: var(--muted); font-weight: 800; }
+body.portal-view .portal-footer a { color: var(--primary-2); }
+
+@media (max-width: 720px) {
+  body.portal-view .header-inner { min-height: 68px; }
+  body.portal-view .brand-mark { width: 41px; height: 41px; border-radius: 15px; }
+  body.portal-view .brand-title { font-size: 17px; }
+  body.portal-view .theme-toggle { padding-right: 6px; }
+  body.portal-view .theme-toggle-label { display: none; }
+  body.portal-view .icon-link { width: 43px; padding: 0; }
+  body.portal-view .hero { min-height: 0; padding: 31px 25px; border-radius: 30px; }
+  body.portal-view .hero-stat { width: fit-content; min-width: 0; padding: 12px 16px; border-radius: 19px; text-align: left; }
+  body.portal-view .toolbar { gap: 13px; }
+  body.portal-view .search-input { height: 52px; }
+  body.portal-view .category-tabs { padding-bottom: 5px; }
+  body.portal-view .section-heading { margin-top: 34px; align-items: flex-start; }
+  body.portal-view .section-heading p { max-width: 250px; }
+  body.portal-view .app-grid { gap: 16px; }
+  body.portal-view .app-card { min-height: 244px; padding: 21px; border-radius: 25px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.portal-view *, body.portal-view *::before, body.portal-view *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

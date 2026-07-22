@@ -3,12 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#172a4d">
+  <meta id="themeColor" name="theme-color" content="#fff8fb">
   <meta name="description" content="수업과 학급 운영에 필요한 웹 도구 모음">
   <title>수학 실험실</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('teacherPortalTheme');
+      document.documentElement.dataset.theme = savedTheme === 'dark' ? 'dark' : 'light';
+    } catch (_) {
+      document.documentElement.dataset.theme = 'light';
+    }
+  </script>
   <link rel="stylesheet" href="assets/portal.css">
 </head>
-<body>
+<body class="portal-view">
   <div class="portal-shell">
     <header class="portal-header">
       <div class="header-inner">
@@ -20,6 +31,14 @@
           </div>
         </div>
         <div class="header-actions">
+          <button id="themeToggle" class="theme-toggle" type="button" aria-label="어두운 화면으로 변경" aria-pressed="false">
+            <span class="theme-toggle-track" aria-hidden="true">
+              <span class="theme-toggle-sun">☀</span>
+              <span class="theme-toggle-moon">☾</span>
+              <span class="theme-toggle-thumb"></span>
+            </span>
+            <span id="themeToggleLabel" class="theme-toggle-label">라이트</span>
+          </button>
           <a class="icon-link" href="admin.html" aria-label="관리자 화면">
             <span>⚙</span><span class="header-admin-label">관리</span>
           </a>

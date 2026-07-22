@@ -13,7 +13,10 @@ const els = {
   sectionTitle: document.getElementById('sectionTitle'),
   resultCount: document.getElementById('resultCount'),
   appGrid: document.getElementById('appGrid'),
-  footerText: document.getElementById('footerText')
+  footerText: document.getElementById('footerText'),
+  themeToggle: document.getElementById('themeToggle'),
+  themeToggleLabel: document.getElementById('themeToggleLabel'),
+  themeColor: document.getElementById('themeColor')
 };
 
 const state = {
@@ -29,6 +32,41 @@ const state = {
 };
 
 const CACHE_KEY = 'teacherPortalCacheV1';
+
+const THEME_KEY = 'teacherPortalTheme';
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
+function applyTheme(theme, save = false) {
+  const nextTheme = theme === 'dark' ? 'dark' : 'light';
+  const isDark = nextTheme === 'dark';
+  document.documentElement.dataset.theme = nextTheme;
+
+  if (els.themeToggle) {
+    els.themeToggle.setAttribute('aria-pressed', String(isDark));
+    els.themeToggle.setAttribute('aria-label', isDark ? '밝은 화면으로 변경' : '어두운 화면으로 변경');
+    els.themeToggle.title = isDark ? '라이트 모드로 변경' : '나이트 모드로 변경';
+  }
+  if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '나이트' : '라이트';
+  if (els.themeColor) els.themeColor.setAttribute('content', isDark ? '#17141f' : '#fff8fb');
+
+  if (save) {
+    try {
+      localStorage.setItem(THEME_KEY, nextTheme);
+    } catch (error) {
+      console.warn('화면 모드 설정을 저장하지 못했습니다.', error);
+    }
+  }
+}
+
+applyTheme(currentTheme());
+
+els.themeToggle?.addEventListener('click', () => {
+  applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true);
+});
+
 
 function loadCache() {
   try {

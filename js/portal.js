@@ -12,7 +12,7 @@ const els = {
   categoryTabs: document.getElementById('categoryTabs'),
   sectionTitle: document.getElementById('sectionTitle'),
   resultCount: document.getElementById('resultCount'),
-  appGrid: document.getElementById('appGrid'),
+  categorySections: document.getElementById('categorySections'),
   footerText: document.getElementById('footerText'),
   themeToggle: document.getElementById('themeToggle'),
   themeToggleLabel: document.getElementById('themeToggleLabel'),
@@ -25,6 +25,7 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   activeCategory: 'all',
   search: '',
+  collapsedCategories: new Set(),
   appsLoaded: false,
   categoriesLoaded: false,
   settingsLoaded: false,
@@ -32,8 +33,18 @@ const state = {
 };
 
 const CACHE_KEY = 'teacherPortalCacheV1';
-
 const THEME_KEY = 'teacherPortalTheme';
+const SECTION_PALETTE = ['#b79be4', '#88bde4', '#82c9b6', '#efa3bc', '#efbd82', '#a8a3ea'];
+
+const sectionObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        sectionObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 })
+  : null;
 
 function currentTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
@@ -67,7 +78,6 @@ els.themeToggle?.addEventListener('click', () => {
   applyTheme(currentTheme() === 'dark' ? 'light' : 'dark', true);
 });
 
-
 function loadCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
@@ -77,7 +87,7 @@ function loadCache() {
     state.settings = { ...DEFAULT_SETTINGS, ...(cached.settings || {}) };
     applySettings();
     renderCategories();
-    renderApps();
+    renderCategorySections();
   } catch (error) {
     console.warn('포털 캐시를 읽지 못했습니다.', error);
   }
@@ -104,7 +114,7 @@ function cleanText(value, fallback = '') {
 }
 
 function normalizeColor(value) {
-  return /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#36588e';
+  return /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#8f79c1';
 }
 
 function isImageDataUrl(value) {
@@ -138,7 +148,11 @@ function safeUrl(value) {
 
 function categoryEntries() {
   return Object.entries(state.categories)
-    .map(([id, item]) => ({ id, name: cleanText(item?.name, '기타'), order: Number(item?.order) || 9999 }))
+    .map(([id, item]) => ({
+      id,
+      name: cleanText(item?.name, '기타'),
+      order: Number(item?.order) || 9999
+    }))
     .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ko'));
 }
 
@@ -148,19 +162,38 @@ function visibleApps() {
     .filter(app => app.visible !== false)
     .sort((a, b) => {
       const featuredDiff = Number(Boolean(b.featured)) - Number(Boolean(a.featured));
-      return featuredDiff || (Number(a.order) || 9999) - (Number(b.order) || 9999) || cleanText(a.title).localeCompare(cleanText(b.title), 'ko');
+      return featuredDiff
+        || (Number(a.order) || 9999) - (Number(b.order) || 9999)
+        || cleanText(a.title).localeCompare(cleanText(b.title), 'ko');
     });
 }
 
-function filteredApps() {
+function matchesSearch(app) {
   const query = state.search.toLocaleLowerCase('ko');
-  return visibleApps().filter(app => {
-    if (state.activeCategory !== 'all' && app.category !== state.activeCategory) return false;
-    if (!query) return true;
-    const categoryName = cleanText(state.categories[app.category]?.name);
-    const haystack = [app.title, app.description, categoryName].map(value => cleanText(value).toLocaleLowerCase('ko')).join(' ');
-    return haystack.includes(query);
-  });
+  if (!query) return true;
+  const categoryName = cleanText(state.categories[app.category]?.name, '기타');
+  const haystack = [app.title, app.description, categoryName]
+    .map(value => cleanText(value).toLocaleLowerCase('ko'))
+    .join(' ');
+  return haystack.includes(query);
+}
+
+function groupedApps() {
+  const apps = visibleApps().filter(matchesSearch);
+  const categories = categoryEntries();
+  const knownIds = new Set(categories.map(item => item.id));
+  const groups = categories
+    .map(category => ({
+      ...category,
+      apps: apps.filter(app => app.category === category.id)
+    }))
+    .filter(group => group.apps.length > 0);
+
+  const uncategorized = apps.filter(app => !knownIds.has(app.category));
+  if (uncategorized.length) {
+    groups.push({ id: '__other__', name: '기타', order: 99999, apps: uncategorized });
+  }
+  return { apps, groups };
 }
 
 function applySettings() {
@@ -180,25 +213,44 @@ function applySettings() {
   applyBackground(settings);
 }
 
+function categoryCounts() {
+  const counts = new Map();
+  visibleApps().filter(matchesSearch).forEach(app => {
+    counts.set(app.category, (counts.get(app.category) || 0) + 1);
+  });
+  return counts;
+}
+
 function renderCategories() {
   const categories = categoryEntries();
-  const valid = state.activeCategory === 'all' || categories.some(item => item.id === state.activeCategory);
+  const counts = categoryCounts();
+  const valid = state.activeCategory === 'all'
+    || categories.some(item => item.id === state.activeCategory)
+    || state.activeCategory === '__other__';
   if (!valid) state.activeCategory = 'all';
 
   els.categoryTabs.replaceChildren();
-  const allButton = createCategoryButton('all', '전체');
-  els.categoryTabs.appendChild(allButton);
-  categories.forEach(item => els.categoryTabs.appendChild(createCategoryButton(item.id, item.name)));
+  const total = visibleApps().filter(matchesSearch).length;
+  els.categoryTabs.appendChild(createCategoryButton('all', '전체', total));
+  categories
+    .filter(item => (counts.get(item.id) || 0) > 0)
+    .forEach(item => els.categoryTabs.appendChild(createCategoryButton(item.id, item.name, counts.get(item.id) || 0)));
 }
 
-function createCategoryButton(id, name) {
+function createCategoryButton(id, name, count) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = `category-tab${state.activeCategory === id ? ' active' : ''}`;
   button.dataset.category = id;
-  button.textContent = name;
   button.setAttribute('role', 'tab');
   button.setAttribute('aria-selected', String(state.activeCategory === id));
+
+  const label = document.createElement('span');
+  label.textContent = name;
+  const number = document.createElement('span');
+  number.className = 'category-tab-count';
+  number.textContent = String(count);
+  button.append(label, number);
   return button;
 }
 
@@ -216,10 +268,11 @@ function createLaunchButton(label, url, app, secondary = false) {
   return link;
 }
 
-function createAppCard(app) {
+function createAppCard(app, index = 0) {
   const article = document.createElement('article');
   article.className = 'app-card';
   article.style.setProperty('--app-color', normalizeColor(app.color));
+  article.style.setProperty('--card-index', String(index));
 
   const head = document.createElement('div');
   head.className = 'card-head';
@@ -276,52 +329,138 @@ function createAppCard(app) {
   return article;
 }
 
-function renderApps() {
-  const allVisible = visibleApps();
-  const apps = filteredApps();
-  els.appCount.textContent = String(allVisible.length);
-  els.resultCount.textContent = `${apps.length}개 표시`;
-  els.sectionTitle.textContent = state.activeCategory === 'all'
-    ? (state.search ? '검색 결과' : '전체 도구')
-    : cleanText(state.categories[state.activeCategory]?.name, '도구');
+function createRailButton(direction, categoryName) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'category-rail-button';
+  button.dataset.railDirection = direction;
+  button.setAttribute('aria-label', `${categoryName} 앱 목록 ${direction === 'prev' ? '왼쪽' : '오른쪽'}으로 이동`);
+  button.textContent = direction === 'prev' ? '←' : '→';
+  return button;
+}
 
-  els.appGrid.replaceChildren();
+function createCategorySection(group, groupIndex) {
+  const section = document.createElement('section');
+  const isCollapsed = state.collapsedCategories.has(group.id) && !state.search;
+  section.className = `category-section${isCollapsed ? '' : ' is-open'} animate-cards`;
+  section.dataset.categorySection = group.id;
+  section.style.setProperty('--section-color', SECTION_PALETTE[groupIndex % SECTION_PALETTE.length]);
+  section.style.setProperty('--section-index', String(groupIndex));
+
+  const header = document.createElement('div');
+  header.className = 'category-section-header';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'category-section-toggle';
+  toggle.dataset.toggleCategory = group.id;
+  toggle.setAttribute('aria-expanded', String(!isCollapsed));
+
+  const indexBadge = document.createElement('span');
+  indexBadge.className = 'category-section-index';
+  indexBadge.textContent = String(groupIndex + 1).padStart(2, '0');
+
+  const titleWrap = document.createElement('span');
+  titleWrap.className = 'category-section-title-wrap';
+  const title = document.createElement('span');
+  title.className = 'category-section-title';
+  title.textContent = `〈${group.name}〉`;
+  const subtitle = document.createElement('span');
+  subtitle.className = 'category-section-subtitle';
+  subtitle.textContent = `${group.apps.length}개의 앱을 모아두었어요`;
+  titleWrap.append(title, subtitle);
+
+  const chevron = document.createElement('span');
+  chevron.className = 'category-section-chevron';
+  chevron.textContent = '⌄';
+  chevron.setAttribute('aria-hidden', 'true');
+  toggle.append(indexBadge, titleWrap, chevron);
+
+  const controls = document.createElement('div');
+  controls.className = 'category-section-controls';
+  if (group.apps.length > 1) {
+    controls.append(createRailButton('prev', group.name), createRailButton('next', group.name));
+  }
+  header.append(toggle, controls);
+
+  const panel = document.createElement('div');
+  panel.className = 'category-section-panel';
+  const panelInner = document.createElement('div');
+  panelInner.className = 'category-section-panel-inner';
+
+  const rail = document.createElement('div');
+  rail.className = 'category-app-rail';
+  rail.tabIndex = 0;
+  rail.setAttribute('aria-label', `${group.name} 앱 목록`);
+  group.apps.forEach((app, index) => rail.appendChild(createAppCard(app, index)));
+
+  panelInner.appendChild(rail);
+  panel.appendChild(panelInner);
+  section.append(header, panel);
+  return section;
+}
+
+function appendStatusState(className, titleText, detailText) {
+  const box = document.createElement('div');
+  box.className = className;
+  const title = document.createElement('strong');
+  title.textContent = titleText;
+  const detail = document.createElement('span');
+  detail.textContent = detailText;
+  box.append(title, detail);
+  els.categorySections.appendChild(box);
+}
+
+function renderCategorySections() {
+  sectionObserver?.disconnect();
+  const allVisible = visibleApps();
+  const { apps, groups } = groupedApps();
+  els.appCount.textContent = String(allVisible.length);
+  els.resultCount.textContent = `${apps.length}개 도구 · ${groups.length}개 카테고리`;
+  els.sectionTitle.textContent = state.search ? '검색 결과' : '카테고리별 도구';
+  els.categorySections.replaceChildren();
 
   if (state.loadError && !Object.keys(state.apps).length) {
-    const error = document.createElement('div');
-    error.className = 'error-state';
-    error.innerHTML = '<strong>앱 목록을 불러오지 못했습니다.</strong><span></span>';
-    error.querySelector('span').textContent = state.loadError;
-    els.appGrid.appendChild(error);
+    appendStatusState('error-state category-wide-state', '앱 목록을 불러오지 못했습니다.', state.loadError);
     return;
   }
 
   if (!state.appsLoaded && !Object.keys(state.apps).length) {
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < 2; i += 1) {
+      const skeletonSection = document.createElement('div');
+      skeletonSection.className = 'category-section category-section-skeleton';
       const skeleton = document.createElement('div');
       skeleton.className = 'skeleton';
-      els.appGrid.appendChild(skeleton);
+      skeletonSection.appendChild(skeleton);
+      els.categorySections.appendChild(skeletonSection);
     }
     return;
   }
 
   if (!Object.keys(state.apps).length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    empty.innerHTML = '<strong>아직 등록된 앱이 없습니다.</strong><span>관리자 화면에서 “현재 앱 한 번에 불러오기”를 눌러 초기 목록을 등록하세요.</span>';
-    els.appGrid.appendChild(empty);
+    appendStatusState(
+      'empty-state category-wide-state',
+      '아직 등록된 앱이 없습니다.',
+      '관리자 화면에서 “현재 앱 한 번에 불러오기”를 눌러 초기 목록을 등록하세요.'
+    );
     return;
   }
 
   if (!apps.length) {
-    const empty = document.createElement('div');
-    empty.className = 'empty-state';
-    empty.innerHTML = '<strong>조건에 맞는 앱이 없습니다.</strong><span>검색어를 바꾸거나 다른 카테고리를 선택해보세요.</span>';
-    els.appGrid.appendChild(empty);
+    appendStatusState(
+      'empty-state category-wide-state',
+      '검색 조건에 맞는 앱이 없습니다.',
+      '검색어를 조금 다르게 입력해보세요.'
+    );
     return;
   }
 
-  apps.forEach(app => els.appGrid.appendChild(createAppCard(app)));
+  groups.forEach((group, index) => {
+    const section = createCategorySection(group, index);
+    els.categorySections.appendChild(section);
+    if (sectionObserver) sectionObserver.observe(section);
+    else section.classList.add('is-visible');
+  });
 }
 
 function markLoaded(part) {
@@ -329,17 +468,74 @@ function markLoaded(part) {
   if (state.appsLoaded && state.categoriesLoaded && state.settingsLoaded) saveCache();
 }
 
+function scrollToCategory(categoryId) {
+  const section = [...els.categorySections.querySelectorAll('[data-category-section]')]
+    .find(item => item.dataset.categorySection === categoryId);
+  if (!section) return;
+  section.classList.add('is-open');
+  section.querySelector('[data-toggle-category]')?.setAttribute('aria-expanded', 'true');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  section.classList.remove('category-highlight');
+  requestAnimationFrame(() => section.classList.add('category-highlight'));
+  window.setTimeout(() => section.classList.remove('category-highlight'), 900);
+}
+
 els.searchInput.addEventListener('input', event => {
   state.search = event.target.value.trim();
-  renderApps();
+  state.activeCategory = 'all';
+  renderCategories();
+  renderCategorySections();
 });
 
 els.categoryTabs.addEventListener('click', event => {
   const button = event.target.closest('[data-category]');
   if (!button) return;
-  state.activeCategory = button.dataset.category;
+  const categoryId = button.dataset.category;
+  state.activeCategory = categoryId;
+
+  if (categoryId === 'all') {
+    state.collapsedCategories.clear();
+    renderCategories();
+    renderCategorySections();
+    els.categorySections.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  state.collapsedCategories.delete(categoryId);
   renderCategories();
-  renderApps();
+  renderCategorySections();
+  requestAnimationFrame(() => scrollToCategory(categoryId));
+});
+
+els.categorySections.addEventListener('click', event => {
+  const railButton = event.target.closest('[data-rail-direction]');
+  if (railButton) {
+    const section = railButton.closest('[data-category-section]');
+    const rail = section?.querySelector('.category-app-rail');
+    if (!rail) return;
+    const direction = railButton.dataset.railDirection === 'prev' ? -1 : 1;
+    rail.scrollBy({ left: direction * Math.max(260, rail.clientWidth * 0.78), behavior: 'smooth' });
+    return;
+  }
+
+  const toggle = event.target.closest('[data-toggle-category]');
+  if (!toggle) return;
+  const section = toggle.closest('[data-category-section]');
+  const categoryId = toggle.dataset.toggleCategory;
+  const willOpen = !section.classList.contains('is-open');
+
+  section.classList.toggle('is-open', willOpen);
+  toggle.setAttribute('aria-expanded', String(willOpen));
+  state.activeCategory = categoryId;
+  if (willOpen) {
+    state.collapsedCategories.delete(categoryId);
+    section.classList.remove('animate-cards');
+    void section.offsetWidth;
+    section.classList.add('animate-cards');
+  } else {
+    state.collapsedCategories.add(categoryId);
+  }
+  renderCategories();
 });
 
 loadCache();
@@ -348,19 +544,20 @@ onValue(ref(db, 'portal/apps'), snapshot => {
   state.apps = snapshot.val() || {};
   state.loadError = '';
   markLoaded('apps');
-  renderApps();
+  renderCategories();
+  renderCategorySections();
 }, error => {
   console.error(error);
   state.appsLoaded = true;
   state.loadError = 'Firebase 데이터베이스 읽기 권한과 인터넷 연결을 확인해주세요.';
-  renderApps();
+  renderCategorySections();
 });
 
 onValue(ref(db, 'portal/categories'), snapshot => {
   state.categories = snapshot.val() || {};
   markLoaded('categories');
   renderCategories();
-  renderApps();
+  renderCategorySections();
 }, error => {
   console.error(error);
   state.categoriesLoaded = true;

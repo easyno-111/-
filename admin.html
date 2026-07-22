@@ -92,12 +92,28 @@
                     <select id="appCategory" required></select>
                   </div>
                   <div class="field">
-                    <label for="appIcon">아이콘</label>
+                    <label for="appIcon">기본 아이콘</label>
                     <input id="appIcon" maxlength="8" placeholder="🎲">
                   </div>
                   <div class="field">
                     <label for="appColor">대표 색상</label>
                     <input id="appColor" type="color" value="#36588e">
+                  </div>
+                  <div class="field span-2">
+                    <label>앱 아이콘 사진</label>
+                    <div class="image-upload-control compact-upload">
+                      <div id="appIconPreview" class="upload-preview icon-upload-preview" aria-live="polite">
+                        <span>사진 없음</span>
+                      </div>
+                      <div class="upload-actions">
+                        <label class="soft-button file-button">
+                          사진 선택
+                          <input id="appIconFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+                        </label>
+                        <button id="removeAppIconImage" class="ghost-button small-button" type="button">사진 제거</button>
+                        <small>정사각형 사진을 권장합니다. 선택한 사진은 자동으로 작게 압축됩니다.</small>
+                      </div>
+                    </div>
                   </div>
                   <div class="field">
                     <label for="appOpenMode">열기 방식</label>
@@ -157,6 +173,27 @@
                 <div class="field"><label for="settingSubtitle">소개 문구</label><textarea id="settingSubtitle" maxlength="160"></textarea></div>
                 <div class="field"><label for="settingNotice">공지 문구</label><textarea id="settingNotice" maxlength="160" placeholder="비워두면 공지가 숨겨집니다."></textarea></div>
                 <div class="field"><label for="settingFooter">하단 문구</label><input id="settingFooter" maxlength="80"></div>
+                <div class="field">
+                  <label>페이지 배경 사진</label>
+                  <div class="image-upload-control background-upload-control">
+                    <div id="backgroundPreview" class="upload-preview background-upload-preview" aria-live="polite">
+                      <span>기본 배경 사용 중</span>
+                    </div>
+                    <div class="upload-actions">
+                      <label class="soft-button file-button">
+                        배경 사진 선택
+                        <input id="backgroundFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+                      </label>
+                      <button id="removeBackgroundImage" class="ghost-button small-button" type="button">기본 배경으로</button>
+                      <small>가로 사진을 권장합니다. 큰 사진도 자동으로 축소·압축됩니다.</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="settingBackgroundOverlay">배경 가림 정도 <span id="backgroundOverlayValue">58%</span></label>
+                  <input id="settingBackgroundOverlay" class="range-input" type="range" min="20" max="90" step="1" value="58">
+                  <small class="field-help">값이 높을수록 글자와 카드가 더 잘 보입니다.</small>
+                </div>
                 <button class="primary-button" type="submit">홈페이지 설정 저장</button>
               </form>
             </div>

@@ -85,8 +85,12 @@ function loadCache() {
 
 function saveCache() {
   try {
+    const cacheApps = Object.fromEntries(Object.entries(state.apps).map(([id, app]) => {
+      const { iconImage, ...cacheApp } = app || {};
+      return [id, cacheApp];
+    }));
     localStorage.setItem(CACHE_KEY, JSON.stringify({
-      apps: state.apps,
+      apps: cacheApps,
       categories: state.categories,
       settings: state.settings
     }));
@@ -101,6 +105,22 @@ function cleanText(value, fallback = '') {
 
 function normalizeColor(value) {
   return /^#[0-9a-f]{6}$/i.test(value || '') ? value : '#36588e';
+}
+
+function isImageDataUrl(value) {
+  return typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(value);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || min));
+}
+
+function applyBackground(settings) {
+  const image = isImageDataUrl(settings.backgroundImage) ? settings.backgroundImage : '';
+  const overlay = Math.round(clamp(settings.backgroundOverlay ?? DEFAULT_SETTINGS.backgroundOverlay, 20, 90));
+  document.body.classList.toggle('has-custom-background', Boolean(image));
+  document.body.style.setProperty('--portal-background-image', image ? `url("${image}")` : 'none');
+  document.body.style.setProperty('--portal-background-overlay', String(overlay / 100));
 }
 
 function safeUrl(value) {
@@ -157,6 +177,7 @@ function applySettings() {
   els.footerText.textContent = footer;
   els.notice.textContent = notice;
   els.notice.classList.toggle('hidden', !notice);
+  applyBackground(settings);
 }
 
 function renderCategories() {
@@ -205,7 +226,15 @@ function createAppCard(app) {
 
   const icon = document.createElement('div');
   icon.className = 'app-icon';
-  icon.textContent = cleanText(app.icon, '🔗');
+  if (isImageDataUrl(app.iconImage)) {
+    const image = document.createElement('img');
+    image.src = app.iconImage;
+    image.alt = '';
+    icon.appendChild(image);
+    icon.classList.add('has-image');
+  } else {
+    icon.textContent = cleanText(app.icon, '🔗');
+  }
 
   const badges = document.createElement('div');
   badges.className = 'badges';

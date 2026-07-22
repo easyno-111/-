@@ -2,7 +2,9 @@ export const DEFAULT_SETTINGS = {
   title: '수학 실험실',
   subtitle: '수업과 학급 운영에 필요한 도구를 한곳에서 시작하세요.',
   notice: '',
-  footer: 'MATHEMATICS LAB · Easy NO'
+  footer: 'MATHEMATICS LAB · Easy NO',
+  backgroundImage: '',
+  backgroundOverlay: 58
 };
 
 export const DEFAULT_CATEGORIES = {

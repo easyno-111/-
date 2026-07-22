@@ -710,3 +710,93 @@ body.portal-view .portal-footer a { color: var(--primary-2); }
     transition-duration: .01ms !important;
   }
 }
+
+/* =========================================================
+   관리자 이미지 업로드 / 사용자 지정 배경
+   ========================================================= */
+.file-button { position: relative; overflow: hidden; cursor: pointer; }
+.file-button input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.image-upload-control {
+  display: grid;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #dfe5ee;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.image-upload-control.compact-upload {
+  grid-template-columns: 86px minmax(0, 1fr);
+  align-items: center;
+}
+.upload-preview {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 82px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #fff;
+  color: #8793a7;
+  font-size: 12px;
+  text-align: center;
+}
+.upload-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.icon-upload-preview { width: 82px; height: 82px; min-height: 82px; }
+.background-upload-preview { width: 100%; height: 150px; }
+.upload-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.upload-actions small { flex-basis: 100%; color: #748197; font-size: 11px; line-height: 1.5; }
+.field-help { color: #748197; font-size: 11px; line-height: 1.5; }
+.range-input { padding: 0 !important; accent-color: var(--primary-2); }
+button:disabled, .soft-button:has(input:disabled) { opacity: .48; cursor: not-allowed; transform: none !important; }
+.admin-app-icon.has-image { overflow: hidden; padding: 0; }
+.admin-app-icon.has-image img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+body.portal-view.has-custom-background {
+  --portal-background-overlay-rgb: 255 248 251;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(
+      rgb(var(--portal-background-overlay-rgb) / var(--portal-background-overlay, .58)),
+      rgb(var(--portal-background-overlay-rgb) / var(--portal-background-overlay, .58))
+    ),
+    var(--portal-background-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+html[data-theme="dark"] body.portal-view.has-custom-background {
+  --portal-background-overlay-rgb: 23 20 31;
+}
+body.portal-view.has-custom-background .portal-shell::before,
+body.portal-view.has-custom-background .portal-shell::after { opacity: .24; }
+body.portal-view .app-icon.has-image {
+  overflow: hidden;
+  padding: 0;
+  background: var(--surface-solid);
+}
+body.portal-view .app-icon.has-image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+@media (max-width: 720px) {
+  .image-upload-control.compact-upload { grid-template-columns: 72px minmax(0, 1fr); }
+  .icon-upload-preview { width: 68px; height: 68px; min-height: 68px; }
+  .background-upload-preview { height: 125px; }
+  body.portal-view.has-custom-background { background-attachment: scroll; }
+}

@@ -25,14 +25,21 @@ const els = {
   statTotal: byId('statTotal'), statVisible: byId('statVisible'), statFeatured: byId('statFeatured'), statCategories: byId('statCategories'),
   adminListCount: byId('adminListCount'), adminAppList: byId('adminAppList'), appForm: byId('appForm'), appId: byId('appId'), formTitle: byId('formTitle'),
   appTitle: byId('appTitle'), appDescription: byId('appDescription'), appCategory: byId('appCategory'), appIcon: byId('appIcon'), appColor: byId('appColor'),
+  appIconFile: byId('appIconFile'), appIconPreview: byId('appIconPreview'), removeAppIconImage: byId('removeAppIconImage'),
   appOpenMode: byId('appOpenMode'), primaryLabel: byId('primaryLabel'), primaryUrl: byId('primaryUrl'), secondaryLabel: byId('secondaryLabel'),
   secondaryUrl: byId('secondaryUrl'), appVisible: byId('appVisible'), appFeatured: byId('appFeatured'), appIsNew: byId('appIsNew'),
   saveAppButton: byId('saveAppButton'), cancelEditButton: byId('cancelEditButton'), categoryManager: byId('categoryManager'), categoryForm: byId('categoryForm'),
   newCategoryName: byId('newCategoryName'), settingsForm: byId('settingsForm'), settingTitle: byId('settingTitle'), settingSubtitle: byId('settingSubtitle'),
-  settingNotice: byId('settingNotice'), settingFooter: byId('settingFooter'), toastContainer: byId('toastContainer')
+  settingNotice: byId('settingNotice'), settingFooter: byId('settingFooter'), backgroundFile: byId('backgroundFile'),
+  backgroundPreview: byId('backgroundPreview'), removeBackgroundImage: byId('removeBackgroundImage'),
+  settingBackgroundOverlay: byId('settingBackgroundOverlay'), backgroundOverlayValue: byId('backgroundOverlayValue'),
+  toastContainer: byId('toastContainer')
 };
 
 const state = { user: null, apps: {}, categories: {}, settings: { ...DEFAULT_SETTINGS }, unsubscribers: [] };
+let draftAppIconImage = '';
+let draftBackgroundImage = '';
+let imageTaskCount = 0;
 
 function text(value, fallback = '') { return typeof value === 'string' ? value.trim() : fallback; }
 function num(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
@@ -41,6 +48,119 @@ function validUrl(value) {
   const url = text(value);
   if (!url || /^(javascript|data|vbscript):/i.test(url)) return false;
   try { return ['http:', 'https:'].includes(new URL(url, window.location.href).protocol); } catch { return false; }
+}
+
+function isImageDataUrl(value) {
+  return typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(value);
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, Number(value) || min));
+}
+
+function setImageTask(active) {
+  imageTaskCount = Math.max(0, imageTaskCount + (active ? 1 : -1));
+  const busy = imageTaskCount > 0;
+  els.saveAppButton.disabled = busy;
+  const settingsButton = els.settingsForm.querySelector('button[type="submit"]');
+  if (settingsButton) settingsButton.disabled = busy;
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('이미지 파일을 읽지 못했습니다.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('이미지를 압축하지 못했습니다.')), type, quality);
+  });
+}
+
+async function compressImage(file, { maxWidth, maxHeight, quality, maxBytes }) {
+  if (!file || !file.type.startsWith('image/')) throw new Error('이미지 파일을 선택해주세요.');
+  if (file.size > 15 * 1024 * 1024) throw new Error('원본 이미지가 너무 큽니다. 15MB 이하 파일을 선택해주세요.');
+
+  const sourceUrl = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.decoding = 'async';
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error('이미지 형식을 읽을 수 없습니다.'));
+      image.src = sourceUrl;
+    });
+
+    let width = image.naturalWidth || image.width;
+    let height = image.naturalHeight || image.height;
+    if (!width || !height) throw new Error('이미지 크기를 확인할 수 없습니다.');
+
+    const scale = Math.min(1, maxWidth / width, maxHeight / height);
+    width = Math.max(1, Math.round(width * scale));
+    height = Math.max(1, Math.round(height * scale));
+
+    let currentQuality = quality;
+    let currentWidth = width;
+    let currentHeight = height;
+    let blob;
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const canvas = document.createElement('canvas');
+      canvas.width = currentWidth;
+      canvas.height = currentHeight;
+      const context = canvas.getContext('2d', { alpha: true });
+      if (!context) throw new Error('이 브라우저에서는 이미지 처리를 사용할 수 없습니다.');
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      context.drawImage(image, 0, 0, currentWidth, currentHeight);
+      blob = await canvasToBlob(canvas, 'image/webp', currentQuality);
+      if (blob.size <= maxBytes) break;
+      currentQuality = Math.max(.55, currentQuality - .08);
+      currentWidth = Math.max(120, Math.round(currentWidth * .88));
+      currentHeight = Math.max(120, Math.round(currentHeight * .88));
+    }
+
+    if (!blob) throw new Error('이미지를 압축하지 못했습니다.');
+    return blobToDataUrl(blob);
+  } finally {
+    URL.revokeObjectURL(sourceUrl);
+  }
+}
+
+function renderImagePreview(container, dataUrl, emptyText, mode = 'icon') {
+  container.replaceChildren();
+  if (isImageDataUrl(dataUrl)) {
+    const image = document.createElement('img');
+    image.src = dataUrl;
+    image.alt = mode === 'background' ? '선택한 배경 미리보기' : '선택한 아이콘 미리보기';
+    container.appendChild(image);
+    container.classList.add('has-image');
+  } else {
+    const label = document.createElement('span');
+    label.textContent = emptyText;
+    container.appendChild(label);
+    container.classList.remove('has-image');
+  }
+}
+
+function updateIconPreview() {
+  renderImagePreview(els.appIconPreview, draftAppIconImage, '사진 없음', 'icon');
+  els.removeAppIconImage.disabled = !draftAppIconImage;
+}
+
+function updateBackgroundPreview() {
+  renderImagePreview(els.backgroundPreview, draftBackgroundImage, '기본 배경 사용 중', 'background');
+  els.removeBackgroundImage.disabled = !draftBackgroundImage;
+}
+
+function updateOverlayLabel() {
+  const value = Math.round(clamp(els.settingBackgroundOverlay.value, 20, 90));
+  els.settingBackgroundOverlay.value = String(value);
+  els.backgroundOverlayValue.textContent = `${value}%`;
 }
 function sortedApps() {
   return Object.entries(state.apps).map(([id, app]) => ({ id, ...app }))
@@ -107,7 +227,15 @@ function renderAppList() {
 
     const icon = document.createElement('div');
     icon.className = 'admin-app-icon';
-    icon.textContent = text(app.icon, '🔗');
+    if (isImageDataUrl(app.iconImage)) {
+      const image = document.createElement('img');
+      image.src = app.iconImage;
+      image.alt = '';
+      icon.appendChild(image);
+      icon.classList.add('has-image');
+    } else {
+      icon.textContent = text(app.icon, '🔗');
+    }
 
     const copy = document.createElement('div');
     copy.className = 'admin-app-copy';
@@ -192,6 +320,11 @@ function fillSettings() {
   els.settingSubtitle.value = text(state.settings.subtitle, DEFAULT_SETTINGS.subtitle);
   els.settingNotice.value = text(state.settings.notice);
   els.settingFooter.value = text(state.settings.footer, DEFAULT_SETTINGS.footer);
+  draftBackgroundImage = isImageDataUrl(state.settings.backgroundImage) ? state.settings.backgroundImage : '';
+  els.backgroundFile.value = '';
+  els.settingBackgroundOverlay.value = String(Math.round(clamp(state.settings.backgroundOverlay ?? DEFAULT_SETTINGS.backgroundOverlay, 20, 90)));
+  updateBackgroundPreview();
+  updateOverlayLabel();
 }
 
 function resetAppForm() {
@@ -204,6 +337,9 @@ function resetAppForm() {
   els.appVisible.checked = true;
   els.appFeatured.checked = false;
   els.appIsNew.checked = false;
+  draftAppIconImage = '';
+  els.appIconFile.value = '';
+  updateIconPreview();
   renderCategoryOptions(sortedCategories()[0]?.id || '');
 }
 
@@ -216,6 +352,9 @@ function editApp(id) {
   els.appDescription.value = text(app.description);
   renderCategoryOptions(app.category);
   els.appIcon.value = text(app.icon);
+  draftAppIconImage = isImageDataUrl(app.iconImage) ? app.iconImage : '';
+  els.appIconFile.value = '';
+  updateIconPreview();
   els.appColor.value = normalizeColor(app.color);
   els.appOpenMode.value = app.openMode === 'same' ? 'same' : 'new';
   els.primaryLabel.value = text(app.primaryLabel, '실행');
@@ -240,6 +379,7 @@ function collectAppData(existing = {}) {
     description: text(els.appDescription.value),
     category: els.appCategory.value,
     icon: text(els.appIcon.value, '🔗'),
+    iconImage: draftAppIconImage,
     color: normalizeColor(els.appColor.value),
     primaryLabel: text(els.primaryLabel.value, '실행'),
     primaryUrl,
@@ -285,8 +425,67 @@ els.logoutButton.addEventListener('click', async () => { await signOut(auth); })
 els.newAppButton.addEventListener('click', () => { resetAppForm(); window.scrollTo({ top: 0, behavior: 'smooth' }); setTimeout(() => els.appTitle.focus(), 250); });
 els.cancelEditButton.addEventListener('click', resetAppForm);
 
+els.appIconFile.addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  setImageTask(true);
+  try {
+    draftAppIconImage = await compressImage(file, {
+      maxWidth: 220,
+      maxHeight: 220,
+      quality: .82,
+      maxBytes: 60 * 1024
+    });
+    updateIconPreview();
+    toast('아이콘 사진을 준비했습니다. 앱 정보를 저장해주세요.');
+  } catch (error) {
+    console.error(error);
+    toast(error.message || '아이콘 사진을 처리하지 못했습니다.', 'error');
+  } finally {
+    event.target.value = '';
+    setImageTask(false);
+  }
+});
+
+els.removeAppIconImage.addEventListener('click', () => {
+  draftAppIconImage = '';
+  els.appIconFile.value = '';
+  updateIconPreview();
+});
+
+els.backgroundFile.addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  setImageTask(true);
+  try {
+    draftBackgroundImage = await compressImage(file, {
+      maxWidth: 1600,
+      maxHeight: 1050,
+      quality: .8,
+      maxBytes: 420 * 1024
+    });
+    updateBackgroundPreview();
+    toast('배경 사진을 준비했습니다. 홈페이지 설정을 저장해주세요.');
+  } catch (error) {
+    console.error(error);
+    toast(error.message || '배경 사진을 처리하지 못했습니다.', 'error');
+  } finally {
+    event.target.value = '';
+    setImageTask(false);
+  }
+});
+
+els.removeBackgroundImage.addEventListener('click', () => {
+  draftBackgroundImage = '';
+  els.backgroundFile.value = '';
+  updateBackgroundPreview();
+});
+
+els.settingBackgroundOverlay.addEventListener('input', updateOverlayLabel);
+
 els.appForm.addEventListener('submit', async event => {
   event.preventDefault();
+  if (imageTaskCount) return toast('이미지를 처리하는 중입니다. 잠시 후 다시 저장해주세요.', 'error');
   if (!Object.keys(state.categories).length) return toast('카테고리를 먼저 추가해주세요.', 'error');
   const id = els.appId.value;
   const existing = id ? state.apps[id] || {} : {};
@@ -417,17 +616,27 @@ els.categoryManager.addEventListener('click', async event => {
 
 els.settingsForm.addEventListener('submit', async event => {
   event.preventDefault();
+  if (imageTaskCount) return toast('이미지를 처리하는 중입니다. 잠시 후 다시 저장해주세요.', 'error');
+  const submitButton = els.settingsForm.querySelector('button[type="submit"]');
   const settings = {
     title: text(els.settingTitle.value, DEFAULT_SETTINGS.title),
     subtitle: text(els.settingSubtitle.value, DEFAULT_SETTINGS.subtitle),
     notice: text(els.settingNotice.value),
     footer: text(els.settingFooter.value, DEFAULT_SETTINGS.footer),
+    backgroundImage: draftBackgroundImage,
+    backgroundOverlay: Math.round(clamp(els.settingBackgroundOverlay.value, 20, 90)),
     updatedAt: Date.now()
   };
+  if (submitButton) submitButton.disabled = true;
   try {
     await set(ref(db, 'portal/settings'), settings);
     toast('홈페이지 설정을 저장했습니다.');
-  } catch (error) { toast(dbMessage(error), 'error'); }
+  } catch (error) {
+    console.error(error);
+    toast(dbMessage(error), 'error');
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 });
 
 onAuthStateChanged(auth, user => {

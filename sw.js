@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teacher-app-portal-v4';
+const CACHE_NAME = 'teacher-app-portal-v5';
 const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
 const CORE_ASSETS = [
   './', './index.html', './offline.html', './assets/portal.css',

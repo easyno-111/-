@@ -1004,9 +1004,9 @@ body.portal-view .category-app-rail {
   overflow-x: auto;
   overscroll-behavior-inline: contain;
   padding: 3px 24px 26px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-padding-inline: 24px;
-  scroll-snap-type: inline proximity;
+  scroll-snap-type: none;
   scrollbar-color: color-mix(in srgb, var(--section-color) 42%, transparent) transparent;
   scrollbar-width: thin;
 }
@@ -1023,7 +1023,7 @@ body.portal-view .category-app-rail .app-card {
   min-width: 0;
   height: 100%;
   min-height: 250px;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
 }
 body.portal-view .category-app-rail .card-category { display: none; }
 body.portal-view .category-app-rail .app-title { margin-top: 20px; }
@@ -1247,8 +1247,9 @@ html[data-theme="dark"] body.portal-view.has-custom-background {
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: pan-y pinch-zoom;
-  scroll-behavior: smooth;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: auto;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--section-color, #9a82d0) 45%, transparent) transparent;
   overscroll-behavior-inline: contain;

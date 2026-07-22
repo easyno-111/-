@@ -160,13 +160,15 @@ function removeRailButtons() {
   document.querySelectorAll('.category-app-rail').forEach(rail => {
     if (rail.dataset.dragReady) return;
     rail.dataset.dragReady = 'true';
-    rail.setAttribute('aria-description', '마우스나 손가락으로 좌우로 끌어 이동할 수 있습니다.');
+    rail.setAttribute('aria-description', '컴퓨터에서는 마우스로 끌고, 모바일에서는 손가락으로 자연스럽게 밀어 이동할 수 있습니다.');
   });
 }
 function railPointerDown(event) {
   const rail = event.target.closest('.category-app-rail');
-  if (!rail || event.button > 0) return;
-  if (event.pointerType === 'mouse') event.preventDefault();
+  // 터치 기기에서는 브라우저의 기본 가로 스크롤을 사용한다.
+  // 그래야 손가락이 움직인 거리만큼 1:1로 따라오고 자연스러운 관성이 유지된다.
+  if (!rail || event.pointerType !== 'mouse' || event.button > 0) return;
+  event.preventDefault();
   activeRailDrag = {
     rail,
     pointerId: event.pointerId,

@@ -173,6 +173,43 @@
                 <div class="field"><label for="settingSubtitle">소개 문구</label><textarea id="settingSubtitle" maxlength="160"></textarea></div>
                 <div class="field"><label for="settingNotice">공지 문구</label><textarea id="settingNotice" maxlength="160" placeholder="비워두면 공지가 숨겨집니다."></textarea></div>
                 <div class="field"><label for="settingFooter">하단 문구</label><input id="settingFooter" maxlength="80"></div>
+
+                <div class="theme-customizer">
+                  <div class="settings-subheader">
+                    <div><strong>기본 배경과 테마</strong><span>방문 화면의 색상과 둥근 정도를 직접 바꿉니다.</span></div>
+                    <button id="resetThemeButton" class="ghost-button small-button" type="button">기본값 복원</button>
+                  </div>
+                  <div class="form-grid theme-settings-grid">
+                    <div class="field">
+                      <label for="settingThemePreset">테마 프리셋</label>
+                      <select id="settingThemePreset">
+                        <option value="lavender">라벤더</option><option value="mint">민트 가든</option><option value="sky">스카이 블루</option><option value="peach">피치 크림</option><option value="mono">차분한 모노</option><option value="custom">직접 설정</option>
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="settingBackgroundStyle">기본 배경 스타일</label>
+                      <select id="settingBackgroundStyle"><option value="soft">은은한 빛 번짐</option><option value="gradient">부드러운 그라데이션</option><option value="solid">단색 배경</option></select>
+                    </div>
+                    <label class="theme-color-field"><span>밝은 배경</span><input id="settingThemeBackground" type="color"></label>
+                    <label class="theme-color-field"><span>밝은 카드</span><input id="settingThemeSurface" type="color"></label>
+                    <label class="theme-color-field"><span>포인트</span><input id="settingThemePrimary" type="color"></label>
+                    <label class="theme-color-field"><span>보조 포인트</span><input id="settingThemeSecondary" type="color"></label>
+                    <label class="theme-color-field"><span>밝은 글자</span><input id="settingThemeText" type="color"></label>
+                    <label class="theme-color-field"><span>어두운 배경</span><input id="settingDarkBackground" type="color"></label>
+                    <label class="theme-color-field"><span>어두운 카드</span><input id="settingDarkSurface" type="color"></label>
+                    <label class="theme-color-field"><span>다크 포인트</span><input id="settingDarkPrimary" type="color"></label>
+                    <label class="theme-color-field"><span>다크 보조</span><input id="settingDarkSecondary" type="color"></label>
+                    <label class="theme-color-field"><span>어두운 글자</span><input id="settingDarkText" type="color"></label>
+                    <div class="field span-2">
+                      <label for="settingCornerRadius">둥근 정도 <span id="cornerRadiusValue">30px</span></label>
+                      <input id="settingCornerRadius" class="range-input" type="range" min="12" max="42" step="1" value="30">
+                    </div>
+                  </div>
+                  <div id="themePreview" class="theme-live-preview" aria-label="테마 미리보기">
+                    <div class="theme-preview-hero"><span>MY CLASSROOM</span><strong>수학 실험실</strong></div>
+                    <div class="theme-preview-card"><i></i><div><strong>앱 카드 미리보기</strong><span>색상과 둥근 정도를 확인하세요.</span></div><b>실행</b></div>
+                  </div>
+                </div>
                 <div class="field">
                   <label>페이지 배경 사진</label>
                   <div class="image-upload-control background-upload-control">

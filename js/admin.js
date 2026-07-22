@@ -1,5 +1,5 @@
 import { auth, db } from './firebase-config.js';
-import { DEFAULT_APPS, DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from './default-data.js';
+import { DEFAULT_APPS, DEFAULT_CATEGORIES, DEFAULT_SETTINGS, THEME_PRESETS } from './default-data.js';
 import {
   browserLocalPersistence,
   onAuthStateChanged,
@@ -33,6 +33,12 @@ const els = {
   settingNotice: byId('settingNotice'), settingFooter: byId('settingFooter'), backgroundFile: byId('backgroundFile'),
   backgroundPreview: byId('backgroundPreview'), removeBackgroundImage: byId('removeBackgroundImage'),
   settingBackgroundOverlay: byId('settingBackgroundOverlay'), backgroundOverlayValue: byId('backgroundOverlayValue'),
+  settingThemePreset: byId('settingThemePreset'), settingBackgroundStyle: byId('settingBackgroundStyle'),
+  settingThemeBackground: byId('settingThemeBackground'), settingThemeSurface: byId('settingThemeSurface'),
+  settingThemePrimary: byId('settingThemePrimary'), settingThemeSecondary: byId('settingThemeSecondary'), settingThemeText: byId('settingThemeText'),
+  settingDarkBackground: byId('settingDarkBackground'), settingDarkSurface: byId('settingDarkSurface'),
+  settingDarkPrimary: byId('settingDarkPrimary'), settingDarkSecondary: byId('settingDarkSecondary'), settingDarkText: byId('settingDarkText'),
+  settingCornerRadius: byId('settingCornerRadius'), cornerRadiusValue: byId('cornerRadiusValue'), themePreview: byId('themePreview'), resetThemeButton: byId('resetThemeButton'),
   toastContainer: byId('toastContainer')
 };
 
@@ -56,6 +62,40 @@ function isImageDataUrl(value) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number(value) || min));
+}
+
+function themeValue(id, fallback) { return normalizeColor(els[id]?.value || fallback); }
+function themeFormValues() {
+  return {
+    themePreset: els.settingThemePreset.value || 'custom', backgroundStyle: els.settingBackgroundStyle.value || 'soft',
+    themeBackground: themeValue('settingThemeBackground', DEFAULT_SETTINGS.themeBackground), themeSurface: themeValue('settingThemeSurface', DEFAULT_SETTINGS.themeSurface),
+    themePrimary: themeValue('settingThemePrimary', DEFAULT_SETTINGS.themePrimary), themeSecondary: themeValue('settingThemeSecondary', DEFAULT_SETTINGS.themeSecondary), themeText: themeValue('settingThemeText', DEFAULT_SETTINGS.themeText),
+    darkBackground: themeValue('settingDarkBackground', DEFAULT_SETTINGS.darkBackground), darkSurface: themeValue('settingDarkSurface', DEFAULT_SETTINGS.darkSurface),
+    darkPrimary: themeValue('settingDarkPrimary', DEFAULT_SETTINGS.darkPrimary), darkSecondary: themeValue('settingDarkSecondary', DEFAULT_SETTINGS.darkSecondary), darkText: themeValue('settingDarkText', DEFAULT_SETTINGS.darkText),
+    cornerRadius: Math.round(clamp(els.settingCornerRadius.value, 12, 42))
+  };
+}
+function applyThemePreset(key) {
+  const preset = THEME_PRESETS[key] || THEME_PRESETS.lavender;
+  Object.entries(preset).forEach(([name, value]) => {
+    if (name === 'label') return;
+    const id = name.replace(/^./, char => char.toUpperCase());
+    const element = els[`setting${id}`];
+    if (element) element.value = value;
+  });
+  updateThemePreview();
+}
+function updateThemePreview() {
+  const t = themeFormValues();
+  els.cornerRadiusValue.textContent = `${t.cornerRadius}px`;
+  const preview = els.themePreview;
+  preview.style.setProperty('--preview-bg', t.themeBackground);
+  preview.style.setProperty('--preview-surface', t.themeSurface);
+  preview.style.setProperty('--preview-primary', t.themePrimary);
+  preview.style.setProperty('--preview-secondary', t.themeSecondary);
+  preview.style.setProperty('--preview-text', t.themeText);
+  preview.style.setProperty('--preview-radius', `${t.cornerRadius}px`);
+  preview.dataset.backgroundStyle = t.backgroundStyle;
 }
 
 function setImageTask(active) {
@@ -323,8 +363,17 @@ function fillSettings() {
   draftBackgroundImage = isImageDataUrl(state.settings.backgroundImage) ? state.settings.backgroundImage : '';
   els.backgroundFile.value = '';
   els.settingBackgroundOverlay.value = String(Math.round(clamp(state.settings.backgroundOverlay ?? DEFAULT_SETTINGS.backgroundOverlay, 20, 90)));
+  const theme = { ...DEFAULT_SETTINGS, ...state.settings };
+  els.settingThemePreset.value = theme.themePreset || 'custom';
+  els.settingBackgroundStyle.value = theme.backgroundStyle || 'soft';
+  ['themeBackground','themeSurface','themePrimary','themeSecondary','themeText','darkBackground','darkSurface','darkPrimary','darkSecondary','darkText'].forEach(name => {
+    const id = `setting${name.replace(/^./, char => char.toUpperCase())}`;
+    if (els[id]) els[id].value = normalizeColor(theme[name]);
+  });
+  els.settingCornerRadius.value = String(Math.round(clamp(theme.cornerRadius, 12, 42)));
   updateBackgroundPreview();
   updateOverlayLabel();
+  updateThemePreview();
 }
 
 function resetAppForm() {
@@ -614,6 +663,26 @@ els.categoryManager.addEventListener('click', async event => {
   } catch (error) { toast(dbMessage(error), 'error'); }
 });
 
+
+els.settingThemePreset.addEventListener('change', () => {
+  if (els.settingThemePreset.value !== 'custom') applyThemePreset(els.settingThemePreset.value);
+  else updateThemePreview();
+});
+[els.settingBackgroundStyle, els.settingThemeBackground, els.settingThemeSurface, els.settingThemePrimary, els.settingThemeSecondary, els.settingThemeText,
+ els.settingDarkBackground, els.settingDarkSurface, els.settingDarkPrimary, els.settingDarkSecondary, els.settingDarkText, els.settingCornerRadius]
+  .forEach(element => element?.addEventListener('input', () => {
+    if (element !== els.settingBackgroundStyle && element !== els.settingCornerRadius) els.settingThemePreset.value = 'custom';
+    updateThemePreview();
+  }));
+els.resetThemeButton.addEventListener('click', () => {
+  els.settingThemePreset.value = 'lavender';
+  els.settingBackgroundStyle.value = 'soft';
+  applyThemePreset('lavender');
+  els.settingCornerRadius.value = String(DEFAULT_SETTINGS.cornerRadius);
+  updateThemePreview();
+  toast('기본 라벤더 테마로 되돌렸습니다. 저장 버튼을 눌러 적용하세요.');
+});
+
 els.settingsForm.addEventListener('submit', async event => {
   event.preventDefault();
   if (imageTaskCount) return toast('이미지를 처리하는 중입니다. 잠시 후 다시 저장해주세요.', 'error');
@@ -625,6 +694,7 @@ els.settingsForm.addEventListener('submit', async event => {
     footer: text(els.settingFooter.value, DEFAULT_SETTINGS.footer),
     backgroundImage: draftBackgroundImage,
     backgroundOverlay: Math.round(clamp(els.settingBackgroundOverlay.value, 20, 90)),
+    ...themeFormValues(),
     updatedAt: Date.now()
   };
   if (submitButton) submitButton.disabled = true;

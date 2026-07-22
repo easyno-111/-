@@ -1087,3 +1087,142 @@ body.portal-view .category-section:not(.is-open) .category-section-controls {
   opacity: .35;
   pointer-events: none;
 }
+
+
+/* =========================================================
+   관리자 테마 편집기 + 프리미엄 카테고리 아코디언
+   ========================================================= */
+.theme-customizer { margin-top: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: #f8f9fc; }
+.settings-subheader { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:16px; }
+.settings-subheader div { display:grid; gap:4px; }
+.settings-subheader strong { color:#243650; font-size:15px; }
+.settings-subheader span { color:#7a8799; font-size:11px; line-height:1.5; }
+.theme-settings-grid { gap:12px; }
+.theme-color-field { display:flex; align-items:center; justify-content:space-between; min-height:45px; padding:7px 9px 7px 12px; border:1px solid #dde3ec; border-radius:12px; background:#fff; color:#526176; font-size:12px; font-weight:800; }
+.theme-color-field input { width:42px; height:30px; padding:2px; border:0; border-radius:8px; background:transparent; cursor:pointer; }
+.theme-live-preview { --preview-bg:#fff8fb; --preview-surface:#fff; --preview-primary:#9a82d0; --preview-secondary:#8db9e7; --preview-text:#443c52; --preview-radius:30px; display:grid; gap:10px; margin-top:15px; padding:14px; overflow:hidden; border:1px solid #dfe4ec; border-radius:18px; color:var(--preview-text); background:radial-gradient(circle at 12% 0%, color-mix(in srgb,var(--preview-primary) 28%,transparent),transparent 42%),radial-gradient(circle at 90% 80%,color-mix(in srgb,var(--preview-secondary) 28%,transparent),transparent 45%),var(--preview-bg); }
+.theme-live-preview[data-background-style="gradient"] { background:linear-gradient(145deg,color-mix(in srgb,var(--preview-primary) 22%,var(--preview-bg)),var(--preview-bg) 48%,color-mix(in srgb,var(--preview-secondary) 25%,var(--preview-bg))); }
+.theme-live-preview[data-background-style="solid"] { background:var(--preview-bg); }
+.theme-preview-hero { display:grid; gap:2px; padding:15px 17px; border-radius:var(--preview-radius); background:linear-gradient(135deg,color-mix(in srgb,var(--preview-primary) 28%,var(--preview-surface)),color-mix(in srgb,var(--preview-secondary) 26%,var(--preview-surface))); }
+.theme-preview-hero span { font-size:8px; font-weight:900; letter-spacing:.16em; opacity:.65; }
+.theme-preview-hero strong { font-size:19px; }
+.theme-preview-card { display:grid; grid-template-columns:36px 1fr auto; align-items:center; gap:10px; padding:11px; border-radius:calc(var(--preview-radius) * .78); background:color-mix(in srgb,var(--preview-surface) 92%,transparent); box-shadow:0 8px 20px color-mix(in srgb,var(--preview-primary) 12%,transparent); }
+.theme-preview-card i { width:36px; height:36px; border-radius:calc(var(--preview-radius) * .42); background:linear-gradient(135deg,var(--preview-primary),var(--preview-secondary)); }
+.theme-preview-card div { display:grid; gap:2px; }
+.theme-preview-card strong { font-size:12px; }
+.theme-preview-card span { font-size:9px; opacity:.65; }
+.theme-preview-card b { padding:7px 10px; border-radius:999px; color:#fff; background:var(--preview-primary); font-size:9px; }
+
+body.portal-view {
+  --bg: var(--portal-theme-bg, #fff8fb);
+  --surface-solid: var(--portal-theme-surface, #fff);
+  --surface: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+  --text: var(--portal-theme-text, #443c52);
+  --muted: color-mix(in srgb, var(--text) 58%, var(--bg));
+  --primary: var(--portal-theme-primary, #9a82d0);
+  --primary-2: var(--portal-theme-secondary, #8db9e7);
+  --surface-soft: color-mix(in srgb, var(--primary) 10%, var(--surface-solid));
+  --line: color-mix(in srgb, var(--text) 14%, transparent);
+  --pastel-pink: color-mix(in srgb, var(--primary) 22%, var(--bg));
+  --pastel-lilac: color-mix(in srgb, var(--primary) 27%, var(--bg));
+  --pastel-blue: color-mix(in srgb, var(--primary-2) 25%, var(--bg));
+  --pastel-mint: color-mix(in srgb, var(--primary-2) 18%, var(--bg));
+  --header-bg: color-mix(in srgb, var(--bg) 78%, transparent);
+  --hero-start: color-mix(in srgb, var(--primary) 27%, var(--surface-solid));
+  --hero-mid: color-mix(in srgb, var(--primary-2) 24%, var(--surface-solid));
+  --hero-end: color-mix(in srgb, var(--primary) 12%, var(--surface-solid));
+  --hero-text: var(--text);
+  --hero-muted: color-mix(in srgb, var(--text) 72%, var(--bg));
+  --input-bg: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  --soft-button-bg: color-mix(in srgb, var(--primary) 14%, var(--surface-solid));
+  --soft-button-text: color-mix(in srgb, var(--primary) 70%, var(--text));
+  background-color:var(--bg);
+  background-image:radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--primary) 25%,transparent),transparent 24%),radial-gradient(circle at 91% 18%,color-mix(in srgb,var(--primary-2) 28%,transparent),transparent 26%),radial-gradient(circle at 78% 82%,color-mix(in srgb,var(--primary) 13%,transparent),transparent 28%);
+}
+body.portal-view[data-background-style="gradient"] { background-image:linear-gradient(145deg,color-mix(in srgb,var(--primary) 18%,var(--bg)),var(--bg) 46%,color-mix(in srgb,var(--primary-2) 20%,var(--bg))); }
+body.portal-view[data-background-style="solid"] { background-image:none; }
+body.portal-view .hero { border-radius:calc(var(--portal-corner-radius,30) * 1px + 8px); }
+body.portal-view .app-card { border-radius:calc(var(--portal-corner-radius,30) * .96px); }
+body.portal-view .category-section { border-radius:calc(var(--portal-corner-radius,30) * 1px + 4px); }
+body.portal-view .search-input { border-radius:calc(var(--portal-corner-radius,30) * .7px); }
+
+body.portal-view .category-section { overflow:clip; transition:opacity .55s ease,transform .55s cubic-bezier(.22,.8,.24,1),border-color .28s ease,box-shadow .28s ease,background .35s ease; }
+body.portal-view .category-section:not(.is-open) { background:linear-gradient(115deg,color-mix(in srgb,var(--section-color) 12%,var(--surface-solid)),color-mix(in srgb,var(--surface) 96%,transparent)); box-shadow:0 12px 30px color-mix(in srgb,var(--section-color) 10%,transparent),inset 0 1px 0 rgba(255,255,255,.5); }
+body.portal-view .category-section-header { min-height:104px; padding:15px 20px 15px 22px; }
+body.portal-view .category-section-toggle { min-height:72px; padding:9px 11px; border-radius:calc(var(--portal-corner-radius,30) * .72px); }
+body.portal-view .category-section-toggle:hover { background:color-mix(in srgb,var(--section-color) 12%,var(--surface-solid)); transform:translateX(3px); }
+body.portal-view .category-section-index { position:relative; overflow:hidden; width:55px; height:55px; border-radius:calc(var(--portal-corner-radius,30) * .62px); background:linear-gradient(145deg,color-mix(in srgb,var(--section-color) 34%,var(--surface-solid)),color-mix(in srgb,var(--section-color) 12%,var(--surface-solid))); box-shadow:0 10px 24px color-mix(in srgb,var(--section-color) 16%,transparent),inset 0 1px 0 rgba(255,255,255,.75); }
+body.portal-view .category-section-index::after { content:""; position:absolute; width:35px; height:35px; right:-16px; bottom:-17px; border-radius:50%; background:color-mix(in srgb,var(--section-color) 38%,transparent); }
+body.portal-view .category-section-title { font-size:clamp(22px,2.8vw,30px); }
+body.portal-view .category-section-preview { display:flex; align-items:center; margin-left:auto; padding-left:14px; transition:opacity .28s ease,transform .35s ease,max-width .35s ease; }
+body.portal-view .category-preview-icon, body.portal-view .category-preview-more { display:grid; width:34px; height:34px; margin-left:-8px; place-items:center; overflow:hidden; border:3px solid var(--surface-solid); border-radius:50%; background:color-mix(in srgb,var(--section-color) 20%,var(--surface-solid)); box-shadow:0 5px 14px rgba(30,25,40,.1); font-size:15px; font-style:normal; }
+body.portal-view .category-preview-icon:first-child { margin-left:0; }
+body.portal-view .category-preview-icon img { width:100%; height:100%; object-fit:cover; }
+body.portal-view .category-preview-more { color:color-mix(in srgb,var(--section-color) 72%,var(--text)); font-size:10px; font-weight:900; }
+body.portal-view .category-toggle-action { display:inline-flex; align-items:center; gap:9px; margin-left:16px; padding:9px 10px 9px 14px; border:1px solid color-mix(in srgb,var(--section-color) 22%,var(--line)); border-radius:999px; color:color-mix(in srgb,var(--section-color) 60%,var(--text)); background:color-mix(in srgb,var(--section-color) 9%,var(--surface-solid)); box-shadow:0 6px 16px color-mix(in srgb,var(--section-color) 9%,transparent); font-size:11px; font-weight:900; white-space:nowrap; transition:transform .25s ease,background .25s ease; }
+body.portal-view .category-toggle-icon { position:relative; width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,color-mix(in srgb,var(--section-color) 78%,white),var(--section-color)); box-shadow:0 5px 12px color-mix(in srgb,var(--section-color) 26%,transparent); }
+body.portal-view .category-toggle-icon::before, body.portal-view .category-toggle-icon::after { content:""; position:absolute; left:8px; top:13px; width:12px; height:2px; border-radius:2px; background:#fff; transition:transform .36s cubic-bezier(.2,.8,.2,1); }
+body.portal-view .category-toggle-icon::after { transform:rotate(90deg); }
+body.portal-view .category-section.is-open .category-toggle-icon::after { transform:rotate(0deg); }
+body.portal-view .category-section.is-open .category-section-preview { opacity:0; transform:translateX(12px); max-width:0; padding-left:0; pointer-events:none; }
+body.portal-view .category-section.is-open .category-toggle-action { background:color-mix(in srgb,var(--section-color) 15%,var(--surface-solid)); }
+body.portal-view .category-section-panel { transform:translateY(-12px); filter:blur(5px); clip-path:inset(0 0 100% 0 round 24px); transition:grid-template-rows .62s cubic-bezier(.2,.82,.2,1),opacity .38s ease,transform .55s cubic-bezier(.2,.82,.2,1),filter .42s ease,clip-path .58s cubic-bezier(.2,.82,.2,1); }
+body.portal-view .category-section.is-open .category-section-panel { transform:translateY(0); filter:blur(0); clip-path:inset(0 0 0 0 round 24px); }
+body.portal-view .category-section.is-open::after { content:""; position:absolute; left:26px; right:26px; top:102px; height:1px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--section-color) 28%,var(--line)),transparent); }
+body.portal-view .category-section-controls { transition:opacity .25s ease,transform .25s ease; }
+body.portal-view .category-section:not(.is-open) .category-section-controls { opacity:0; transform:translateX(10px); pointer-events:none; }
+
+@media (max-width:760px) {
+  .theme-customizer { padding:14px; }
+  .settings-subheader { align-items:stretch; flex-direction:column; }
+  body.portal-view .category-section-header { min-height:94px; padding:11px 12px 11px 14px; }
+  body.portal-view .category-section-preview { display:none; }
+  body.portal-view .category-toggle-label { display:none; }
+  body.portal-view .category-toggle-action { margin-left:auto; padding:4px; border:0; background:transparent; box-shadow:none; }
+  body.portal-view .category-section-title { font-size:20px; }
+  body.portal-view .category-section-subtitle { font-size:10px; }
+  body.portal-view .category-section-index { width:47px; height:47px; }
+}
+
+html[data-theme="dark"] body.portal-view {
+  --bg: var(--portal-theme-bg, #17141f);
+  --surface-solid: var(--portal-theme-surface, #282233);
+  --surface: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+  --text: var(--portal-theme-text, #f8f3fb);
+  --muted: color-mix(in srgb, var(--text) 62%, var(--bg));
+  --primary: var(--portal-theme-primary, #c7b5f3);
+  --primary-2: var(--portal-theme-secondary, #86add4);
+  --surface-soft: color-mix(in srgb, var(--primary) 13%, var(--surface-solid));
+  --line: color-mix(in srgb, var(--text) 12%, transparent);
+  --pastel-pink: color-mix(in srgb, var(--primary) 23%, var(--bg));
+  --pastel-lilac: color-mix(in srgb, var(--primary) 26%, var(--bg));
+  --pastel-blue: color-mix(in srgb, var(--primary-2) 23%, var(--bg));
+  --pastel-mint: color-mix(in srgb, var(--primary-2) 17%, var(--bg));
+  --header-bg: color-mix(in srgb, var(--bg) 80%, transparent);
+  --hero-start: color-mix(in srgb, var(--primary) 20%, var(--surface-solid));
+  --hero-mid: color-mix(in srgb, var(--primary-2) 18%, var(--surface-solid));
+  --hero-end: color-mix(in srgb, var(--primary) 9%, var(--surface-solid));
+  --hero-text: var(--text);
+  --hero-muted: color-mix(in srgb, var(--text) 74%, var(--bg));
+  --input-bg: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+  --soft-button-bg: color-mix(in srgb, var(--primary) 16%, var(--surface-solid));
+  --soft-button-text: color-mix(in srgb, var(--primary) 60%, var(--text));
+  background-color:var(--bg);
+  background-image:radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--primary) 22%,transparent),transparent 24%),radial-gradient(circle at 91% 18%,color-mix(in srgb,var(--primary-2) 22%,transparent),transparent 26%),radial-gradient(circle at 78% 82%,color-mix(in srgb,var(--primary) 11%,transparent),transparent 28%);
+}
+html[data-theme="dark"] body.portal-view[data-background-style="gradient"] { background-image:linear-gradient(145deg,color-mix(in srgb,var(--primary) 15%,var(--bg)),var(--bg) 46%,color-mix(in srgb,var(--primary-2) 17%,var(--bg))); }
+html[data-theme="dark"] body.portal-view[data-background-style="solid"] { background-image:none; }
+body.portal-view.has-custom-background,
+html[data-theme="dark"] body.portal-view.has-custom-background {
+  background-image:
+    linear-gradient(rgb(var(--portal-background-overlay-rgb) / var(--portal-background-overlay, .58)),rgb(var(--portal-background-overlay-rgb) / var(--portal-background-overlay, .58))),
+    var(--portal-background-image);
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+  background-attachment:fixed;
+}
+@media (max-width:720px) {
+  body.portal-view.has-custom-background,
+  html[data-theme="dark"] body.portal-view.has-custom-background { background-attachment:scroll; }
+}

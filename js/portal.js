@@ -61,7 +61,7 @@ function applyTheme(theme, save = false) {
     els.themeToggle.title = isDark ? '라이트 모드로 변경' : '나이트 모드로 변경';
   }
   if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '나이트' : '라이트';
-  if (els.themeColor) els.themeColor.setAttribute('content', isDark ? '#17141f' : '#fff8fb');
+  applyVisualTheme(state.settings);
 
   if (save) {
     try {
@@ -123,6 +123,27 @@ function isImageDataUrl(value) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number(value) || min));
+}
+
+
+function themeHex(value, fallback) { return /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback; }
+function applyVisualTheme(rawSettings = {}) {
+  const settings = { ...DEFAULT_SETTINGS, ...rawSettings };
+  const dark = currentTheme() === 'dark';
+  const background = themeHex(dark ? settings.darkBackground : settings.themeBackground, dark ? '#17141f' : '#fff8fb');
+  const surface = themeHex(dark ? settings.darkSurface : settings.themeSurface, dark ? '#282233' : '#ffffff');
+  const primary = themeHex(dark ? settings.darkPrimary : settings.themePrimary, dark ? '#c7b5f3' : '#9a82d0');
+  const secondary = themeHex(dark ? settings.darkSecondary : settings.themeSecondary, dark ? '#86add4' : '#8db9e7');
+  const text = themeHex(dark ? settings.darkText : settings.themeText, dark ? '#f8f3fb' : '#443c52');
+  document.body.style.setProperty('--portal-theme-bg', background);
+  document.body.style.setProperty('--portal-theme-surface', surface);
+  document.body.style.setProperty('--portal-theme-primary', primary);
+  document.body.style.setProperty('--portal-theme-secondary', secondary);
+  document.body.style.setProperty('--portal-theme-text', text);
+  document.body.style.setProperty('--portal-corner-radius', String(Math.round(clamp(settings.cornerRadius, 12, 42))));
+  const style = ['soft','gradient','solid'].includes(settings.backgroundStyle) ? settings.backgroundStyle : 'soft';
+  document.body.dataset.backgroundStyle = style;
+  if (els.themeColor) els.themeColor.setAttribute('content', background);
 }
 
 function applyBackground(settings) {
@@ -210,6 +231,7 @@ function applySettings() {
   els.footerText.textContent = footer;
   els.notice.textContent = notice;
   els.notice.classList.toggle('hidden', !notice);
+  applyVisualTheme(settings);
   applyBackground(settings);
 }
 
@@ -370,11 +392,25 @@ function createCategorySection(group, groupIndex) {
   subtitle.textContent = `${group.apps.length}개의 앱을 모아두었어요`;
   titleWrap.append(title, subtitle);
 
-  const chevron = document.createElement('span');
-  chevron.className = 'category-section-chevron';
-  chevron.textContent = '⌄';
-  chevron.setAttribute('aria-hidden', 'true');
-  toggle.append(indexBadge, titleWrap, chevron);
+  const preview = document.createElement('span');
+  preview.className = 'category-section-preview';
+  group.apps.slice(0, 4).forEach(app => {
+    const bubble = document.createElement('span');
+    bubble.className = 'category-preview-icon';
+    if (isImageDataUrl(app.iconImage)) {
+      const image = document.createElement('img'); image.src = app.iconImage; image.alt = ''; bubble.appendChild(image);
+    } else bubble.textContent = cleanText(app.icon, '●');
+    preview.appendChild(bubble);
+  });
+  if (group.apps.length > 4) {
+    const more = document.createElement('span'); more.className = 'category-preview-more'; more.textContent = `+${group.apps.length - 4}`; preview.appendChild(more);
+  }
+  const action = document.createElement('span');
+  action.className = 'category-toggle-action';
+  const actionLabel = document.createElement('span'); actionLabel.className = 'category-toggle-label'; actionLabel.textContent = isCollapsed ? '펼쳐보기' : '접어두기';
+  const actionIcon = document.createElement('span'); actionIcon.className = 'category-toggle-icon'; actionIcon.setAttribute('aria-hidden', 'true');
+  action.append(actionLabel, actionIcon);
+  toggle.append(indexBadge, titleWrap, preview, action);
 
   const controls = document.createElement('div');
   controls.className = 'category-section-controls';
@@ -526,6 +562,8 @@ els.categorySections.addEventListener('click', event => {
 
   section.classList.toggle('is-open', willOpen);
   toggle.setAttribute('aria-expanded', String(willOpen));
+  const toggleLabel = toggle.querySelector('.category-toggle-label');
+  if (toggleLabel) toggleLabel.textContent = willOpen ? '접어두기' : '펼쳐보기';
   state.activeCategory = categoryId;
   if (willOpen) {
     state.collapsedCategories.delete(categoryId);

@@ -1,10 +1,37 @@
+export const THEME_PRESETS = {
+  lavender: {
+    label: '라벤더', themeBackground: '#fff8fb', themeSurface: '#ffffff', themePrimary: '#9a82d0', themeSecondary: '#8db9e7', themeText: '#443c52',
+    darkBackground: '#17141f', darkSurface: '#282233', darkPrimary: '#c7b5f3', darkSecondary: '#86add4', darkText: '#f8f3fb'
+  },
+  mint: {
+    label: '민트 가든', themeBackground: '#f4fbf8', themeSurface: '#ffffff', themePrimary: '#67bfa3', themeSecondary: '#8ab9df', themeText: '#334a45',
+    darkBackground: '#13201d', darkSurface: '#21332e', darkPrimary: '#8ed8c1', darkSecondary: '#8db8dd', darkText: '#effaf6'
+  },
+  sky: {
+    label: '스카이 블루', themeBackground: '#f4f9ff', themeSurface: '#ffffff', themePrimary: '#72a9df', themeSecondary: '#a18bd2', themeText: '#35485d',
+    darkBackground: '#131c28', darkSurface: '#202d3d', darkPrimary: '#91bee9', darkSecondary: '#b3a0df', darkText: '#f2f7fc'
+  },
+  peach: {
+    label: '피치 크림', themeBackground: '#fff9f3', themeSurface: '#ffffff', themePrimary: '#e99a7c', themeSecondary: '#d795b5', themeText: '#59423b',
+    darkBackground: '#241815', darkSurface: '#352622', darkPrimary: '#f0ad91', darkSecondary: '#e2a4c1', darkText: '#fff7f2'
+  },
+  mono: {
+    label: '차분한 모노', themeBackground: '#f6f7f9', themeSurface: '#ffffff', themePrimary: '#697386', themeSecondary: '#8d97a8', themeText: '#303744',
+    darkBackground: '#16191f', darkSurface: '#252a33', darkPrimary: '#aab3c2', darkSecondary: '#8894a7', darkText: '#f3f5f7'
+  }
+};
+
 export const DEFAULT_SETTINGS = {
   title: '수학 실험실',
   subtitle: '수업과 학급 운영에 필요한 도구를 한곳에서 시작하세요.',
   notice: '',
   footer: 'MATHEMATICS LAB · Easy NO',
   backgroundImage: '',
-  backgroundOverlay: 58
+  backgroundOverlay: 58,
+  themePreset: 'lavender',
+  backgroundStyle: 'soft',
+  cornerRadius: 30,
+  ...THEME_PRESETS.lavender
 };
 
 export const DEFAULT_CATEGORIES = {

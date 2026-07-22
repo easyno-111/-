@@ -29,12 +29,18 @@ const state = {
   appsLoaded: false,
   categoriesLoaded: false,
   settingsLoaded: false,
-  loadError: ''
+  loadError: '',
+  cacheAvailable: false,
+  cacheRendered: false,
+  initialFirebaseCommitted: false
 };
 
 const CACHE_KEY = 'teacherPortalCacheV1';
 const THEME_KEY = 'teacherPortalTheme';
 const SECTION_PALETTE = ['#b79be4', '#88bde4', '#82c9b6', '#efa3bc', '#efbd82', '#a8a3ea'];
+const CACHE_FALLBACK_DELAY = 450;
+let cacheFallbackTimer = 0;
+let realtimeRenderTimer = 0;
 
 const sectionObserver = 'IntersectionObserver' in window
   ? new IntersectionObserver(entries => {
@@ -81,16 +87,52 @@ els.themeToggle?.addEventListener('click', () => {
 function loadCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-    if (!cached || typeof cached !== 'object') return;
+    if (!cached || typeof cached !== 'object') return false;
     state.apps = cached.apps || {};
     state.categories = cached.categories || {};
     state.settings = { ...DEFAULT_SETTINGS, ...(cached.settings || {}) };
+    state.cacheAvailable = Boolean(Object.keys(state.apps).length || Object.keys(state.categories).length);
     applySettings();
-    renderCategories();
-    renderCategorySections();
+    return state.cacheAvailable;
   } catch (error) {
     console.warn('포털 캐시를 읽지 못했습니다.', error);
+    return false;
   }
+}
+
+function renderCachedFallback() {
+  if (!state.cacheAvailable || state.initialFirebaseCommitted || state.cacheRendered) return;
+  state.cacheRendered = true;
+  renderCategories();
+  renderCategorySections();
+}
+
+function allInitialDataSettled() {
+  return state.appsLoaded && state.categoriesLoaded && state.settingsLoaded;
+}
+
+function commitPortalView({ animate = true } = {}) {
+  applySettings();
+  renderCategories();
+  renderCategorySections({ animate });
+}
+
+function commitInitialFirebaseView() {
+  if (!allInitialDataSettled() || state.initialFirebaseCommitted) return;
+  state.initialFirebaseCommitted = true;
+  window.clearTimeout(cacheFallbackTimer);
+  // 캐시 화면이 먼저 노출된 경우에는 등장 애니메이션을 반복하지 않는다.
+  commitPortalView({ animate: !state.cacheRendered });
+  saveCache();
+}
+
+function scheduleRealtimeRender() {
+  if (!state.initialFirebaseCommitted) return commitInitialFirebaseView();
+  window.clearTimeout(realtimeRenderTimer);
+  realtimeRenderTimer = window.setTimeout(() => {
+    commitPortalView({ animate: false });
+    saveCache();
+  }, 60);
 }
 
 function saveCache() {
@@ -371,10 +413,10 @@ function createRailButton(direction, categoryName) {
   return button;
 }
 
-function createCategorySection(group, groupIndex) {
+function createCategorySection(group, groupIndex, animate = true) {
   const section = document.createElement('section');
   const isCollapsed = state.collapsedCategories.has(group.id) && !state.search;
-  section.className = `category-section${isCollapsed ? '' : ' is-open'} animate-cards`;
+  section.className = `category-section${isCollapsed ? '' : ' is-open'}${animate ? ' animate-cards' : ''}`;
   section.dataset.categorySection = group.id;
   section.style.setProperty('--section-color', SECTION_PALETTE[groupIndex % SECTION_PALETTE.length]);
   section.style.setProperty('--section-index', String(groupIndex));
@@ -452,7 +494,7 @@ function appendStatusState(className, titleText, detailText) {
   els.categorySections.appendChild(box);
 }
 
-function renderCategorySections() {
+function renderCategorySections({ animate = true } = {}) {
   sectionObserver?.disconnect();
   const allVisible = visibleApps();
   const { apps, groups } = groupedApps();
@@ -497,7 +539,7 @@ function renderCategorySections() {
   }
 
   groups.forEach((group, index) => {
-    const section = createCategorySection(group, index);
+    const section = createCategorySection(group, index, animate);
     els.categorySections.appendChild(section);
     if (sectionObserver) sectionObserver.observe(section);
     else section.classList.add('is-visible');
@@ -606,37 +648,40 @@ els.categorySections.addEventListener('click', event => {
   renderCategories();
 });
 
-loadCache();
+const cacheLoaded = loadCache();
+if (cacheLoaded) {
+  // Firebase가 빠르게 응답하면 캐시 화면을 생략해 한 번만 그린다.
+  cacheFallbackTimer = window.setTimeout(renderCachedFallback, CACHE_FALLBACK_DELAY);
+}
 
 onValue(ref(db, 'portal/apps'), snapshot => {
   state.apps = snapshot.val() || {};
   state.loadError = '';
   markLoaded('apps');
-  renderCategories();
-  renderCategorySections();
+  scheduleRealtimeRender();
 }, error => {
   console.error(error);
   state.appsLoaded = true;
   state.loadError = 'Firebase 데이터베이스 읽기 권한과 인터넷 연결을 확인해주세요.';
-  renderCategorySections();
+  scheduleRealtimeRender();
 });
 
 onValue(ref(db, 'portal/categories'), snapshot => {
   state.categories = snapshot.val() || {};
   markLoaded('categories');
-  renderCategories();
-  renderCategorySections();
+  scheduleRealtimeRender();
 }, error => {
   console.error(error);
   state.categoriesLoaded = true;
+  scheduleRealtimeRender();
 });
 
 onValue(ref(db, 'portal/settings'), snapshot => {
   state.settings = { ...DEFAULT_SETTINGS, ...(snapshot.val() || {}) };
   markLoaded('settings');
-  applySettings();
+  scheduleRealtimeRender();
 }, error => {
   console.error(error);
   state.settingsLoaded = true;
-  applySettings();
+  scheduleRealtimeRender();
 });

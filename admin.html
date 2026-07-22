@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#172a4d">
   <meta name="robots" content="noindex,nofollow">
   <title>앱 포털 관리자</title>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="assets/portal.css">
 </head>
 <body class="admin-body">
@@ -49,6 +50,8 @@
           <p>코드를 수정하지 않고 앱 카드와 홈페이지 정보를 관리합니다.</p>
         </div>
         <div class="admin-hero-actions">
+          <button id="adminInstallButton" class="soft-button hidden" type="button">앱으로 설치</button>
+          <button id="previewHomeButton" class="soft-button" type="button">홈 미리보기</button>
           <button id="seedButton" class="soft-button" type="button">현재 앱 한 번에 불러오기</button>
           <button id="newAppButton" class="primary-button" type="button">＋ 새 앱 추가</button>
         </div>
@@ -67,6 +70,19 @@
             <h2>등록된 앱</h2>
             <span id="adminListCount" class="result-count"></span>
           </div>
+          <div id="bulkToolbar" class="bulk-toolbar">
+            <label class="bulk-select-all"><input id="selectAllApps" type="checkbox"> 전체 선택</label>
+            <span id="selectedAppCount">0개 선택</span>
+            <select id="bulkAction" aria-label="일괄 작업">
+              <option value="">일괄 작업 선택</option>
+              <option value="show">공개하기</option><option value="hide">숨기기</option>
+              <option value="new-on">NEW 표시</option><option value="new-off">NEW 해제</option>
+              <option value="category">카테고리 이동</option><option value="delete">삭제</option>
+            </select>
+            <select id="bulkCategory" class="hidden" aria-label="이동할 카테고리"></select>
+            <button id="applyBulkAction" class="soft-button small-button" type="button">적용</button>
+          </div>
+          <p class="admin-drag-hint">앱 왼쪽의 손잡이를 마우스나 손가락으로 끌어 표시 순서를 변경할 수 있습니다.</p>
           <div id="adminAppList" class="app-list">
             <div class="empty-admin">데이터를 불러오는 중입니다.</div>
           </div>
@@ -146,8 +162,14 @@
                     </div>
                   </div>
                 </div>
+                <div id="draftNotice" class="draft-notice hidden">
+                  <span>저장하지 않은 작성 내용이 있습니다.</span>
+                  <button id="restoreDraftButton" class="ghost-button small-button" type="button">복원</button>
+                  <button id="discardDraftButton" class="ghost-button small-button" type="button">버리기</button>
+                </div>
                 <div class="form-actions">
                   <button id="saveAppButton" class="primary-button" type="submit">저장하기</button>
+                  <button id="previewDraftButton" class="soft-button" type="button">저장 전 미리보기</button>
                   <button id="cancelEditButton" class="ghost-button" type="button">초기화</button>
                 </div>
               </form>
@@ -237,10 +259,45 @@
           </section>
         </aside>
       </section>
+      <section class="admin-extra-grid">
+        <section class="panel lesson-set-admin-panel">
+          <div class="panel-header"><div><h2>수업 준비 세트</h2><p>수업에 사용할 앱을 순서대로 묶어 한 번에 진행합니다.</p></div><button id="newLessonSetButton" class="soft-button small-button" type="button">＋ 새 세트</button></div>
+          <div class="panel-body lesson-set-admin-body">
+            <div id="lessonSetList" class="lesson-set-list"></div>
+            <form id="lessonSetForm" class="lesson-set-form hidden">
+              <input id="lessonSetId" type="hidden">
+              <div class="field"><label for="lessonSetName">세트 이름</label><input id="lessonSetName" maxlength="50" required placeholder="예: 3학년 2반 수학"></div>
+              <div class="lesson-set-builder">
+                <div><strong>앱 선택</strong><div id="lessonSetAppChoices" class="lesson-set-app-choices"></div></div>
+                <div><strong>진행 순서</strong><div id="lessonSetSelectedApps" class="lesson-set-selected-apps"></div></div>
+              </div>
+              <div class="form-actions"><button class="primary-button" type="submit">세트 저장</button><button id="cancelLessonSetButton" class="ghost-button" type="button">취소</button></div>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel backup-panel">
+          <div class="panel-header"><div><h2>백업과 복원</h2><p>설정 변경 시 최근 백업 5개를 이 브라우저에 자동 보관합니다.</p></div></div>
+          <div class="panel-body">
+            <div class="backup-actions">
+              <button id="createBackupButton" class="soft-button" type="button">지금 백업</button>
+              <button id="exportBackupButton" class="soft-button" type="button">파일로 내보내기</button>
+              <label class="soft-button file-button">파일 불러오기<input id="importBackupFile" type="file" accept="application/json,.json"></label>
+            </div>
+            <div id="backupList" class="backup-list"></div>
+          </div>
+        </section>
+
+        <section class="panel change-log-panel">
+          <div class="panel-header"><div><h2>최근 변경 기록</h2><p>앱·카테고리·홈 설정 변경을 확인합니다.</p></div><button id="clearChangeLogButton" class="ghost-button small-button" type="button">기록 비우기</button></div>
+          <div class="panel-body"><div id="changeLogList" class="change-log-list"></div></div>
+        </section>
+      </section>
     </main>
   </div>
 
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
   <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/admin-enhancements.js"></script>
 </body>
 </html>

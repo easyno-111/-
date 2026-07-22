@@ -46,6 +46,9 @@ const state = { user: null, apps: {}, categories: {}, settings: { ...DEFAULT_SET
 let draftAppIconImage = '';
 let draftBackgroundImage = '';
 let imageTaskCount = 0;
+let lastSettingsFormHash = '';
+const SETTINGS_FORM_KEYS = ['title','subtitle','notice','footer','backgroundImage','backgroundOverlay','themePreset','backgroundStyle','themeBackground','themeSurface','themePrimary','themeSecondary','themeText','darkBackground','darkSurface','darkPrimary','darkSecondary','darkText','cornerRadius'];
+function settingsFormHash(settings) { return JSON.stringify(Object.fromEntries(SETTINGS_FORM_KEYS.map(key => [key, settings?.[key] ?? null]))); }
 
 function text(value, fallback = '') { return typeof value === 'string' ? value.trim() : fallback; }
 function num(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
@@ -449,7 +452,7 @@ function attachDatabaseListeners() {
   state.unsubscribers = [
     onValue(ref(db, 'portal/apps'), snapshot => { state.apps = snapshot.val() || {}; renderAppList(); }, error => toast(dbMessage(error), 'error')),
     onValue(ref(db, 'portal/categories'), snapshot => { state.categories = snapshot.val() || {}; renderCategoryManager(); }, error => toast(dbMessage(error), 'error')),
-    onValue(ref(db, 'portal/settings'), snapshot => { state.settings = { ...DEFAULT_SETTINGS, ...(snapshot.val() || {}) }; fillSettings(); }, error => toast(dbMessage(error), 'error'))
+    onValue(ref(db, 'portal/settings'), snapshot => { const incoming = snapshot.val() || {}; state.settings = { ...DEFAULT_SETTINGS, ...incoming }; const nextHash = settingsFormHash(state.settings); if (nextHash !== lastSettingsFormHash) { lastSettingsFormHash = nextHash; fillSettings(); } }, error => toast(dbMessage(error), 'error'))
   ];
 }
 
@@ -699,7 +702,7 @@ els.settingsForm.addEventListener('submit', async event => {
   };
   if (submitButton) submitButton.disabled = true;
   try {
-    await set(ref(db, 'portal/settings'), settings);
+    await update(ref(db, 'portal/settings'), settings);
     toast('홈페이지 설정을 저장했습니다.');
   } catch (error) {
     console.error(error);

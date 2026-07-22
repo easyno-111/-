@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#9a82d0">
+  <title>수학 실험실 · 오프라인</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;background:#fff8fb;color:#443c52}main{width:min(1050px,calc(100% - 28px));margin:auto;padding:34px 0 60px}.top{padding:25px;border-radius:28px;background:linear-gradient(135deg,#eee7ff,#e8f5ff);box-shadow:0 18px 50px #6d55851c}.top h1{margin:0 0 8px}.top p{margin:0;color:#736b7c}.status{margin:16px 0;padding:12px 15px;border-radius:14px;background:#fff0c7;color:#715719;font-weight:750}.group{margin-top:20px;padding:18px;border-radius:24px;background:#fff;box-shadow:0 12px 34px #59466d13}.group h2{margin:0 0 12px;font-size:1.1rem}.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.app{padding:14px;border:1px solid #eee8f4;border-radius:18px;background:#fffcff}.app strong{display:block;margin-bottom:4px}.app p{min-height:38px;margin:0 0 10px;color:#80788a;font-size:.82rem}.app a{display:inline-block;padding:9px 12px;border-radius:999px;background:#927bc8;color:#fff;text-decoration:none;font-weight:800}.empty{padding:30px;text-align:center;color:#7f768c}button{margin-top:15px;border:0;border-radius:999px;padding:11px 15px;background:#443c52;color:#fff;font-weight:800;cursor:pointer}
+  </style>
+</head>
+<body><main><section class="top"><h1 id="title">수학 실험실</h1><p>인터넷 연결 없이 저장된 앱 목록을 보여드립니다.</p><button onclick="location.reload()">연결 다시 확인</button></section><div class="status">실시간 기능이 필요한 앱은 인터넷 연결 후 사용할 수 있습니다.</div><div id="content"></div></main>
+<script>
+  const content=document.getElementById('content');
+  try{
+    const cache=JSON.parse(localStorage.getItem('teacherPortalCacheV1')||'null');
+    if(!cache)throw new Error();
+    document.getElementById('title').textContent=cache.settings?.title||'수학 실험실';
+    const cats=Object.entries(cache.categories||{}).sort((a,b)=>(a[1].order||0)-(b[1].order||0));
+    const apps=Object.entries(cache.apps||{}).map(([id,a])=>({id,...a})).filter(a=>a.visible!==false).sort((a,b)=>(a.order||0)-(b.order||0));
+    cats.forEach(([id,cat])=>{const list=apps.filter(a=>a.category===id);if(!list.length)return;const section=document.createElement('section');section.className='group';section.innerHTML='<h2>'+cat.name+'</h2><div class="apps"></div>';const grid=section.querySelector('.apps');list.forEach(app=>{const card=document.createElement('article');card.className='app';const url=app.primaryUrl||'';card.innerHTML='<strong>'+(app.icon||'🔗')+' '+(app.title||'앱')+'</strong><p>'+(app.description||'')+'</p>'+(url?'<a href="'+url+'">'+(app.primaryLabel||'실행')+'</a>':'');grid.appendChild(card)});content.appendChild(section)});
+    if(!content.children.length)content.innerHTML='<div class="empty">저장된 공개 앱이 없습니다.</div>';
+  }catch(e){content.innerHTML='<div class="empty">아직 저장된 앱 목록이 없습니다.<br>인터넷에 연결된 상태에서 포털을 한 번 열어주세요.</div>'}
+</script></body></html>

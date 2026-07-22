@@ -412,12 +412,7 @@ function createCategorySection(group, groupIndex) {
   action.append(actionLabel, actionIcon);
   toggle.append(indexBadge, titleWrap, preview, action);
 
-  const controls = document.createElement('div');
-  controls.className = 'category-section-controls';
-  if (group.apps.length > 1) {
-    controls.append(createRailButton('prev', group.name), createRailButton('next', group.name));
-  }
-  header.append(toggle, controls);
+  header.append(toggle);
 
   const panel = document.createElement('div');
   panel.className = 'category-section-panel';

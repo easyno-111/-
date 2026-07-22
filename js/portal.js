@@ -339,6 +339,16 @@ function createAppCard(app, index = 0) {
   description.className = 'app-description';
   description.textContent = cleanText(app.description, '등록된 설명이 없습니다.');
 
+  const primaryUrl = safeUrl(app.primaryUrl);
+  if (primaryUrl) {
+    article.classList.add('is-clickable');
+    article.dataset.primaryUrl = primaryUrl;
+    article.dataset.openMode = app.openMode === 'same' ? 'same' : 'new';
+    article.tabIndex = 0;
+    article.setAttribute('role', 'link');
+    article.setAttribute('aria-label', `${cleanText(app.title, '앱')} 실행`);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'card-actions';
   const primary = createLaunchButton(app.primaryLabel, app.primaryUrl, app, false);
@@ -538,7 +548,32 @@ els.categoryTabs.addEventListener('click', event => {
   requestAnimationFrame(() => scrollToCategory(categoryId));
 });
 
+function openAppCard(card) {
+  const url = safeUrl(card?.dataset.primaryUrl);
+  if (!url) return;
+  if (card.dataset.openMode === 'same') window.location.assign(url);
+  else window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+els.categorySections.addEventListener('keydown', event => {
+  if (!['Enter', ' '].includes(event.key)) return;
+  if (event.target.closest('a, button, input, select, textarea')) return;
+  const card = event.target.closest('.app-card[data-primary-url]');
+  if (!card) return;
+  event.preventDefault();
+  openAppCard(card);
+});
+
 els.categorySections.addEventListener('click', event => {
+  // 명시적인 링크/버튼은 브라우저 기본 동작을 그대로 사용한다.
+  if (!event.target.closest('a, button, input, select, textarea')) {
+    const card = event.target.closest('.app-card[data-primary-url]');
+    if (card) {
+      openAppCard(card);
+      return;
+    }
+  }
+
   const railButton = event.target.closest('[data-rail-direction]');
   if (railButton) {
     const section = railButton.closest('[data-category-section]');

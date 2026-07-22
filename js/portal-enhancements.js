@@ -8,6 +8,7 @@ const RUNNER_KEY = 'teacherPortalLessonRunnerV1';
 let deferredInstallPrompt = null;
 let activeRailDrag = null;
 let suppressRailClickUntil = 0;
+let suppressRailClickTarget = null;
 
 function text(value, fallback = '') { return typeof value === 'string' ? value.trim() : fallback; }
 function num(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
@@ -165,10 +166,9 @@ function removeRailButtons() {
 }
 function railPointerDown(event) {
   const rail = event.target.closest('.category-app-rail');
-  // 터치 기기에서는 브라우저의 기본 가로 스크롤을 사용한다.
-  // 그래야 손가락이 움직인 거리만큼 1:1로 따라오고 자연스러운 관성이 유지된다.
-  if (!rail || event.pointerType !== 'mouse' || event.button > 0) return;
-  event.preventDefault();
+  // 터치/펜 입력은 브라우저의 기본 스크롤에 전적으로 맡긴다.
+  // 마우스도 아직은 포인터 캡처나 preventDefault를 하지 않아 일반 클릭이 그대로 살아 있다.
+  if (!rail || event.pointerType !== 'mouse' || event.button !== 0) return;
   activeRailDrag = {
     rail,
     pointerId: event.pointerId,
@@ -176,27 +176,49 @@ function railPointerDown(event) {
     startY: event.clientY,
     startScroll: rail.scrollLeft,
     moved: false,
-    horizontal: false
+    horizontal: false,
+    captured: false,
+    distance: 0
   };
-  rail.setPointerCapture?.(event.pointerId);
-  rail.classList.add('is-dragging');
 }
 function railPointerMove(event) {
   if (!activeRailDrag || activeRailDrag.pointerId !== event.pointerId) return;
   const dx = event.clientX - activeRailDrag.startX;
   const dy = event.clientY - activeRailDrag.startY;
-  if (!activeRailDrag.horizontal && Math.abs(dx) > 7 && Math.abs(dx) > Math.abs(dy)) activeRailDrag.horizontal = true;
+  activeRailDrag.distance = Math.max(activeRailDrag.distance, Math.abs(dx));
+
+  // 세로로 움직이기 시작했다면 가로 드래그 후보를 즉시 취소한다.
+  if (!activeRailDrag.horizontal && Math.abs(dy) > 9 && Math.abs(dy) > Math.abs(dx)) {
+    activeRailDrag = null;
+    return;
+  }
+
+  if (!activeRailDrag.horizontal && Math.abs(dx) > 9 && Math.abs(dx) > Math.abs(dy)) {
+    activeRailDrag.horizontal = true;
+    activeRailDrag.moved = true;
+    activeRailDrag.rail.classList.add('is-dragging');
+    activeRailDrag.rail.setPointerCapture?.(event.pointerId);
+    activeRailDrag.captured = true;
+  }
   if (!activeRailDrag.horizontal) return;
+
   event.preventDefault();
-  activeRailDrag.moved = true;
   activeRailDrag.rail.scrollLeft = activeRailDrag.startScroll - dx;
 }
 function railPointerEnd(event) {
   if (!activeRailDrag || activeRailDrag.pointerId !== event.pointerId) return;
-  const moved = activeRailDrag.moved;
-  activeRailDrag.rail.classList.remove('is-dragging');
+  const drag = activeRailDrag;
+  drag.rail.classList.remove('is-dragging');
+  if (drag.captured && drag.rail.hasPointerCapture?.(event.pointerId)) {
+    drag.rail.releasePointerCapture?.(event.pointerId);
+  }
   activeRailDrag = null;
-  if (moved) suppressRailClickUntil = Date.now() + 350;
+
+  // 실제로 충분히 끌었을 때만, 같은 레일에서 바로 이어지는 유령 클릭을 한 번 막는다.
+  if (drag.moved && drag.distance > 9) {
+    suppressRailClickTarget = drag.rail;
+    suppressRailClickUntil = Date.now() + 260;
+  }
 }
 
 async function requestInstall() {
@@ -273,9 +295,12 @@ document.addEventListener('pointermove', railPointerMove, { passive: false });
 document.addEventListener('pointerup', railPointerEnd);
 document.addEventListener('pointercancel', railPointerEnd);
 document.addEventListener('click', event => {
-  if (Date.now() < suppressRailClickUntil && event.target.closest('.category-app-rail a, .category-app-rail button')) {
+  const rail = event.target.closest('.category-app-rail');
+  if (rail && rail === suppressRailClickTarget && Date.now() < suppressRailClickUntil) {
     event.preventDefault();
-    event.stopPropagation();
+    event.stopImmediatePropagation();
+    suppressRailClickUntil = 0;
+    suppressRailClickTarget = null;
   }
 }, true);
 

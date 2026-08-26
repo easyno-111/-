@@ -259,32 +259,11 @@
   .result-line b{ color:var(--coral); font-variant-numeric: tabular-nums; }
   .muted{ font-size:.82rem; color:var(--ink-soft); line-height:1.55; }
 
-  /* ---- timer demo (slide 6) ---- */
-  .timer-wrap{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:44px;
-    flex-wrap:wrap;
-  }
-  .ring-holder{
-    width:240px; height:240px;
-    border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    background: conic-gradient(var(--gold) calc(var(--pct,0)*1%), var(--line) 0);
-    box-shadow: var(--shadow);
-    transition: background .2s linear;
-  }
-  .ring-inner{
-    width:198px; height:198px;
-    border-radius:50%;
-    background:var(--paper-card);
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:4px;
-  }
-  #timeLabel{ font-size:2.5rem; font-variant-numeric:tabular-nums; font-family:"Gaegu",sans-serif; font-weight:700; }
-  #timerState{ font-size:.85rem; color:var(--ink-soft); }
-  .timer-controls{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; text-align:left; max-width:320px; }
+  /* ---- pendulum wave demo (slide 6) ---- */
+  #pendCanvas{ width:100%; height:100%; display:block; }
+
+  /* ---- newton's cradle demo ---- */
+  #cradleCanvas{ width:100%; height:100%; display:block; cursor:grab; touch-action:none; }
   .preset-row{ display:flex; gap:8px; flex-wrap:wrap; }
   .preset{
     border:1.6px solid var(--line);
@@ -296,31 +275,13 @@
     font-family:"Gowun Dodum",sans-serif;
   }
   .preset.active{ background:var(--ink); color:var(--paper-card); border-color:var(--ink); }
-  .timer-btn-row{ display:flex; gap:10px; }
-
-  @keyframes ringShake{
-    0%{ transform:rotate(0deg) scale(1); }
-    10%{ transform:rotate(-10deg) scale(1.03); }
-    20%{ transform:rotate(9deg) scale(1.03); }
-    30%{ transform:rotate(-8deg) scale(1.02); }
-    40%{ transform:rotate(8deg) scale(1.02); }
-    50%{ transform:rotate(-6deg) scale(1.01); }
-    60%{ transform:rotate(6deg) scale(1.01); }
-    70%{ transform:rotate(-3deg) scale(1); }
-    80%{ transform:rotate(3deg) scale(1); }
-    90%{ transform:rotate(-1deg) scale(1); }
-    100%{ transform:rotate(0deg) scale(1); }
+  .progress-track{
+    flex:1; max-width:240px; height:8px;
+    background:var(--line); border-radius:999px; overflow:hidden;
   }
-  @keyframes ringGlow{
-    0%,100%{ box-shadow: 0 0 0 0 rgba(238,130,103,0.5), var(--shadow); }
-    50%{ box-shadow: 0 0 0 16px rgba(238,130,103,0), var(--shadow); }
-  }
-  .ring-holder.ringing{
-    animation: ringShake .7s ease-in-out infinite, ringGlow 1.4s ease-out infinite;
-  }
-  #timeLabel.alarm{ font-size:2.7rem; }
-  @media (prefers-reduced-motion: reduce){
-    .ring-holder.ringing{ animation:none; box-shadow:0 0 0 8px rgba(238,130,103,0.35), var(--shadow); }
+  .progress-fill{
+    height:100%; width:0%;
+    background:var(--gold); border-radius:999px;
   }
 
   /* ---- closing slide ---- */
@@ -543,7 +504,7 @@
       <div class="content left" style="max-width:920px;">
         <span class="eyebrow"><span class="dot"></span> 왜 웹앱인가</span>
         <h2 class="title display">설치도, 로그인도 필요 없어요</h2>
-        <p class="lead">앱스토어 심사도, 회원가입도 없이 <b>링크 하나</b>로 누구에게나 똑같이 보여줄 수 있는 게 웹앱의 힘이에요. 오늘은 그 힘을 두 가지 도구로 직접 보여드릴게요.</p>
+        <p class="lead">앱스토어 심사도, 회원가입도 없이 <b>링크 하나</b>로 누구에게나 똑같이 보여줄 수 있는 게 웹앱의 힘이에요. 오늘은 그 힘을 세 가지 도구로 직접 보여드릴게요.</p>
         <div class="card-grid">
           <div class="card">
             <div class="num">01</div>
@@ -621,44 +582,102 @@
       <div class="blob" style="width:200px;height:200px;background:var(--sky);opacity:.2;bottom:14%;left:10%;"></div>
       <div class="content">
         <span class="eyebrow"><span class="dot"></span> 예시 2</span>
-        <h2 class="title display">공부할 때 바로 쓰는 <span class="accent">집중 타이머</span></h2>
-        <p class="lead">황금비 도구가 &lsquo;수학 개념을 눈에 보이게&rsquo; 만든 거라면, 이번 건 &lsquo;진짜 매일 쓸 수 있는&rsquo; 웹앱이에요. 시간을 정하고 시작 버튼만 누르면 끝 — 이것도 전부 코드 몇 줄이에요.</p>
-        <button class="btn" onclick="goTo(5)">타이머 써보기 →</button>
+        <h2 class="title display">13개의 진자가 만드는 <span class="accent">물리 시뮬레이션</span></h2>
+        <p class="lead">길이가 조금씩 다른 진자 13개를 동시에 흔들면, 처음엔 나란히 있다가 각자 다른 주기로 흩어지고, 정확히 10초마다 다시 나란히 정렬돼요. 단진자 공식 <b>T = 2π√(L/g)</b>만으로 이 복잡한 움직임 전체를 계산했어요.</p>
+        <button class="btn" onclick="goTo(5)">시뮬레이션 보러가기 →</button>
       </div>
     </section>
 
     <!-- SLIDE 6 : EXAMPLE 2 DEMO -->
     <section class="slide" id="s5">
-      <div class="content">
-        <span class="eyebrow"><span class="dot"></span> 집중 타이머 · 실제 작동</span>
-        <h2 class="title display" style="font-size:clamp(1.4rem,2.6vw,2rem);">시간을 고르고 시작을 눌러보세요</h2>
-        <div class="timer-wrap">
-          <div class="ring-holder" id="ringHolder">
-            <div class="ring-inner">
-              <div id="timeLabel">25:00</div>
-              <div id="timerState">대기 중</div>
+      <div class="content" style="max-width:1080px;">
+        <span class="eyebrow"><span class="dot"></span> 진자 웨이브 · 실제 작동</span>
+        <h2 class="title display" style="font-size:clamp(1.4rem,2.6vw,2rem);">시작을 누르면 13개가 동시에 흔들려요</h2>
+        <div class="demo-wrap">
+          <div class="device">
+            <div class="device-bar">
+              <div style="display:flex; gap:8px;">
+                <button class="btn small" id="pendToggle">▶ 시작</button>
+                <button class="btn ghost small" id="pendReset">⟲ 처음부터</button>
+              </div>
+              <div class="preset-row" id="pendSpeedRow">
+                <button class="preset active" data-speed="1">1×</button>
+                <button class="preset" data-speed="2">2×</button>
+                <button class="preset" data-speed="3">3×</button>
+              </div>
+            </div>
+            <div class="canvas-holder" style="aspect-ratio:16/9;">
+              <canvas id="pendCanvas"></canvas>
+            </div>
+            <div class="device-bar">
+              <span class="muted" id="pendHint">13개의 진자가 각자 다른 주기로 흔들리다가, 10초마다 다시 나란히 정렬돼요</span>
+              <div class="progress-track"><div class="progress-fill" id="pendProgress"></div></div>
             </div>
           </div>
-          <div class="timer-controls">
-            <span class="muted">집중 시간 선택</span>
-            <div class="preset-row">
-              <button class="preset active" data-min="25">25분</button>
-              <button class="preset" data-min="15">15분</button>
-              <button class="preset" data-min="5">5분</button>
-              <button class="preset" data-min="1">1분(테스트)</button>
+          <div class="side-panel">
+            <h3>🌀 왜 다시 정렬될까요?</h3>
+            <p class="muted" style="margin:0;">13개 진자의 길이를 아주 조금씩 다르게 설계해서, 10초 동안 정확히 정수 번(10~22번) 왕복하게 만들었어요. 그래서 10초마다 모든 진자가 우연이 아니라 &lsquo;계산대로&rsquo; 다시 나란히 정렬돼요.</p>
+            <div class="formula">
+              단진자의 주기 공식<br>
+              T = 2π√(L/g)<br>
+              <span class="sym">L</span>: 줄 길이(m), <span class="sym">g</span> ≈ 9.8 m/s²
             </div>
-            <div class="timer-btn-row">
-              <button class="btn small" id="timerToggle">시작</button>
-              <button class="btn ghost small" id="timerReset">초기화</button>
-            </div>
-            <p class="muted">브라우저 안에서만 돌아가는 순수 타이머예요. 계정도, 서버도 필요 없어요.</p>
+            <div class="result-line"><span>진자 개수</span><b>13개</b></div>
+            <div class="result-line"><span>가장 짧은 주기</span><b id="pFast">-</b></div>
+            <div class="result-line"><span>가장 긴 주기</span><b id="pSlow">-</b></div>
+            <div class="result-line"><span>재정렬까지</span><b id="pCountdown">-</b></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- SLIDE 7 : CLOSING -->
+    <!-- SLIDE 7 : EXAMPLE 3 INTRO -->
     <section class="slide" id="s6">
+      <div class="blob" style="width:220px;height:220px;background:var(--sky);opacity:.18;top:10%;left:8%;"></div>
+      <div class="content">
+        <span class="eyebrow"><span class="dot"></span> 예시 3</span>
+        <h2 class="title display">직접 당겨보는 <span class="accent">뉴턴의 요람</span></h2>
+        <p class="lead">책상 위에서 흔히 보는 그 쇠구슬 장난감이에요. 공 하나를 당겼다 놓으면 완전탄성충돌 때문에 반대쪽 공 딱 하나만 튀어나가요. 마우스로 직접 당겨보면서 운동량과 에너지가 실시간으로 계산되는 걸 확인해보세요.</p>
+        <button class="btn" onclick="goTo(7)">직접 당겨보기 →</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 8 : EXAMPLE 3 DEMO -->
+    <section class="slide" id="s7">
+      <div class="content" style="max-width:1080px;">
+        <span class="eyebrow"><span class="dot"></span> 뉴턴의 요람 · 실제 작동</span>
+        <h2 class="title display" style="font-size:clamp(1.4rem,2.6vw,2rem);">공을 당겼다가 놓아보세요</h2>
+        <div class="demo-wrap">
+          <div class="device">
+            <div class="device-bar">
+              <span class="hint" id="cradleHint">마우스나 손가락으로 아무 공이나 옆으로 당겼다 놓아보세요</span>
+              <button class="btn ghost small" id="cradleReset">🔄 초기화</button>
+            </div>
+            <div class="canvas-holder" style="aspect-ratio:16/9;">
+              <canvas id="cradleCanvas"></canvas>
+            </div>
+            <div class="device-bar">
+              <span class="muted">질량이 모두 같은 공 5개예요. 놓으면 그대로 물리 법칙에 따라 움직여요.</span>
+            </div>
+          </div>
+          <div class="side-panel">
+            <h3>⚙️ 완전탄성충돌이란?</h3>
+            <p class="muted" style="margin:0;">질량이 같은 두 물체가 완전탄성충돌하면, 마치 배턴을 넘기듯 속도를 통째로 교환해요. 그래서 왼쪽 공 1개를 당겼다 놓으면 반대쪽 공 1개만 튀어나가고, 나머지는 가만히 있어요.</p>
+            <div class="formula">
+              등질량 탄성충돌<br>
+              v₁&prime; = v₂,&nbsp; v₂&prime; = v₁<br>
+              <span class="sym">운동량 p = mv</span>, <span class="sym">운동에너지 E = ½mv²</span> 모두 보존
+            </div>
+            <div class="result-line"><span>공 개수</span><b>5개</b></div>
+            <div class="result-line"><span>충돌 횟수</span><b id="cradleHits">0</b></div>
+            <div class="result-line"><span>남은 역학적 에너지</span><b id="cradleEnergy">100%</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 9 : CLOSING -->
+    <section class="slide" id="s8">
       <div class="blob" style="width:260px;height:260px;background:var(--gold);opacity:.16;top:10%;left:8%;"></div>
       <div class="content" style="max-width:920px;">
         <span class="eyebrow"><span class="dot"></span> 정리</span>
@@ -667,14 +686,14 @@
           <ul class="pill-list">
             <li>페이지 넘기기 애니메이션</li>
             <li>사진을 분석하는 황금비 계산 도구</li>
-            <li>실제 작동하는 집중 타이머</li>
-            <li>외부 로그인·서버 연결 전혀 없음</li>
+            <li>실제 주기 공식으로 계산한 진자 웨이브 시뮬레이션</li>
+            <li>직접 당길 수 있는 완전탄성충돌 시뮬레이션</li>
           </ul>
           <ul class="pill-list">
             <li>수업 시간에 배운 &lsquo;내분점&rsquo; 공식을 그대로 사용</li>
+            <li>외부 로그인·서버 연결 전혀 없음</li>
             <li>모바일·PC 어디서나 똑같이 실행</li>
             <li>전부 HTML + CSS + JavaScript</li>
-            <li>여러분도 지금 배우면 다음 발표에 쓸 수 있어요</li>
           </ul>
         </div>
 
@@ -695,6 +714,10 @@
           <div class="prompt-bubble" style="--accent:var(--gold);">
             <span class="prompt-tag">요청 4</span>
             <p>&ldquo;황금비 나선이 부드럽게 그려지게, 타이머가 끝나면 알람시계처럼 흔들리게 해줘. 마지막 페이지엔 실제 썼던 프롬프트도 요약해서 보여줘.&rdquo;</p>
+          </div>
+          <div class="prompt-bubble" style="--accent:var(--coral);">
+            <span class="prompt-tag">요청 5</span>
+            <p>&ldquo;완전탄성충돌 하는 쇠구슬 5개짜리 뉴턴의 요람도 추가해줘. 내가 직접 줄을 당길 수 있게, 진짜 물리 법칙 그대로 적용해서.&rdquo;</p>
           </div>
         </div>
 
@@ -788,7 +811,16 @@
   // touch swipe
   var touchStartX = null;
   var shell = document.getElementById('deckShell');
-  shell.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; }, {passive:true});
+  shell.addEventListener('touchstart', function(e){
+    // canvases with their own drag interactions manage touch themselves —
+    // don't let a drag on them also register as a slide-swipe
+    var t = e.target;
+    if (t && t.tagName === 'CANVAS' && (t.id === 'cradleCanvas' || t.id === 'ratioCanvas')){
+      touchStartX = null;
+      return;
+    }
+    touchStartX = e.touches[0].clientX;
+  }, {passive:true});
   shell.addEventListener('touchend', function(e){
     if (touchStartX===null) return;
     var dx = e.changedTouches[0].clientX - touchStartX;
@@ -1103,93 +1135,413 @@
   window.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeZoom(); });
 })();
 
-/* ---------------- Timer demo ---------------- */
+/* ---------------- Pendulum wave demo ---------------- */
 (function(){
-  var totalSeconds = 25*60;
-  var remaining = totalSeconds;
-  var running = false;
-  var isRinging = false;
-  var tickHandle = null;
+  var canvas = document.getElementById('pendCanvas');
+  var ctx = canvas.getContext('2d');
+  var holder = canvas.parentElement;
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var timeLabel = document.getElementById('timeLabel');
-  var stateLabel = document.getElementById('timerState');
-  var ring = document.getElementById('ringHolder');
-  var toggleBtn = document.getElementById('timerToggle');
-  var resetBtn = document.getElementById('timerReset');
-  var presets = document.querySelectorAll('.preset');
+  var N = 13, g = 9.8;
+  var theta0 = 22 * Math.PI / 180;
+  var T_total = 10;   // seconds until every pendulum realigns
+  var N_min = 10;     // oscillations completed by the slowest pendulum in T_total
 
-  function fmt(s){
-    var m = Math.floor(s/60), r = s%60;
-    return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+  var periods = [], omegas = [], lengthsM = [];
+  for (var i=0;i<N;i++){
+    var Nosc = N_min + i;
+    var T = T_total / Nosc;
+    periods.push(T);
+    omegas.push(2*Math.PI/T);
+    lengthsM.push(g * T*T / (4*Math.PI*Math.PI));
+  }
+  var maxLenM = Math.max.apply(null, lengthsM);
+
+  function fmtSec(s){ return s.toFixed(2) + 's'; }
+  document.getElementById('pFast').textContent = fmtSec(periods[periods.length-1]);
+  document.getElementById('pSlow').textContent = fmtSec(periods[0]);
+
+  // --- palette pulled from the page's own CSS tokens ---
+  function hexToRgb(hex){
+    hex = (hex||'').trim().replace('#','');
+    if (hex.length===3){ hex = hex.split('').map(function(c){ return c+c; }).join(''); }
+    var num = parseInt(hex,16) || 0;
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+  function mixColor(c1,c2,t){
+    return 'rgb(' + Math.round(c1.r+(c2.r-c1.r)*t) + ',' + Math.round(c1.g+(c2.g-c1.g)*t) + ',' + Math.round(c1.b+(c2.b-c1.b)*t) + ')';
+  }
+  var cs = getComputedStyle(document.documentElement);
+  var goldC = hexToRgb(cs.getPropertyValue('--gold'));
+  var coralC = hexToRgb(cs.getPropertyValue('--coral'));
+  var skyC = hexToRgb(cs.getPropertyValue('--sky'));
+  var paperC = hexToRgb(cs.getPropertyValue('--paper-card'));
+  var inkC = hexToRgb(cs.getPropertyValue('--ink'));
+
+  function bobColor(i){
+    var t = i/(N-1);
+    return t < 0.5 ? mixColor(goldC, coralC, t/0.5) : mixColor(coralC, skyC, (t-0.5)/0.5);
   }
 
-  function paint(){
-    timeLabel.textContent = isRinging ? '⏰' : fmt(remaining);
-    timeLabel.classList.toggle('alarm', isRinging);
-    var pct = 100 - (remaining/totalSeconds*100);
-    ring.style.setProperty('--pct', pct.toFixed(2));
-    stateLabel.textContent = running ? '집중 중' : (isRinging ? '시간 종료!' : '대기 중');
+  var running = false, elapsed = 0, lastTs = null, speed = 1, lastCycle = 0;
+
+  var lastW=0, lastH=0, resizeQueued=false;
+  function resize(){
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(function(){
+      resizeQueued = false;
+      var rect = holder.getBoundingClientRect();
+      var w = Math.round(rect.width), h = Math.round(rect.height);
+      if (w<=0 || h<=0) return;
+      if (Math.abs(w-lastW)<1 && Math.abs(h-lastH)<1){ draw(); return; }
+      lastW=w; lastH=h;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      canvas.style.width = w+'px'; canvas.style.height = h+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      canvas._w = w; canvas._h = h;
+      draw();
+    });
   }
 
-  function triggerAlarm(){
-    isRinging = true;
-    ring.classList.add('ringing');
+  function anchorXs(w){
+    var margin = w*0.08;
+    var usable = w - margin*2;
+    var xs = [];
+    for (var i=0;i<N;i++){ xs.push(margin + usable*(N===1?0:i/(N-1))); }
+    return xs;
+  }
+
+  function draw(){
+    var w = canvas._w, h = canvas._h;
+    if (!w || !h) return;
+    var anchorY = h*0.14;
+    var scale = (h*0.72) / maxLenM;
+
+    if (!reducedMotion){
+      ctx.fillStyle = 'rgba(' + paperC.r + ',' + paperC.g + ',' + paperC.b + ',0.16)';
+      ctx.fillRect(0,0,w,h);
+    } else {
+      ctx.clearRect(0,0,w,h);
+    }
+
+    var xs = anchorXs(w);
+
+    ctx.strokeStyle = 'rgba(' + inkC.r + ',' + inkC.g + ',' + inkC.b + ',0.35)';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(xs[0]-14, anchorY);
+    ctx.lineTo(xs[N-1]+14, anchorY);
+    ctx.stroke();
+
+    for (var i=0;i<N;i++){
+      var theta = theta0 * Math.cos(omegas[i]*elapsed);
+      var Lpx = lengthsM[i]*scale;
+      var bx = xs[i] + Lpx*Math.sin(theta);
+      var by = anchorY + Lpx*Math.cos(theta);
+
+      ctx.beginPath();
+      ctx.arc(xs[i], anchorY, 2.6, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(' + inkC.r + ',' + inkC.g + ',' + inkC.b + ',0.5)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(xs[i], anchorY);
+      ctx.lineTo(bx,by);
+      ctx.strokeStyle = 'rgba(' + inkC.r + ',' + inkC.g + ',' + inkC.b + ',0.28)';
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(bx,by,7,0,Math.PI*2);
+      ctx.fillStyle = bobColor(i);
+      ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.stroke();
+    }
+  }
+
+  function updateHud(){
+    var countdown = T_total - (elapsed % T_total);
+    document.getElementById('pCountdown').textContent = countdown.toFixed(1) + 's';
+    document.getElementById('pendProgress').style.width = (100 - countdown/T_total*100).toFixed(1) + '%';
+  }
+
+  var defaultHint = '13개의 진자가 각자 다른 주기로 흔들리다가, 10초마다 다시 나란히 정렬돼요';
+  function celebrateAlign(){
+    var hint = document.getElementById('pendHint');
+    hint.textContent = '✨ 지금 모든 진자가 정렬됐어요!';
     if (window.spawnFxBurst){
-      var r = ring.getBoundingClientRect();
-      window.spawnFxBurst(r.left + r.width/2, r.top + r.height/2);
+      var rect = canvas.getBoundingClientRect();
+      window.spawnFxBurst(rect.left + rect.width/2, rect.top + rect.height*0.16);
     }
-    paint();
-  }
-  function stopAlarm(){
-    isRinging = false;
-    ring.classList.remove('ringing');
+    setTimeout(function(){ hint.textContent = defaultHint; }, 1600);
   }
 
-  function tick(){
-    remaining -= 1;
-    if (remaining <= 0){
-      remaining = 0;
-      pause();
-      triggerAlarm();
-      return;
-    }
-    paint();
+  function loop(ts){
+    if (!running) return;
+    if (lastTs === null) lastTs = ts;
+    var dt = (ts - lastTs) / 1000;
+    lastTs = ts;
+    elapsed += dt * speed;
+
+    var cycle = Math.floor(elapsed / T_total);
+    if (cycle > lastCycle){ lastCycle = cycle; celebrateAlign(); }
+
+    draw();
+    updateHud();
+    requestAnimationFrame(loop);
   }
 
-  function start(){
-    if (running || remaining<=0) return;
-    stopAlarm();
-    running = true;
-    toggleBtn.textContent = '일시정지';
-    tickHandle = setInterval(tick, 1000);
-    paint();
-  }
-  function pause(){
+  var toggleBtn = document.getElementById('pendToggle');
+  var resetBtn = document.getElementById('pendReset');
+
+  toggleBtn.addEventListener('click', function(){
+    running = !running;
+    toggleBtn.textContent = running ? '⏸ 멈추기' : '▶ 시작';
+    if (running){ lastTs = null; requestAnimationFrame(loop); }
+  });
+
+  resetBtn.addEventListener('click', function(){
     running = false;
-    toggleBtn.textContent = '시작';
-    clearInterval(tickHandle);
-    paint();
-  }
-  function reset(){
-    pause();
-    stopAlarm();
-    remaining = totalSeconds;
-    paint();
-  }
+    elapsed = 0; lastCycle = 0; lastTs = null;
+    toggleBtn.textContent = '▶ 시작';
+    document.getElementById('pendHint').textContent = defaultHint;
+    if (canvas._w && canvas._h) ctx.clearRect(0,0,canvas._w,canvas._h);
+    draw();
+    updateHud();
+  });
 
-  toggleBtn.addEventListener('click', function(){ running ? pause() : start(); });
-  resetBtn.addEventListener('click', reset);
-
-  presets.forEach(function(p){
-    p.addEventListener('click', function(){
-      presets.forEach(function(x){ x.classList.remove('active'); });
-      p.classList.add('active');
-      totalSeconds = parseInt(p.dataset.min,10)*60;
-      reset();
+  document.querySelectorAll('#pendSpeedRow .preset').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('#pendSpeedRow .preset').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      speed = parseFloat(btn.dataset.speed);
     });
   });
 
-  paint();
+  window.addEventListener('resize', resize);
+  setTimeout(resize, 50);
+  new ResizeObserver(resize).observe(holder);
+  updateHud();
+})();
+
+/* ---------------- Newton's cradle demo ---------------- */
+(function(){
+  var canvas = document.getElementById('cradleCanvas');
+  var ctx = canvas.getContext('2d');
+  var holder = canvas.parentElement;
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  var N = 5;
+  var g = 9.8;
+  var Lm = 0.9;              // pendulum length used in the physics (meters)
+  var theta = new Array(N).fill(0);
+  var omega = new Array(N).fill(0);
+  var damping = 0.999;        // mild energy loss per frame, like real air/joint friction
+  var hits = 0;
+  var peakEnergy = 0;
+  var dragging = -1;
+
+  var hintEl = document.getElementById('cradleHint');
+  var hitsEl = document.getElementById('cradleHits');
+  var energyEl = document.getElementById('cradleEnergy');
+  var resetBtn = document.getElementById('cradleReset');
+  var defaultHint = '마우스나 손가락으로 아무 공이나 옆으로 당겼다 놓아보세요';
+
+  var lastW=0, lastH=0, resizeQueued=false;
+  function resize(){
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(function(){
+      resizeQueued = false;
+      var rect = holder.getBoundingClientRect();
+      var w = Math.round(rect.width), h = Math.round(rect.height);
+      if (w<=0 || h<=0) return;
+      if (Math.abs(w-lastW)<1 && Math.abs(h-lastH)<1){ draw(); return; }
+      lastW=w; lastH=h;
+      canvas.width = w*dpr; canvas.height = h*dpr;
+      canvas.style.width = w+'px'; canvas.style.height = h+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      canvas._w = w; canvas._h = h;
+      draw();
+    });
+  }
+
+  function geom(){
+    var w = canvas._w, h = canvas._h;
+    var r = Math.min(w/(N*2.6), h*0.11);
+    var anchorY = h*0.16;
+    var Lpx = h*0.6;
+    var totalW = N*2*r;
+    var startX = w/2 - totalW/2 + r;
+    var xs = [];
+    for (var i=0;i<N;i++){ xs.push(startX + i*2*r); }
+    return { w:w, h:h, r:r, anchorY:anchorY, Lpx:Lpx, xs:xs };
+  }
+
+  function ballPos(i, geo){
+    return {
+      x: geo.xs[i] + geo.Lpx*Math.sin(theta[i]),
+      y: geo.anchorY + geo.Lpx*Math.cos(theta[i])
+    };
+  }
+
+  function step(dt){
+    for (var i=0;i<N;i++){
+      if (i === dragging) continue;
+      omega[i] += -(g/Lm) * Math.sin(theta[i]) * dt;
+      omega[i] *= damping;
+      theta[i] += omega[i]*dt;
+    }
+    // sweep several times so a collision chain fully resolves within one frame
+    for (var pass=0; pass<N; pass++){
+      for (var i=0;i<N-1;i++){
+        var dxA = Math.sin(theta[i]);
+        var dxB = Math.sin(theta[i+1]);
+        if (dxA > dxB + 1e-6 && omega[i] > omega[i+1]){
+          var tmp = omega[i]; omega[i] = omega[i+1]; omega[i+1] = tmp;
+          hits++;
+          hitsEl.textContent = hits;
+          var mid = (dxA+dxB)/2;
+          theta[i] = Math.asin(Math.max(-1, Math.min(1, mid)));
+          theta[i+1] = theta[i];
+        }
+      }
+    }
+  }
+
+  function draw(){
+    var geo = geom();
+    var w = geo.w, h = geo.h;
+    if (!w || !h) return;
+    ctx.clearRect(0,0,w,h);
+
+    var barY = geo.anchorY;
+    var leftX = geo.xs[0]-geo.r*1.6, rightX = geo.xs[N-1]+geo.r*1.6;
+    ctx.strokeStyle = 'rgba(38,59,51,0.4)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(leftX,barY); ctx.lineTo(rightX,barY); ctx.stroke();
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(leftX,barY); ctx.lineTo(leftX, barY+geo.Lpx*1.1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rightX,barY); ctx.lineTo(rightX, barY+geo.Lpx*1.1); ctx.stroke();
+
+    var i, p;
+    for (i=0;i<N;i++){
+      p = ballPos(i, geo);
+      var spread = geo.r*0.85;
+      ctx.strokeStyle = 'rgba(38,59,51,0.32)';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(geo.xs[i]-spread, barY); ctx.lineTo(p.x,p.y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(geo.xs[i]+spread, barY); ctx.lineTo(p.x,p.y); ctx.stroke();
+    }
+    for (i=0;i<N;i++){
+      p = ballPos(i, geo);
+      var grad = ctx.createRadialGradient(p.x-geo.r*0.35, p.y-geo.r*0.35, geo.r*0.1, p.x, p.y, geo.r);
+      grad.addColorStop(0, '#FFFFFF');
+      grad.addColorStop(0.35, '#DADFE3');
+      grad.addColorStop(1, '#8D97A3');
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,geo.r,0,Math.PI*2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(224,168,54,0.35)';
+      ctx.stroke();
+    }
+  }
+
+  function totalEnergy(){
+    // total mechanical energy (kinetic + potential, unit mass) — stays
+    // essentially flat except for the small damping loss, unlike raw KE
+    // alone which swings between 0% and 100% every half-period.
+    var e = 0;
+    for (var i=0;i<N;i++){
+      var ke = 0.5 * Lm*Lm * omega[i]*omega[i];
+      var pe = g * Lm * (1 - Math.cos(theta[i]));
+      e += ke + pe;
+    }
+    return e;
+  }
+
+  var lastTs = null;
+  function loop(ts){
+    if (lastTs === null) lastTs = ts;
+    var dt = Math.min(0.032, (ts-lastTs)/1000);
+    lastTs = ts;
+    step(dt);
+    draw();
+    var e = totalEnergy();
+    peakEnergy = Math.max(peakEnergy, e);
+    if (peakEnergy > 0.0005){
+      energyEl.textContent = Math.max(0, Math.round(e/peakEnergy*100)) + '%';
+    }
+    requestAnimationFrame(loop);
+  }
+
+  function pointerToTheta(clientX, geo, idx){
+    var dx = clientX - geo.xs[idx];
+    var t = Math.max(-1, Math.min(1, dx/geo.Lpx));
+    return Math.asin(t);
+  }
+  function hitTestBall(x,y,geo){
+    var best=-1, bestD=1e9;
+    for (var i=0;i<N;i++){
+      var p = ballPos(i, geo);
+      var d = Math.hypot(x-p.x, y-p.y);
+      if (d < geo.r*1.7 && d < bestD){ bestD=d; best=i; }
+    }
+    return best;
+  }
+  function localPoint(e){
+    var rect = canvas.getBoundingClientRect();
+    return { x: e.clientX-rect.left, y: e.clientY-rect.top };
+  }
+
+  canvas.addEventListener('pointerdown', function(e){
+    var geo = geom();
+    var pt = localPoint(e);
+    var idx = hitTestBall(pt.x, pt.y, geo);
+    if (idx>=0){
+      dragging = idx;
+      omega[idx] = 0;
+      canvas.style.cursor = 'grabbing';
+      if (canvas.setPointerCapture){ try{ canvas.setPointerCapture(e.pointerId); }catch(err){} }
+      hintEl.textContent = '놓으면 물리 법칙대로 튕겨나가요';
+    }
+  });
+  canvas.addEventListener('pointermove', function(e){
+    if (dragging < 0) return;
+    var geo = geom();
+    var pt = localPoint(e);
+    theta[dragging] = pointerToTheta(pt.x, geo, dragging);
+  });
+  function endDrag(){
+    if (dragging < 0) return;
+    dragging = -1;
+    canvas.style.cursor = 'grab';
+    hintEl.textContent = defaultHint;
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('pointerleave', function(){ if (dragging>=0) endDrag(); });
+
+  resetBtn.addEventListener('click', function(){
+    for (var i=0;i<N;i++){ theta[i]=0; omega[i]=0; }
+    dragging = -1;
+    hits = 0; hitsEl.textContent = '0';
+    peakEnergy = 0; energyEl.textContent = '100%';
+    hintEl.textContent = defaultHint;
+  });
+
+  window.addEventListener('resize', resize);
+  setTimeout(resize, 50);
+  new ResizeObserver(resize).observe(holder);
+  requestAnimationFrame(loop);
 })();
 
 /* ---------------- Hidden easter egg: golden spiral ---------------- */

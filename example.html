@@ -1,0 +1,1326 @@
+<title>황금비 슬라이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#F2F6EF;
+    --paper-card:#FFFFFF;
+    --ink:#263B33;
+    --ink-soft:#5C7268;
+    --gold:#E0A836;
+    --coral:#EE8267;
+    --sky:#7FADC4;
+    --line:#D8E2D6;
+    --shadow: 0 12px 32px -16px rgba(38,59,51,0.25);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#1B2420;
+      --paper-card:#223028;
+      --ink:#EDF1EA;
+      --ink-soft:#A9B8AE;
+      --gold:#F0C468;
+      --coral:#F49A81;
+      --sky:#9CC6DB;
+      --line:#33453B;
+      --shadow: 0 12px 32px -16px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#1B2420;
+    --paper-card:#223028;
+    --ink:#EDF1EA;
+    --ink-soft:#A9B8AE;
+    --gold:#F0C468;
+    --coral:#F49A81;
+    --sky:#9CC6DB;
+    --line:#33453B;
+    --shadow: 0 12px 32px -16px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Gowun Dodum","Apple SD Gothic Neo",sans-serif;
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .display{
+    font-family:"Gaegu","Gowun Dodum",sans-serif;
+    font-weight:700;
+    text-wrap:balance;
+  }
+
+  .deck-shell{
+    position:relative;
+    width:100vw; height:100vh;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 8px 8px, var(--line) 1.4px, transparent 1.4px) 0 0/28px 28px,
+      var(--paper);
+  }
+
+  .track{
+    display:flex;
+    height:100%;
+    transition: transform .55s cubic-bezier(.65,0,.35,1);
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .track{ transition: none; }
+  }
+
+  .slide{
+    flex: 0 0 100vw;
+    width:100vw;
+    min-width:0;
+    max-width:100vw;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 5vh 6vw 9vh;
+    position:relative;
+    overflow:hidden;
+  }
+
+  .blob{
+    position:absolute;
+    border-radius:50%;
+    filter: blur(0px);
+    opacity:.55;
+    pointer-events:none;
+  }
+
+  .content{
+    width:100%;
+    max-width:980px;
+    min-width:0;
+    max-height:100%;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    gap:22px;
+    z-index:2;
+    scrollbar-width:thin;
+  }
+  .content.left{ align-items:flex-start; text-align:left; }
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-size:.85rem;
+    letter-spacing:.08em;
+    color:var(--ink-soft);
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    padding:6px 16px;
+    border-radius:999px;
+    box-shadow: var(--shadow);
+  }
+  .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);}
+
+  h1.title{ font-size:clamp(2.2rem, 5.2vw, 3.8rem); margin:0; line-height:1.15; }
+  h2.title{ font-size:clamp(1.7rem, 3.6vw, 2.6rem); margin:0; line-height:1.2; }
+  p.lead{ font-size:clamp(1.02rem, 1.7vw, 1.28rem); color:var(--ink-soft); max-width:640px; margin:0; line-height:1.65; }
+  .content.left p.lead{ max-width:520px; }
+
+  .accent{ color:var(--coral); }
+  .accent-gold{ color:var(--gold); }
+
+  .cta-row{ display:flex; gap:14px; margin-top:6px; flex-wrap:wrap; justify-content:center; }
+  .btn{
+    font-family:"Gowun Dodum",sans-serif;
+    font-size:1rem;
+    border:none;
+    padding:13px 26px;
+    border-radius:999px;
+    cursor:pointer;
+    background:var(--ink);
+    color:var(--paper-card);
+    box-shadow: var(--shadow);
+    transition: transform .15s ease;
+  }
+  .btn:hover{ transform: translateY(-2px); }
+  .btn.ghost{
+    background:transparent;
+    color:var(--ink);
+    border:1.6px solid var(--line);
+    box-shadow:none;
+  }
+  .btn.small{ padding:9px 18px; font-size:.9rem; }
+
+  /* ---- card grid (slide 2) ---- */
+  .card-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:18px;
+    width:100%;
+    margin-top:8px;
+  }
+  .card{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:24px;
+    padding:26px 20px;
+    box-shadow:var(--shadow);
+    text-align:left;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .card .num{
+    font-family:"Gaegu",sans-serif; font-weight:700;
+    font-size:1.6rem; color:var(--gold);
+  }
+  .card h3{ margin:0; font-size:1.08rem; }
+  .card p{ margin:0; font-size:.92rem; color:var(--ink-soft); line-height:1.55; }
+
+  /* ---- demo frame (slide 4 golden ratio) ---- */
+  .demo-wrap{
+    display:grid;
+    grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr);
+    gap:26px;
+    width:100%;
+    min-width:0;
+    align-items:stretch;
+    text-align:left;
+  }
+  .device{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:28px;
+    box-shadow:var(--shadow);
+    padding:18px;
+    display:flex; flex-direction:column; gap:12px;
+    min-width:0;
+    min-height:0;
+  }
+  .device-bar{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .device-bar .hint{ font-size:.82rem; color:var(--ink-soft); }
+  .canvas-holder{
+    position:relative;
+    border-radius:18px;
+    overflow:hidden;
+    background:
+      repeating-linear-gradient(45deg, var(--paper) 0 10px, var(--paper-card) 10px 20px);
+    border:1px dashed var(--line);
+    aspect-ratio: 4/3;
+    width:100%;
+    min-width:0;
+    max-width:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #ratioCanvas{ width:100%; height:100%; display:block; cursor:crosshair; touch-action:none; }
+  .file-label{
+    font-size:.85rem;
+    padding:9px 16px;
+    border-radius:999px;
+    border:1.6px solid var(--line);
+    background:var(--paper);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .file-label.primary{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:#2B2100;
+    font-weight:700;
+    padding:11px 20px;
+  }
+  .file-label input{ display:none; }
+
+  .side-panel{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:28px;
+    box-shadow:var(--shadow);
+    padding:24px;
+    display:flex; flex-direction:column; gap:16px;
+    justify-content:center;
+    min-width:0;
+  }
+  .side-panel h3{ margin:0; font-size:1.05rem; }
+  .formula{
+    background:var(--paper);
+    border-radius:14px;
+    padding:14px 16px;
+    font-size:.95rem;
+    line-height:1.7;
+    border:1px solid var(--line);
+  }
+  .formula .sym{ color:var(--sky); font-weight:700; }
+  .result-line{ display:flex; justify-content:space-between; font-size:.92rem; }
+  .result-line b{ color:var(--coral); font-variant-numeric: tabular-nums; }
+  .muted{ font-size:.82rem; color:var(--ink-soft); line-height:1.55; }
+
+  /* ---- timer demo (slide 6) ---- */
+  .timer-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:44px;
+    flex-wrap:wrap;
+  }
+  .ring-holder{
+    width:240px; height:240px;
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background: conic-gradient(var(--gold) calc(var(--pct,0)*1%), var(--line) 0);
+    box-shadow: var(--shadow);
+    transition: background .2s linear;
+  }
+  .ring-inner{
+    width:198px; height:198px;
+    border-radius:50%;
+    background:var(--paper-card);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:4px;
+  }
+  #timeLabel{ font-size:2.5rem; font-variant-numeric:tabular-nums; font-family:"Gaegu",sans-serif; font-weight:700; }
+  #timerState{ font-size:.85rem; color:var(--ink-soft); }
+  .timer-controls{ display:flex; flex-direction:column; gap:14px; align-items:flex-start; text-align:left; max-width:320px; }
+  .preset-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .preset{
+    border:1.6px solid var(--line);
+    background:var(--paper-card);
+    padding:7px 14px;
+    border-radius:999px;
+    font-size:.85rem;
+    cursor:pointer;
+    font-family:"Gowun Dodum",sans-serif;
+  }
+  .preset.active{ background:var(--ink); color:var(--paper-card); border-color:var(--ink); }
+  .timer-btn-row{ display:flex; gap:10px; }
+
+  @keyframes ringShake{
+    0%{ transform:rotate(0deg) scale(1); }
+    10%{ transform:rotate(-10deg) scale(1.03); }
+    20%{ transform:rotate(9deg) scale(1.03); }
+    30%{ transform:rotate(-8deg) scale(1.02); }
+    40%{ transform:rotate(8deg) scale(1.02); }
+    50%{ transform:rotate(-6deg) scale(1.01); }
+    60%{ transform:rotate(6deg) scale(1.01); }
+    70%{ transform:rotate(-3deg) scale(1); }
+    80%{ transform:rotate(3deg) scale(1); }
+    90%{ transform:rotate(-1deg) scale(1); }
+    100%{ transform:rotate(0deg) scale(1); }
+  }
+  @keyframes ringGlow{
+    0%,100%{ box-shadow: 0 0 0 0 rgba(238,130,103,0.5), var(--shadow); }
+    50%{ box-shadow: 0 0 0 16px rgba(238,130,103,0), var(--shadow); }
+  }
+  .ring-holder.ringing{
+    animation: ringShake .7s ease-in-out infinite, ringGlow 1.4s ease-out infinite;
+  }
+  #timeLabel.alarm{ font-size:2.7rem; }
+  @media (prefers-reduced-motion: reduce){
+    .ring-holder.ringing{ animation:none; box-shadow:0 0 0 8px rgba(238,130,103,0.35), var(--shadow); }
+  }
+
+  /* ---- closing slide ---- */
+  .grid-two{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    width:100%;
+    text-align:left;
+  }
+  .pill-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
+  .pill-list li{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:12px 16px;
+    font-size:.95rem;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .pill-list li::before{ content:"✓"; color:var(--gold); font-weight:700; }
+
+  .prompt-log{ display:flex; flex-direction:column; gap:9px; width:100%; margin-top:2px; }
+  .prompt-bubble{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--accent, var(--gold));
+    border-radius:14px;
+    padding:11px 16px;
+    display:flex; flex-direction:column; gap:3px;
+    text-align:left;
+  }
+  .prompt-tag{ font-size:.7rem; letter-spacing:.07em; color:var(--ink-soft); font-weight:700; }
+  .prompt-bubble p{ margin:0; font-size:.87rem; line-height:1.5; font-style:italic; color:var(--ink); }
+
+  /* ---- nav chrome ---- */
+  .nav-btn{
+    position:fixed; top:50%; transform:translateY(-50%);
+    width:52px; height:52px; border-radius:50%;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; z-index:20;
+    color:var(--ink);
+    font-size:1.3rem;
+    transition: opacity .2s ease, transform .15s ease;
+  }
+  .nav-btn:hover{ transform:translateY(-50%) scale(1.06); }
+  .nav-btn.prev{ left:22px; }
+  .nav-btn.next{ right:22px; }
+  .nav-btn[disabled]{ opacity:.25; cursor:default; pointer-events:none; }
+
+  .progress-row{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:14px;
+    z-index:20;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    padding:10px 18px;
+    border-radius:999px;
+    box-shadow:var(--shadow);
+  }
+  .dots{ display:flex; gap:8px; }
+  .dots button{
+    width:9px; height:9px; border-radius:50%;
+    border:none; background:var(--line); cursor:pointer; padding:0;
+  }
+  .dots button.active{ background:var(--gold); width:22px; border-radius:6px; transition: width .2s ease; }
+  .count{ font-size:.78rem; color:var(--ink-soft); font-variant-numeric:tabular-nums; min-width:38px; text-align:center; }
+
+  @media (max-width: 860px){
+    .demo-wrap{ grid-template-columns:1fr; }
+    .card-grid{ grid-template-columns:1fr; }
+    .grid-two{ grid-template-columns:1fr; }
+    .nav-btn{ width:42px; height:42px; }
+    .nav-btn.prev{ left:8px; } .nav-btn.next{ right:8px; }
+  }
+
+  /* ---- slide entrance animation ---- */
+  @keyframes slideIn{
+    from{ opacity:0; transform:translateY(16px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .content.enter{ animation: slideIn .5s cubic-bezier(.2,.8,.2,1) both; }
+  @media (prefers-reduced-motion: reduce){
+    .content.enter{ animation:none; }
+  }
+
+  /* ---- page-turn sweep flash ---- */
+  .sweep{
+    position:fixed; inset:0;
+    z-index:15;
+    pointer-events:none;
+    background: linear-gradient(100deg, transparent 40%, rgba(224,168,54,0.22) 50%, transparent 60%);
+    transform: translateX(-120%);
+    opacity:0;
+  }
+  .sweep.play{
+    animation: sweepMove .55s ease;
+  }
+  @keyframes sweepMove{
+    0%{ transform:translateX(-120%); opacity:1; }
+    100%{ transform:translateX(120%); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .sweep.play{ animation:none; }
+  }
+
+  /* ---- fx particle canvas ---- */
+  #fxCanvas{
+    position:fixed; inset:0;
+    width:100vw; height:100vh;
+    z-index:50;
+    pointer-events:none;
+  }
+
+  /* ---- zoom overlay (golden ratio magnifier) ---- */
+  .zoom-overlay{
+    position:fixed; inset:0;
+    z-index:60;
+    display:none;
+    align-items:center; justify-content:center;
+    background:rgba(20,26,22,0.6);
+    opacity:0;
+    transition: opacity .35s ease;
+  }
+  .zoom-overlay.open{ opacity:1; }
+  .zoom-panel{
+    width:min(94vw, 820px);
+    max-height:90vh;
+    transform:scale(.86);
+    transition: transform .4s cubic-bezier(.2,.8,.2,1);
+  }
+  .zoom-overlay.open .zoom-panel{ transform:scale(1); }
+  .zoom-panel .device{ width:100%; }
+  .zoom-close{
+    position:fixed;
+    top:24px; right:24px;
+    z-index:61;
+    background:var(--paper-card);
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:10px 18px;
+    font-family:"Gowun Dodum",sans-serif;
+    font-size:.9rem;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .25s ease;
+  }
+  .zoom-overlay.open ~ .zoom-close,
+  .zoom-close.show{ opacity:1; pointer-events:auto; }
+  @media (prefers-reduced-motion: reduce){
+    .zoom-overlay, .zoom-panel{ transition:none; }
+  }
+
+  /* ---- hidden easter egg ---- */
+  .egg-trigger{
+    position:fixed;
+    left:16px; bottom:16px;
+    z-index:40;
+    width:30px; height:30px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    opacity:.28;
+    cursor:pointer;
+    font-size:1.05rem;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .egg-trigger:hover{ opacity:.6; transform:scale(1.12); }
+  .egg-overlay{
+    position:fixed; inset:0;
+    z-index:80;
+    display:none;
+    align-items:center; justify-content:center;
+    flex-direction:column;
+    background:rgba(15,20,17,0.86);
+    backdrop-filter: blur(3px);
+    opacity:0;
+    transition:opacity .4s ease;
+  }
+  .egg-overlay.open{ display:flex; opacity:1; }
+  #eggCanvas{ position:absolute; inset:0; width:100%; height:100%; }
+  .egg-msg{
+    position:relative;
+    text-align:center;
+    color:#FBF8EF;
+    max-width:520px;
+    padding:0 24px;
+    margin-top:38vh;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .egg-msg .display{ font-size:1.9rem; margin:0 0 10px; }
+  .egg-msg .muted{ color:#D9DED6; }
+</style>
+
+<div class="deck-shell" id="deckShell">
+  <div class="track" id="track">
+
+    <!-- SLIDE 1 : TITLE -->
+    <section class="slide" id="s0">
+      <div class="blob" style="width:260px;height:260px;background:var(--gold);opacity:.18;top:8%;left:6%;"></div>
+      <div class="blob" style="width:200px;height:200px;background:var(--sky);opacity:.22;bottom:10%;right:10%;"></div>
+      <div class="content">
+        <span class="eyebrow"><span class="dot"></span> 웹앱 제작, 왜 배울까?</span>
+        <h1 class="title display">코드 몇 줄이면<br><span class="accent-gold">이런 것도</span> 만들 수 있어요</h1>
+        <p class="lead">이 발표 자체도 하나의 웹앱입니다. 페이지 넘기기부터, 중간에 나오는 &nbsp;<b>실제로 작동하는 도구</b>까지 — 전부 HTML·CSS·자바스크립트 하나로 만들었어요.</p>
+        <div class="cta-row">
+          <button class="btn" onclick="goTo(1)">시작하기 →</button>
+          <span class="muted" style="align-self:center;">← → 키 또는 아래 화살표로 넘겨보세요</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 : WHY WEBAPP -->
+    <section class="slide" id="s1">
+      <div class="content left" style="max-width:920px;">
+        <span class="eyebrow"><span class="dot"></span> 왜 웹앱인가</span>
+        <h2 class="title display">설치도, 로그인도 필요 없어요</h2>
+        <p class="lead">앱스토어 심사도, 회원가입도 없이 <b>링크 하나</b>로 누구에게나 똑같이 보여줄 수 있는 게 웹앱의 힘이에요. 오늘은 그 힘을 두 가지 도구로 직접 보여드릴게요.</p>
+        <div class="card-grid">
+          <div class="card">
+            <div class="num">01</div>
+            <h3>바로 실행</h3>
+            <p>설치 없이 링크를 열면 그 순간 바로 작동해요. 컴퓨터든 휴대폰이든 상관없어요.</p>
+          </div>
+          <div class="card">
+            <div class="num">02</div>
+            <h3>아이디어 → 결과물</h3>
+            <p>수업 시간에 배운 개념(예: 내분점)을 코드 몇 줄로 실제로 눈에 보이는 도구로 바꿀 수 있어요.</p>
+          </div>
+          <div class="card">
+            <div class="num">03</div>
+            <h3>누구나 공유</h3>
+            <p>완성한 웹앱은 링크 하나로 친구, 선생님, 가족 누구에게나 바로 보여줄 수 있어요.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 : EXAMPLE 1 INTRO -->
+    <section class="slide" id="s2">
+      <div class="blob" style="width:220px;height:220px;background:var(--coral);opacity:.18;top:12%;right:8%;"></div>
+      <div class="content">
+        <span class="eyebrow"><span class="dot"></span> 예시 1</span>
+        <h2 class="title display">사진 속 <span class="accent-gold">황금비</span>를 찾아주는 도구</h2>
+        <p class="lead">사진 위에 두 점을 찍으면, 그 선분 위에서 황금비(약 1 : 1.618) 지점이 어디인지 바로 계산해서 보여줘요. <b>공통수학2의 &lsquo;내분점&rsquo;</b> 공식을 그대로 코드로 옮긴 거예요.</p>
+        <button class="btn" onclick="goTo(3)">도구 직접 써보기 →</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 : EXAMPLE 1 DEMO -->
+    <section class="slide" id="s3">
+      <div class="content" style="max-width:1080px;">
+        <span class="eyebrow"><span class="dot"></span> 황금비 파인더 · 실제 작동</span>
+        <h2 class="title display" style="font-size:clamp(1.4rem,2.6vw,2rem);">이미지 위에 두 점을 클릭해 보세요</h2>
+        <div class="demo-wrap">
+          <div class="device" id="deviceCard">
+            <div class="device-bar">
+              <label class="file-label primary">📷 사진 올리고 황금비 보기
+                <input type="file" accept="image/*" id="imgInput">
+              </label>
+              <span class="hint">사진을 올리면 황금비 격자선이 바로 겹쳐 보여요</span>
+            </div>
+            <div class="canvas-holder">
+              <canvas id="ratioCanvas"></canvas>
+            </div>
+            <div class="device-bar">
+              <span class="muted" id="pointHint">원하면 사진 위 두 점을 클릭해 직접 구간을 재볼 수도 있어요</span>
+              <div style="display:flex; gap:8px;">
+                <button class="btn ghost small" id="zoomBtn">🔍 확대해서 보기</button>
+                <button class="btn ghost small" onclick="resetRatio()">점 지우기</button>
+              </div>
+            </div>
+          </div>
+          <div class="side-panel">
+            <h3>🐚 사진 속 황금비, 이렇게 보여요</h3>
+            <p class="muted" style="margin:0;">금색 선은 가로·세로를 <b>1 : 1.618</b>로 나누는 황금비 격자예요. 사진 속 피사체가 이 선 근처에 걸치면 안정적으로 느껴져요 — 인물 사진의 눈높이, 건물의 창문 줄 등에서 자주 발견돼요.</p>
+            <div class="formula">
+              두 점을 찍으면 선분 AB를 <span class="sym">m : n</span>으로 내분하는 점 P를 계산해요<br>
+              P = ( (n·x₁ + m·x₂)/(m+n),&nbsp; (n·y₁ + m·y₂)/(m+n) )<br>
+              황금비는 <span class="sym">m : n ≈ 1.618 : 1</span>
+            </div>
+            <div class="result-line"><span>A → B 거리</span><b id="rDist">-</b></div>
+            <div class="result-line"><span>A → 황금분할점</span><b id="rAP">-</b></div>
+            <div class="result-line"><span>황금분할점 → B</span><b id="rPB">-</b></div>
+            <div class="result-line"><span>AP : PB</span><b id="rRatio">-</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5 : EXAMPLE 2 INTRO -->
+    <section class="slide" id="s4">
+      <div class="blob" style="width:200px;height:200px;background:var(--sky);opacity:.2;bottom:14%;left:10%;"></div>
+      <div class="content">
+        <span class="eyebrow"><span class="dot"></span> 예시 2</span>
+        <h2 class="title display">공부할 때 바로 쓰는 <span class="accent">집중 타이머</span></h2>
+        <p class="lead">황금비 도구가 &lsquo;수학 개념을 눈에 보이게&rsquo; 만든 거라면, 이번 건 &lsquo;진짜 매일 쓸 수 있는&rsquo; 웹앱이에요. 시간을 정하고 시작 버튼만 누르면 끝 — 이것도 전부 코드 몇 줄이에요.</p>
+        <button class="btn" onclick="goTo(5)">타이머 써보기 →</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 6 : EXAMPLE 2 DEMO -->
+    <section class="slide" id="s5">
+      <div class="content">
+        <span class="eyebrow"><span class="dot"></span> 집중 타이머 · 실제 작동</span>
+        <h2 class="title display" style="font-size:clamp(1.4rem,2.6vw,2rem);">시간을 고르고 시작을 눌러보세요</h2>
+        <div class="timer-wrap">
+          <div class="ring-holder" id="ringHolder">
+            <div class="ring-inner">
+              <div id="timeLabel">25:00</div>
+              <div id="timerState">대기 중</div>
+            </div>
+          </div>
+          <div class="timer-controls">
+            <span class="muted">집중 시간 선택</span>
+            <div class="preset-row">
+              <button class="preset active" data-min="25">25분</button>
+              <button class="preset" data-min="15">15분</button>
+              <button class="preset" data-min="5">5분</button>
+              <button class="preset" data-min="1">1분(테스트)</button>
+            </div>
+            <div class="timer-btn-row">
+              <button class="btn small" id="timerToggle">시작</button>
+              <button class="btn ghost small" id="timerReset">초기화</button>
+            </div>
+            <p class="muted">브라우저 안에서만 돌아가는 순수 타이머예요. 계정도, 서버도 필요 없어요.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 7 : CLOSING -->
+    <section class="slide" id="s6">
+      <div class="blob" style="width:260px;height:260px;background:var(--gold);opacity:.16;top:10%;left:8%;"></div>
+      <div class="content" style="max-width:920px;">
+        <span class="eyebrow"><span class="dot"></span> 정리</span>
+        <h2 class="title display">이 발표 전체가 <span class="accent-gold">웹앱 한 개</span>였어요</h2>
+        <div class="grid-two">
+          <ul class="pill-list">
+            <li>페이지 넘기기 애니메이션</li>
+            <li>사진을 분석하는 황금비 계산 도구</li>
+            <li>실제 작동하는 집중 타이머</li>
+            <li>외부 로그인·서버 연결 전혀 없음</li>
+          </ul>
+          <ul class="pill-list">
+            <li>수업 시간에 배운 &lsquo;내분점&rsquo; 공식을 그대로 사용</li>
+            <li>모바일·PC 어디서나 똑같이 실행</li>
+            <li>전부 HTML + CSS + JavaScript</li>
+            <li>여러분도 지금 배우면 다음 발표에 쓸 수 있어요</li>
+          </ul>
+        </div>
+
+        <span class="eyebrow" style="margin-top:2px;"><span class="dot"></span> 🗣️ 실제로 쓴 프롬프트</span>
+        <div class="prompt-log">
+          <div class="prompt-bubble" style="--accent:var(--gold);">
+            <span class="prompt-tag">요청 1</span>
+            <p>&ldquo;학생들에게 웹앱 제작의 중요성을 보여주는 웹앱을 만들고 싶어. 페이지 넘기듯 발표처럼, 황금비 측정 도구도 예시로 넣고 싶어 — 공통수학2 내분과 연결해서.&rdquo;</p>
+          </div>
+          <div class="prompt-bubble" style="--accent:var(--coral);">
+            <span class="prompt-tag">요청 2</span>
+            <p>&ldquo;사진을 올리면 황금비를 확인할 수 있게 해줘. 계정 연동 없이, 웹앱 하나로 이 정도까지 가능하다는 걸 보여주고 싶어.&rdquo;</p>
+          </div>
+          <div class="prompt-bubble" style="--accent:var(--sky);">
+            <span class="prompt-tag">요청 3</span>
+            <p>&ldquo;터치하면 폭죽처럼 터지는 효과, 슬라이드 전환 애니메이션처럼 다른 발표 도구와 차별화되는 인터랙션을 넣어줘.&rdquo;</p>
+          </div>
+          <div class="prompt-bubble" style="--accent:var(--gold);">
+            <span class="prompt-tag">요청 4</span>
+            <p>&ldquo;황금비 나선이 부드럽게 그려지게, 타이머가 끝나면 알람시계처럼 흔들리게 해줘. 마지막 페이지엔 실제 썼던 프롬프트도 요약해서 보여줘.&rdquo;</p>
+          </div>
+        </div>
+
+        <p class="lead" style="margin-top:6px;">이 정도 문장만으로 웹앱 하나가 완성돼요. 발표 자료, 계산기, 미니 게임까지 — 다음은 여러분 차례예요.</p>
+        <button class="btn" onclick="goTo(0)">처음으로 돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+
+  <button class="nav-btn prev" id="prevBtn" aria-label="이전 슬라이드">‹</button>
+  <button class="nav-btn next" id="nextBtn" aria-label="다음 슬라이드">›</button>
+
+  <div class="progress-row">
+    <span class="count" id="countLabel">1 / 7</span>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="sweep" id="sweep"></div>
+  <canvas id="fxCanvas"></canvas>
+
+  <div class="zoom-overlay" id="zoomOverlay">
+    <div class="zoom-panel" id="zoomPanel"></div>
+    <button class="zoom-close" id="zoomClose" aria-label="확대 닫기">✕ 닫기</button>
+  </div>
+
+  <button class="egg-trigger" id="eggTrigger" aria-label="숨겨진 도장" title="🐚">🐚</button>
+  <div class="egg-overlay" id="eggOverlay">
+    <canvas id="eggCanvas"></canvas>
+    <div class="egg-msg">
+      <p class="display">황금비의 나선을 찾았어요! 🎉</p>
+      <p class="muted">피보나치 수열이 그리는 나선이에요 — 자연에서도, 예술에서도 반복해서 나타나요.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var track = document.getElementById('track');
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var idx = 0;
+
+  var dotsWrap = document.getElementById('dots');
+  for (var i=0;i<total;i++){
+    var b = document.createElement('button');
+    b.addEventListener('click', (function(n){ return function(){ goTo(n); }; })(i));
+    dotsWrap.appendChild(b);
+  }
+
+  var sweepEl = document.getElementById('sweep');
+  var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render(prevIdx){
+    track.style.transform = 'translateX(-' + (idx*100) + 'vw)';
+    var dotBtns = dotsWrap.querySelectorAll('button');
+    dotBtns.forEach(function(d,i){ d.classList.toggle('active', i===idx); });
+    document.getElementById('countLabel').textContent = (idx+1) + ' / ' + total;
+    document.getElementById('prevBtn').disabled = idx===0;
+    document.getElementById('nextBtn').disabled = idx===total-1;
+
+    // page-turn sweep flash + content entrance animation, only on an actual slide change
+    if (prevIdx !== undefined && prevIdx !== idx && !prefersReduced){
+      sweepEl.classList.remove('play');
+      void sweepEl.offsetWidth; // restart animation
+      sweepEl.classList.add('play');
+
+      var activeContent = slides[idx].querySelector('.content');
+      if (activeContent){
+        activeContent.classList.remove('enter');
+        void activeContent.offsetWidth;
+        activeContent.classList.add('enter');
+      }
+    }
+  }
+
+  window.goTo = function(n){
+    var prevIdx = idx;
+    idx = Math.max(0, Math.min(total-1, n));
+    render(prevIdx);
+  };
+
+  document.getElementById('prevBtn').addEventListener('click', function(){ goTo(idx-1); });
+  document.getElementById('nextBtn').addEventListener('click', function(){ goTo(idx+1); });
+
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown'){ goTo(idx+1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ goTo(idx-1); }
+  });
+
+  // touch swipe
+  var touchStartX = null;
+  var shell = document.getElementById('deckShell');
+  shell.addEventListener('touchstart', function(e){ touchStartX = e.touches[0].clientX; }, {passive:true});
+  shell.addEventListener('touchend', function(e){
+    if (touchStartX===null) return;
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50){ dx < 0 ? goTo(idx+1) : goTo(idx-1); }
+    touchStartX = null;
+  }, {passive:true});
+
+  render();
+})();
+
+/* ---------------- Touch particle burst ---------------- */
+(function(){
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var canvas = document.getElementById('fxCanvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+  var particles = [];
+  var running = false;
+  var colors = ['#E0A836', '#EE8267', '#7FADC4', '#F0C468'];
+
+  function resizeFx(){
+    canvas.width = innerWidth * dpr;
+    canvas.height = innerHeight * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  resizeFx();
+  window.addEventListener('resize', resizeFx);
+
+  function spawnBurst(x,y){
+    var n = 10 + Math.floor(Math.random()*6);
+    for (var i=0;i<n;i++){
+      var angle = (Math.PI*2) * (i/n) + Math.random()*0.5;
+      var speed = 2 + Math.random()*3.4;
+      particles.push({
+        x:x, y:y,
+        vx: Math.cos(angle)*speed,
+        vy: Math.sin(angle)*speed - 1.2,
+        size: 2.5 + Math.random()*3,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        life: 1
+      });
+    }
+    if (!running){ running = true; requestAnimationFrame(loop); }
+  }
+
+  function loop(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    for (var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.vy += 0.12; // gravity
+      p.x += p.vx; p.y += p.vy;
+      p.life -= 0.02;
+      if (p.life <= 0){ particles.splice(i,1); continue; }
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.beginPath();
+      ctx.fillStyle = p.color;
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if (particles.length > 0){
+      requestAnimationFrame(loop);
+    } else {
+      running = false;
+    }
+  }
+
+  document.addEventListener('pointerdown', function(e){
+    // skip inputs/labels so file pickers & typing aren't distracted
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT') return;
+    spawnBurst(e.clientX, e.clientY);
+  });
+
+  window.spawnFxBurst = spawnBurst;
+})();
+
+/* ---------------- Golden ratio demo ---------------- */
+(function(){
+  var canvas = document.getElementById('ratioCanvas');
+  var ctx = canvas.getContext('2d');
+  var holder = canvas.parentElement;
+  var img = null;
+  var points = [];
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  function defaultArt(){
+    // draw a simple placeholder scene so the demo works before any upload
+    var w = canvas._w, h = canvas._h;
+    var g = ctx.createLinearGradient(0,0,0,h);
+    g.addColorStop(0, '#EFE3C4');
+    g.addColorStop(1, '#D9CDA6');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,w,h);
+    // simple "building" silhouette to click golden ratio points on
+    ctx.fillStyle = '#8A7A54';
+    var bw = w*0.22, bh = h*0.62;
+    var bx = w*0.5 - bw/2, by = h - bh - h*0.08;
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = '#EE8267';
+    ctx.fillRect(w*0.12, h-h*0.1, w*0.76, h*0.1);
+    ctx.fillStyle = 'rgba(38,59,51,0.55)';
+    ctx.font = (Math.max(12,w*0.032)) + 'px "Gowun Dodum", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('예시 이미지 — 건물의 세로선을 클릭해보세요', w/2, h*0.16);
+  }
+
+  var lastW = 0, lastH = 0, resizeQueued = false;
+  function resize(){
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(function(){
+      resizeQueued = false;
+      var rect = holder.getBoundingClientRect();
+      var w = Math.round(rect.width), h = Math.round(rect.height);
+      if (w<=0 || h<=0) return;
+      // skip if size effectively unchanged (avoids ResizeObserver feedback loops)
+      if (Math.abs(w-lastW) < 1 && Math.abs(h-lastH) < 1) { redraw(); return; }
+      lastW = w; lastH = h;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      canvas._w = w;
+      canvas._h = h;
+      redraw();
+    });
+  }
+
+  function drawGoldenGrid(x,y,w,h){
+    var phi1 = 0.382, phi2 = 0.618;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(224,168,54,0.85)';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([]);
+    [phi1, phi2].forEach(function(f){
+      // vertical lines
+      ctx.beginPath();
+      ctx.moveTo(x + w*f, y);
+      ctx.lineTo(x + w*f, y + h);
+      ctx.stroke();
+      // horizontal lines
+      ctx.beginPath();
+      ctx.moveTo(x, y + h*f);
+      ctx.lineTo(x + w, y + h*f);
+      ctx.stroke();
+    });
+    ctx.restore();
+  }
+
+  function redraw(){
+    var w = canvas._w, h = canvas._h;
+    if (!w || !h) return;
+    ctx.clearRect(0,0,w,h);
+    var frameX=0, frameY=0, frameW=w, frameH=h;
+    if (img){
+      // contain-fit image
+      var scale = Math.min(w/img.width, h/img.height);
+      var iw = img.width*scale, ih = img.height*scale;
+      var ix = (w-iw)/2, iy=(h-ih)/2;
+      ctx.fillStyle = '#00000010';
+      ctx.fillRect(0,0,w,h);
+      ctx.drawImage(img, ix, iy, iw, ih);
+      frameX=ix; frameY=iy; frameW=iw; frameH=ih;
+    } else {
+      defaultArt();
+    }
+    drawGoldenGrid(frameX, frameY, frameW, frameH);
+    drawPoints(w,h);
+  }
+
+  function drawDot(x,y,color,label){
+    ctx.beginPath();
+    ctx.arc(x,y,7,0,Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.stroke();
+    if (label){
+      ctx.font = '700 13px "Gowun Dodum", sans-serif';
+      ctx.fillStyle = '#263B33';
+      ctx.textAlign='center';
+      ctx.fillText(label, x, y-14);
+    }
+  }
+
+  function drawPoints(w,h){
+    if (points.length >= 1){ drawDot(points[0].x, points[0].y, '#7FADC4', 'A'); }
+    if (points.length >= 2){
+      var a = points[0], bpt = points[1];
+      drawDot(bpt.x, bpt.y, '#EE8267', 'B');
+      ctx.beginPath();
+      ctx.moveTo(a.x,a.y); ctx.lineTo(bpt.x,bpt.y);
+      ctx.strokeStyle = '#263B3388';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      var t = 0.618; // m:n = 1.618:1 -> point closer to B
+      var px = a.x + (bpt.x-a.x)*t;
+      var py = a.y + (bpt.y-a.y)*t;
+      drawDot(px,py,'#E0A836','φ');
+      updateStats(a,bpt,{x:px,y:py});
+    } else {
+      clearStats();
+    }
+  }
+
+  function dist(p1,p2){ return Math.hypot(p2.x-p1.x, p2.y-p1.y); }
+
+  function updateStats(a,b,p){
+    var dAB = dist(a,b), dAP = dist(a,p), dPB = dist(p,b);
+    document.getElementById('rDist').textContent = dAB.toFixed(0) + ' px';
+    document.getElementById('rAP').textContent = dAP.toFixed(0) + ' px';
+    document.getElementById('rPB').textContent = dPB.toFixed(0) + ' px';
+    document.getElementById('rRatio').textContent = (dPB>0 ? (dAP/dPB).toFixed(3) : '-') + '  (≈ φ)';
+    document.getElementById('pointHint').textContent = '두 점 완료! 노란 점(φ)이 황금분할점이에요';
+  }
+  function clearStats(){
+    ['rDist','rAP','rPB','rRatio'].forEach(function(id){ document.getElementById(id).textContent = '-'; });
+    document.getElementById('pointHint').textContent = points.length===1
+      ? '좋아요! 둘째 점을 클릭하세요'
+      : '원하면 사진 위 두 점을 클릭해 직접 구간을 재볼 수도 있어요';
+  }
+
+  function handlePick(clientX, clientY){
+    var rect = canvas.getBoundingClientRect();
+    var x = clientX - rect.left, y = clientY - rect.top;
+    if (points.length >= 2){ points = []; }
+    points.push({x:x,y:y});
+    redraw();
+  }
+
+  canvas.addEventListener('click', function(e){ handlePick(e.clientX, e.clientY); });
+  canvas.addEventListener('touchstart', function(e){
+    var t = e.touches[0];
+    handlePick(t.clientX, t.clientY);
+  }, {passive:true});
+
+  window.resetRatio = function(){
+    points = [];
+    redraw();
+  };
+
+  document.getElementById('imgInput').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      var image = new Image();
+      image.onload = function(){
+        img = image;
+        points = [];
+        redraw();
+      };
+      image.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  window.addEventListener('resize', resize);
+  // resize when this slide becomes visible/sized
+  setTimeout(resize, 50);
+  new ResizeObserver(resize).observe(holder);
+})();
+
+/* ---------------- Golden ratio zoom-in demo ---------------- */
+(function(){
+  var deviceCard = document.getElementById('deviceCard');
+  var zoomBtn = document.getElementById('zoomBtn');
+  var overlay = document.getElementById('zoomOverlay');
+  var panel = document.getElementById('zoomPanel');
+  var closeBtn = document.getElementById('zoomClose');
+  var originalParent = deviceCard.parentNode;
+  var originalNext = deviceCard.nextSibling;
+  var open = false;
+
+  function openZoom(){
+    if (open) return;
+    open = true;
+    originalParent = deviceCard.parentNode;
+    originalNext = deviceCard.nextSibling;
+    panel.appendChild(deviceCard);
+    overlay.style.display = 'flex';
+    closeBtn.classList.add('show');
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ overlay.classList.add('open'); });
+    });
+    zoomBtn.textContent = '🔎 확대 중 …';
+  }
+
+  function closeZoom(){
+    if (!open) return;
+    open = false;
+    overlay.classList.remove('open');
+    closeBtn.classList.remove('show');
+    zoomBtn.textContent = '🔍 확대해서 보기';
+    var done = function(){
+      originalParent.insertBefore(deviceCard, originalNext);
+      overlay.style.display = 'none';
+    };
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      done();
+    } else {
+      setTimeout(done, 400);
+    }
+  }
+
+  zoomBtn.addEventListener('click', openZoom);
+  closeBtn.addEventListener('click', closeZoom);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeZoom(); });
+  window.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeZoom(); });
+})();
+
+/* ---------------- Timer demo ---------------- */
+(function(){
+  var totalSeconds = 25*60;
+  var remaining = totalSeconds;
+  var running = false;
+  var isRinging = false;
+  var tickHandle = null;
+
+  var timeLabel = document.getElementById('timeLabel');
+  var stateLabel = document.getElementById('timerState');
+  var ring = document.getElementById('ringHolder');
+  var toggleBtn = document.getElementById('timerToggle');
+  var resetBtn = document.getElementById('timerReset');
+  var presets = document.querySelectorAll('.preset');
+
+  function fmt(s){
+    var m = Math.floor(s/60), r = s%60;
+    return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0');
+  }
+
+  function paint(){
+    timeLabel.textContent = isRinging ? '⏰' : fmt(remaining);
+    timeLabel.classList.toggle('alarm', isRinging);
+    var pct = 100 - (remaining/totalSeconds*100);
+    ring.style.setProperty('--pct', pct.toFixed(2));
+    stateLabel.textContent = running ? '집중 중' : (isRinging ? '시간 종료!' : '대기 중');
+  }
+
+  function triggerAlarm(){
+    isRinging = true;
+    ring.classList.add('ringing');
+    if (window.spawnFxBurst){
+      var r = ring.getBoundingClientRect();
+      window.spawnFxBurst(r.left + r.width/2, r.top + r.height/2);
+    }
+    paint();
+  }
+  function stopAlarm(){
+    isRinging = false;
+    ring.classList.remove('ringing');
+  }
+
+  function tick(){
+    remaining -= 1;
+    if (remaining <= 0){
+      remaining = 0;
+      pause();
+      triggerAlarm();
+      return;
+    }
+    paint();
+  }
+
+  function start(){
+    if (running || remaining<=0) return;
+    stopAlarm();
+    running = true;
+    toggleBtn.textContent = '일시정지';
+    tickHandle = setInterval(tick, 1000);
+    paint();
+  }
+  function pause(){
+    running = false;
+    toggleBtn.textContent = '시작';
+    clearInterval(tickHandle);
+    paint();
+  }
+  function reset(){
+    pause();
+    stopAlarm();
+    remaining = totalSeconds;
+    paint();
+  }
+
+  toggleBtn.addEventListener('click', function(){ running ? pause() : start(); });
+  resetBtn.addEventListener('click', reset);
+
+  presets.forEach(function(p){
+    p.addEventListener('click', function(){
+      presets.forEach(function(x){ x.classList.remove('active'); });
+      p.classList.add('active');
+      totalSeconds = parseInt(p.dataset.min,10)*60;
+      reset();
+    });
+  });
+
+  paint();
+})();
+
+/* ---------------- Hidden easter egg: golden spiral ---------------- */
+(function(){
+  var trigger = document.getElementById('eggTrigger');
+  var overlay = document.getElementById('eggOverlay');
+  var canvas = document.getElementById('eggCanvas');
+  var ctx = canvas.getContext('2d');
+  var dpr = Math.max(1, window.devicePixelRatio || 1);
+  var clicks = 0;
+  var clickTimer = null;
+  var closeTimer = null;
+  var spiralRAF = null;
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resizeEgg(){
+    var r = canvas.getBoundingClientRect();
+    canvas.width = r.width * dpr;
+    canvas.height = r.height * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  function easeInOutCubic(t){
+    return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+  }
+
+  // Draw a smooth logarithmic golden spiral that gently unwinds from the
+  // center outward, with a soft glow trailing the growing tip.
+  function drawSpiral(){
+    resizeEgg();
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    var cx = w/2, cy = h*0.36;
+    var size = Math.min(w,h) * 0.22;
+    var phi = 1.6180339887;
+    var thetaMax = Math.PI * 2 * 2.25; // ~2.25 turns
+    var b = Math.log(phi) / (Math.PI/2); // quarter-turn growth factor
+    var r0 = size / Math.exp(b*thetaMax);
+    var duration = reducedMotion ? 1 : 3400;
+
+    function pointAt(theta){
+      var r = r0 * Math.exp(b*theta);
+      return { x: cx + r*Math.cos(theta), y: cy + r*Math.sin(theta) };
+    }
+
+    var startTime = null;
+    if (spiralRAF) cancelAnimationFrame(spiralRAF);
+
+    function frame(ts){
+      if (!startTime) startTime = ts;
+      var t = Math.min(1, (ts-startTime)/duration);
+      var curThetaMax = easeInOutCubic(t) * thetaMax;
+
+      ctx.clearRect(0,0,w,h);
+      ctx.save();
+      ctx.shadowColor = 'rgba(240,196,104,0.85)';
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = 'rgba(240,196,104,0.95)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      var steps = Math.max(2, Math.floor(curThetaMax/0.05));
+      for (var i=0;i<=steps;i++){
+        var theta = (i/steps)*curThetaMax;
+        var p = pointAt(theta);
+        if (i===0) ctx.moveTo(p.x,p.y); else ctx.lineTo(p.x,p.y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // glowing sparkle at the growing tip
+      var tip = pointAt(curThetaMax);
+      var pulse = 3 + Math.sin(ts/140)*1.6;
+      var grad = ctx.createRadialGradient(tip.x,tip.y,0, tip.x,tip.y, 15+pulse);
+      grad.addColorStop(0, 'rgba(255,244,214,0.95)');
+      grad.addColorStop(1, 'rgba(255,244,214,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(tip.x, tip.y, 15+pulse, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = '#FFF7E0';
+      ctx.arc(tip.x, tip.y, 4, 0, Math.PI*2);
+      ctx.fill();
+
+      // keep a gentle pulse going at the finished tip until the overlay closes
+      spiralRAF = requestAnimationFrame(frame);
+    }
+    spiralRAF = requestAnimationFrame(frame);
+  }
+
+  function openEgg(){
+    overlay.classList.add('open');
+    drawSpiral();
+    // a few celebratory bursts across the screen
+    if (window.spawnFxBurst){
+      for (var i=0;i<6;i++){
+        (function(i){
+          setTimeout(function(){
+            window.spawnFxBurst(
+              window.innerWidth * (0.2 + Math.random()*0.6),
+              window.innerHeight * (0.25 + Math.random()*0.4)
+            );
+          }, i*180);
+        })(i);
+      }
+    }
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(closeEgg, 5800);
+  }
+  function closeEgg(){
+    overlay.classList.remove('open');
+    if (spiralRAF){ cancelAnimationFrame(spiralRAF); spiralRAF = null; }
+    setTimeout(function(){ overlay.style.display = 'none'; }, 400);
+  }
+  overlay.style.display = 'none';
+  overlay.addEventListener('transitionend', function(){
+    if (!overlay.classList.contains('open')) overlay.style.display = 'none';
+  });
+  overlay.addEventListener('click', function(){ clearTimeout(closeTimer); closeEgg(); });
+
+  trigger.addEventListener('click', function(e){
+    e.stopPropagation();
+    clicks++;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(function(){ clicks = 0; }, 1400);
+    if (clicks >= 5){
+      clicks = 0;
+      overlay.style.display = 'flex';
+      requestAnimationFrame(function(){ openEgg(); });
+    }
+  });
+})();
+</script>

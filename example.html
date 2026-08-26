@@ -1345,6 +1345,7 @@
   var hits = 0;
   var peakEnergy = 0;
   var dragging = -1;
+  var frozen = new Array(N).fill(false); // balls currently rigidly dragged along with the grabbed one
 
   var hintEl = document.getElementById('cradleHint');
   var hitsEl = document.getElementById('cradleHits');
@@ -1392,7 +1393,7 @@
 
   function step(dt){
     for (var i=0;i<N;i++){
-      if (i === dragging) continue;
+      if (frozen[i]) continue;
       omega[i] += -(g/Lm) * Math.sin(theta[i]) * dt;
       omega[i] *= damping;
       theta[i] += omega[i]*dt;
@@ -1502,6 +1503,35 @@
     return { x: e.clientX-rect.left, y: e.clientY-rect.top };
   }
 
+  // While dragging one ball, any neighbor(s) it's already resting against
+  // get pulled along too — they can't pass through each other, so pulling
+  // ball 2 outward also drags ball 1 if ball 1 is in its way.
+  function applyContactDrag(idx){
+    var dx = new Array(N);
+    for (var i=0;i<N;i++){ dx[i] = Math.sin(theta[i]); }
+
+    for (var j=idx-1; j>=0; j--){
+      if (dx[j] > dx[j+1] + 1e-9){
+        theta[j] = theta[j+1];
+        dx[j] = dx[j+1];
+        omega[j] = 0;
+        frozen[j] = true;
+      } else {
+        break;
+      }
+    }
+    for (var k=idx+1; k<N; k++){
+      if (dx[k] < dx[k-1] - 1e-9){
+        theta[k] = theta[k-1];
+        dx[k] = dx[k-1];
+        omega[k] = 0;
+        frozen[k] = true;
+      } else {
+        break;
+      }
+    }
+  }
+
   canvas.addEventListener('pointerdown', function(e){
     var geo = geom();
     var pt = localPoint(e);
@@ -1509,6 +1539,8 @@
     if (idx>=0){
       dragging = idx;
       omega[idx] = 0;
+      for (var i=0;i<N;i++){ frozen[i] = false; }
+      frozen[idx] = true;
       canvas.style.cursor = 'grabbing';
       if (canvas.setPointerCapture){ try{ canvas.setPointerCapture(e.pointerId); }catch(err){} }
       hintEl.textContent = '놓으면 물리 법칙대로 튕겨나가요';
@@ -1518,11 +1550,15 @@
     if (dragging < 0) return;
     var geo = geom();
     var pt = localPoint(e);
+    for (var i=0;i<N;i++){ frozen[i] = false; }
+    frozen[dragging] = true;
     theta[dragging] = pointerToTheta(pt.x, geo, dragging);
+    applyContactDrag(dragging);
   });
   function endDrag(){
     if (dragging < 0) return;
     dragging = -1;
+    for (var i=0;i<N;i++){ frozen[i] = false; }
     canvas.style.cursor = 'grab';
     hintEl.textContent = defaultHint;
   }
@@ -1531,7 +1567,7 @@
   canvas.addEventListener('pointerleave', function(){ if (dragging>=0) endDrag(); });
 
   resetBtn.addEventListener('click', function(){
-    for (var i=0;i<N;i++){ theta[i]=0; omega[i]=0; }
+    for (var i=0;i<N;i++){ theta[i]=0; omega[i]=0; frozen[i]=false; }
     dragging = -1;
     hits = 0; hitsEl.textContent = '0';
     peakEnergy = 0; energyEl.textContent = '100%';

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <title>랜덤 아레나 V6.3.0</title>
+  <title>랜덤 아레나 V6.5.0</title>
   <style>
     :root{
       --bg:#06101e;--bg2:#0a1930;--panel:#0d1b2d;--panel2:#11243c;
@@ -161,7 +161,7 @@
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark">R</div>
-      <div><div class="brand-kicker">CLASSROOM RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V6.3.0</span></h1></div>
+      <div><div class="brand-kicker">CLASSROOM RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V6.5.0</span></h1></div>
     </div>
     <div class="top-actions">
       <button id="soundBtn" class="icon-btn" type="button" aria-label="소리 켜기 또는 끄기" title="소리">♪</button>
@@ -281,14 +281,14 @@
         </section>
       </aside>
     </div>
-    <footer class="footer">랜덤 아레나 V6.3.0 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다.</footer>
+    <footer class="footer">랜덤 아레나 V6.5.0 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다.</footer>
   </main>
   <div id="toast" class="toast" role="status"></div>
 
   <script>
   (()=>{
     "use strict";
-    const VERSION="6.3.0";
+    const VERSION="6.5.0";
     const MODE_INFO={
       quick:{name:"빠른 추첨",start:"빠른 추첨 시작",hint:"빠른 레이스",accent:"#4ec5ff"},
       rank:{name:"1~3등 뽑기",start:"1~3등 추첨 시작",hint:"1~3등 순차 추첨",accent:"#ffd454"},
@@ -316,7 +316,7 @@
       W:0,H:0,dpr:1,worldH:0,cameraY:0,courseSeed:1,balls:[],pegs:[],bumpers:[],rotors:[],gates:[],boosters:[],particles:[],
       plannedOrder:[],raceStart:0,lastFrame:0,endingAt:0,animationId:0,audio:null,toastTimer:0,presenting:false,
       engine:"idle",rails:[],lottoBalls:[],lottoWinners:[],lottoPhase:"idle",lottoPhaseStart:0,lottoCapture:null,lottoSpin:0,physicsAccumulator:0,
-      physicsTimeScale:1,zoom:1,zoomTarget:1,zoomFocusX:0,cinematicCandidate:null,cinematicText:"",freezeUntil:0,freezeFocus:null,chaseWind:0,chaseWindTarget:0
+      physicsTimeScale:1,zoom:1,zoomTarget:1,zoomFocusX:0,cinematicCandidate:null,cinematicText:"",freezeUntil:0,freezeFocus:null,winnerFx:null,chaseWind:0,chaseWindTarget:0
     };
     const palettes=[
       ["#dff4ff","#5bc9ff","#2679e8"],["#fff0f4","#ff8aaa","#d93668"],["#e7fff4","#5ee1a8","#17966a"],
@@ -491,7 +491,7 @@
     function finishStaticMode(){state.running=false;setStatus("완료");els.statResults.textContent=`${state.results.length}명`;els.startBtn.disabled=false;els.startBtn.textContent="다시 섞기";els.savePngBtn.disabled=false;els.copyBtn.disabled=false;celebrate(state.mode==="teams"?70:90);tone(660,.18,"triangle",.07);setTimeout(()=>tone(880,.24,"sine",.07),170)}
 
     async function runLottoMode(eligible,token){
-      state.engine="lotto";state.courseSeed=newSeed();state.lottoWinners=secureShuffle(eligible).slice(0,state.drawCount);state.plannedOrder=[...state.lottoWinners];state.lottoPhase="ready";state.lottoCapture=null;state.lottoSpin=0;
+      state.engine="lotto";state.courseSeed=newSeed();state.lottoWinners=secureShuffle(eligible).slice(0,state.drawCount);state.plannedOrder=[...state.lottoWinners];state.lottoPhase="ready";state.lottoCapture=null;state.lottoSpin=0;state.winnerFx=null;
       prepareLottoBalls(eligible);drawLottoScene();setStageLabel("로또 기계에 모든 번호 공을 넣었습니다");
       if(!await countdown(token))return;
       state.raceStart=performance.now();state.lastFrame=state.raceStart;state.lottoPhase="mix";state.lottoPhaseStart=state.raceStart;setStatus("혼합");setStageLabel("강한 바람으로 번호 공을 공정하게 섞는 중");
@@ -549,7 +549,7 @@
       else{const q=(ease-.72)/.28;b.x=g.bendX+(slotX-g.bendX)*q;b.y=g.bendY+(g.slotY-g.bendY)*q}
     }
     function revealLottoBall(now){
-      const b=state.lottoCapture;if(!b)return;const place=state.results.length+1;b.capturing=false;b.active=false;b.inTray=true;b.trayIndex=place-1;state.results.push(b.num);state.lottoCapture=null;renderLiveRanks();els.statResults.textContent=`${state.results.length}명`;spawnBurst(b.x,b.y,"#ffd454",26);tone(560+place*120,.18,"triangle",.07);setStageLabel(`${place}${state.mode==="rank"?"등":"번째 당첨"} ${b.num}번 추첨 완료!`);
+      const b=state.lottoCapture;if(!b)return;const place=state.results.length+1;b.capturing=false;b.active=false;b.inTray=true;b.trayIndex=place-1;state.results.push(b.num);state.lottoCapture=null;state.winnerFx={x:b.x,num:b.num,place,start:now};renderLiveRanks();els.statResults.textContent=`${state.results.length}명`;spawnBurst(b.x,b.y,"#ffd454",34);tone(560+place*120,.18,"triangle",.07);setTimeout(()=>tone(830+place*70,.16,"sine",.045),120);setStageLabel(`${place}${state.mode==="rank"?"등":"번째 당첨"} ${b.num}번 추첨 완료!`);
       if(state.results.length>=state.drawCount){state.ending=true;state.endingAt=now;state.lottoPhase="done";setStatus("완료");celebrate(100)}else{state.lottoPhase="pause";state.lottoPhaseStart=now;setStatus("확정")}
     }
     function finalizeLotto(){
@@ -559,11 +559,11 @@
     }
 
     async function runRaceMode(eligible,token){
-      state.engine="race";state.courseSeed=newSeed();state.plannedOrder=[];state.physicsAccumulator=0;state.physicsTimeScale=1;state.zoom=1;state.zoomTarget=1;state.cinematicCandidate=null;state.cinematicText="";state.freezeUntil=0;state.freezeFocus=null;state.chaseWind=0;state.chaseWindTarget=0;
+      state.engine="race";state.courseSeed=newSeed();state.plannedOrder=[];state.physicsAccumulator=0;state.physicsTimeScale=1;state.zoom=1;state.zoomTarget=1;state.cinematicCandidate=null;state.cinematicText="";state.freezeUntil=0;state.freezeFocus=null;state.winnerFx=null;state.chaseWind=0;state.chaseWindTarget=0;
       buildRace(eligible);drawScene();setStageLabel(state.style==="quick"?"장거리 코스 출발 게이트 준비 중":"울트라 코스 출발 게이트 준비 중");
       if(!await countdown(token))return;
       state.raceStart=performance.now();state.lastFrame=state.raceStart;setStatus("질주");setStageLabel("중앙 구멍을 향한 실제 물리 레이스 진행 중");
-      state.balls.forEach(b=>{b.vx=(Math.random()-.5)*135+(state.W/2-b.x)*.34;b.vy=48+Math.random()*62});
+      state.balls.forEach(b=>{b.vx=(Math.random()-.5)*155+(state.W/2-b.x)*.39;b.vy=55+Math.random()*71});
       cancelAnimationFrame(state.animationId);state.animationId=requestAnimationFrame(raceLoop);
     }
     function raceWorldHeight(){return state.style==="tension"?Math.max(state.H*7.2,5000):Math.max(state.H*4.6,3200)}
@@ -594,7 +594,7 @@
       state.rails.push({x1:W*.5,y1:y,x2:W*.27,y2:y+235,w:7,color:leftType==="speed"?"#4ec5ff":"#a78bfa",railType:leftType},{x1:W*.5,y1:y,x2:W*.73,y2:y+235,w:7,color:rightType==="speed"?"#4ec5ff":"#a78bfa",railType:rightType});
       state.bumpers.push({x:W*.18,y:y+122,r:22,pulse:0,color:"#ff7185"},{x:W*.82,y:y+122,r:22,pulse:0,color:"#53e0a1"});
     }
-    function addTimedGate(W,y,phase=0,speed=1.1){state.gates.push({y,phase,speed,gapW:clamp(W*.2,105,170),gapX:W/2,color:"#ff9c43",pulse:0})}
+    function addTimedGate(W,y,phase=0,speed=1.1){state.gates.push({y,phase,speed,gapW:clamp(W*.22,116,187),gapX:W/2,color:"#ff9c43",pulse:0})}
     function addBoosters(W,worldH){
       const ys=[worldH*.58,worldH*.67,worldH*.75];ys.forEach((y,row)=>{const xs=row%2?[W*.32,W*.68]:[W*.2,W*.5,W*.8];xs.forEach((x,i)=>state.boosters.push({x,y:y+(i%2)*58,r:19,pulse:0,color:"#53e0a1"}))});
     }
@@ -648,18 +648,19 @@
       state.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=100*dt;p.life-=dt});state.particles=state.particles.filter(p=>p.life>0);
     }
     function updateCinematic(now,dt){
-      const active=state.balls.filter(b=>b.active),f=finishGeometry(),finalStart=f.topY-Math.max(300,state.H*.52);let candidate=null,deep=false;
+      const active=state.balls.filter(b=>b.active),f=finishGeometry(),finalStart=f.topY-Math.max(250,state.H*.38);let candidate=null,deep=false;
       if(now<state.freezeUntil&&state.freezeFocus){candidate=state.freezeFocus;deep=true;state.cinematicText=`${state.freezeFocus.num}번 골인!`}
       else{
         const near=active.filter(b=>b.y>finalStart&&b.vy>-90).sort((a,b)=>(b.y-Math.abs(b.x-f.center)*.22)-(a.y-Math.abs(a.x-f.center)*.22));
         candidate=near[0]||null;if(candidate){deep=candidate.y>f.gateY-145&&Math.abs(candidate.x-f.center)<f.half*1.9&&candidate.vy>0;state.cinematicText=deep?`당첨 직전 · ${candidate.num}번`:`FINAL ZONE · ${candidate.num}번`}
       }
       state.cinematicCandidate=candidate;const later=state.results.length>0;
-      state.zoomTarget=candidate?(deep?1.64:1.2):1;state.physicsTimeScale=candidate?(deep?(later ? .42 : .31):(later ? .80 : .68)):1;
+      state.zoomTarget=candidate?(deep?1.64:1.2):1;state.physicsTimeScale=candidate?(deep?(later ? .42 : .31):(later ? .86 : .78)):1;
       state.zoom+=(state.zoomTarget-state.zoom)*(1-Math.exp(-dt*(deep?7:4.5)));const focusTarget=candidate?candidate.x:state.W/2;state.zoomFocusX+=(focusTarget-state.zoomFocusX)*(1-Math.exp(-dt*5));
-      const leader=active.sort((a,b)=>b.y-a.y)[0],target=candidate?candidate.y-state.H*.68:leader?leader.y-state.H*.34:state.cameraY,maxCamera=Math.max(0,state.worldH-state.H);state.cameraY+=(clamp(target,0,maxCamera)-state.cameraY)*(1-Math.exp(-dt*(candidate?5.2:3.1)));
+      const leader=active.sort((a,b)=>b.y-a.y)[0],anchor=cinematicAnchorY(),target=candidate?candidate.y-anchor:leader?leader.y-state.H*.34:state.cameraY,maxCamera=Math.max(0,state.worldH-(candidate?state.H*.18:state.H));state.cameraY+=(clamp(target,0,maxCamera)-state.cameraY)*(1-Math.exp(-dt*(candidate?5.8:3.1)));
       if(now>=state.freezeUntil)state.freezeFocus=null;
     }
+    function cinematicAnchorY(){return state.H*.56}
     function applyComebackAssist(dt){
       const active=state.balls.filter(b=>b.active);for(const b of active)b.chaseGlow=Math.max(0,b.chaseGlow-dt*1.8);if(state.comeback==="pure"||active.length<2){state.chaseWindTarget=0;state.chaseWind+=(state.chaseWindTarget-state.chaseWind)*Math.min(1,dt*3);return}
       const strong=state.comeback==="boost",leader=active.reduce((best,b)=>b.y>best.y?b:best,active[0]),threshold=state.H*(strong ? .72 : 1.02),assistLimit=state.worldH-Math.max(state.H*.72,520),base=strong?92:54,extra=strong?108:70;let helped=0;
@@ -667,8 +668,8 @@
       state.chaseWindTarget=helped?1:0;state.chaseWind+=(state.chaseWindTarget-state.chaseWind)*Math.min(1,dt*2.8);
     }
     function updateBall(b,now,dt){
-      const prevY=b.y,f=finishGeometry();b.vy+=(state.style==="quick"?235:215)*dt;b.vx*=Math.pow(.9982,dt*60);b.vy*=Math.pow(.999,dt*60);b.glow=Math.max(0,b.glow-dt*.7);
-      b.vx=clamp(b.vx,-430,430);b.vy=clamp(b.vy,-340,state.style==="quick"?390:355);b.x+=b.vx*dt;b.y+=b.vy*dt;
+      const prevY=b.y,f=finishGeometry();b.vy+=(state.style==="quick"?277:254)*dt;b.vx*=Math.pow(.9982,dt*60);b.vy*=Math.pow(.999,dt*60);b.glow=Math.max(0,b.glow-dt*.7);
+      b.vx=clamp(b.vx,-465,465);b.vy=clamp(b.vy,-340,state.style==="quick"?437:398);b.x+=b.vx*dt;b.y+=b.vy*dt;
       const wall=20+b.r;if(b.x<wall){b.x=wall;b.vx=Math.abs(b.vx)*.76+22}else if(b.x>state.W-wall){b.x=state.W-wall;b.vx=-Math.abs(b.vx)*.76-22}
       if(b.y<25){b.y=25;b.vy=Math.abs(b.vy)}
       for(const p of state.pegs){if(Math.abs(p.y-b.y)>b.r+10)continue;collideCircle(b,p.x,p.y,p.r,.56)}
@@ -705,7 +706,7 @@
       const d=Math.sqrt(d2),nx=dx/d,ny=dy/d,type=r.railType||"normal";b.x+=nx*(min-d+.08);b.y+=ny*(min-d+.08);let normalSpeed=b.vx*nx+b.vy*ny;
       if(normalSpeed<0){const restitution=r.finish ? .28 : type==="bounce" ? .68 : type==="speed" ? .18 : .25;b.vx-=normalSpeed*(1+restitution)*nx;b.vy-=normalSpeed*(1+restitution)*ny}
       const keep=r.finish ? .997 : type==="speed" ? .99985 : type==="bounce" ? .9992 : .99955,tangent=(b.vx*tx+b.vy*ty)*keep,normal=b.vx*nx+b.vy*ny;b.vx=tx*tangent+nx*normal;b.vy=ty*tangent+ny*normal;
-      if(!r.finish&&Math.abs(ty)>.12){const sign=ty>=0?1:-1,downX=tx*sign,downY=ty*sign,slide=type==="speed"?155:type==="bounce"?58:96,downSpeed=b.vx*downX+b.vy*downY;b.vx+=downX*slide*dt;b.vy+=downY*slide*dt;if(type==="speed"&&downSpeed<44&&b.vy>-120){const lift=(44-downSpeed)*Math.min(1,dt*5);b.vx+=downX*lift;b.vy+=downY*lift}}
+      if(!r.finish&&Math.abs(ty)>.12){const sign=ty>=0?1:-1,downX=tx*sign,downY=ty*sign,slide=type==="speed"?174:type==="bounce"?64:110,downSpeed=b.vx*downX+b.vy*downY;b.vx+=downX*slide*dt;b.vy+=downY*slide*dt;if(type==="speed"&&downSpeed<50&&b.vy>-120){const lift=(50-downSpeed)*Math.min(1,dt*5);b.vx+=downX*lift;b.vy+=downY*lift}}
       return true;
     }
     function collideBalls(){
@@ -716,8 +717,8 @@
       }
     }
     function finishBall(ball,now){
-      if(!ball.active||state.ending)return;ball.active=false;ball.finished=true;ball.y=state.worldH-44;ball.glow=1;state.results.push(ball.num);state.freezeUntil=now+(state.results.length===1?230:170);state.freezeFocus={x:ball.x,y:ball.y,num:ball.num};spawnBurst(ball.x,ball.y,"#ffd454",30);renderLiveRanks();els.statResults.textContent=`${state.results.length}명`;tone(520+state.results.length*120,.16,"triangle",.065);
-      const place=state.results.length;setStageLabel(`${place}등 ${ball.num}번 도착!${place<state.drawCount?" 다음 순위를 기다리는 중":""}`);
+      if(!ball.active||state.ending)return;ball.active=false;ball.finished=true;ball.y=state.worldH-44;ball.glow=1;state.results.push(ball.num);const place=state.results.length,safeTarget=clamp(ball.y-cinematicAnchorY(),0,state.worldH-state.H*.18);state.cameraY+=(safeTarget-state.cameraY)*.48;state.freezeUntil=now+(place===1?260:190);state.freezeFocus={x:ball.x,y:ball.y,num:ball.num};state.winnerFx={x:ball.x,num:ball.num,place,start:now};spawnBurst(ball.x,ball.y,"#ffd454",44);renderLiveRanks();els.statResults.textContent=`${state.results.length}명`;tone(520+place*120,.18,"triangle",.07);setTimeout(()=>tone(760+place*90,.13,"triangle",.052),90);setTimeout(()=>tone(980+place*70,.22,"sine",.045),210);
+      setStageLabel(`${place}등 ${ball.num}번 도착!${place<state.drawCount?" 다음 순위를 기다리는 중":""}`);
       if(state.results.length>=state.drawCount){state.ending=true;state.endingAt=now;setStatus("결승");celebrate(100)}
     }
     function finalizeRace(){
@@ -751,7 +752,7 @@
       ctx.setTransform(state.dpr,0,0,state.dpr,0,0);drawBackground(0);const g=lottoGeometry();drawLottoMachineBase(g);
       for(const b of state.lottoBalls){if(b.inTray){b.x=state.W/2+(b.trayIndex-(state.drawCount-1)/2)*g.slotGap;b.y=g.slotY}drawBall(b,b.x,b.y)}
       drawLottoGlass(g);
-      for(const p of state.particles){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;
+      for(const p of state.particles){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,p.size,p.size)}ctx.globalAlpha=1;drawWinnerEffect(performance.now());
     }
     function drawLottoMachineBase(g){
       ctx.save();ctx.lineCap="round";
@@ -767,10 +768,10 @@
     }
     function drawShuffleBackdrop(){drawIdle();ctx.save();ctx.globalAlpha=.14;for(let i=0;i<18;i++){const x=(i*83%state.W),y=(i*137%state.H);ctx.beginPath();ctx.arc(x,y,18+(i%4)*4,0,Math.PI*2);ctx.fillStyle=palettes[i%palettes.length][1];ctx.fill()}ctx.restore()}
     function drawScene(){
-      ctx.setTransform(state.dpr,0,0,state.dpr,0,0);drawBackground(state.cameraY);ctx.save();const anchorY=state.H*.68;ctx.translate(state.zoomFocusX,anchorY);ctx.scale(state.zoom,state.zoom);ctx.translate(-state.zoomFocusX,-anchorY);drawCourse(state.cameraY);
+      ctx.setTransform(state.dpr,0,0,state.dpr,0,0);drawBackground(state.cameraY);ctx.save();const anchorY=cinematicAnchorY();ctx.translate(state.zoomFocusX,anchorY);ctx.scale(state.zoom,state.zoom);ctx.translate(-state.zoomFocusX,-anchorY);drawCourse(state.cameraY);
       for(const b of state.balls){if(!b.active&&!b.finished)continue;const sy=b.y-state.cameraY;if(sy<-40||sy>state.H+40)continue;drawBall(b,b.x,sy)}
       for(const p of state.particles){const sy=p.y-state.cameraY;if(sy<-20||sy>state.H+20)continue;ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.color;ctx.fillRect(p.x,sy,p.size,p.size)}ctx.globalAlpha=1;
-      ctx.restore();drawRaceHud();drawMinimap();
+      ctx.restore();drawRaceHud();drawMinimap();drawWinnerEffect(performance.now());
     }
     function drawBackground(camera){
       const g=ctx.createLinearGradient(0,0,0,state.H);g.addColorStop(0,"#091b30");g.addColorStop(1,"#030a13");ctx.fillStyle=g;ctx.fillRect(0,0,state.W,state.H);
@@ -800,7 +801,7 @@
     function drawMinimap(){
       const w=66,h=Math.min(260,state.H-110),x=state.W-w-11,y=57,sy=h/state.worldH;ctx.save();ctx.fillStyle="rgba(3,10,18,.82)";roundRect(ctx,x,y,w,h,12);ctx.fill();ctx.strokeStyle="rgba(255,255,255,.16)";ctx.stroke();ctx.fillStyle="rgba(78,197,255,.12)";ctx.fillRect(x+6,y+5,w-12,h-10);
       for(const b of state.balls){if(!b.active)continue;ctx.beginPath();ctx.arc(x+6+(b.x/state.W)*(w-12),y+5+b.y*sy,1.8,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill()}
-      const viewY=y+5+state.cameraY*sy,viewH=Math.max(9,state.H/state.zoom*sy);ctx.strokeStyle="#4ec5ff";ctx.lineWidth=2;ctx.strokeRect(x+5,viewY,w-10,viewH);ctx.fillStyle="#c7eefe";ctx.font="900 8px sans-serif";ctx.textAlign="center";ctx.fillText("MAP",x+w/2,y-6);ctx.restore();
+      const viewTop=clamp(state.cameraY,0,state.worldH),viewBottom=clamp(state.cameraY+state.H/state.zoom,0,state.worldH),viewY=y+5+viewTop*sy,viewH=Math.max(5,(viewBottom-viewTop)*sy);ctx.strokeStyle="#4ec5ff";ctx.lineWidth=2;ctx.strokeRect(x+5,viewY,w-10,viewH);ctx.fillStyle="#c7eefe";ctx.font="900 8px sans-serif";ctx.textAlign="center";ctx.fillText("MAP",x+w/2,y-6);ctx.restore();
     }
     function drawRaceHud(){
       const ranked=state.balls.filter(b=>b.active).sort((a,b)=>b.y-a.y).slice(0,5),boxW=state.W<520?112:138,rowH=22,boxH=28+ranked.length*rowH;ctx.save();ctx.fillStyle="rgba(3,10,18,.78)";roundRect(ctx,11,56,boxW,boxH,12);ctx.fill();ctx.strokeStyle="rgba(255,255,255,.14)";ctx.stroke();ctx.fillStyle="#8fdfff";ctx.font="900 9px Pretendard, sans-serif";ctx.textAlign="left";ctx.fillText("LIVE TOP 5",22,75);
@@ -809,6 +810,14 @@
       if(state.chaseWind>.04){ctx.globalAlpha=state.chaseWind;ctx.fillStyle=state.comeback==="boost"?"rgba(83,224,161,.18)":"rgba(78,197,255,.16)";roundRect(ctx,state.W/2-70,58,140,28,14);ctx.fill();ctx.strokeStyle=state.comeback==="boost"?"rgba(83,224,161,.55)":"rgba(78,197,255,.48)";ctx.stroke();ctx.fillStyle=state.comeback==="boost"?"#bfffe4":"#bfeeff";ctx.textAlign="center";ctx.font="900 10px Pretendard, sans-serif";ctx.fillText(state.comeback==="boost"?"↯ 강화 추격 발동":"↯ 추격 바람 발동",state.W/2,76)}
       if(state.cinematicCandidate){const deep=state.zoomTarget>1.4,g=ctx.createRadialGradient(state.W/2,state.H*.58,state.H*.12,state.W/2,state.H*.58,state.H*.72);g.addColorStop(0,"rgba(0,0,0,0)");g.addColorStop(1,deep?"rgba(0,0,0,.62)":"rgba(0,0,0,.28)");ctx.globalAlpha=clamp((state.zoom-1)*2.5,0,1);ctx.fillStyle=g;ctx.fillRect(0,0,state.W,state.H);ctx.globalAlpha=1;ctx.fillStyle=deep?"#ffd454":"#dff5ff";ctx.textAlign="center";ctx.font=`1000 ${deep?18:12}px Pretendard, sans-serif`;ctx.shadowColor=deep?"#ff9c43":"#4ec5ff";ctx.shadowBlur=18;ctx.fillText(state.cinematicText,state.W/2,state.H-38);ctx.shadowBlur=0}
       ctx.restore();
+    }
+    function drawWinnerEffect(now){
+      const fx=state.winnerFx;if(!fx)return;const t=(now-fx.start)/1000;if(t<0)return;if(t>1.38){state.winnerFx=null;return}const cx=clamp(fx.x,state.W*.2,state.W*.8),cy=cinematicAnchorY(),power=fx.place===1?1:.86,fade=clamp(1-(t-1.02)/.36,0,1),burst=clamp(t/.34,0,1);ctx.save();
+      const flash=clamp(1-t/.3,0,1)*.5*power;if(flash>0){ctx.globalAlpha=flash;const fg=ctx.createRadialGradient(cx,cy,8,cx,cy,Math.max(state.W,state.H)*.78);fg.addColorStop(0,"#fffbe0");fg.addColorStop(.28,"rgba(255,212,84,.82)");fg.addColorStop(1,"rgba(255,156,67,0)");ctx.fillStyle=fg;ctx.fillRect(0,0,state.W,state.H)}
+      ctx.globalCompositeOperation="screen";ctx.lineCap="round";for(let ring=0;ring<3;ring++){const rp=clamp((t-ring*.07)/.72,0,1);if(rp<=0)continue;ctx.globalAlpha=(1-rp)*.8*fade;ctx.strokeStyle=ring===1?"#fff4ae":"#ffd454";ctx.lineWidth=Math.max(2,7*(1-rp));ctx.beginPath();ctx.arc(cx,cy,24+rp*(118+ring*34),0,Math.PI*2);ctx.stroke()}
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(t*1.7);for(let i=0;i<18;i++){const a=i*Math.PI*2/18,inner=34+burst*18,outer=inner+(52+20*Math.sin(i*2.7))*burst*power;ctx.globalAlpha=(1-burst*.55)*.68*fade;ctx.strokeStyle=i%3===0?"#fff9d7":i%2?"#ffd454":"#ff9c43";ctx.lineWidth=i%3===0?4:2;ctx.beginPath();ctx.moveTo(Math.cos(a)*inner,Math.sin(a)*inner);ctx.lineTo(Math.cos(a)*outer,Math.sin(a)*outer);ctx.stroke()}ctx.restore();
+      for(let i=0;i<28;i++){const a=i*2.39996+(fx.num%11)*.17,delay=(i%7)*.025,sp=clamp((t-delay)/.82,0,1),dist=35+sp*(80+(i%5)*18),sx=cx+Math.cos(a)*dist,sy=cy+Math.sin(a)*dist+sp*sp*34;ctx.globalAlpha=(1-sp)*fade;ctx.fillStyle=i%3===0?"#fff":i%2?"#ffd454":"#ff9c43";ctx.save();ctx.translate(sx,sy);ctx.rotate(a+t*4);ctx.fillRect(-2-(i%2),-5,4+(i%2)*2,10);ctx.restore()}
+      const p=clamp((t-.08)/.4,0,1),pop=.32+p*.68+Math.sin(p*Math.PI)*.18,badgeY=cy-clamp(state.H*.19,78,118),badgeW=clamp(state.W*.34,190,290),badgeH=state.W<520?92:106;ctx.globalCompositeOperation="source-over";ctx.globalAlpha=fade;ctx.save();ctx.translate(cx,badgeY);ctx.scale(pop,pop);ctx.fillStyle="rgba(5,13,23,.9)";ctx.shadowColor="#ffd454";ctx.shadowBlur=30;roundRect(ctx,-badgeW/2,-badgeH/2,badgeW,badgeH,22);ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle="rgba(255,212,84,.85)";ctx.lineWidth=2.5;ctx.stroke();ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#ffd454";ctx.font=`1000 ${state.W<520?12:14}px Pretendard, sans-serif`;ctx.fillText(state.mode==="rank"?`${fx.place}등 당첨!`:`당첨 ${fx.place}번째!`,0,-badgeH*.23);ctx.fillStyle="#fff";ctx.font=`1000 ${state.W<520?34:43}px Pretendard, sans-serif`;ctx.shadowColor="#ff9c43";ctx.shadowBlur=15;ctx.fillText(`${fx.num}번`,0,badgeH*.13);ctx.restore();ctx.restore();
     }
     function roundRect(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
     function spawnBurst(x,y,color,count){for(let i=0;i<count;i++){const life=.35+Math.random()*.55;state.particles.push({x,y,vx:(Math.random()-.5)*220,vy:(Math.random()-.5)*210,life,max:life,color,size:2+Math.random()*3.5})}}

@@ -1,6 +1,4 @@
-import { db } from './firebase-config.js';
-import { ref, onValue } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js';
-import { DEFAULT_SETTINGS } from './default-data.js';
+import { DEFAULT_APPS, DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from './default-data.js';
 
 const els = {
   brandTitle: document.getElementById('brandTitle'),
@@ -13,6 +11,8 @@ const els = {
   sectionTitle: document.getElementById('sectionTitle'),
   resultCount: document.getElementById('resultCount'),
   categorySections: document.getElementById('categorySections'),
+  recentApps: document.getElementById('recentApps'),
+  favoriteApps: document.getElementById('favoriteApps'),
   footerText: document.getElementById('footerText'),
   themeToggle: document.getElementById('themeToggle'),
   themeToggleLabel: document.getElementById('themeToggleLabel'),
@@ -32,14 +32,22 @@ const state = {
   loadError: '',
   cacheAvailable: false,
   cacheRendered: false,
-  initialFirebaseCommitted: false
+  initialFirebaseCommitted: false,
+  dataSource: 'loading',
+  favorites: new Set(),
+  recentIds: []
 };
 
 const CACHE_KEY = 'teacherPortalCacheV1';
 const THEME_KEY = 'teacherPortalTheme';
+const FAVORITES_KEY = 'teacherPortalFavoritesV1';
+const RECENTS_KEY = 'teacherPortalRecentsV1';
+const PORTAL_VERSION = '1.0.0';
 const SECTION_PALETTE = ['#b79be4', '#88bde4', '#82c9b6', '#efa3bc', '#efbd82', '#a8a3ea'];
 const CACHE_FALLBACK_DELAY = 450;
+const FIREBASE_STARTUP_TIMEOUT = 5000;
 let cacheFallbackTimer = 0;
+let firebaseStartupTimer = 0;
 let realtimeRenderTimer = 0;
 
 const sectionObserver = 'IntersectionObserver' in window
@@ -63,10 +71,10 @@ function applyTheme(theme, save = false) {
 
   if (els.themeToggle) {
     els.themeToggle.setAttribute('aria-pressed', String(isDark));
-    els.themeToggle.setAttribute('aria-label', isDark ? '밝은 화면으로 변경' : '어두운 화면으로 변경');
-    els.themeToggle.title = isDark ? '라이트 모드로 변경' : '나이트 모드로 변경';
+    els.themeToggle.setAttribute('aria-label', isDark ? '초록 칠판으로 변경' : '검정 칠판으로 변경');
+    els.themeToggle.title = isDark ? '초록 칠판으로 변경' : '검정 칠판으로 변경';
   }
-  if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '나이트' : '라이트';
+  if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '검정 칠판' : '초록 칠판';
   applyVisualTheme(state.settings);
 
   if (save) {
@@ -103,8 +111,8 @@ function loadCache() {
 function renderCachedFallback() {
   if (!state.cacheAvailable || state.initialFirebaseCommitted || state.cacheRendered) return;
   state.cacheRendered = true;
-  renderCategories();
-  renderCategorySections();
+  state.dataSource = 'cache';
+  commitPortalView({ animate: true });
 }
 
 function allInitialDataSettled() {
@@ -115,12 +123,15 @@ function commitPortalView({ animate = true } = {}) {
   applySettings();
   renderCategories();
   renderCategorySections({ animate });
+  renderQuickAccess();
+  publishPortalData();
 }
 
 function commitInitialFirebaseView() {
   if (!allInitialDataSettled() || state.initialFirebaseCommitted) return;
   state.initialFirebaseCommitted = true;
   window.clearTimeout(cacheFallbackTimer);
+  window.clearTimeout(firebaseStartupTimer);
   // 캐시 화면이 먼저 노출된 경우에는 등장 애니메이션을 반복하지 않는다.
   commitPortalView({ animate: !state.cacheRendered });
   saveCache();
@@ -149,6 +160,111 @@ function saveCache() {
   } catch (error) {
     console.warn('포털 캐시를 저장하지 못했습니다.', error);
   }
+}
+
+function cloneData(value) {
+  try { return structuredClone(value); }
+  catch { return JSON.parse(JSON.stringify(value)); }
+}
+
+function publishPortalData() {
+  const detail = {
+    apps: state.apps,
+    categories: state.categories,
+    settings: state.settings,
+    source: state.dataSource,
+    version: PORTAL_VERSION
+  };
+  window.__TEACHER_PORTAL_DATA__ = detail;
+  window.dispatchEvent(new CustomEvent('teacher-portal-data', { detail }));
+}
+
+function loadUserPreferences() {
+  try {
+    const favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+    state.favorites = new Set(Array.isArray(favorites) ? favorites.filter(id => typeof id === 'string') : []);
+  } catch { state.favorites = new Set(); }
+  try {
+    const recents = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+    state.recentIds = Array.isArray(recents) ? recents.filter(id => typeof id === 'string').slice(0, 6) : [];
+  } catch { state.recentIds = []; }
+}
+
+function saveFavorites() {
+  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify([...state.favorites])); } catch {}
+}
+
+function saveRecents() {
+  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(state.recentIds)); } catch {}
+}
+
+function recordAppLaunch(appId) {
+  if (!appId || !state.apps[appId]) return;
+  state.recentIds = [appId, ...state.recentIds.filter(id => id !== appId)].slice(0, 6);
+  saveRecents();
+  renderQuickAccess();
+}
+
+function toggleFavorite(appId) {
+  if (!appId || !state.apps[appId]) return false;
+  if (state.favorites.has(appId)) state.favorites.delete(appId);
+  else state.favorites.add(appId);
+  saveFavorites();
+  renderQuickAccess();
+  return state.favorites.has(appId);
+}
+
+function createQuickAppButton(app) {
+  const url = safeUrl(app.primaryUrl);
+  if (!url) return null;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'quick-app-button';
+  button.style.setProperty('--app-color', normalizeColor(app.color));
+
+  const icon = document.createElement('span');
+  icon.className = 'quick-app-icon';
+  if (isImageDataUrl(app.iconImage)) {
+    const image = document.createElement('img');
+    image.src = app.iconImage;
+    image.alt = '';
+    icon.appendChild(image);
+  } else icon.textContent = cleanText(app.icon, '●');
+
+  const title = document.createElement('span');
+  title.className = 'quick-app-title';
+  title.textContent = cleanText(app.title, '앱');
+  button.append(icon, title);
+  button.addEventListener('click', () => {
+    recordAppLaunch(app.id);
+    if (app.openMode === 'same') window.location.assign(url);
+    else window.open(url, '_blank', 'noopener,noreferrer');
+  });
+  return button;
+}
+
+function renderQuickList(container, ids, emptyText) {
+  if (!container) return;
+  container.replaceChildren();
+  const apps = ids
+    .map(id => state.apps[id] ? ({ id, ...state.apps[id] }) : null)
+    .filter(app => app && app.visible !== false)
+    .slice(0, 3);
+  apps.forEach(app => {
+    const button = createQuickAppButton(app);
+    if (button) container.appendChild(button);
+  });
+  if (!container.children.length) {
+    const empty = document.createElement('span');
+    empty.className = 'quick-app-empty';
+    empty.textContent = emptyText;
+    container.appendChild(empty);
+  }
+}
+
+function renderQuickAccess() {
+  renderQuickList(els.recentApps, state.recentIds, '앱을 실행하면 여기에 표시돼요.');
+  renderQuickList(els.favoriteApps, [...state.favorites], '앱 카드의 ☆를 눌러 추가하세요.');
 }
 
 function cleanText(value, fallback = '') {
@@ -185,7 +301,7 @@ function applyVisualTheme(rawSettings = {}) {
   document.body.style.setProperty('--portal-corner-radius', String(Math.round(clamp(settings.cornerRadius, 12, 42))));
   const style = ['soft','gradient','solid'].includes(settings.backgroundStyle) ? settings.backgroundStyle : 'soft';
   document.body.dataset.backgroundStyle = style;
-  if (els.themeColor) els.themeColor.setAttribute('content', background);
+  if (els.themeColor) els.themeColor.setAttribute('content', dark ? '#141a17' : '#0b3f31');
 }
 
 function applyBackground(settings) {
@@ -268,7 +384,7 @@ function applySettings() {
 
   document.title = title;
   els.brandTitle.textContent = title;
-  els.heroTitle.textContent = title;
+  els.heroTitle.textContent = '오늘 무엇을 할까요?';
   els.heroSubtitle.textContent = subtitle;
   els.footerText.textContent = footer;
   els.notice.textContent = notice;
@@ -329,12 +445,14 @@ function createLaunchButton(label, url, app, secondary = false) {
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
   }
+  link.addEventListener('click', () => recordAppLaunch(app.id));
   return link;
 }
 
 function createAppCard(app, index = 0) {
   const article = document.createElement('article');
   article.className = 'app-card';
+  article.dataset.appId = app.id;
   article.style.setProperty('--app-color', normalizeColor(app.color));
   article.style.setProperty('--card-index', String(index));
 
@@ -355,6 +473,18 @@ function createAppCard(app, index = 0) {
 
   const badges = document.createElement('div');
   badges.className = 'badges';
+
+  const favorite = document.createElement('button');
+  favorite.type = 'button';
+  favorite.className = 'favorite-toggle';
+  favorite.dataset.favoriteApp = app.id;
+  const isFavorite = state.favorites.has(app.id);
+  favorite.setAttribute('aria-pressed', String(isFavorite));
+  favorite.setAttribute('aria-label', `${cleanText(app.title, '앱')} ${isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`);
+  favorite.title = isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가';
+  favorite.textContent = isFavorite ? '★' : '☆';
+  badges.appendChild(favorite);
+
   if (app.featured) {
     const badge = document.createElement('span');
     badge.className = 'badge badge-featured';
@@ -593,6 +723,7 @@ els.categoryTabs.addEventListener('click', event => {
 function openAppCard(card) {
   const url = safeUrl(card?.dataset.primaryUrl);
   if (!url) return;
+  recordAppLaunch(card.dataset.appId);
   if (card.dataset.openMode === 'same') window.location.assign(url);
   else window.open(url, '_blank', 'noopener,noreferrer');
 }
@@ -607,6 +738,16 @@ els.categorySections.addEventListener('keydown', event => {
 });
 
 els.categorySections.addEventListener('click', event => {
+  const favoriteButton = event.target.closest('[data-favorite-app]');
+  if (favoriteButton) {
+    const active = toggleFavorite(favoriteButton.dataset.favoriteApp);
+    favoriteButton.setAttribute('aria-pressed', String(active));
+    favoriteButton.setAttribute('aria-label', active ? '즐겨찾기 해제' : '즐겨찾기 추가');
+    favoriteButton.title = active ? '즐겨찾기 해제' : '즐겨찾기 추가';
+    favoriteButton.textContent = active ? '★' : '☆';
+    return;
+  }
+
   // 명시적인 링크/버튼은 브라우저 기본 동작을 그대로 사용한다.
   if (!event.target.closest('a, button, input, select, textarea')) {
     const card = event.target.closest('.app-card[data-primary-url]');
@@ -648,40 +789,90 @@ els.categorySections.addEventListener('click', event => {
   renderCategories();
 });
 
+loadUserPreferences();
+renderQuickAccess();
+
+window.addEventListener('teacher-portal-launch', event => recordAppLaunch(event.detail?.appId));
+
+document.addEventListener('keydown', event => {
+  if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target?.isContentEditable) return;
+  event.preventDefault();
+  els.searchInput?.focus();
+});
+
 const cacheLoaded = loadCache();
 if (cacheLoaded) {
   // Firebase가 빠르게 응답하면 캐시 화면을 생략해 한 번만 그린다.
   cacheFallbackTimer = window.setTimeout(renderCachedFallback, CACHE_FALLBACK_DELAY);
 }
 
-onValue(ref(db, 'portal/apps'), snapshot => {
-  state.apps = snapshot.val() || {};
+function fillFallbackFor(part) {
+  if (part === 'apps' && !Object.keys(state.apps).length) state.apps = cloneData(DEFAULT_APPS);
+  if (part === 'categories' && !Object.keys(state.categories).length) state.categories = cloneData(DEFAULT_CATEGORIES);
+  if (part === 'settings') state.settings = { ...DEFAULT_SETTINGS, ...state.settings };
+  state[`${part}Loaded`] = true;
+}
+
+function handleRealtimeError(part, error) {
+  console.error(`Firebase ${part} 읽기 실패`, error);
+  fillFallbackFor(part);
+  state.dataSource = state.cacheAvailable ? 'cache' : 'default';
   state.loadError = '';
-  markLoaded('apps');
   scheduleRealtimeRender();
-}, error => {
-  console.error(error);
-  state.appsLoaded = true;
-  state.loadError = 'Firebase 데이터베이스 읽기 권한과 인터넷 연결을 확인해주세요.';
-  scheduleRealtimeRender();
-});
+}
 
-onValue(ref(db, 'portal/categories'), snapshot => {
-  state.categories = snapshot.val() || {};
-  markLoaded('categories');
-  scheduleRealtimeRender();
-}, error => {
-  console.error(error);
-  state.categoriesLoaded = true;
-  scheduleRealtimeRender();
-});
+function activateOfflineFallback(error) {
+  console.warn('Firebase 연결을 시작하지 못해 로컬 포털로 전환합니다.', error);
+  fillFallbackFor('apps');
+  fillFallbackFor('categories');
+  fillFallbackFor('settings');
+  state.dataSource = state.cacheAvailable ? 'cache' : 'default';
+  state.loadError = '';
+  state.initialFirebaseCommitted = true;
+  window.clearTimeout(cacheFallbackTimer);
+  window.clearTimeout(firebaseStartupTimer);
+  commitPortalView({ animate: !state.cacheRendered });
+}
 
-onValue(ref(db, 'portal/settings'), snapshot => {
-  state.settings = { ...DEFAULT_SETTINGS, ...(snapshot.val() || {}) };
-  markLoaded('settings');
-  scheduleRealtimeRender();
-}, error => {
-  console.error(error);
-  state.settingsLoaded = true;
-  scheduleRealtimeRender();
-});
+async function connectRealtimeData() {
+  firebaseStartupTimer = window.setTimeout(() => {
+    if (!state.initialFirebaseCommitted && !allInitialDataSettled()) {
+      activateOfflineFallback(new Error('Firebase startup timeout'));
+    }
+  }, FIREBASE_STARTUP_TIMEOUT);
+
+  try {
+    const [{ db }, database] = await Promise.all([
+      import('./firebase-config.js'),
+      import('https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js')
+    ]);
+    const { ref, onValue } = database;
+
+    onValue(ref(db, 'portal/apps'), snapshot => {
+      state.apps = snapshot.val() || {};
+      state.loadError = '';
+      state.dataSource = 'firebase';
+      markLoaded('apps');
+      scheduleRealtimeRender();
+    }, error => handleRealtimeError('apps', error));
+
+    onValue(ref(db, 'portal/categories'), snapshot => {
+      state.categories = snapshot.val() || {};
+      state.dataSource = 'firebase';
+      markLoaded('categories');
+      scheduleRealtimeRender();
+    }, error => handleRealtimeError('categories', error));
+
+    onValue(ref(db, 'portal/settings'), snapshot => {
+      state.settings = { ...DEFAULT_SETTINGS, ...(snapshot.val() || {}) };
+      state.dataSource = 'firebase';
+      markLoaded('settings');
+      scheduleRealtimeRender();
+    }, error => handleRealtimeError('settings', error));
+  } catch (error) {
+    activateOfflineFallback(error);
+  }
+}
+
+connectRealtimeData();

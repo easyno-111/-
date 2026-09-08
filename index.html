@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/app-icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
   <script>
     try {
       const savedTheme = localStorage.getItem('teacherPortalTheme');
@@ -21,16 +21,17 @@
     }
   </script>
   <link rel="stylesheet" href="assets/portal.css?v=20260722-interaction2">
+  <link rel="stylesheet" href="assets/chalkboard-theme.css?v=20260908-1">
 </head>
 <body class="portal-view">
   <div class="portal-shell">
     <header class="portal-header">
       <div class="header-inner">
         <div class="brand">
-          <div class="brand-mark">M</div>
+          <div class="brand-mark" aria-hidden="true">∑</div>
           <div class="brand-copy">
             <h1 class="brand-title" id="brandTitle">수학 실험실</h1>
-            <p class="brand-caption">TEACHER APP PORTAL</p>
+            <p class="brand-caption">TEACHER APP PORTAL <span class="portal-version">v1.0.0</span></p>
           </div>
         </div>
         <div class="header-actions">
@@ -41,7 +42,7 @@
               <span class="theme-toggle-moon">☾</span>
               <span class="theme-toggle-thumb"></span>
             </span>
-            <span id="themeToggleLabel" class="theme-toggle-label">라이트</span>
+            <span id="themeToggleLabel" class="theme-toggle-label">초록 칠판</span>
           </button>
           <a class="icon-link" href="admin.html" aria-label="관리자 화면">
             <span>⚙</span><span class="header-admin-label">관리</span>
@@ -51,11 +52,12 @@
     </header>
 
     <main class="portal-main">
-      <section class="hero">
+      <section class="hero chalk-hero">
         <div class="hero-copy">
-          <p class="eyebrow">CLASSROOM DIGITAL TOOLBOX</p>
-          <h2 id="heroTitle">수학 실험실</h2>
+          <p class="eyebrow">TODAY'S CLASSROOM BOARD</p>
+          <h2 id="heroTitle">오늘 무엇을 할까요?</h2>
           <p id="heroSubtitle">수업과 학급 운영에 필요한 도구를 한곳에서 시작하세요.</p>
+          <div class="hero-chalk-line" aria-hidden="true"></div>
         </div>
         <div class="hero-stat" aria-label="공개 앱 수">
           <strong id="appCount">—</strong>
@@ -65,6 +67,25 @@
 
       <div id="notice" class="notice hidden"></div>
 
+      <section id="quickAccessSection" class="chalk-quick-access" aria-label="빠른 실행">
+        <div class="quick-access-intro">
+          <span class="chalk-pin" aria-hidden="true">✦</span>
+          <div>
+            <p class="quick-access-kicker">QUICK START</p>
+            <h3>자주 쓰는 도구를 바로 시작하세요</h3>
+            <p>최근 실행한 앱과 즐겨찾기를 이 기기에만 안전하게 기억합니다.</p>
+          </div>
+        </div>
+        <div class="quick-access-group">
+          <div class="quick-access-heading"><span aria-hidden="true">↻</span><strong>최근 사용</strong></div>
+          <div id="recentApps" class="quick-app-list" aria-live="polite"></div>
+        </div>
+        <div class="quick-access-group">
+          <div class="quick-access-heading"><span aria-hidden="true">☆</span><strong>즐겨찾기</strong></div>
+          <div id="favoriteApps" class="quick-app-list" aria-live="polite"></div>
+        </div>
+      </section>
+
       <section id="draftPreviewSection" class="draft-preview-section hidden" aria-live="polite"></section>
       <section id="lessonSetsSection" class="lesson-sets-section hidden" aria-label="수업 준비 세트">
         <div class="section-heading"><div><h3>수업 준비 세트</h3><p>준비한 순서대로 앱을 실행하며 수업을 진행하세요.</p></div></div>
@@ -73,7 +94,7 @@
 
       <section class="toolbar" aria-label="앱 검색과 분류">
         <div class="search-wrap">
-          <input id="searchInput" class="search-input" type="search" placeholder="앱 이름이나 설명으로 검색" autocomplete="off">
+          <input id="searchInput" class="search-input" type="search" placeholder="앱 이름이나 설명으로 검색 · / 키로 바로 검색" autocomplete="off">
         </div>
         <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="카테고리">
           <button class="category-tab active" type="button" data-category="all">전체</button>
@@ -95,7 +116,7 @@
     </main>
 
     <footer class="portal-footer">
-      <span id="footerText">MATHEMATICS LAB · Easy NO</span>
+      <span id="footerText">MATHEMATICS LAB · Easy NO</span><span class="footer-version">PORTAL v1.0.0</span>
       <a href="admin.html">관리자</a>
     </footer>
   </div>
@@ -115,7 +136,7 @@
     <div id="lessonRunnerContent"></div>
   </dialog>
 
-  <script type="module" src="js/portal.js?v=20260722-singleload1"></script>
-  <script type="module" src="js/portal-enhancements.js?v=20260722-interaction2"></script>
+  <script type="module" src="js/portal.js?v=20260908-chalk1"></script>
+  <script type="module" src="js/portal-enhancements.js?v=20260908-chalk1"></script>
 </body>
 </html>

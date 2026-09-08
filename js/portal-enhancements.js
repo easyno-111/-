@@ -1,6 +1,3 @@
-import { db } from './firebase-config.js';
-import { onValue, ref } from 'https://www.gstatic.com/firebasejs/12.16.0/firebase-database.js';
-
 const $ = id => document.getElementById(id);
 const state = { apps: {}, settings: {}, runner: null };
 const PREVIEW_KEY = 'teacherPortalAppDraftPreviewV1';
@@ -11,6 +8,10 @@ let suppressRailClickUntil = 0;
 let suppressRailClickTarget = null;
 
 function text(value, fallback = '') { return typeof value === 'string' ? value.trim() : fallback; }
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+}
+function safeColor(value, fallback = '#9a82d0') { return /^#[0-9a-f]{6}$/i.test(value || '') ? value : fallback; }
 function num(value, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function isImage(value) { return typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(value); }
 function safeUrl(value) {
@@ -92,26 +93,26 @@ function renderRunner() {
   const app = state.apps[appIds[step]];
   if (!app) return;
   const progress = appIds.map((id, index) => {
-    const title = text(state.apps[id]?.title, '앱');
+    const title = escapeHtml(text(state.apps[id]?.title, '앱'));
     return `<button type="button" data-runner-step="${index}" class="${index === step ? 'active' : index < step ? 'done' : ''}"><span>${index + 1}</span>${title}</button>`;
   }).join('');
   const primary = safeUrl(app.primaryUrl);
   const secondary = safeUrl(app.secondaryUrl);
   container.innerHTML = `
     <p class="lesson-runner-kicker">수업 준비 세트</p>
-    <h2>${text(name, '수업 세트')}</h2>
+    <h2>${escapeHtml(text(name, '수업 세트'))}</h2>
     <div class="lesson-runner-progress">${progress}</div>
     <section class="lesson-runner-current">
       <div class="lesson-runner-icon"></div>
-      <div><span>${step + 1} / ${appIds.length}</span><h3>${text(app.title, '앱')}</h3><p>${text(app.description)}</p></div>
+      <div><span>${step + 1} / ${appIds.length}</span><h3>${escapeHtml(text(app.title, '앱'))}</h3><p>${escapeHtml(text(app.description))}</p></div>
     </section>
     <div class="lesson-runner-launches">
-      ${primary ? `<a href="${primary}" target="_blank" rel="noopener">${text(app.primaryLabel, '실행')}</a>` : ''}
-      ${secondary ? `<a href="${secondary}" target="_blank" rel="noopener" class="secondary">${text(app.secondaryLabel, '두 번째 화면')}</a>` : ''}
+      ${primary ? `<a href="${escapeHtml(primary)}" target="_blank" rel="noopener" data-runner-launch="${escapeHtml(appIds[step])}">${escapeHtml(text(app.primaryLabel, '실행'))}</a>` : ''}
+      ${secondary ? `<a href="${escapeHtml(secondary)}" target="_blank" rel="noopener" class="secondary" data-runner-launch="${escapeHtml(appIds[step])}">${escapeHtml(text(app.secondaryLabel, '두 번째 화면'))}</a>` : ''}
     </div>
     <div class="lesson-runner-nav">
       <button type="button" data-runner-nav="prev" ${step === 0 ? 'disabled' : ''}>이전 활동</button>
-      <strong>다음: ${step < appIds.length - 1 ? text(state.apps[appIds[step + 1]]?.title, '다음 활동') : '수업 마무리'}</strong>
+      <strong>다음: ${step < appIds.length - 1 ? escapeHtml(text(state.apps[appIds[step + 1]]?.title, '다음 활동')) : '수업 마무리'}</strong>
       <button type="button" data-runner-nav="next">${step < appIds.length - 1 ? '다음 활동' : '완료'}</button>
     </div>`;
   const iconSlot = container.querySelector('.lesson-runner-icon');
@@ -148,10 +149,10 @@ function renderDraftPreview() {
   const primary = safeUrl(draft.primaryUrl);
   section.innerHTML = `
     <div class="draft-preview-banner"><strong>저장 전 미리보기</strong><span>이 카드는 Firebase에 아직 저장되지 않았습니다.</span><button type="button" id="closeDraftPreview">닫기</button></div>
-    <article class="draft-preview-card" style="--app-color:${draft.appColor || '#9a82d0'}">
-      <div class="draft-preview-icon">${text(draft.appIcon, '✨')}</div>
-      <div><span>${text(draft.appCategoryName, '카테고리')}</span><h3>${text(draft.appTitle)}</h3><p>${text(draft.appDescription, '앱 설명이 여기에 표시됩니다.')}</p></div>
-      ${primary ? `<a href="${primary}" target="_blank" rel="noopener">${text(draft.primaryLabel, '실행')}</a>` : '<button disabled>주소 입력 필요</button>'}
+    <article class="draft-preview-card" style="--app-color:${safeColor(draft.appColor)}">
+      <div class="draft-preview-icon">${escapeHtml(text(draft.appIcon, '✨'))}</div>
+      <div><span>${escapeHtml(text(draft.appCategoryName, '카테고리'))}</span><h3>${escapeHtml(text(draft.appTitle))}</h3><p>${escapeHtml(text(draft.appDescription, '앱 설명이 여기에 표시됩니다.'))}</p></div>
+      ${primary ? `<a href="${escapeHtml(primary)}" target="_blank" rel="noopener">${escapeHtml(text(draft.primaryLabel, '실행'))}</a>` : '<button disabled>주소 입력 필요</button>'}
     </article>`;
   $('closeDraftPreview')?.addEventListener('click', () => section.remove());
 }
@@ -270,6 +271,12 @@ $('lessonSetCards')?.addEventListener('click', event => {
   if (button) startLessonSet(button.dataset.startLessonSet);
 });
 $('lessonRunnerContent')?.addEventListener('click', event => {
+  const launch = event.target.closest('[data-runner-launch]');
+  if (launch) {
+    window.dispatchEvent(new CustomEvent('teacher-portal-launch', { detail: { appId: launch.dataset.runnerLaunch } }));
+    return;
+  }
+
   const stepButton = event.target.closest('[data-runner-step]');
   if (stepButton && state.runner) {
     state.runner.step = num(stepButton.dataset.runnerStep);
@@ -312,13 +319,16 @@ setupPwa();
 setupQuickLauncher();
 
 let runnerRestored = false;
-onValue(ref(db, 'portal/apps'), snapshot => {
-  state.apps = snapshot.val() || {};
+function receivePortalData(detail) {
+  if (!detail || typeof detail !== 'object') return;
+  state.apps = detail.apps || {};
+  state.settings = detail.settings || {};
   renderLessonSets();
-  if (!runnerRestored && Object.keys(state.settings).length) { runnerRestored = true; restoreRunner(); }
-});
-onValue(ref(db, 'portal/settings'), snapshot => {
-  state.settings = snapshot.val() || {};
-  renderLessonSets();
-  if (!runnerRestored && Object.keys(state.apps).length) { runnerRestored = true; restoreRunner(); }
-});
+  if (!runnerRestored && Object.keys(state.apps).length && Object.keys(state.settings).length) {
+    runnerRestored = true;
+    restoreRunner();
+  }
+}
+
+window.addEventListener('teacher-portal-data', event => receivePortalData(event.detail));
+if (window.__TEACHER_PORTAL_DATA__) receivePortalData(window.__TEACHER_PORTAL_DATA__);

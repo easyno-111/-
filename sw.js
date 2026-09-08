@@ -1,7 +1,9 @@
-const CACHE_NAME = 'teacher-app-portal-v8-singleload';
+const CACHE_NAME = 'teacher-app-portal-v9-chalkboard';
 const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
 const CORE_ASSETS = [
-  './offline.html', './manifest.webmanifest',
+  './', './index.html', './offline.html', './manifest.webmanifest',
+  './assets/portal.css', './assets/chalkboard-theme.css', './assets/chalkboard-bg.webp',
+  './js/portal.js', './js/portal-enhancements.js', './js/default-data.js',
   './icons/app-icon-192.png', './icons/app-icon-512.png'
 ];
 

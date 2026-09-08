@@ -42,7 +42,7 @@ const CACHE_KEY = 'teacherPortalCacheV1';
 const THEME_KEY = 'teacherPortalTheme';
 const FAVORITES_KEY = 'teacherPortalFavoritesV1';
 const RECENTS_KEY = 'teacherPortalRecentsV1';
-const PORTAL_VERSION = '1.0.0';
+const PORTAL_VERSION = '1.1.0';
 const SECTION_PALETTE = ['#b79be4', '#88bde4', '#82c9b6', '#efa3bc', '#efbd82', '#a8a3ea'];
 const CACHE_FALLBACK_DELAY = 450;
 const FIREBASE_STARTUP_TIMEOUT = 5000;
@@ -71,10 +71,10 @@ function applyTheme(theme, save = false) {
 
   if (els.themeToggle) {
     els.themeToggle.setAttribute('aria-pressed', String(isDark));
-    els.themeToggle.setAttribute('aria-label', isDark ? '초록 칠판으로 변경' : '검정 칠판으로 변경');
-    els.themeToggle.title = isDark ? '초록 칠판으로 변경' : '검정 칠판으로 변경';
+    els.themeToggle.setAttribute('aria-label', isDark ? '밝은 화면으로 변경' : '어두운 화면으로 변경');
+    els.themeToggle.title = isDark ? '밝은 화면으로 변경' : '어두운 화면으로 변경';
   }
-  if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '검정 칠판' : '초록 칠판';
+  if (els.themeToggleLabel) els.themeToggleLabel.textContent = isDark ? '어두운 화면' : '밝은 화면';
   applyVisualTheme(state.settings);
 
   if (save) {
@@ -301,7 +301,7 @@ function applyVisualTheme(rawSettings = {}) {
   document.body.style.setProperty('--portal-corner-radius', String(Math.round(clamp(settings.cornerRadius, 12, 42))));
   const style = ['soft','gradient','solid'].includes(settings.backgroundStyle) ? settings.backgroundStyle : 'soft';
   document.body.dataset.backgroundStyle = style;
-  if (els.themeColor) els.themeColor.setAttribute('content', dark ? '#141a17' : '#0b3f31');
+  if (els.themeColor) els.themeColor.setAttribute('content', dark ? '#171c19' : '#f5f2eb');
 }
 
 function applyBackground(settings) {

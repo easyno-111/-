@@ -112,7 +112,7 @@
     .controls{transition:opacity .25s}
     .controls.locked{opacity:.48;pointer-events:none}
 
-    /* v0.5.1 - classroom image sequence */
+    /* v0.6.1 - classroom image sequence */
     .slide.sceneSlide{padding:3.2% 4%}
     .sceneGallery{
       position:relative;
@@ -183,6 +183,41 @@
     }
 
     @media (max-width:900px){.deck{border-radius:16px}.slide{padding:5.5%}.controls{bottom:.6vh}.patches{gap:8px}.patch{border-radius:14px}.quote{max-width:92%}}
+
+    .fairnessSlide{background:linear-gradient(135deg,#151923 0%,#20283b 55%,#121721 100%)!important;color:white}
+    .fairnessQuestion{font-size:clamp(46px,7vw,118px);font-weight:1000;letter-spacing:-.07em;line-height:.92;text-align:center}
+    .fairnessBubble{margin-top:2.4vh;padding:.7em 1em;border-radius:28px;background:white;color:#111827;font-size:clamp(22px,2.5vw,42px);font-weight:950;box-shadow:10px 10px 0 #ffcf53;transform:rotate(-1deg)}
+    .checkpoint{display:grid;grid-template-columns:.8fr 1.2fr;gap:2vw;align-items:center;width:min(92%,1120px);margin-top:2.8vh}
+    .checkpointVisual{min-height:210px;border-radius:28px;background:linear-gradient(160deg,#263449,#111827);border:2px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;gap:1.2vw;font-size:clamp(52px,7vw,110px);box-shadow:0 14px 36px rgba(0,0,0,.22)}
+    .checkpointText{padding:1.15em 1.2em;border-radius:28px;background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.12);text-align:left}
+    .checkpointText .caseTitle{font-size:clamp(18px,1.6vw,28px);font-weight:950;color:#ffd166;letter-spacing:.04em}
+    .checkpointText .caseBody{font-size:clamp(18px,2vw,34px);line-height:1.42;font-weight:850;margin-top:.45em}
+    .sameRule{margin-top:2.2vh;padding:.55em .9em;border-radius:999px;background:#dff7ec;color:#123c2e;font-size:clamp(18px,1.8vw,31px);font-weight:950}
+    .notEqual{margin-top:2vh;font-size:clamp(34px,4.2vw,72px);font-weight:1000;letter-spacing:-.05em}
+    .notEqual .left{color:#ffb4b4}.notEqual .neq{color:#ffd166;padding:0 .25em}.notEqual .right{color:#9ff0c9}
+    .teacherReality{margin-top:1.7vh;max-width:1000px;font-size:clamp(16px,1.45vw,25px);line-height:1.55;font-weight:720;color:#dce3ef;text-align:center}
+    .teacherReality b{color:white;font-weight:950}
+    @media (max-width:900px){.checkpoint{grid-template-columns:1fr;gap:10px}.checkpointVisual{min-height:120px}.fairnessBubble{margin-top:1.5vh}.teacherReality{font-size:13px}.notEqual{font-size:clamp(28px,6vw,52px)}}
+
+    /* v0.6.1: 5페이지(담임선생님) 세로 오버플로우/상단 잘림 수정 */
+    .slide[data-name="담임선생님"]{padding:3.2% 6% 3.5%}
+    .slide[data-name="담임선생님"] .center{justify-content:flex-start;padding-top:.4%;gap:0}
+    .slide[data-name="담임선생님"] .eyebrow{font-size:clamp(13px,1vw,20px)}
+    .slide[data-name="담임선생님"] .sub{font-size:clamp(16px,1.55vw,27px)}
+    .slide[data-name="담임선생님"] .countdownBox{font-size:clamp(72px,10vw,150px);line-height:.72;min-height:.74em;margin-top:.4vh}
+    .slide[data-name="담임선생님"] .teacherBoom{font-size:clamp(46px,6.7vw,108px);line-height:.9;margin-top:.4vh}
+    .slide[data-name="담임선생님"] .quote{font-size:clamp(17px,1.7vw,29px);line-height:1.2;padding:.62em .9em;margin-top:1.1vh!important}
+    .slide[data-name="담임선생님"] .handsomeMega{font-size:clamp(54px,7.8vw,126px);line-height:.78;padding:.1em .24em .14em;border-radius:22px;margin-top:.8vh}
+    .slide[data-name="담임선생님"] .tiny{font-size:clamp(11px,.85vw,15px)}
+    .slide[data-name="담임선생님"] .body{font-size:clamp(15px,1.3vw,23px)}
+    .slide[data-name="담임선생님"] .reveal[style*="margin-top:2vh"]{margin-top:.8vh!important}
+    .slide[data-name="담임선생님"] .reveal[style*="margin-top:1.2vh"]{margin-top:.55vh!important}
+    @media (max-width:900px){
+      .slide[data-name="담임선생님"]{padding:2.5% 5% 3%}
+      .slide[data-name="담임선생님"] .countdownBox{font-size:clamp(64px,13vw,112px)}
+      .slide[data-name="담임선생님"] .teacherBoom{font-size:clamp(42px,9vw,82px)}
+      .slide[data-name="담임선생님"] .handsomeMega{font-size:clamp(48px,10vw,92px)}
+    }
   </style>
 </head>
 <body>
@@ -198,7 +233,7 @@
       </div>
       <span class="floaty" style="width:15vw;height:15vw;background:#6fe0b4;left:-4vw;top:-5vw"></span>
       <span class="floaty" style="width:11vw;height:11vw;background:#f6b0cd;right:5vw;bottom:-3vw;animation-delay:1s"></span>
-      <div class="version">v0.5.1</div>
+      <div class="version">v0.6.1</div>
     </section>
 
     <section class="slide blue" data-name="분석 중">
@@ -341,6 +376,25 @@
       </div>
     </section>
 
+
+    <section class="slide fairnessSlide" data-name="왜 저만">
+      <div class="center">
+        <div class="eyebrow reveal">공정성에 대한 질문</div>
+        <h2 class="fairnessQuestion pop d1">“왜 저만<br>뭐라 해요?”</h2>
+        <div class="fairnessBubble pop d2">“쟤들도 평소에 똑같이 하는데요?”</div>
+        <div class="checkpoint reveal d3">
+          <div class="checkpointVisual"><span>🚓</span><span>🚗</span></div>
+          <div class="checkpointText">
+            <div class="caseTitle">예를 들어 · 음주운전 단속</div>
+            <div class="caseBody">단속에 걸린 운전자가<br>“저 뒤 차도 평소에 음주운전하는데요. 왜 저만 잡아요?”<br>라고 한다면?</div>
+          </div>
+        </div>
+        <div class="sameRule reveal d4">지금 확인된 행동에는 지금 책임을 묻습니다. 다른 사람도 적발되면 같은 기준.</div>
+        <div class="notEqual pop d5"><span class="left">“쟤도 했어요”</span><span class="neq">≠</span><span class="right">“나는 괜찮아요”</span></div>
+        <p class="teacherReality reveal d6">그리고 같은 행동이 반복해서 보이면 선생님에게도 그 행동에 대한 정보가 쌓입니다. <b>선생님도 사람이니까요.</b><br>그 인식을 바꾸는 가장 빠른 방법은 “쟤도 했어요”가 아니라 <b>다음 행동을 바꾸는 것</b>입니다.</p>
+      </div>
+    </section>
+
     <section class="slide pink" data-name="학생 의견">
       <div class="center">
         <div class="eyebrow reveal">학생들이 직접 남긴 개선 방향</div>
@@ -374,7 +428,7 @@
         <p class="sub reveal d4" style="margin-top:1.5vh">10월 정기보고에서 확인 예정</p>
         <p class="tiny reveal d5" style="margin-top:2vh">※ 다음 업데이트에서 버그가 더 늘어날 수도 있음</p>
       </div>
-      <div class="version">webapp v0.5.1</div>
+      <div class="version">webapp v0.6.1</div>
     </section>
 
   </main></div>

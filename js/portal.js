@@ -224,12 +224,7 @@ function createQuickAppButton(app) {
 
   const icon = document.createElement('span');
   icon.className = 'quick-app-icon';
-  if (isImageDataUrl(app.iconImage)) {
-    const image = document.createElement('img');
-    image.src = app.iconImage;
-    image.alt = '';
-    icon.appendChild(image);
-  } else icon.textContent = cleanText(app.icon, '●');
+  fillIcon(icon, app);
 
   const title = document.createElement('span');
   title.className = 'quick-app-title';
@@ -265,6 +260,29 @@ function renderQuickList(container, ids, emptyText) {
 function renderQuickAccess() {
   renderQuickList(els.recentApps, state.recentIds, '앱을 실행하면 여기에 표시돼요.');
   renderQuickList(els.favoriteApps, [...state.favorites], '앱 카드의 ☆를 눌러 추가하세요.');
+}
+
+function iconFallback(app) {
+  const own = cleanText(app.icon);
+  if (own) return own;
+  const first = Array.from(cleanText(app.title))[0];
+  return first ? first.toUpperCase() : '●';
+}
+
+function fillIcon(icon, app) {
+  if (isImageDataUrl(app.iconImage)) {
+    const image = document.createElement('img');
+    image.alt = '';
+    image.addEventListener('error', () => {
+      icon.classList.remove('has-image');
+      icon.replaceChildren(document.createTextNode(iconFallback(app)));
+    }, { once: true });
+    image.src = app.iconImage;
+    icon.appendChild(image);
+    icon.classList.add('has-image');
+  } else {
+    icon.textContent = iconFallback(app);
+  }
 }
 
 function cleanText(value, fallback = '') {
@@ -461,15 +479,7 @@ function createAppCard(app, index = 0) {
 
   const icon = document.createElement('div');
   icon.className = 'app-icon';
-  if (isImageDataUrl(app.iconImage)) {
-    const image = document.createElement('img');
-    image.src = app.iconImage;
-    image.alt = '';
-    icon.appendChild(image);
-    icon.classList.add('has-image');
-  } else {
-    icon.textContent = cleanText(app.icon, '🔗');
-  }
+  fillIcon(icon, app);
 
   const badges = document.createElement('div');
   badges.className = 'badges';
@@ -509,7 +519,7 @@ function createAppCard(app, index = 0) {
 
   const description = document.createElement('p');
   description.className = 'app-description';
-  description.textContent = cleanText(app.description, '등록된 설명이 없습니다.');
+  description.textContent = cleanText(app.description);
 
   const primaryUrl = safeUrl(app.primaryUrl);
   if (primaryUrl) {
@@ -568,7 +578,7 @@ function createCategorySection(group, groupIndex, animate = true) {
   titleWrap.className = 'category-section-title-wrap';
   const title = document.createElement('span');
   title.className = 'category-section-title';
-  title.textContent = `〈${group.name}〉`;
+  title.textContent = group.name;
   const subtitle = document.createElement('span');
   subtitle.className = 'category-section-subtitle';
   subtitle.textContent = `${group.apps.length}개의 앱을 모아두었어요`;
@@ -579,9 +589,7 @@ function createCategorySection(group, groupIndex, animate = true) {
   group.apps.slice(0, 4).forEach(app => {
     const bubble = document.createElement('span');
     bubble.className = 'category-preview-icon';
-    if (isImageDataUrl(app.iconImage)) {
-      const image = document.createElement('img'); image.src = app.iconImage; image.alt = ''; bubble.appendChild(image);
-    } else bubble.textContent = cleanText(app.icon, '●');
+    fillIcon(bubble, app);
     preview.appendChild(bubble);
   });
   if (group.apps.length > 4) {

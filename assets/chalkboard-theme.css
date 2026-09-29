@@ -909,10 +909,7 @@ body.portal-view .lesson-runner-close { color: var(--studio-text); background: v
     scrollbar-width: none;
   }
   body.portal-view .category-app-rail::-webkit-scrollbar { display: none; }
-  body.portal-view .category-app-rail .app-card {
-    scroll-snap-align: center;
-    scroll-snap-stop: always;
-  }
+  body.portal-view .category-app-rail .app-card { scroll-snap-align: center; }
   body.portal-view .rail-counter {
     display: block;
     padding: 0 0 12px;

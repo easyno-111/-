@@ -674,6 +674,7 @@ body.portal-view .category-app-rail {
   -webkit-user-select: auto;
 }
 body.portal-view .category-app-rail::after { display: none; }
+body.portal-view .rail-counter { display: none; }
 
 /* ---------- App cards ---------- */
 body.portal-view .app-card {
@@ -892,10 +893,34 @@ body.portal-view .lesson-runner-close { color: var(--studio-text); background: v
   }
   body.portal-view .category-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
   body.portal-view .category-tab { flex: 0 0 auto; }
+  /* Phones: swipe through cards one at a time, like the recent-apps switcher.
+     The card takes 80% of the width and the neighbours peek in from the sides. */
   body.portal-view .category-app-rail {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 12px;
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-auto-columns: 100%;
+    gap: 12px;
+    padding: 14px 10% 8px;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  body.portal-view .category-app-rail::-webkit-scrollbar { display: none; }
+  body.portal-view .category-app-rail .app-card {
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+  }
+  body.portal-view .rail-counter {
+    display: block;
+    padding: 0 0 12px;
+    color: var(--studio-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-align: center;
   }
   body.portal-view .category-section-header { min-height: 0; padding: 6px 9px 6px 11px; }
   body.portal-view .category-preview { display: none; }

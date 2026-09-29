@@ -616,6 +616,13 @@ function createCategorySection(group, groupIndex, animate = true) {
   group.apps.forEach((app, index) => rail.appendChild(createAppCard(app, index)));
 
   panelInner.appendChild(rail);
+  if (group.apps.length > 1) {
+    const counter = document.createElement('div');
+    counter.className = 'rail-counter';
+    counter.setAttribute('aria-hidden', 'true');
+    counter.textContent = `1 / ${group.apps.length}`;
+    panelInner.appendChild(counter);
+  }
   panel.appendChild(panelInner);
   section.append(header, panel);
   return section;
@@ -744,6 +751,30 @@ els.categorySections.addEventListener('keydown', event => {
   event.preventDefault();
   openAppCard(card);
 });
+
+// 폰에서 카드를 옆으로 넘길 때 "3 / 11" 처럼 현재 위치를 보여 준다. (스크롤은 버블링되지 않아 캡처로 받는다)
+let railCounterFrame = 0;
+els.categorySections.addEventListener('scroll', event => {
+  const rail = event.target;
+  if (!(rail instanceof HTMLElement) || !rail.classList.contains('category-app-rail')) return;
+  cancelAnimationFrame(railCounterFrame);
+  railCounterFrame = requestAnimationFrame(() => updateRailCounter(rail));
+}, true);
+
+function updateRailCounter(rail) {
+  const counter = rail.parentElement?.querySelector('.rail-counter');
+  if (!counter) return;
+  const railBox = rail.getBoundingClientRect();
+  const middle = railBox.left + railBox.width / 2;
+  let nearest = 0;
+  let nearestDistance = Infinity;
+  Array.from(rail.children).forEach((card, index) => {
+    const box = card.getBoundingClientRect();
+    const distance = Math.abs(box.left + box.width / 2 - middle);
+    if (distance < nearestDistance) { nearest = index; nearestDistance = distance; }
+  });
+  counter.textContent = `${nearest + 1} / ${rail.children.length}`;
+}
 
 els.categorySections.addEventListener('click', event => {
   const favoriteButton = event.target.closest('[data-favorite-app]');

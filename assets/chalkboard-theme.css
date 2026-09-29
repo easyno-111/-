@@ -1,6 +1,7 @@
 /* =========================================================
-   Mathematics Lab · Classroom Studio Theme v1.1.0 (2026-09-08)
-   Chalkboard-inspired, modern teacher portal.
+   Mathematics Lab · Classroom Studio Theme v1.2.0 (2026-09-29)
+   Chalkboard-inspired teacher portal with light chalk touches:
+   board hero + board-strip category headers, cards stay clean paper.
    No full-page texture/image: UI stays clean and readable.
    ========================================================= */
 
@@ -20,6 +21,13 @@ body.portal-view {
   --studio-pink: #e7a7b8;
   --studio-blue: #76a9ca;
   --studio-mint: #82b9a1;
+  --chalk: #f7f5ea;
+  --board-1: #12372e;
+  --board-2: #18493b;
+  --board-3: #205547;
+  --tray: #b18b5c;
+  --tray-2: #94714a;
+  --chalk-dust: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
   --studio-shadow-sm: 0 6px 18px rgba(39, 51, 45, .06);
   --studio-shadow-md: 0 14px 34px rgba(39, 51, 45, .09);
   --studio-shadow-lg: 0 24px 54px rgba(28, 45, 37, .13);
@@ -53,6 +61,11 @@ html[data-theme="dark"] body.portal-view {
   --studio-green: #2e6a58;
   --studio-green-2: #397b68;
   --studio-green-3: #4c8c78;
+  --board-1: #0f2b24;
+  --board-2: #133a30;
+  --board-3: #1a4a3d;
+  --tray: #8c6d49;
+  --tray-2: #755a3b;
   --header-bg: rgba(23, 28, 25, .94);
   --input-bg: #202824;
   --studio-shadow-sm: 0 6px 18px rgba(0, 0, 0, .16);
@@ -124,7 +137,7 @@ body.portal-view .brand-caption {
   margin-top: 1px;
   color: var(--studio-muted);
   font-family: "Nunito", sans-serif;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: .14em;
 }
@@ -174,7 +187,7 @@ html[data-theme="dark"] body.portal-view .theme-toggle-thumb { transform: transl
 body.portal-view .theme-toggle-label {
   min-width: 56px;
   color: var(--studio-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -184,51 +197,61 @@ body.portal-view .portal-main {
   padding: 28px 0 56px;
 }
 
-/* Single chalkboard-inspired hero. No wood frame / full-page image. */
+/* Chalkboard hero, kept compact so the apps start higher on the page.
+   Chalk touches: dust speckle, hand-drawn frame, chalk squiggle, tray ledge. */
 body.portal-view .hero {
   position: relative;
-  min-height: 190px;
-  padding: 30px 34px;
+  min-height: 0;
+  padding: 26px 34px 36px;
   border: 0;
-  border-radius: 24px;
-  color: #f7f5ea;
+  border-radius: 22px;
+  color: var(--chalk);
   background:
-    radial-gradient(circle at 82% 18%, rgba(255,255,255,.065) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 76% 42%, rgba(255,255,255,.045) 0 1px, transparent 1.5px),
-    linear-gradient(125deg, #12372e 0%, #18493b 52%, #205747 100%);
-  background-size: 37px 37px, 53px 53px, auto;
+    radial-gradient(ellipse 58% 90% at 16% 18%, rgba(255,255,255,.08), transparent 64%),
+    radial-gradient(ellipse 48% 80% at 84% 90%, rgba(255,255,255,.06), transparent 62%),
+    var(--chalk-dust),
+    linear-gradient(125deg, var(--board-1) 0%, var(--board-2) 52%, var(--board-3) 100%);
+  background-size: auto, auto, 180px 180px, auto;
   box-shadow: var(--studio-shadow-lg);
   overflow: hidden;
 }
+/* hand-drawn chalk frame */
 body.portal-view .hero::before {
   content: "";
   position: absolute;
-  width: 340px;
-  height: 340px;
-  right: -105px;
-  top: -172px;
-  border: 1px solid rgba(248, 244, 218, .13);
-  border-radius: 50%;
+  inset: 9px 9px 15px;
+  width: auto;
+  height: auto;
+  border: 2px solid rgba(247, 245, 234, .17);
+  border-radius: 17px 13px 18px 12px / 13px 18px 12px 17px;
   background: transparent;
+  box-shadow: none;
+  pointer-events: none;
 }
+/* chalk tray ledge with chalk pieces and an eraser */
 body.portal-view .hero::after {
   content: "";
   position: absolute;
-  width: 220px;
-  height: 220px;
-  right: 32px;
-  bottom: -150px;
-  border: 1px solid rgba(248, 244, 218, .09);
-  border-radius: 50%;
-  background: transparent;
+  inset: auto 0 0 0;
+  width: auto;
+  height: 11px;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(#fbfaf0, #fbfaf0) 36px 3px / 34px 5px no-repeat,
+    linear-gradient(#efd76c, #efd76c) 80px 3px / 22px 5px no-repeat,
+    linear-gradient(#55685f, #55685f) calc(100% - 46px) 2px / 36px 7px no-repeat,
+    linear-gradient(180deg, var(--tray), var(--tray-2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
+  pointer-events: none;
 }
 body.portal-view .hero-copy,
 body.portal-view .hero-stat { position: relative; z-index: 1; }
 body.portal-view .eyebrow {
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: #dbc96f;
   font-family: "Nunito", sans-serif;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .16em;
 }
@@ -236,40 +259,47 @@ body.portal-view .hero h2 {
   margin: 0;
   color: #fbfaf2;
   font-family: "Gaegu", "Gowun Dodum", sans-serif;
-  font-size: clamp(40px, 5vw, 56px);
+  font-size: clamp(36px, 4.6vw, 50px);
   font-weight: 700;
   line-height: 1.02;
-  letter-spacing: -.025em;
-  text-shadow: none;
+  letter-spacing: -.02em;
+  text-shadow: 0 0 1px rgba(255,255,255,.35);
 }
 body.portal-view .hero p {
   max-width: 650px;
-  margin-top: 9px;
-  color: rgba(242, 243, 230, .76);
+  margin-top: 8px;
+  color: rgba(242, 243, 230, .82);
   font-family: "Gowun Dodum", sans-serif;
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.6;
 }
 body.portal-view .hero-stat {
-  min-width: 128px;
-  padding: 17px 18px;
-  border: 1px solid rgba(250, 248, 235, .22);
-  border-radius: 17px;
-  background: rgba(255,255,255,.07);
+  min-width: 108px;
+  padding: 12px 16px;
+  border: 2px solid rgba(247, 245, 234, .3);
+  border-radius: 16px 12px 17px 13px / 13px 17px 12px 16px;
+  background: rgba(255,255,255,.04);
   box-shadow: none;
-  backdrop-filter: blur(2px);
+  text-align: center;
 }
 body.portal-view .hero-stat strong {
   color: #f1dc79;
-  font-size: 38px;
+  font-family: "Gaegu", "Nunito", sans-serif;
+  font-size: 40px;
   line-height: 1;
 }
 body.portal-view .hero-stat span {
-  margin-top: 5px;
-  color: rgba(247, 247, 236, .69);
-  font-size: 10px;
+  margin-top: 3px;
+  color: rgba(247, 247, 236, .75);
+  font-size: 12px;
 }
-body.portal-view .hero-chalk-line { display: none; }
+body.portal-view .hero-chalk-line {
+  display: block;
+  width: 168px;
+  height: 9px;
+  margin-top: 10px;
+  background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='9' viewBox='0 0 168 9'%3E%3Cpath d='M2 5.5C22 1.5 42 8 64 4.2S108 2 128 5.4 156 6.5 166 3' fill='none' stroke='%23f7f5ea' stroke-opacity='.55' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left center / contain;
+}
 
 body.portal-view .notice {
   margin-top: 14px;
@@ -321,7 +351,7 @@ body.portal-view .quick-access-kicker {
   margin: 0 0 3px;
   color: var(--studio-green-3);
   font-family: "Nunito", sans-serif;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 900;
   letter-spacing: .14em;
 }
@@ -329,13 +359,13 @@ body.portal-view .quick-access-intro h3 {
   margin: 0;
   color: var(--studio-text);
   font-family: "Gowun Dodum", sans-serif;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
 }
 body.portal-view .quick-access-intro p:last-child {
   margin: 4px 0 0;
   color: var(--studio-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.55;
 }
 body.portal-view .quick-access-heading {
@@ -344,7 +374,7 @@ body.portal-view .quick-access-heading {
   gap: 7px;
   margin-bottom: 9px;
   color: var(--studio-text);
-  font-size: 11px;
+  font-size: 13px;
 }
 body.portal-view .quick-access-heading > span { color: var(--studio-green-3); font-size: 15px; }
 body.portal-view .quick-app-list {
@@ -385,39 +415,69 @@ body.portal-view .quick-app-icon {
   background: color-mix(in srgb, var(--app-color, var(--studio-green)) 15%, var(--studio-surface));
 }
 body.portal-view .quick-app-icon img { width: 100%; height: 100%; object-fit: cover; }
-body.portal-view .quick-app-name {
+body.portal-view .quick-app-name,
+body.portal-view .quick-app-title {
   width: 100%;
   overflow: hidden;
   color: var(--studio-text);
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
 }
-body.portal-view .quick-empty {
-  min-height: 72px;
+body.portal-view .quick-empty,
+body.portal-view .quick-app-empty {
+  grid-column: 1 / -1;
+  min-height: 60px;
+  padding: 8px;
   border: 1px dashed color-mix(in srgb, var(--studio-line) 85%, transparent);
   border-radius: 12px;
   display: grid;
   place-items: center;
   color: var(--studio-muted);
   background: transparent;
-  font-size: 9px;
+  font-size: 12px;
+  line-height: 1.5;
   text-align: center;
 }
+/* Nothing to show yet: shrink the panel to a single quiet line. */
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) {
+  grid-template-columns: 1fr;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-group { display: none; }
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro {
+  align-items: center;
+  padding: 10px 16px;
+  border: 1px dashed var(--studio-line);
+  background: transparent;
+}
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 14px;
+}
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-kicker { display: none; }
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro h3 { font-size: 16px; }
+body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro p:last-child { margin: 0; }
 
 /* ---------- Lesson sets ---------- */
 body.portal-view .lesson-sets-section { margin: 24px 0 30px; }
 body.portal-view .lesson-sets-section .section-heading h3,
 body.portal-view .section-heading h3 {
   color: var(--studio-text);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: 23px;
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 30px;
   font-weight: 700;
   letter-spacing: -.02em;
 }
-body.portal-view .section-heading p { color: var(--studio-muted); font-size: 11px; }
+body.portal-view .section-heading p { color: var(--studio-muted); font-size: 13px; }
 body.portal-view .lesson-set-card,
 body.portal-view .draft-preview-card {
   border: 1px solid var(--studio-line);
@@ -442,7 +502,7 @@ body.portal-view .resume-lesson-button:hover { filter: brightness(1.06); }
 
 /* ---------- Search and category tabs ---------- */
 body.portal-view .toolbar {
-  margin-top: 26px;
+  margin-top: 18px;
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--studio-line);
@@ -467,13 +527,13 @@ body.portal-view .search-input:focus {
 }
 body.portal-view .category-tabs { gap: 4px; }
 body.portal-view .category-tab {
-  height: 38px;
-  padding: 0 12px;
+  height: 40px;
+  padding: 0 14px;
   border: 1px solid transparent;
   border-radius: 10px;
   color: var(--studio-muted);
   background: transparent;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
 }
 body.portal-view .category-tab:hover {
@@ -498,8 +558,8 @@ body.portal-view .category-tab.active .category-tab-count {
   color: #fff;
   background: rgba(255,255,255,.15);
 }
-body.portal-view .result-count { color: var(--studio-muted); font-size: 10px; }
-body.portal-view .category-overview-heading { margin-top: 31px; }
+body.portal-view .result-count { color: var(--studio-muted); font-size: 12px; white-space: nowrap; }
+body.portal-view .category-overview-heading { margin-top: 22px; }
 
 /* ---------- Category sections ---------- */
 body.portal-view .category-sections { gap: 15px; }
@@ -523,92 +583,104 @@ body.portal-view .category-section::before {
 }
 body.portal-view .category-section.is-open::after { display: none; }
 body.portal-view .category-section-header {
-  min-height: 78px;
-  padding: 9px 13px 9px 15px;
+  min-height: 0;
+  padding: 7px 12px 7px 17px;
+  color: var(--chalk);
+  background:
+    var(--chalk-dust),
+    linear-gradient(120deg, var(--board-1), var(--board-2));
+  background-size: 180px 180px, auto;
 }
 body.portal-view .category-section-toggle {
-  min-height: 60px;
-  padding: 6px;
+  min-height: 54px;
+  padding: 4px 6px;
   border-radius: 12px;
-  color: var(--studio-text);
+  color: var(--chalk);
 }
 body.portal-view .category-section-toggle:hover {
-  background: var(--studio-surface-soft);
+  background: rgba(255, 255, 255, .06);
   transform: none;
 }
 body.portal-view .category-section-index {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 12px;
-  color: color-mix(in srgb, var(--section-color) 84%, #24342e);
-  background: color-mix(in srgb, var(--section-color) 17%, var(--studio-surface));
+  width: 40px;
+  height: 40px;
+  border: 2px solid color-mix(in srgb, var(--section-color) 68%, #fff);
+  border-radius: 52% 48% 50% 46% / 47% 53% 46% 52%;
+  color: var(--chalk);
+  background: transparent;
   box-shadow: none;
-}
-html[data-theme="dark"] body.portal-view .category-section-index {
-  color: color-mix(in srgb, var(--section-color) 80%, #fff);
-  background: color-mix(in srgb, var(--section-color) 18%, var(--studio-surface));
+  font-family: "Gaegu", "Nunito", sans-serif;
+  font-size: 19px;
+  font-weight: 700;
 }
 body.portal-view .category-section-index::after { display: none; }
 body.portal-view .category-section-title {
-  color: var(--studio-text);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: clamp(19px, 2.4vw, 23px);
+  color: var(--chalk);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: clamp(26px, 3vw, 32px);
   font-weight: 700;
-  letter-spacing: -.02em;
+  line-height: 1.05;
+  letter-spacing: -.01em;
 }
 body.portal-view .category-section-subtitle {
-  color: var(--studio-muted);
-  font-size: 9px;
+  color: rgba(247, 245, 234, .72);
+  font-size: 12px;
   font-weight: 700;
 }
 body.portal-view .category-preview-icon,
 body.portal-view .category-preview-more {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--studio-line);
-  background: var(--studio-surface-soft);
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(247, 245, 234, .22);
+  color: var(--chalk);
+  background: rgba(255, 255, 255, .1);
   box-shadow: none;
+  font-size: 15px;
 }
 body.portal-view .category-toggle-action {
-  border: 1px solid var(--studio-line);
+  border: 1px solid rgba(247, 245, 234, .3);
   border-radius: 10px;
-  color: var(--studio-muted);
-  background: var(--studio-surface-soft);
+  color: rgba(247, 245, 234, .88);
+  background: transparent;
   box-shadow: none;
 }
-body.portal-view .category-section.is-open .category-toggle-action { background: var(--studio-surface-soft); }
+body.portal-view .category-section.is-open .category-toggle-action { background: transparent; }
+body.portal-view .category-toggle-label { font-size: 12px; }
 body.portal-view .category-toggle-icon {
   width: 25px;
   height: 25px;
-  background: color-mix(in srgb, var(--studio-green) 8%, var(--studio-surface));
+  background: rgba(255, 255, 255, .12);
   box-shadow: none;
 }
 body.portal-view .category-toggle-icon::before,
-body.portal-view .category-toggle-icon::after { background: var(--studio-text); }
+body.portal-view .category-toggle-icon::after { background: var(--chalk); }
 body.portal-view .category-section-panel {
-  border-top: 1px solid color-mix(in srgb, var(--studio-line) 80%, transparent);
+  border-top: 0;
   clip-path: inset(0 0 100% 0 round 14px);
   filter: none;
 }
 body.portal-view .category-section.is-open .category-section-panel { clip-path: inset(0 0 0 0 round 14px); }
+/* Wrapping grid instead of a sideways-scrolling rail: every app is visible at once. */
 body.portal-view .category-app-rail {
-  grid-auto-columns: minmax(250px, calc((100% - 36px) / 3.25));
-  gap: 12px;
-  padding: 16px 17px 18px;
-  scrollbar-color: color-mix(in srgb, var(--studio-muted) 28%, transparent) transparent;
+  display: grid;
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 236px), 1fr));
+  gap: 14px;
+  padding: 18px;
+  overflow: visible !important;
+  cursor: default;
+  user-select: auto;
+  -webkit-user-select: auto;
 }
-body.portal-view .category-app-rail::after {
-  border-color: var(--studio-line);
-  color: var(--studio-muted);
-}
+body.portal-view .category-app-rail::after { display: none; }
 
 /* ---------- App cards ---------- */
 body.portal-view .app-card {
-  min-height: 214px;
-  padding: 16px;
+  min-height: 152px;
+  padding: 15px 16px 16px;
   border: 1px solid var(--studio-line);
-  border-radius: 15px;
+  border-radius: 14px;
   color: var(--studio-text);
   background: var(--studio-surface-soft);
   box-shadow: none;
@@ -618,7 +690,7 @@ body.portal-view .app-card::before {
   inset: 0 auto 0 0;
   width: 3px;
   height: auto;
-  border-radius: 15px 0 0 15px;
+  border-radius: 14px 0 0 14px;
   background: var(--app-color, var(--studio-green));
   opacity: .78;
 }
@@ -630,24 +702,26 @@ body.portal-view .app-card:hover {
 }
 html[data-theme="dark"] body.portal-view .app-card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.23); }
 body.portal-view .app-icon {
-  width: 44px;
-  height: 44px;
+  width: 46px;
+  height: 46px;
   border: 0;
-  border-radius: 12px;
-  color: var(--studio-text);
+  border-radius: 13px;
+  color: color-mix(in srgb, var(--app-color, var(--studio-green)) 62%, var(--studio-text));
   background: color-mix(in srgb, var(--app-color, var(--studio-green)) 17%, var(--studio-surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-color, var(--studio-green)) 10%, transparent);
-  font-size: 22px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-color, var(--studio-green)) 14%, transparent);
+  font-family: "Gaegu", "Nunito", sans-serif;
+  font-size: 26px;
+  font-weight: 700;
 }
 body.portal-view .favorite-toggle {
-  width: 29px;
-  height: 29px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: 9px;
   color: color-mix(in srgb, var(--studio-muted) 82%, transparent);
   background: transparent;
-  font-size: 18px;
+  font-size: 20px;
 }
 body.portal-view .favorite-toggle:hover {
   color: #b8952c;
@@ -656,11 +730,11 @@ body.portal-view .favorite-toggle:hover {
 html[data-theme="dark"] body.portal-view .favorite-toggle:hover { background: #3b3728; }
 body.portal-view .favorite-toggle[aria-pressed="true"] { color: #c29e2d; }
 body.portal-view .badge {
-  padding: 4px 7px;
+  padding: 4px 8px;
   border: 0;
   border-radius: 999px;
   background: color-mix(in srgb, var(--studio-muted) 10%, transparent);
-  font-size: 8px;
+  font-size: 10px;
 }
 body.portal-view .badge-featured { color: #3e8066; background: #e4f2eb; }
 body.portal-view .badge-new { color: #a65f72; background: #f8e9ed; }
@@ -670,35 +744,49 @@ body.portal-view .card-category { color: color-mix(in srgb, var(--app-color) 72%
 body.portal-view .app-title {
   color: var(--studio-text);
   font-family: "Gowun Dodum", sans-serif;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   letter-spacing: -.01em;
 }
-body.portal-view .category-app-rail .app-title { margin-top: 13px; }
+body.portal-view .category-app-rail .app-card { min-height: 152px; }
+body.portal-view .category-app-rail .app-title { margin-top: 12px; }
 body.portal-view .app-description {
+  margin: 5px 0 14px;
   color: var(--studio-muted);
-  font-size: 11px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.55;
+  -webkit-line-clamp: 2;
 }
+body.portal-view .app-description:empty { display: none; }
 body.portal-view .launch-button {
-  min-height: 36px;
+  min-height: 40px;
   border: 0;
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   box-shadow: none;
 }
+/* One board-green button for every app: pale app colors used to make it look disabled. */
 body.portal-view .launch-primary {
   color: #fff;
-  background: color-mix(in srgb, var(--app-color, var(--studio-green)) 68%, #25483d);
+  background: var(--studio-green-2);
 }
-body.portal-view .launch-primary:hover { filter: brightness(1.05); }
-body.portal-view .launch-secondary {
+body.portal-view .launch-primary:hover { filter: brightness(1.08); }
+body.portal-view .launch-secondary,
+html[data-theme="dark"] body.portal-view .launch-secondary {
   border: 1px solid var(--studio-line);
   color: var(--studio-text);
   background: var(--studio-surface);
 }
-body.portal-view .empty-state,
+@keyframes chalkCardIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+body.portal-view .category-section.animate-cards.is-open.is-visible .app-card {
+  animation: chalkCardIn .42s cubic-bezier(.18,.82,.24,1) both;
+  animation-delay: calc(60ms + (var(--card-index, 0) * 45ms));
+}
+
 body.portal-view .error-state {
   border-color: var(--studio-line);
   background: var(--studio-surface);
@@ -760,7 +848,6 @@ body.portal-view .lesson-runner-close { color: var(--studio-text); background: v
   body.portal-view .portal-main { width: min(100% - 28px, 1180px); }
   body.portal-view .chalk-quick-access { grid-template-columns: 1fr 1fr; }
   body.portal-view .quick-access-intro { grid-column: 1 / -1; }
-  body.portal-view .category-app-rail { grid-auto-columns: minmax(250px, 46%); }
 }
 
 @media (max-width: 720px) {
@@ -774,20 +861,22 @@ body.portal-view .lesson-runner-close { color: var(--studio-text); background: v
   body.portal-view .install-portal-button,
   body.portal-view .theme-toggle { min-height: 36px; }
   body.portal-view .hero {
-    min-height: 170px;
-    padding: 25px 23px;
-    border-radius: 19px;
+    min-height: 0;
+    padding: 22px 20px 32px;
+    border-radius: 18px;
     align-items: flex-start;
   }
-  body.portal-view .hero h2 { font-size: clamp(36px, 11vw, 48px); }
-  body.portal-view .hero p { max-width: calc(100% - 80px); font-size: 11px; }
+  body.portal-view .hero h2 { font-size: clamp(32px, 9.5vw, 42px); }
+  body.portal-view .hero p { max-width: 100%; font-size: 13px; }
   body.portal-view .hero-stat {
-    min-width: 88px;
-    padding: 11px 12px;
+    min-width: 0;
+    margin-top: 12px;
+    padding: 8px 14px;
     border-radius: 13px;
+    text-align: left;
   }
-  body.portal-view .hero-stat strong { font-size: 30px; }
-  body.portal-view .hero-stat span { font-size: 8px; }
+  body.portal-view .hero-stat strong { font-size: 32px; }
+  body.portal-view .hero-stat span { font-size: 11px; }
   body.portal-view .chalk-quick-access {
     grid-template-columns: 1fr;
     gap: 9px;
@@ -804,27 +893,27 @@ body.portal-view .lesson-runner-close { color: var(--studio-text); background: v
   body.portal-view .category-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
   body.portal-view .category-tab { flex: 0 0 auto; }
   body.portal-view .category-app-rail {
-    grid-auto-columns: minmax(245px, 84vw);
+    grid-template-columns: 1fr;
     gap: 10px;
-    padding: 12px 13px 15px;
+    padding: 12px;
   }
-  body.portal-view .category-section-header { min-height: 72px; padding: 8px 9px 8px 11px; }
+  body.portal-view .category-section-header { min-height: 0; padding: 6px 9px 6px 11px; }
   body.portal-view .category-preview { display: none; }
-  body.portal-view .category-section-title { font-size: 20px; }
-  body.portal-view .app-card { min-height: 205px; }
+  body.portal-view .category-section-title { font-size: 26px; }
+  body.portal-view .category-app-rail .app-card { min-height: 0; }
 }
 
 @media (max-width: 480px) {
   body.portal-view .brand-mark { width: 36px; height: 36px; border-radius: 10px; font-size: 19px; }
   body.portal-view .header-actions { gap: 5px; }
   body.portal-view .hero {
-    min-height: 190px;
-    padding: 23px 20px;
+    min-height: 0;
+    padding: 20px 18px 34px;
   }
-  body.portal-view .hero p { max-width: 100%; padding-right: 82px; }
-  body.portal-view .hero-stat { position: absolute; right: 18px; bottom: 18px; }
+  body.portal-view .hero p { max-width: 100%; }
+  body.portal-view .hero-stat { justify-self: start; }
   body.portal-view .quick-app-list { grid-template-columns: repeat(3, 1fr); }
-  body.portal-view .section-heading h3 { font-size: 21px; }
+  body.portal-view .section-heading h3 { font-size: 26px; }
   body.portal-view .category-section-index { width: 38px; height: 38px; }
   body.portal-view .category-toggle-label { display: none; }
 }

@@ -170,6 +170,7 @@ function railPointerDown(event) {
   // 터치/펜 입력은 브라우저의 기본 스크롤에 전적으로 맡긴다.
   // 마우스도 아직은 포인터 캡처나 preventDefault를 하지 않아 일반 클릭이 그대로 살아 있다.
   if (!rail || event.pointerType !== 'mouse' || event.button !== 0) return;
+  if (rail.scrollWidth <= rail.clientWidth + 1) return;
   activeRailDrag = {
     rail,
     pointerId: event.pointerId,

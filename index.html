@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta id="themeColor" name="theme-color" content="#f5f2eb">
+  <meta id="themeColor" name="theme-color" content="#15352b">
   <meta name="description" content="수업과 학급 운영에 필요한 웹 도구 모음">
   <title>수학 실험실</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -21,69 +21,42 @@
     }
   </script>
   <link rel="stylesheet" href="assets/portal.css?v=20260722-interaction2">
-  <link rel="stylesheet" href="assets/chalkboard-theme.css?v=20260929-board2">
+  <link rel="stylesheet" href="assets/chalkboard-theme.css?v=20261015-launcher1">
 </head>
 <body class="portal-view">
   <div class="portal-shell">
+    <!-- 칠판 띠: 이름 · 검색 · 날짜 · 버튼 -->
     <header class="portal-header">
       <div class="header-inner">
         <div class="brand">
-          <div class="brand-mark" aria-hidden="true">∑</div>
-          <div class="brand-copy">
-            <h1 class="brand-title" id="brandTitle">수학 실험실</h1>
-            <p class="brand-caption">TEACHER APP PORTAL <span class="portal-version">v1.1.0</span></p>
-          </div>
+          <h1 class="brand-title" id="brandTitle">수학 실험실</h1>
+          <p class="brand-caption">TEACHER APP PORTAL</p>
+        </div>
+        <div class="search-wrap">
+          <input id="searchInput" class="search-input" type="search" placeholder="앱 검색" aria-label="앱 검색 (/ 키로 바로 검색)" autocomplete="off">
         </div>
         <div class="header-actions">
+          <time id="todayDate" class="today-date"></time>
           <button id="installPortalButton" class="install-portal-button hidden" type="button">앱 설치</button>
           <button id="themeToggle" class="theme-toggle" type="button" aria-label="어두운 화면으로 변경" aria-pressed="false">
-            <span class="theme-toggle-track" aria-hidden="true">
-              <span class="theme-toggle-sun">☀</span>
-              <span class="theme-toggle-moon">☾</span>
-              <span class="theme-toggle-thumb"></span>
-            </span>
-            <span id="themeToggleLabel" class="theme-toggle-label">밝은 화면</span>
+            <span class="theme-toggle-sun" aria-hidden="true">☀</span>
+            <span class="theme-toggle-moon" aria-hidden="true">☾</span>
           </button>
-          <a class="icon-link" href="admin.html" aria-label="관리자 화면">
-            <span>⚙</span><span class="header-admin-label">관리</span>
-          </a>
+          <a class="icon-link" href="admin.html" aria-label="관리자 화면" title="관리자 화면">⚙</a>
         </div>
       </div>
     </header>
 
     <main class="portal-main">
-      <section class="hero chalk-hero">
-        <div class="hero-copy">
-          <p class="eyebrow">MATH CLASSROOM TOOLBOX</p>
-          <h2 id="heroTitle">오늘 무엇을 할까요?</h2>
-          <p id="heroSubtitle">수업과 학급 운영에 필요한 도구를 한곳에서 시작하세요.</p>
-          <div class="hero-chalk-line" aria-hidden="true"></div>
-        </div>
-        <div class="hero-stat" aria-label="공개 앱 수">
-          <strong id="appCount">—</strong>
-          <span>사용 가능한 도구</span>
-        </div>
-      </section>
-
       <div id="notice" class="notice hidden"></div>
 
-      <section id="quickAccessSection" class="chalk-quick-access" aria-label="빠른 실행">
-        <div class="quick-access-intro">
-          <span class="chalk-pin" aria-hidden="true">✦</span>
-          <div>
-            <p class="quick-access-kicker">QUICK START</p>
-            <h3>자주 쓰는 도구를 빠르게 시작하세요</h3>
-            <p>최근 실행한 앱과 즐겨찾기를 이 기기에만 안전하게 기억합니다.</p>
-          </div>
-        </div>
-        <div class="quick-access-group">
-          <div class="quick-access-heading"><span aria-hidden="true">↻</span><strong>최근 사용</strong></div>
-          <div id="recentApps" class="quick-app-list" aria-live="polite"></div>
-        </div>
-        <div class="quick-access-group">
-          <div class="quick-access-heading"><span aria-hidden="true">☆</span><strong>즐겨찾기</strong></div>
-          <div id="favoriteApps" class="quick-app-list" aria-live="polite"></div>
-        </div>
+      <nav id="categoryTabs" class="category-tabs" role="tablist" aria-label="카테고리">
+        <button class="category-tab active" type="button" data-category="all">전체</button>
+      </nav>
+
+      <section id="quickAccessSection" class="quick-row hidden" aria-label="자주 쓰는 앱">
+        <span class="quick-label">자주 쓰는 ✎</span>
+        <div id="quickApps" class="quick-apps"></div>
       </section>
 
       <section id="draftPreviewSection" class="draft-preview-section hidden" aria-live="polite"></section>
@@ -92,22 +65,7 @@
         <div id="lessonSetCards" class="lesson-set-cards"></div>
       </section>
 
-      <section class="toolbar" aria-label="앱 검색과 분류">
-        <div class="search-wrap">
-          <input id="searchInput" class="search-input" type="search" placeholder="앱 이름이나 설명으로 검색 · / 키로 바로 검색" autocomplete="off">
-        </div>
-        <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="카테고리">
-          <button class="category-tab active" type="button" data-category="all">전체</button>
-        </div>
-      </section>
-
-      <div class="section-heading category-overview-heading">
-        <div>
-          <h3 id="sectionTitle">카테고리별 도구</h3>
-          <p>필요한 도구를 카테고리별로 빠르게 찾아보세요.</p>
-        </div>
-        <div id="resultCount" class="result-count"></div>
-      </div>
+      <p id="searchStatus" class="search-status hidden" aria-live="polite"></p>
 
       <section id="categorySections" class="category-sections" aria-live="polite">
         <div class="category-section category-section-skeleton"><div class="skeleton"></div></div>
@@ -116,27 +74,20 @@
     </main>
 
     <footer class="portal-footer">
-      <span id="footerText">MATHEMATICS LAB · Easy NO</span><span class="footer-version">PORTAL v1.1.0</span>
+      <span id="footerText">MATHEMATICS LAB · Easy NO</span>
       <a href="admin.html">관리자</a>
     </footer>
   </div>
 
-
-  <div class="portal-quick-launcher">
-    <button id="quickLauncherButton" class="quick-launcher-button" type="button" aria-expanded="false" aria-label="빠른 메뉴">＋</button>
-    <div id="quickLauncherMenu" class="quick-launcher-menu hidden">
-      <a href="admin.html">관리자 화면</a>
-      <button id="quickInstallButton" type="button">홈 화면에 설치</button>
-      <button id="refreshPortalButton" type="button">화면 새로고침</button>
-    </div>
-  </div>
+  <!-- 링크가 두 개인 앱(교사용 · 학생용 등)을 눌렀을 때 고르는 창 -->
+  <dialog id="launchChoiceDialog" class="launch-choice" aria-label="실행할 화면 선택"></dialog>
 
   <dialog id="lessonRunnerDialog" class="lesson-runner-dialog">
     <form method="dialog"><button class="lesson-runner-close" aria-label="닫기">×</button></form>
     <div id="lessonRunnerContent"></div>
   </dialog>
 
-  <script type="module" src="js/portal.js?v=20260929-board2"></script>
-  <script type="module" src="js/portal-enhancements.js?v=20260929-board2"></script>
+  <script type="module" src="js/portal.js?v=20261015-launcher1"></script>
+  <script type="module" src="js/portal-enhancements.js?v=20261015-launcher1"></script>
 </body>
 </html>

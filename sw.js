@@ -1,4 +1,4 @@
-const CACHE_NAME = 'teacher-app-portal-v10-studio';
+const CACHE_NAME = 'teacher-app-portal-v11-launcher';
 const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
 const CORE_ASSETS = [
   './', './index.html', './offline.html', './manifest.webmanifest',

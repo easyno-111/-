@@ -3,9 +3,6 @@ const state = { apps: {}, settings: {}, runner: null };
 const PREVIEW_KEY = 'teacherPortalAppDraftPreviewV1';
 const RUNNER_KEY = 'teacherPortalLessonRunnerV1';
 let deferredInstallPrompt = null;
-let activeRailDrag = null;
-let suppressRailClickUntil = 0;
-let suppressRailClickTarget = null;
 
 function text(value, fallback = '') { return typeof value === 'string' ? value.trim() : fallback; }
 function escapeHtml(value) {
@@ -28,6 +25,7 @@ function lessonSets() {
     .filter(item => item.visible !== false && Array.isArray(item.appIds) && item.appIds.some(id => state.apps[id]?.visible !== false))
     .sort((a, b) => num(a.order, 9999) - num(b.order, 9999));
 }
+// 아이콘: 올린 그림 > 이모지 > 앱 이름 첫 글자 (포털 타일과 같은 규칙)
 function appIcon(app, className = '') {
   const wrap = document.createElement('span');
   wrap.className = className;
@@ -36,7 +34,10 @@ function appIcon(app, className = '') {
     img.src = app.iconImage;
     img.alt = '';
     wrap.appendChild(img);
-  } else wrap.textContent = text(app?.icon, '🔗');
+  } else {
+    const first = Array.from(text(app?.title))[0];
+    wrap.textContent = text(app?.icon) || (first ? first.toUpperCase() : '●');
+  }
   return wrap;
 }
 function renderLessonSets() {
@@ -157,72 +158,6 @@ function renderDraftPreview() {
   $('closeDraftPreview')?.addEventListener('click', () => section.remove());
 }
 
-function removeRailButtons() {
-  document.querySelectorAll('.category-section-controls').forEach(item => item.remove());
-  document.querySelectorAll('.category-app-rail').forEach(rail => {
-    if (rail.dataset.dragReady) return;
-    rail.dataset.dragReady = 'true';
-    rail.setAttribute('aria-description', '컴퓨터에서는 마우스로 끌고, 모바일에서는 손가락으로 자연스럽게 밀어 이동할 수 있습니다.');
-  });
-}
-function railPointerDown(event) {
-  const rail = event.target.closest('.category-app-rail');
-  // 터치/펜 입력은 브라우저의 기본 스크롤에 전적으로 맡긴다.
-  // 마우스도 아직은 포인터 캡처나 preventDefault를 하지 않아 일반 클릭이 그대로 살아 있다.
-  if (!rail || event.pointerType !== 'mouse' || event.button !== 0) return;
-  if (rail.scrollWidth <= rail.clientWidth + 1) return;
-  activeRailDrag = {
-    rail,
-    pointerId: event.pointerId,
-    startX: event.clientX,
-    startY: event.clientY,
-    startScroll: rail.scrollLeft,
-    moved: false,
-    horizontal: false,
-    captured: false,
-    distance: 0
-  };
-}
-function railPointerMove(event) {
-  if (!activeRailDrag || activeRailDrag.pointerId !== event.pointerId) return;
-  const dx = event.clientX - activeRailDrag.startX;
-  const dy = event.clientY - activeRailDrag.startY;
-  activeRailDrag.distance = Math.max(activeRailDrag.distance, Math.abs(dx));
-
-  // 세로로 움직이기 시작했다면 가로 드래그 후보를 즉시 취소한다.
-  if (!activeRailDrag.horizontal && Math.abs(dy) > 9 && Math.abs(dy) > Math.abs(dx)) {
-    activeRailDrag = null;
-    return;
-  }
-
-  if (!activeRailDrag.horizontal && Math.abs(dx) > 9 && Math.abs(dx) > Math.abs(dy)) {
-    activeRailDrag.horizontal = true;
-    activeRailDrag.moved = true;
-    activeRailDrag.rail.classList.add('is-dragging');
-    activeRailDrag.rail.setPointerCapture?.(event.pointerId);
-    activeRailDrag.captured = true;
-  }
-  if (!activeRailDrag.horizontal) return;
-
-  event.preventDefault();
-  activeRailDrag.rail.scrollLeft = activeRailDrag.startScroll - dx;
-}
-function railPointerEnd(event) {
-  if (!activeRailDrag || activeRailDrag.pointerId !== event.pointerId) return;
-  const drag = activeRailDrag;
-  drag.rail.classList.remove('is-dragging');
-  if (drag.captured && drag.rail.hasPointerCapture?.(event.pointerId)) {
-    drag.rail.releasePointerCapture?.(event.pointerId);
-  }
-  activeRailDrag = null;
-
-  // 실제로 충분히 끌었을 때만, 같은 레일에서 바로 이어지는 유령 클릭을 한 번 막는다.
-  if (drag.moved && drag.distance > 9) {
-    suppressRailClickTarget = drag.rail;
-    suppressRailClickUntil = Date.now() + 260;
-  }
-}
-
 async function requestInstall() {
   if (deferredInstallPrompt) {
     await deferredInstallPrompt.prompt();
@@ -238,33 +173,8 @@ function setupPwa() {
     event.preventDefault();
     deferredInstallPrompt = event;
     $('installPortalButton')?.classList.remove('hidden');
-    $('quickInstallButton')?.classList.remove('hidden');
   });
   $('installPortalButton')?.addEventListener('click', requestInstall);
-  $('quickInstallButton')?.addEventListener('click', requestInstall);
-}
-function setupQuickLauncher() {
-  const button = $('quickLauncherButton');
-  const menu = $('quickLauncherMenu');
-  button?.addEventListener('click', () => {
-    const open = menu.classList.toggle('hidden') === false;
-    button.setAttribute('aria-expanded', String(open));
-    button.textContent = open ? '×' : '＋';
-  });
-  document.addEventListener('click', event => {
-    if (!event.target.closest('.portal-quick-launcher')) {
-      menu?.classList.add('hidden');
-      button?.setAttribute('aria-expanded', 'false');
-      if (button) button.textContent = '＋';
-    }
-  });
-  $('refreshPortalButton')?.addEventListener('click', async () => {
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map(registration => registration.update()));
-    }
-    location.reload();
-  });
 }
 
 $('lessonSetCards')?.addEventListener('click', event => {
@@ -295,29 +205,9 @@ $('lessonRunnerContent')?.addEventListener('click', event => {
   saveRunner();
   renderRunner();
 });
-$('lessonRunnerDialog')?.addEventListener('close', () => {});
 
-document.addEventListener('dragstart', event => { if (event.target.closest('.category-app-rail')) event.preventDefault(); });
-document.addEventListener('pointerdown', railPointerDown);
-document.addEventListener('pointermove', railPointerMove, { passive: false });
-document.addEventListener('pointerup', railPointerEnd);
-document.addEventListener('pointercancel', railPointerEnd);
-document.addEventListener('click', event => {
-  const rail = event.target.closest('.category-app-rail');
-  if (rail && rail === suppressRailClickTarget && Date.now() < suppressRailClickUntil) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    suppressRailClickUntil = 0;
-    suppressRailClickTarget = null;
-  }
-}, true);
-
-const railObserver = new MutationObserver(removeRailButtons);
-railObserver.observe($('categorySections'), { childList: true, subtree: true });
-removeRailButtons();
 renderDraftPreview();
 setupPwa();
-setupQuickLauncher();
 
 let runnerRestored = false;
 function receivePortalData(detail) {

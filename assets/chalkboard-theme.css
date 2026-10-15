@@ -1,947 +1,713 @@
 /* =========================================================
-   Mathematics Lab · Classroom Studio Theme v1.2.0 (2026-09-29)
-   Chalkboard-inspired teacher portal with light chalk touches:
-   board hero + board-strip category headers, cards stay clean paper.
-   No full-page texture/image: UI stays clean and readable.
+   Mathematics Lab · Launcher Theme v2.0.0 (2026-10-15)
+   Chalkboard header band + paper launcher. Apps are big icon
+   tiles (like a phone home screen), not cards with buttons.
+   Loaded only by index.html; admin.html keeps portal.css alone.
+   Most rules override portal.css, hence the body.portal-view prefix.
    ========================================================= */
 
 body.portal-view {
-  --studio-bg: #f5f2eb;
-  --studio-bg-2: #eee9df;
-  --studio-surface: #ffffff;
-  --studio-surface-soft: #faf8f3;
-  --studio-text: #23332d;
-  --studio-muted: #728079;
-  --studio-line: #ddd9cf;
-  --studio-green: #173f34;
-  --studio-green-2: #205547;
-  --studio-green-3: #2f6b5b;
-  --studio-cream: #f2e7bb;
-  --studio-yellow: #e6c65b;
-  --studio-pink: #e7a7b8;
-  --studio-blue: #76a9ca;
-  --studio-mint: #82b9a1;
-  --chalk: #f7f5ea;
-  --board-1: #12372e;
-  --board-2: #18493b;
-  --board-3: #205547;
+  --paper: #f8f5ee;
+  --paper-dot: rgba(34, 48, 43, .09);
+  --ink: #22302b;
+  --muted: #76827c;
+  --line: #e3ded3;
+  --surface: #ffffff;
+  --surface-soft: #f3efe6;
+  --board-1: #15352b;
+  --board-2: #1d4a3b;
+  --chalk: #f4f1e4;
+  --chalk-dim: rgba(244, 241, 228, .62);
+  --chalk-line: rgba(244, 241, 228, .4);
   --tray: #b18b5c;
-  --tray-2: #94714a;
-  --chalk-dust: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
-  --studio-shadow-sm: 0 6px 18px rgba(39, 51, 45, .06);
-  --studio-shadow-md: 0 14px 34px rgba(39, 51, 45, .09);
-  --studio-shadow-lg: 0 24px 54px rgba(28, 45, 37, .13);
+  --green: #1d4a3c;
+  --green-2: #27624f;
+  --tag-bg: #e4f2eb;
+  --tag-text: #2f7a5b;
+  --new: #ff4d5e;
+  --star: #e0b100;
+  --chalk-dust: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 -.12'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
 
-  --text: var(--studio-text);
-  --muted: var(--studio-muted);
-  --surface: var(--studio-surface);
-  --surface-solid: var(--studio-surface);
-  --line: var(--studio-line);
-  --primary: var(--studio-green);
-  --primary-2: var(--studio-blue);
-  --header-bg: rgba(250, 248, 243, .93);
-  --input-bg: #ffffff;
+  /* portal.css tokens: point them at ours so leftover rules blend in. */
+  --bg: var(--paper);
+  --surface-solid: var(--surface);
+  --text: var(--ink);
+  --primary: var(--green);
+  --primary-2: var(--green-2);
+  --input-bg: var(--surface);
+  --header-bg: var(--board-1);
+  --shadow: 0 14px 34px rgba(34, 48, 43, .10);
+  --card-shadow: 0 6px 18px rgba(34, 48, 43, .07);
   --portal-corner-radius: 18;
 
-  position: relative;
   min-height: 100vh;
-  color: var(--studio-text);
-  background: var(--studio-bg);
-  background-image: none !important;
-}
-
-html[data-theme="dark"] body.portal-view {
-  --studio-bg: #171c19;
-  --studio-bg-2: #1b211e;
-  --studio-surface: #202824;
-  --studio-surface-soft: #1c231f;
-  --studio-text: #f1f2ec;
-  --studio-muted: #a9b3ad;
-  --studio-line: #35413b;
-  --studio-green: #2e6a58;
-  --studio-green-2: #397b68;
-  --studio-green-3: #4c8c78;
-  --board-1: #0f2b24;
-  --board-2: #133a30;
-  --board-3: #1a4a3d;
-  --tray: #8c6d49;
-  --tray-2: #755a3b;
-  --header-bg: rgba(23, 28, 25, .94);
-  --input-bg: #202824;
-  --studio-shadow-sm: 0 6px 18px rgba(0, 0, 0, .16);
-  --studio-shadow-md: 0 14px 34px rgba(0, 0, 0, .24);
-  --studio-shadow-lg: 0 24px 54px rgba(0, 0, 0, .30);
-  color: var(--studio-text);
-  background: var(--studio-bg);
-  background-image: none !important;
-}
-
-/* Portal-specific uploaded backgrounds are deliberately muted in this theme.
-   Keeping the setting/data is useful, but it should not compete with app cards. */
-body.portal-view.has-custom-background,
-html[data-theme="dark"] body.portal-view.has-custom-background {
-  background: var(--studio-bg) !important;
-  background-image: none !important;
+  color: var(--ink);
+  font-family: "Gowun Dodum", "Noto Sans KR", sans-serif;
+  background-color: var(--paper) !important;
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1.2px) !important;
+  background-size: 22px 22px !important;
   background-attachment: scroll !important;
 }
-
-body.portal-view .portal-shell {
-  min-height: 100vh;
-  overflow: visible;
-  background: transparent;
+html[data-theme="dark"] body.portal-view {
+  --paper: #1a1e1c;
+  --paper-dot: rgba(244, 241, 228, .08);
+  --ink: #eef0ea;
+  --muted: #9aa49e;
+  --line: #333b37;
+  --surface: #242927;
+  --surface-soft: #1f2422;
+  --tag-bg: #27392f;
+  --tag-text: #9bd5bd;
+  --shadow: 0 14px 34px rgba(0, 0, 0, .3);
+  --card-shadow: 0 6px 18px rgba(0, 0, 0, .25);
 }
+/* An uploaded page background is ignored: it would fight the tiles. */
+body.portal-view.has-custom-background,
+html[data-theme="dark"] body.portal-view.has-custom-background {
+  background-color: var(--paper) !important;
+  background-image: radial-gradient(var(--paper-dot) 1px, transparent 1.2px) !important;
+  background-attachment: scroll !important;
+}
+body.portal-view .portal-shell { min-height: 100vh; overflow: visible; background: transparent; }
 body.portal-view .portal-shell::before,
 body.portal-view .portal-shell::after { display: none !important; }
 
-/* ---------- Header ---------- */
-body.portal-view .portal-header {
+/* ---------- Header: chalkboard band ---------- */
+body.portal-view .portal-header,
+html[data-theme="dark"] body.portal-view .portal-header {
   position: sticky;
   top: 0;
   z-index: 90;
-  border-bottom: 1px solid color-mix(in srgb, var(--studio-line) 82%, transparent);
-  background: var(--header-bg);
-  box-shadow: 0 4px 20px rgba(38, 49, 44, .045);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
-}
-body.portal-view .header-inner {
-  width: min(1180px, calc(100% - 40px));
-  min-height: 70px;
-}
-body.portal-view .brand { gap: 11px; }
-body.portal-view .brand-mark {
-  width: 40px;
-  height: 40px;
   border: 0;
-  border-radius: 12px;
-  color: #fff;
-  background: var(--studio-green);
-  box-shadow: 0 7px 16px rgba(23, 63, 52, .18);
-  transform: none;
-  font-family: Georgia, serif;
-  font-size: 21px;
-  font-weight: 700;
-  text-shadow: none;
-}
-html[data-theme="dark"] body.portal-view .brand-mark { background: #295f50; }
-body.portal-view .brand-title {
-  margin: 0;
-  color: var(--studio-text);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -.025em;
-  text-shadow: none;
-}
-body.portal-view .brand-caption {
-  margin-top: 1px;
-  color: var(--studio-muted);
-  font-family: "Nunito", sans-serif;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .14em;
-}
-body.portal-view .portal-version {
-  display: inline-block;
-  margin-left: 5px;
-  color: var(--studio-green-3);
-  letter-spacing: .03em;
-}
-body.portal-view .header-actions { gap: 8px; }
-body.portal-view .icon-link,
-body.portal-view .install-portal-button,
-body.portal-view .theme-toggle {
-  min-height: 38px;
-  border: 1px solid var(--studio-line);
-  border-radius: 11px;
-  color: var(--studio-text);
-  background: var(--studio-surface);
-  box-shadow: none;
-}
-body.portal-view .icon-link:hover,
-body.portal-view .theme-toggle:hover,
-body.portal-view .install-portal-button:hover {
-  border-color: color-mix(in srgb, var(--studio-green) 35%, var(--studio-line));
-  color: var(--studio-green);
-  background: color-mix(in srgb, var(--studio-surface) 92%, var(--studio-green) 8%);
-  box-shadow: var(--studio-shadow-sm);
-}
-body.portal-view .theme-toggle { padding: 4px 9px 4px 5px; }
-body.portal-view .theme-toggle-track {
-  width: 45px;
-  height: 25px;
-  color: #b49b41;
-  background: #f4edcf;
-}
-body.portal-view .theme-toggle-thumb {
-  width: 19px;
-  height: 19px;
-  background: #ffffff;
-  box-shadow: 0 1px 5px rgba(36, 48, 42, .16);
-}
-html[data-theme="dark"] body.portal-view .theme-toggle-track {
-  color: #9bb6c8;
-  background: #303c37;
-}
-html[data-theme="dark"] body.portal-view .theme-toggle-thumb { transform: translateX(20px); }
-body.portal-view .theme-toggle-label {
-  min-width: 56px;
-  color: var(--studio-muted);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-/* ---------- Main ---------- */
-body.portal-view .portal-main {
-  width: min(1180px, calc(100% - 40px));
-  padding: 28px 0 56px;
-}
-
-/* Chalkboard hero, kept compact so the apps start higher on the page.
-   Chalk touches: dust speckle, hand-drawn frame, chalk squiggle, tray ledge. */
-body.portal-view .hero {
-  position: relative;
-  min-height: 0;
-  padding: 26px 34px 36px;
-  border: 0;
-  border-radius: 22px;
-  color: var(--chalk);
-  background:
-    radial-gradient(ellipse 58% 90% at 16% 18%, rgba(255,255,255,.08), transparent 64%),
-    radial-gradient(ellipse 48% 80% at 84% 90%, rgba(255,255,255,.06), transparent 62%),
-    var(--chalk-dust),
-    linear-gradient(125deg, var(--board-1) 0%, var(--board-2) 52%, var(--board-3) 100%);
-  background-size: auto, auto, 180px 180px, auto;
-  box-shadow: var(--studio-shadow-lg);
-  overflow: hidden;
-}
-/* hand-drawn chalk frame */
-body.portal-view .hero::before {
-  content: "";
-  position: absolute;
-  inset: 9px 9px 15px;
-  width: auto;
-  height: auto;
-  border: 2px solid rgba(247, 245, 234, .17);
-  border-radius: 17px 13px 18px 12px / 13px 18px 12px 17px;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-/* chalk tray ledge with chalk pieces and an eraser */
-body.portal-view .hero::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  width: auto;
-  height: 11px;
-  border: 0;
-  border-radius: 0;
-  background:
-    linear-gradient(#fbfaf0, #fbfaf0) 36px 3px / 34px 5px no-repeat,
-    linear-gradient(#efd76c, #efd76c) 80px 3px / 22px 5px no-repeat,
-    linear-gradient(#55685f, #55685f) calc(100% - 46px) 2px / 36px 7px no-repeat,
-    linear-gradient(180deg, var(--tray), var(--tray-2));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
-  pointer-events: none;
-}
-body.portal-view .hero-copy,
-body.portal-view .hero-stat { position: relative; z-index: 1; }
-body.portal-view .eyebrow {
-  margin-bottom: 4px;
-  color: #dbc96f;
-  font-family: "Nunito", sans-serif;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: .16em;
-}
-body.portal-view .hero h2 {
-  margin: 0;
-  color: #fbfaf2;
-  font-family: "Gaegu", "Gowun Dodum", sans-serif;
-  font-size: clamp(36px, 4.6vw, 50px);
-  font-weight: 700;
-  line-height: 1.02;
-  letter-spacing: -.02em;
-  text-shadow: 0 0 1px rgba(255,255,255,.35);
-}
-body.portal-view .hero p {
-  max-width: 650px;
-  margin-top: 8px;
-  color: rgba(242, 243, 230, .82);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: 15px;
-  line-height: 1.6;
-}
-body.portal-view .hero-stat {
-  min-width: 108px;
-  padding: 12px 16px;
-  border: 2px solid rgba(247, 245, 234, .3);
-  border-radius: 16px 12px 17px 13px / 13px 17px 12px 16px;
-  background: rgba(255,255,255,.04);
-  box-shadow: none;
-  text-align: center;
-}
-body.portal-view .hero-stat strong {
-  color: #f1dc79;
-  font-family: "Gaegu", "Nunito", sans-serif;
-  font-size: 40px;
-  line-height: 1;
-}
-body.portal-view .hero-stat span {
-  margin-top: 3px;
-  color: rgba(247, 247, 236, .75);
-  font-size: 12px;
-}
-body.portal-view .hero-chalk-line {
-  display: block;
-  width: 168px;
-  height: 9px;
-  margin-top: 10px;
-  background: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='168' height='9' viewBox='0 0 168 9'%3E%3Cpath d='M2 5.5C22 1.5 42 8 64 4.2S108 2 128 5.4 156 6.5 166 3' fill='none' stroke='%23f7f5ea' stroke-opacity='.55' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat left center / contain;
-}
-
-body.portal-view .notice {
-  margin-top: 14px;
-  border: 1px solid #e4d39b;
-  border-radius: 12px;
-  color: #665826;
-  background: #fff8dc;
-  box-shadow: none;
-}
-html[data-theme="dark"] body.portal-view .notice {
-  border-color: #5b5339;
-  color: #e6dcae;
-  background: #29271e;
-}
-
-/* ---------- Quick access ---------- */
-body.portal-view .chalk-quick-access {
-  display: grid;
-  grid-template-columns: .95fr 1.05fr 1.05fr;
-  gap: 14px;
-  margin-top: 18px;
-  padding: 14px;
-  border: 1px solid var(--studio-line);
-  border-radius: 20px;
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-md);
-  overflow: visible;
-}
-body.portal-view .quick-access-intro,
-body.portal-view .quick-access-group {
-  min-width: 0;
-  padding: 15px 16px;
-  border: 0;
-  border-radius: 15px;
-  background: var(--studio-surface-soft);
-}
-body.portal-view .quick-access-group { border-left: 0; }
-body.portal-view .quick-access-intro {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-body.portal-view .chalk-pin {
-  color: var(--studio-yellow);
-  font-size: 17px;
-  transform: none;
-}
-body.portal-view .quick-access-kicker {
-  margin: 0 0 3px;
-  color: var(--studio-green-3);
-  font-family: "Nunito", sans-serif;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: .14em;
-}
-body.portal-view .quick-access-intro h3 {
-  margin: 0;
-  color: var(--studio-text);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-}
-body.portal-view .quick-access-intro p:last-child {
-  margin: 4px 0 0;
-  color: var(--studio-muted);
-  font-size: 12px;
-  line-height: 1.55;
-}
-body.portal-view .quick-access-heading {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 9px;
-  color: var(--studio-text);
-  font-size: 13px;
-}
-body.portal-view .quick-access-heading > span { color: var(--studio-green-3); font-size: 15px; }
-body.portal-view .quick-app-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
-}
-body.portal-view .quick-app-button {
-  min-width: 0;
-  min-height: 72px;
-  padding: 8px 6px;
-  border: 1px solid var(--studio-line);
-  border-radius: 12px;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 4px;
-  color: var(--studio-text);
-  background: var(--studio-surface);
-  box-shadow: none;
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
-}
-body.portal-view .quick-app-button:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--app-color, var(--studio-green)) 34%, var(--studio-line));
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-sm);
-}
-body.portal-view .quick-app-icon {
-  width: 31px;
-  height: 31px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border: 0;
-  border-radius: 9px;
-  font-size: 18px;
-  background: color-mix(in srgb, var(--app-color, var(--studio-green)) 15%, var(--studio-surface));
-}
-body.portal-view .quick-app-icon img { width: 100%; height: 100%; object-fit: cover; }
-body.portal-view .quick-app-name,
-body.portal-view .quick-app-title {
-  width: 100%;
-  overflow: hidden;
-  color: var(--studio-text);
-  font-size: 12px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-align: center;
-}
-body.portal-view .quick-empty,
-body.portal-view .quick-app-empty {
-  grid-column: 1 / -1;
-  min-height: 60px;
-  padding: 8px;
-  border: 1px dashed color-mix(in srgb, var(--studio-line) 85%, transparent);
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  color: var(--studio-muted);
-  background: transparent;
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: center;
-}
-/* Nothing to show yet: shrink the panel to a single quiet line. */
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) {
-  grid-template-columns: 1fr;
-  margin-top: 12px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-group { display: none; }
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro {
-  align-items: center;
-  padding: 10px 16px;
-  border: 1px dashed var(--studio-line);
-  background: transparent;
-}
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 2px 14px;
-}
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-kicker { display: none; }
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro h3 { font-size: 16px; }
-body.portal-view .chalk-quick-access:not(:has(.quick-app-button)) .quick-access-intro p:last-child { margin: 0; }
-
-/* ---------- Lesson sets ---------- */
-body.portal-view .lesson-sets-section { margin: 24px 0 30px; }
-body.portal-view .lesson-sets-section .section-heading h3,
-body.portal-view .section-heading h3 {
-  color: var(--studio-text);
-  font-family: "Gaegu", "Gowun Dodum", sans-serif;
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -.02em;
-}
-body.portal-view .section-heading p { color: var(--studio-muted); font-size: 13px; }
-body.portal-view .lesson-set-card,
-body.portal-view .draft-preview-card {
-  border: 1px solid var(--studio-line);
-  border-radius: 16px;
-  color: var(--studio-text);
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-sm);
-}
-body.portal-view .lesson-set-card h4 { color: var(--studio-green); }
-html[data-theme="dark"] body.portal-view .lesson-set-card h4 { color: #8bc6ae; }
-body.portal-view .lesson-set-card p { color: var(--studio-muted); }
-body.portal-view .lesson-set-start-button,
-body.portal-view .resume-lesson-button {
-  border: 1px solid var(--studio-green);
-  border-radius: 10px;
-  color: #fff;
-  background: var(--studio-green);
-  box-shadow: none;
-}
-body.portal-view .lesson-set-start-button:hover,
-body.portal-view .resume-lesson-button:hover { filter: brightness(1.06); }
-
-/* ---------- Search and category tabs ---------- */
-body.portal-view .toolbar {
-  margin-top: 18px;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--studio-line);
-  border-radius: 17px;
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-sm);
-}
-body.portal-view .search-wrap::before { color: var(--studio-muted); }
-body.portal-view .search-input {
-  height: 44px;
-  border: 1px solid var(--studio-line);
-  border-radius: 11px;
-  color: var(--studio-text);
-  background: var(--studio-surface-soft);
-  box-shadow: none;
-}
-body.portal-view .search-input::placeholder { color: color-mix(in srgb, var(--studio-muted) 77%, transparent); }
-body.portal-view .search-input:focus {
-  border-color: color-mix(in srgb, var(--studio-green) 58%, var(--studio-line));
-  background: var(--studio-surface);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--studio-green) 10%, transparent);
-}
-body.portal-view .category-tabs { gap: 4px; }
-body.portal-view .category-tab {
-  height: 40px;
-  padding: 0 14px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  color: var(--studio-muted);
-  background: transparent;
-  font-size: 13px;
-  font-weight: 800;
-}
-body.portal-view .category-tab:hover {
-  border-color: var(--studio-line);
-  color: var(--studio-text);
-  background: var(--studio-surface-soft);
-}
-body.portal-view .category-tab.active {
-  border-color: transparent;
-  color: #fff;
-  background: var(--studio-green);
-  box-shadow: 0 5px 12px rgba(23, 63, 52, .16);
-}
-html[data-theme="dark"] body.portal-view .category-tab.active { background: #316e5d; }
-body.portal-view .category-tab-count {
-  min-width: 18px;
-  height: 18px;
-  color: inherit;
-  background: color-mix(in srgb, currentColor 9%, transparent);
-}
-body.portal-view .category-tab.active .category-tab-count {
-  color: #fff;
-  background: rgba(255,255,255,.15);
-}
-body.portal-view .result-count { color: var(--studio-muted); font-size: 12px; white-space: nowrap; }
-body.portal-view .category-overview-heading { margin-top: 22px; }
-
-/* ---------- Category sections ---------- */
-body.portal-view .category-sections { gap: 15px; }
-body.portal-view .category-section {
-  overflow: hidden;
-  border: 1px solid var(--studio-line);
-  border-radius: 18px;
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-sm);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-body.portal-view .category-section:not(.is-open) {
-  background: var(--studio-surface);
-  box-shadow: 0 4px 12px rgba(39, 51, 45, .035);
-}
-body.portal-view .category-section::before {
-  width: 4px;
-  background: var(--section-color);
-  opacity: .82;
-}
-body.portal-view .category-section.is-open::after { display: none; }
-body.portal-view .category-section-header {
-  min-height: 0;
-  padding: 7px 12px 7px 17px;
+  border-bottom: 4px solid var(--tray);
   color: var(--chalk);
   background:
     var(--chalk-dust),
     linear-gradient(120deg, var(--board-1), var(--board-2));
   background-size: 180px 180px, auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
-body.portal-view .category-section-toggle {
-  min-height: 54px;
-  padding: 4px 6px;
-  border-radius: 12px;
+body.portal-view .header-inner {
+  width: min(1120px, calc(100% - 40px));
+  min-height: 70px;
+  margin: 0 auto;
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+}
+body.portal-view .brand { display: block; min-width: 0; }
+body.portal-view .brand-title {
+  margin: 0;
   color: var(--chalk);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  text-shadow: 0 0 1px rgba(255, 255, 255, .4);
 }
-body.portal-view .category-section-toggle:hover {
-  background: rgba(255, 255, 255, .06);
-  transform: none;
+body.portal-view .brand-caption {
+  margin: 3px 0 0;
+  color: var(--chalk-dim);
+  font-family: "Nunito", sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .18em;
 }
-body.portal-view .category-section-index {
-  width: 40px;
-  height: 40px;
-  border: 2px solid color-mix(in srgb, var(--section-color) 68%, #fff);
-  border-radius: 52% 48% 50% 46% / 47% 53% 46% 52%;
+body.portal-view .search-wrap { justify-self: center; width: min(440px, 100%); }
+body.portal-view .search-wrap::before { display: none; }
+body.portal-view .search-input,
+html[data-theme="dark"] body.portal-view .search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 16px 0 40px;
+  border: 2px solid var(--chalk-line);
+  border-radius: 14px 10px 15px 11px / 11px 15px 10px 14px;
   color: var(--chalk);
-  background: transparent;
+  background: rgba(255, 255, 255, .06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23f4f1e4' stroke-opacity='.7' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") 13px center no-repeat;
   box-shadow: none;
-  font-family: "Gaegu", "Nunito", sans-serif;
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
   font-size: 19px;
   font-weight: 700;
 }
-body.portal-view .category-section-index::after { display: none; }
-body.portal-view .category-section-title {
+body.portal-view .search-input::placeholder { color: var(--chalk-dim); }
+body.portal-view .search-input:focus {
+  outline: none;
+  border-color: var(--chalk);
+  background-color: rgba(255, 255, 255, .1);
+  box-shadow: 0 0 0 3px rgba(244, 241, 228, .14);
+}
+body.portal-view .header-actions { display: flex; align-items: center; gap: 10px; }
+body.portal-view .today-date {
+  margin-right: 4px;
   color: var(--chalk);
   font-family: "Gaegu", "Gowun Dodum", sans-serif;
-  font-size: clamp(26px, 3vw, 32px);
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1.05;
-  letter-spacing: -.01em;
+  white-space: nowrap;
 }
-body.portal-view .category-section-subtitle {
-  color: rgba(247, 245, 234, .72);
-  font-size: 12px;
+body.portal-view .today-date:empty { display: none; }
+body.portal-view .icon-link,
+body.portal-view .theme-toggle,
+body.portal-view .install-portal-button,
+html[data-theme="dark"] body.portal-view .icon-link,
+html[data-theme="dark"] body.portal-view .theme-toggle,
+html[data-theme="dark"] body.portal-view .install-portal-button {
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: 2px solid var(--chalk-line);
+  border-radius: 50% 46% 52% 48% / 47% 53% 46% 52%;
+  display: grid;
+  place-items: center;
+  color: var(--chalk);
+  background: transparent;
+  box-shadow: none;
+  font-size: 18px;
+  line-height: 1;
+  text-decoration: none;
+  transform: none;
+  transition: background .15s ease, border-color .15s ease;
+}
+body.portal-view .install-portal-button,
+html[data-theme="dark"] body.portal-view .install-portal-button {
+  width: auto;
+  padding: 0 12px;
+  white-space: nowrap;
+  border-radius: 12px 9px 13px 10px / 10px 13px 9px 12px;
+  font-family: "Gaegu", sans-serif;
+  font-size: 17px;
   font-weight: 700;
 }
-body.portal-view .category-preview-icon,
-body.portal-view .category-preview-more {
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(247, 245, 234, .22);
+body.portal-view .icon-link:hover,
+body.portal-view .theme-toggle:hover,
+body.portal-view .install-portal-button:hover {
+  border-color: var(--chalk);
   color: var(--chalk);
   background: rgba(255, 255, 255, .1);
   box-shadow: none;
-  font-size: 15px;
+  transform: none;
 }
-body.portal-view .category-toggle-action {
-  border: 1px solid rgba(247, 245, 234, .3);
-  border-radius: 10px;
-  color: rgba(247, 245, 234, .88);
+body.portal-view .theme-toggle-sun,
+body.portal-view .theme-toggle-moon { display: none; }
+html:not([data-theme="dark"]) body.portal-view .theme-toggle-moon { display: block; }
+html[data-theme="dark"] body.portal-view .theme-toggle-sun { display: block; }
+
+/* ---------- Main ---------- */
+body.portal-view .portal-main {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 16px 0 60px;
+}
+
+/* Notice: a sticky note under the board. Stays yellow in dark mode too. */
+body.portal-view .notice,
+html[data-theme="dark"] body.portal-view .notice {
+  margin: 12px 0 4px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 3px;
+  color: #5a4a12;
+  background: #fff6b8;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .12);
+  transform: rotate(-.4deg);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Category tabs */
+body.portal-view .category-tabs { margin-top: 12px; gap: 6px; padding: 2px 0; }
+body.portal-view .category-tab,
+html[data-theme="dark"] body.portal-view .category-tab {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
   background: transparent;
   box-shadow: none;
-}
-body.portal-view .category-section.is-open .category-toggle-action { background: transparent; }
-body.portal-view .category-toggle-label { font-size: 12px; }
-body.portal-view .category-toggle-icon {
-  width: 25px;
-  height: 25px;
-  background: rgba(255, 255, 255, .12);
-  box-shadow: none;
-}
-body.portal-view .category-toggle-icon::before,
-body.portal-view .category-toggle-icon::after { background: var(--chalk); }
-body.portal-view .category-section-panel {
-  border-top: 0;
-  clip-path: inset(0 0 100% 0 round 14px);
-  filter: none;
-}
-body.portal-view .category-section.is-open .category-section-panel { clip-path: inset(0 0 0 0 round 14px); }
-/* Wrapping grid instead of a sideways-scrolling rail: every app is visible at once. */
-body.portal-view .category-app-rail {
-  display: grid;
-  grid-auto-flow: row;
-  grid-auto-columns: auto;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 236px), 1fr));
-  gap: 14px;
-  padding: 18px;
-  overflow: visible !important;
-  cursor: default;
-  user-select: auto;
-  -webkit-user-select: auto;
-}
-body.portal-view .category-app-rail::after { display: none; }
-body.portal-view .rail-counter { display: none; }
-
-/* ---------- App cards ---------- */
-body.portal-view .app-card {
-  min-height: 152px;
-  padding: 15px 16px 16px;
-  border: 1px solid var(--studio-line);
-  border-radius: 14px;
-  color: var(--studio-text);
-  background: var(--studio-surface-soft);
-  box-shadow: none;
-  transition: transform .17s ease, box-shadow .17s ease, border-color .17s ease, background .17s ease;
-}
-body.portal-view .app-card::before {
-  inset: 0 auto 0 0;
-  width: 3px;
-  height: auto;
-  border-radius: 14px 0 0 14px;
-  background: var(--app-color, var(--studio-green));
-  opacity: .78;
-}
-body.portal-view .app-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--app-color, var(--studio-green)) 34%, var(--studio-line));
-  background: var(--studio-surface);
-  box-shadow: 0 10px 24px rgba(36, 49, 43, .09);
-}
-html[data-theme="dark"] body.portal-view .app-card:hover { box-shadow: 0 10px 24px rgba(0,0,0,.23); }
-body.portal-view .app-icon {
-  width: 46px;
-  height: 46px;
-  border: 0;
-  border-radius: 13px;
-  color: color-mix(in srgb, var(--app-color, var(--studio-green)) 62%, var(--studio-text));
-  background: color-mix(in srgb, var(--app-color, var(--studio-green)) 17%, var(--studio-surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-color, var(--studio-green)) 14%, transparent);
-  font-family: "Gaegu", "Nunito", sans-serif;
-  font-size: 26px;
+  font-size: 14px;
   font-weight: 700;
 }
+body.portal-view .category-tab:hover { border-color: var(--line); color: var(--ink); background: var(--surface); }
+body.portal-view .category-tab.active,
+html[data-theme="dark"] body.portal-view .category-tab.active {
+  border-color: transparent;
+  color: #fff;
+  background: var(--green);
+  box-shadow: 0 5px 12px rgba(29, 74, 60, .2);
+}
+body.portal-view .category-tab-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 11px;
+  line-height: 18px;
+}
+body.portal-view .category-tab.active .category-tab-count { background: rgba(255, 255, 255, .18); }
+
+/* "자주 쓰는" row */
+body.portal-view .quick-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin-top: 16px;
+}
+body.portal-view .quick-label {
+  margin-right: 4px;
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+}
+body.portal-view .quick-apps { display: flex; flex-wrap: wrap; gap: 8px; }
+body.portal-view .quick-app-button,
+html[data-theme="dark"] body.portal-view .quick-app-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  min-height: 0;
+  padding: 0 14px 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(34, 48, 43, .05);
+  font-family: "Gowun Dodum", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+body.portal-view .quick-app-button:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(34, 48, 43, .1); }
+body.portal-view .quick-app-icon {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #fff;
+  background: var(--app-color, var(--green));
+  font-size: 16px;
+  line-height: 1;
+}
+body.portal-view .quick-app-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.portal-view .quick-app-icon.is-letter { font-family: "Gaegu", sans-serif; font-size: 17px; font-weight: 700; }
+body.portal-view .quick-app-name { white-space: nowrap; }
+body.portal-view .quick-app-button.is-favorite::after { content: "★"; margin-left: -2px; color: var(--star); font-size: 12px; }
+
+/* Search status + lesson sets */
+body.portal-view .search-status {
+  margin: 20px 0 -12px;
+  color: var(--muted);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+}
+body.portal-view .lesson-sets-section { margin: 24px 0 0; }
+body.portal-view .section-heading h3 {
+  color: var(--ink);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+}
+body.portal-view .section-heading p { color: var(--muted); font-size: 13px; }
+body.portal-view .lesson-set-card,
+body.portal-view .draft-preview-card,
+html[data-theme="dark"] body.portal-view .lesson-set-card,
+html[data-theme="dark"] body.portal-view .draft-preview-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+body.portal-view .lesson-set-card h4 { color: var(--green-2); }
+html[data-theme="dark"] body.portal-view .lesson-set-card h4 { color: #8bc6ae; }
+body.portal-view .lesson-set-card p { color: var(--muted); }
+body.portal-view .lesson-set-start-button,
+body.portal-view .resume-lesson-button {
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: var(--green);
+  box-shadow: none;
+}
+body.portal-view .lesson-set-start-button:hover,
+body.portal-view .resume-lesson-button:hover { filter: brightness(1.08); }
+
+/* ---------- Category sections ---------- */
+body.portal-view .category-sections { display: block; }
+body.portal-view .category-section,
+html[data-theme="dark"] body.portal-view .category-section {
+  margin: 30px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  overflow: visible !important;
+  scroll-margin-top: 92px;
+  transition: none;
+}
+body.portal-view .category-section::before,
+body.portal-view .category-section::after { display: none !important; }
+body.portal-view .category-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 16px;
+  color: var(--ink);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* highlighter stroke under the category name */
+body.portal-view .category-name {
+  padding: 0 4px;
+  background: linear-gradient(transparent 58%, var(--section-color, #ffe66d) 58%, var(--section-color, #ffe66d) 92%, transparent 92%);
+}
+html[data-theme="dark"] body.portal-view .category-name {
+  background: linear-gradient(transparent 58%, color-mix(in srgb, var(--section-color, #ffe66d) 45%, transparent) 58%, color-mix(in srgb, var(--section-color, #ffe66d) 45%, transparent) 92%, transparent 92%);
+}
+body.portal-view .category-count { color: var(--muted); font-size: 18px; font-weight: 400; }
+@keyframes categoryFlash {
+  0%, 100% { background-color: transparent; }
+  40% { background-color: color-mix(in srgb, var(--section-color, #ffe66d) 55%, transparent); }
+}
+body.portal-view .category-section.category-highlight .category-name { animation: categoryFlash .9s ease; }
+
+/* Tile grid: like a phone home screen */
+body.portal-view .tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 22px 10px;
+}
+
+/* ---------- App tiles ---------- */
+body.portal-view .app-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  text-align: center;
+  outline: none;
+}
+body.portal-view .app-tile.is-clickable { cursor: pointer; }
+body.portal-view .app-tile-head { position: relative; width: 78px; height: 78px; }
+body.portal-view .app-tile-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #fff;
+  background: var(--app-color, var(--green));
+  box-shadow:
+    0 10px 22px color-mix(in srgb, var(--app-color, var(--green)) 38%, transparent),
+    inset 0 -6px 0 rgba(0, 0, 0, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .35);
+  font-size: 38px;
+  line-height: 1;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+body.portal-view .app-tile.is-clickable:hover .app-tile-icon,
+body.portal-view .app-tile:focus-visible .app-tile-icon { transform: translateY(-4px) scale(1.04); }
+body.portal-view .app-tile:focus-visible .app-tile-icon {
+  box-shadow: 0 0 0 3px var(--paper), 0 0 0 6px var(--green);
+}
+body.portal-view .app-tile-icon.has-image { background: var(--surface); box-shadow: 0 10px 22px rgba(34, 48, 43, .18); }
+body.portal-view .app-tile-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* No icon yet: the app's first letter on a deeper shade of its color */
+body.portal-view .app-tile-icon.is-letter {
+  background: color-mix(in srgb, var(--app-color, var(--green)) 72%, #203028);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .18);
+}
 body.portal-view .favorite-toggle {
+  position: absolute;
+  left: -7px;
+  top: -7px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #b9b3a6;
+  background: var(--surface);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease;
+}
+body.portal-view .app-tile:hover .favorite-toggle,
+body.portal-view .app-tile:focus-within .favorite-toggle,
+body.portal-view .favorite-toggle[aria-pressed="true"] { opacity: 1; }
+body.portal-view .favorite-toggle:hover { color: var(--star); }
+body.portal-view .favorite-toggle[aria-pressed="true"] { color: var(--star); }
+@media (hover: none) {
+  body.portal-view .favorite-toggle { width: 24px; height: 24px; font-size: 13px; opacity: .7; }
+  body.portal-view .favorite-toggle[aria-pressed="true"] { opacity: 1; }
+}
+body.portal-view .app-tile-new {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  z-index: 2;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border: 2px solid var(--paper);
+  border-radius: 999px;
+  color: #fff;
+  background: var(--new);
+  font-family: "Nunito", sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 18px;
+  letter-spacing: .04em;
+}
+body.portal-view .app-tile-name {
+  max-width: 112px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+body.portal-view .app-tile-tag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: var(--tag-text);
+  background: var(--tag-bg);
+  font-size: 10px;
+  vertical-align: 1px;
+}
+body.portal-view .app-tile-sub {
+  max-width: 100%;
+  margin-top: -5px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Empty / error / loading */
+body.portal-view .category-wide-state,
+body.portal-view .empty-state,
+body.portal-view .error-state {
+  display: grid;
+  gap: 6px;
+  margin-top: 30px;
+  padding: 28px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  color: var(--muted);
+  background: transparent;
+  text-align: center;
+}
+body.portal-view .empty-state strong,
+body.portal-view .error-state strong {
+  color: var(--ink);
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+@keyframes launcherShimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+body.portal-view .category-section-skeleton { min-height: 0 !important; }
+body.portal-view .skeleton,
+html[data-theme="dark"] body.portal-view .skeleton {
+  min-height: 130px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, var(--surface-soft) 25%, var(--surface) 50%, var(--surface-soft) 75%);
+  background-size: 200% 100%;
+  animation: launcherShimmer 1.4s linear infinite;
+}
+
+/* ---------- Footer ---------- */
+body.portal-view .portal-footer,
+html[data-theme="dark"] body.portal-view .portal-footer {
+  padding: 40px 0 30px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: none;
+}
+body.portal-view .portal-footer a { margin-left: 10px; color: var(--green-2); }
+
+/* ---------- Launch choice (apps with two links) ---------- */
+body.portal-view .launch-choice {
+  width: min(380px, calc(100% - 32px));
+  padding: 22px 22px 20px;
+  border: 0;
+  border-radius: 20px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .28);
+  font-family: "Gowun Dodum", "Noto Sans KR", sans-serif;
+}
+body.portal-view .launch-choice::backdrop { background: rgba(20, 30, 26, .5); backdrop-filter: blur(4px); }
+body.portal-view .launch-choice-close {
+  position: absolute;
+  right: 12px;
+  top: 10px;
   width: 32px;
   height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 9px;
-  color: color-mix(in srgb, var(--studio-muted) 82%, transparent);
-  background: transparent;
+  border-radius: 50%;
+  color: var(--ink);
+  background: var(--surface-soft);
   font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
 }
-body.portal-view .favorite-toggle:hover {
-  color: #b8952c;
-  background: #f6edce;
+body.portal-view .launch-choice-head {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  text-align: center;
 }
-html[data-theme="dark"] body.portal-view .favorite-toggle:hover { background: #3b3728; }
-body.portal-view .favorite-toggle[aria-pressed="true"] { color: #c29e2d; }
-body.portal-view .badge {
-  padding: 4px 8px;
-  border: 0;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--studio-muted) 10%, transparent);
-  font-size: 10px;
+body.portal-view .launch-choice-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #fff;
+  background: var(--app-color, var(--green));
+  font-size: 32px;
+  line-height: 1;
 }
-body.portal-view .badge-featured { color: #3e8066; background: #e4f2eb; }
-body.portal-view .badge-new { color: #a65f72; background: #f8e9ed; }
-html[data-theme="dark"] body.portal-view .badge-featured { color: #9bd5bd; background: #283c34; }
-html[data-theme="dark"] body.portal-view .badge-new { color: #e5a7b8; background: #3c2d32; }
-body.portal-view .card-category { color: color-mix(in srgb, var(--app-color) 72%, var(--studio-text)); }
-body.portal-view .app-title {
-  color: var(--studio-text);
-  font-family: "Gowun Dodum", sans-serif;
-  font-size: 17px;
+body.portal-view .launch-choice-icon img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.portal-view .launch-choice-icon.is-letter {
+  background: color-mix(in srgb, var(--app-color, var(--green)) 72%, #203028);
+  font-family: "Gaegu", sans-serif;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -.01em;
 }
-body.portal-view .category-app-rail .app-card { min-height: 152px; }
-body.portal-view .category-app-rail .app-title { margin-top: 12px; }
-body.portal-view .app-description {
-  margin: 5px 0 14px;
-  color: var(--studio-muted);
-  font-size: 13px;
-  line-height: 1.55;
-  -webkit-line-clamp: 2;
+body.portal-view .launch-choice h2 {
+  margin: 0;
+  font-family: "Gaegu", "Gowun Dodum", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
 }
-body.portal-view .app-description:empty { display: none; }
-body.portal-view .launch-button {
-  min-height: 40px;
-  border: 0;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 800;
-  box-shadow: none;
+body.portal-view .launch-choice p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+body.portal-view .launch-choice-actions { display: grid; gap: 10px; margin-top: 18px; }
+body.portal-view .launch-choice-button {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
 }
-/* One board-green button for every app: pale app colors used to make it look disabled. */
-body.portal-view .launch-primary {
-  color: #fff;
-  background: var(--studio-green-2);
-}
-body.portal-view .launch-primary:hover { filter: brightness(1.08); }
-body.portal-view .launch-secondary,
-html[data-theme="dark"] body.portal-view .launch-secondary {
-  border: 1px solid var(--studio-line);
-  color: var(--studio-text);
-  background: var(--studio-surface);
-}
-@keyframes chalkCardIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-body.portal-view .category-section.animate-cards.is-open.is-visible .app-card {
-  animation: chalkCardIn .42s cubic-bezier(.18,.82,.24,1) both;
-  animation-delay: calc(60ms + (var(--card-index, 0) * 45ms));
-}
+body.portal-view .launch-choice-button.primary { color: #fff; background: var(--green); }
+body.portal-view .launch-choice-button.primary:hover { filter: brightness(1.08); }
+body.portal-view .launch-choice-button.secondary { border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
+body.portal-view .launch-choice-button.secondary:hover { background: var(--surface-soft); }
 
-body.portal-view .error-state {
-  border-color: var(--studio-line);
-  background: var(--studio-surface);
-  color: var(--studio-muted);
+/* Lesson runner dialog: paper surface */
+body.portal-view .lesson-runner-dialog,
+html[data-theme="dark"] body.portal-view .lesson-runner-dialog {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
-body.portal-view .empty-state strong,
-body.portal-view .error-state strong { color: var(--studio-text); }
-body.portal-view .skeleton {
-  background: linear-gradient(90deg, #efede7 25%, #f8f6f1 50%, #efede7 75%);
-  background-size: 200% 100%;
-}
-html[data-theme="dark"] body.portal-view .skeleton {
-  background: linear-gradient(90deg, #242c28 25%, #303a35 50%, #242c28 75%);
-  background-size: 200% 100%;
-}
-
-/* ---------- Footer / quick launcher ---------- */
-body.portal-view .portal-footer {
-  color: var(--studio-muted);
-  text-shadow: none;
-}
-body.portal-view .portal-footer a { color: var(--studio-green-3); }
-body.portal-view .footer-version {
-  margin-left: 10px;
-  padding-left: 10px;
-  border-left: 1px solid var(--studio-line);
-  color: color-mix(in srgb, var(--studio-muted) 72%, transparent);
-}
-body.portal-view .quick-launcher-button {
-  border: 0;
-  color: #fff;
-  background: var(--studio-green);
-  box-shadow: 0 12px 25px rgba(23,63,52,.22);
-}
-body.portal-view .quick-launcher-button:hover { background: var(--studio-green-2); }
-body.portal-view .quick-launcher-menu {
-  border: 1px solid var(--studio-line);
-  color: var(--studio-text);
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-md);
-}
-body.portal-view .quick-launcher-menu a,
-body.portal-view .quick-launcher-menu button { color: var(--studio-text); }
-body.portal-view .quick-launcher-menu a:hover,
-body.portal-view .quick-launcher-menu button:hover { background: var(--studio-surface-soft); }
-
-/* Dialog */
-body.portal-view .lesson-runner-dialog {
-  border: 1px solid var(--studio-line);
-  color: var(--studio-text);
-  background: var(--studio-surface);
-  box-shadow: var(--studio-shadow-lg);
-}
-body.portal-view .lesson-runner-close { color: var(--studio-text); background: var(--studio-surface-soft); }
+body.portal-view .lesson-runner-close { color: var(--ink); background: var(--surface-soft); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 980px) {
   body.portal-view .header-inner,
-  body.portal-view .portal-main { width: min(100% - 28px, 1180px); }
-  body.portal-view .chalk-quick-access { grid-template-columns: 1fr 1fr; }
-  body.portal-view .quick-access-intro { grid-column: 1 / -1; }
+  body.portal-view .portal-main { width: calc(100% - 28px); }
 }
 
 @media (max-width: 720px) {
-  body.portal-view .header-inner { min-height: 62px; width: calc(100% - 22px); }
-  body.portal-view .portal-main { width: calc(100% - 22px); padding-top: 18px; }
-  body.portal-view .brand-title { font-size: 18px; }
-  body.portal-view .brand-caption { display: none; }
-  body.portal-view .header-admin-label,
-  body.portal-view .theme-toggle-label { display: none; }
-  body.portal-view .icon-link,
-  body.portal-view .install-portal-button,
-  body.portal-view .theme-toggle { min-height: 36px; }
-  body.portal-view .hero {
+  body.portal-view .header-inner {
+    width: calc(100% - 22px);
     min-height: 0;
-    padding: 22px 20px 32px;
-    border-radius: 18px;
-    align-items: flex-start;
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
+    padding: 10px 0 12px;
   }
-  body.portal-view .hero h2 { font-size: clamp(32px, 9.5vw, 42px); }
-  body.portal-view .hero p { max-width: 100%; font-size: 13px; }
-  body.portal-view .hero-stat {
-    min-width: 0;
-    margin-top: 12px;
-    padding: 8px 14px;
-    border-radius: 13px;
-    text-align: left;
-  }
-  body.portal-view .hero-stat strong { font-size: 32px; }
-  body.portal-view .hero-stat span { font-size: 11px; }
-  body.portal-view .chalk-quick-access {
-    grid-template-columns: 1fr;
-    gap: 9px;
-    padding: 9px;
-    border-radius: 17px;
-  }
-  body.portal-view .quick-access-intro { grid-column: auto; }
-  body.portal-view .quick-access-intro,
-  body.portal-view .quick-access-group { padding: 13px; }
-  body.portal-view .toolbar {
-    padding: 9px;
-    border-radius: 15px;
-  }
-  body.portal-view .category-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+  body.portal-view .search-wrap { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  body.portal-view .search-input { height: 40px; font-size: 17px; }
+  body.portal-view .brand-title { font-size: 27px; }
+  body.portal-view .brand-caption { display: none; }
+  body.portal-view .today-date { display: none; }
+  body.portal-view .header-actions { gap: 8px; }
+  body.portal-view .portal-main { width: calc(100% - 22px); padding-top: 12px; }
+  body.portal-view .category-tabs { flex-wrap: nowrap; overflow-x: auto; }
   body.portal-view .category-tab { flex: 0 0 auto; }
-  /* Phones: swipe through cards one at a time, like the recent-apps switcher.
-     The card takes 80% of the width and the neighbours peek in from the sides. */
-  body.portal-view .category-app-rail {
-    grid-auto-flow: column;
-    grid-template-columns: none;
-    grid-auto-columns: 100%;
-    gap: 12px;
-    padding: 14px 10% 8px;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+  body.portal-view .quick-label { font-size: 21px; }
+  body.portal-view .category-section,
+  html[data-theme="dark"] body.portal-view .category-section { margin-top: 26px !important; scroll-margin-top: 120px; }
+  body.portal-view .category-title { font-size: 30px; margin-bottom: 14px; }
+  body.portal-view .tile-grid { grid-template-columns: repeat(4, 1fr); gap: 18px 6px; }
+  body.portal-view .app-tile-head { width: 66px; height: 66px; }
+  body.portal-view .app-tile-icon { border-radius: 19px; font-size: 32px; }
+  body.portal-view .app-tile-icon.is-letter { font-size: 34px; }
+  body.portal-view .app-tile-name { max-width: 84px; font-size: 12.5px; }
+  body.portal-view .launch-choice {
+    position: fixed;
+    inset: auto 0 0 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border-radius: 20px 20px 0 0;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
-  body.portal-view .category-app-rail::-webkit-scrollbar { display: none; }
-  body.portal-view .category-app-rail .app-card { scroll-snap-align: center; }
-  body.portal-view .rail-counter {
-    display: block;
-    padding: 0 0 12px;
-    color: var(--studio-muted);
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: .04em;
-    text-align: center;
-  }
-  body.portal-view .category-section-header { min-height: 0; padding: 6px 9px 6px 11px; }
-  body.portal-view .category-preview { display: none; }
-  body.portal-view .category-section-title { font-size: 26px; }
-  body.portal-view .category-app-rail .app-card { min-height: 0; }
 }
 
-@media (max-width: 480px) {
-  body.portal-view .brand-mark { width: 36px; height: 36px; border-radius: 10px; font-size: 19px; }
-  body.portal-view .header-actions { gap: 5px; }
-  body.portal-view .hero {
-    min-height: 0;
-    padding: 20px 18px 34px;
-  }
-  body.portal-view .hero p { max-width: 100%; }
-  body.portal-view .hero-stat { justify-self: start; }
-  body.portal-view .quick-app-list { grid-template-columns: repeat(3, 1fr); }
-  body.portal-view .section-heading h3 { font-size: 26px; }
-  body.portal-view .category-section-index { width: 38px; height: 38px; }
-  body.portal-view .category-toggle-label { display: none; }
+@media (max-width: 400px) {
+  body.portal-view .app-tile-head { width: 62px; height: 62px; }
+  body.portal-view .app-tile-icon { font-size: 30px; }
+  body.portal-view .app-tile-name { font-size: 12px; max-width: 78px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.portal-view .app-card,
+  body.portal-view .app-tile-icon,
   body.portal-view .quick-app-button,
-  body.portal-view .category-section-toggle { transition: none !important; }
+  body.portal-view .favorite-toggle { transition: none !important; }
+  body.portal-view .skeleton { animation: none; }
 }

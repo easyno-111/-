@@ -13,30 +13,22 @@
       <div class="brand-mark" aria-hidden="true">R</div>
       <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V7</span></h1></div>
     </div>
+    <nav class="mode-strip" aria-label="추첨 모드">
+      <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">01</span><span class="mode-title">빠른 추첨</span></button>
+      <button class="mode-card" data-mode="rank" style="--mode-color:#f2b61b" type="button"><span class="mode-number">02</span><span class="mode-title">1~3등</span></button>
+      <button class="mode-card" data-mode="teams" style="--mode-color:#2fc278" type="button"><span class="mode-number">03</span><span class="mode-title">팀 나누기</span></button>
+      <button class="mode-card" data-mode="order" style="--mode-color:#8a5cf6" type="button"><span class="mode-number">04</span><span class="mode-title">전체 순서</span></button>
+    </nav>
     <div class="top-actions">
       <button id="soundBtn" class="icon-btn" type="button" aria-label="효과음 켜기 또는 끄기" title="효과음">♪</button>
       <button id="musicBtn" class="icon-btn" type="button" aria-label="음악 켜기 또는 끄기" title="음악">♫</button>
       <button id="fullscreenBtn" class="ghost-btn" type="button">무대 크게 보기</button>
-      <button id="resetSessionBtn" class="ghost-btn" type="button">당첨 기록 초기화</button>
     </div>
   </header>
 
   <main class="app">
-    <nav class="mode-strip" aria-label="추첨 모드">
-      <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">MODE 01</span><span class="mode-title">빠른 추첨</span><span class="mode-desc">한 명 또는 여러 명을 짧고 선명하게</span></button>
-      <button class="mode-card" data-mode="rank" style="--mode-color:#f2b61b" type="button"><span class="mode-number">MODE 02</span><span class="mode-title">1~3등 뽑기</span><span class="mode-desc">로또 캡슐 공개 또는 실제 도착 순위</span></button>
-      <button class="mode-card" data-mode="teams" style="--mode-color:#2fc278" type="button"><span class="mode-number">MODE 03</span><span class="mode-title">팀 나누기</span><span class="mode-desc">모든 번호를 비슷한 인원으로 배치</span></button>
-      <button class="mode-card" data-mode="order" style="--mode-color:#8a5cf6" type="button"><span class="mode-number">MODE 04</span><span class="mode-title">전체 순서</span><span class="mode-desc">발표와 활동 순서를 한 번에 결정</span></button>
-    </nav>
-
     <div class="workspace">
       <section class="stage-shell" aria-label="추첨 무대">
-        <div class="stage-head">
-          <div class="stat"><span class="stat-label">참가</span><span id="statParticipants" class="stat-value">30명</span></div>
-          <div class="stat"><span class="stat-label">현재 모드</span><span id="statMode" class="stat-value">빠른 추첨</span></div>
-          <div class="stat"><span class="stat-label">진행 상태</span><span id="statStatus" class="stat-value live">대기</span></div>
-          <div class="stat"><span class="stat-label">이번 기록</span><span id="statResults" class="stat-value gold">0명</span></div>
-        </div>
         <div id="stage" class="stage">
           <canvas id="gameCanvas" class="pixel-canvas"></canvas>
           <canvas id="hudCanvas" class="hud-canvas"></canvas>
@@ -53,13 +45,35 @@
           <div class="stage-vignette" aria-hidden="true"></div>
           <div id="fileWarning" class="file-warning" hidden>이 페이지는 파일로 직접 열면 동작하지 않습니다. 포털(GitHub Pages)에서 실행해 주세요.</div>
         </div>
-        <div id="liveRanks" class="live-ranks"><span class="rank-placeholder">추첨 결과가 여기에 차례대로 기록됩니다.</span></div>
+        <div class="stage-foot">
+          <div class="stage-head">
+            <span class="stat"><span class="stat-label">참가</span><span id="statParticipants" class="stat-value">30명</span></span>
+            <span class="stat"><span class="stat-label">모드</span><span id="statMode" class="stat-value">빠른 추첨</span></span>
+            <span class="stat"><span class="stat-label">상태</span><span id="statStatus" class="stat-value live">대기</span></span>
+            <span class="stat"><span class="stat-label">기록</span><span id="statResults" class="stat-value gold">0명</span></span>
+          </div>
+          <div id="liveRanks" class="live-ranks"><span class="rank-placeholder">추첨 결과가 여기에 차례대로 기록됩니다.</span></div>
+        </div>
       </section>
 
       <aside class="control-panel">
+        <section class="panel-card start-card">
+          <div class="panel-body">
+            <button id="startBtn" class="primary-btn" type="button">빠른 추첨 시작</button>
+            <p class="hint start-hint"><span id="settingHint">빠른 레이스</span> · Space 시작 · F 크게 보기 · Esc 결과 닫기</p>
+          </div>
+        </section>
+
         <section class="panel-card">
           <div class="panel-title"><span>참가 번호</span><small id="participantBadge">30명 선택</small></div>
           <div class="panel-body">
+            <div class="preset-bar">
+              <select id="presetSelect" class="select-input" aria-label="저장된 반 프리셋"><option value="">저장된 반 없음</option></select>
+              <button id="loadPresetBtn" class="mini-btn" type="button">불러오기</button>
+              <button id="importRosterBtn" class="mini-btn accent" type="button" title="엑셀 학적 현황표(.xlsx)를 올리면 반별로 저장됩니다. 이름은 이O후 형태로 가려집니다.">엑셀 명단</button>
+            </div>
+            <input id="rosterFile" type="file" accept=".xlsx,.xlsm,.csv" hidden>
+            <div id="rosterChip" class="roster-chip" hidden><span class="roster-icon">▣</span><span id="rosterLabel">명단</span><button id="rosterClearBtn" type="button" aria-label="명단 이름 표시 끄기">×</button></div>
             <div class="tabs">
               <button class="tab active" data-input-type="range" type="button">연속 번호</button>
               <button class="tab" data-input-type="direct" type="button">특정 번호만</button>
@@ -76,16 +90,19 @@
               <label class="field"><span class="field-label">참가할 번호 <em>쉼표·띄어쓰기·범위 사용 가능</em></span><textarea id="directInput" class="text-area" placeholder="예: 2, 5, 8, 11, 15-20"></textarea></label>
             </div>
             <div id="numberPad" class="number-pad" aria-label="1번부터 40번 빠른 선택"></div>
-            <div id="rosterChip" class="roster-chip" hidden><span class="roster-icon">▣</span><span id="rosterLabel">명단</span><button id="rosterClearBtn" type="button" aria-label="명단 이름 표시 끄기">×</button></div>
             <div class="participant-summary">
               <div class="summary-line"><span>현재 참가 번호</span><b id="selectedCount">30명</b></div>
               <div id="participantChips" class="chips"></div>
             </div>
+            <details class="sub-details">
+              <summary>이 번호를 반으로 저장</summary>
+              <div class="preset-row"><input id="presetName" class="text-input" type="text" maxlength="24" placeholder="예: 1학년 4반"><button id="savePresetBtn" class="mini-btn" type="button">저장</button><button id="deletePresetBtn" class="mini-btn danger" type="button" title="선택한 프리셋 삭제">삭제</button></div>
+            </details>
           </div>
         </section>
 
         <section class="panel-card">
-          <div class="panel-title"><span>추첨 설정</span><small id="settingHint">빠른 레이스</small></div>
+          <div class="panel-title"><span>추첨 설정</span><small>모드별 기본 항목</small></div>
           <div class="panel-body">
             <div id="countBlock" class="setting-block">
               <span id="countLabel" class="field-label">당첨 인원</span>
@@ -104,48 +121,39 @@
               <span id="styleLabel" class="field-label">추첨 연출</span>
               <div class="segmented"><button class="seg-btn active" data-style="quick" type="button">빠르게</button><button class="seg-btn" data-style="tension" type="button">긴장감 있게</button></div>
             </div>
-            <div id="comebackBlock" class="setting-block" hidden>
-              <span class="field-label">핀볼 역전 규칙 <em>번호별 보정 없음</em></span>
-              <div class="segmented"><button class="seg-btn" data-comeback="pure" type="button">순수 물리</button><button class="seg-btn active" data-comeback="natural" type="button">자연 역전</button><button class="seg-btn" data-comeback="boost" type="button">역전 강화</button></div>
-              <p id="comebackHelp" class="hint">갈림길과 시간차 통과문에 약한 추격 바람을 더합니다. 골인 구간에서는 보정이 자동으로 꺼집니다.</p>
-            </div>
-            <div id="cameraBlock" class="setting-block" hidden>
-              <span class="field-label">카메라 <em>진행 중에도 변경 가능</em></span>
-              <div class="segmented"><button class="seg-btn active" data-camera="auto" type="button">자동</button><button class="seg-btn" data-camera="overview" type="button">전체</button><button class="seg-btn" data-camera="track" type="button">번호 추적</button></div>
-              <select id="trackSelect" class="select-input camera-select" aria-label="추적할 번호"><option value="">추적할 번호 선택</option></select>
-              <p id="cameraHelp" class="hint camera-note">자동 카메라가 선두와 주요 장면을 따라갑니다.</p>
-            </div>
             <div id="excludeBlock" class="setting-block"><label class="check-line"><input id="excludeWinners" type="checkbox" checked> 당첨 번호를 다음 추첨에서 제외</label></div>
-            <div class="setting-block fx-block">
-              <span class="field-label">연출</span>
-              <label class="check-line"><input id="replayToggle" type="checkbox" checked> 핀볼 결승 리플레이</label>
-              <label class="check-line"><input id="scanlineToggle" type="checkbox" checked> 브라운관 스캔라인</label>
-            </div>
-          </div>
-        </section>
-
-        <section class="panel-card">
-          <div class="panel-body">
-            <button id="startBtn" class="primary-btn" type="button">빠른 추첨 시작</button>
-            <div class="secondary-grid"><button id="savePngBtn" class="secondary-btn" type="button" disabled>결과 PNG</button><button id="copyBtn" class="secondary-btn" type="button" disabled>결과 복사</button></div>
-            <p class="hint">Space로 시작 · F로 무대 크게 보기 · Esc로 결과 닫기</p>
-          </div>
-        </section>
-
-        <section class="panel-card">
-          <div class="panel-title"><span>반 프리셋</span><small>이 기기에 저장</small></div>
-          <div class="panel-body">
-            <button id="importRosterBtn" class="import-btn" type="button"><span class="import-icon">⬆</span><span><b>엑셀 명단 가져오기</b><small>학적 현황표(.xlsx)를 올리면 반별로 저장 · 이름은 이O후 형태로 가려짐</small></span></button>
-            <input id="rosterFile" type="file" accept=".xlsx,.xlsm,.csv" hidden>
-            <div class="preset-row"><input id="presetName" class="text-input" type="text" maxlength="24" placeholder="예: 1학년 4반"><button id="savePresetBtn" class="mini-btn" type="button">저장</button></div>
-            <div class="preset-row"><select id="presetSelect" class="select-input" aria-label="저장된 프리셋"><option value="">저장된 프리셋 없음</option></select><button id="loadPresetBtn" class="mini-btn" type="button">불러오기</button></div>
-            <div class="preset-row"><span class="hint" style="margin:0">프리셋을 불러오면 무대와 결과에 이름이 함께 표시됩니다.</span><button id="deletePresetBtn" class="mini-btn danger" type="button">삭제</button></div>
+            <details id="advancedDetails" class="advanced">
+              <summary>고급 설정 <small>역전 규칙 · 카메라 · 연출</small></summary>
+              <div id="comebackBlock" class="setting-block" hidden>
+                <span class="field-label">핀볼 역전 규칙 <em>번호별 보정 없음</em></span>
+                <div class="segmented"><button class="seg-btn" data-comeback="pure" type="button">순수 물리</button><button class="seg-btn active" data-comeback="natural" type="button">자연 역전</button><button class="seg-btn" data-comeback="boost" type="button">역전 강화</button></div>
+                <p id="comebackHelp" class="hint">갈림길과 시간차 통과문에 약한 추격 바람을 더합니다. 골인 구간에서는 보정이 자동으로 꺼집니다.</p>
+              </div>
+              <div id="cameraBlock" class="setting-block" hidden>
+                <span class="field-label">카메라 <em>진행 중에도 변경 가능</em></span>
+                <div class="segmented"><button class="seg-btn active" data-camera="auto" type="button">자동</button><button class="seg-btn" data-camera="overview" type="button">전체</button><button class="seg-btn" data-camera="track" type="button">번호 추적</button></div>
+                <select id="trackSelect" class="select-input camera-select" aria-label="추적할 번호"><option value="">추적할 번호 선택</option></select>
+                <p id="cameraHelp" class="hint camera-note">자동 카메라가 선두와 주요 장면을 따라갑니다.</p>
+              </div>
+              <div class="setting-block fx-block">
+                <span class="field-label">연출</span>
+                <label class="check-line"><input id="replayToggle" type="checkbox" checked> 핀볼 결승 리플레이</label>
+                <label class="check-line"><input id="scanlineToggle" type="checkbox" checked> 브라운관 스캔라인</label>
+              </div>
+            </details>
           </div>
         </section>
 
         <section class="panel-card">
           <div class="panel-title"><span>이번 당첨 기록</span><small id="remainingLabel">남은 30명</small></div>
-          <div class="panel-body"><div id="sessionResults" class="session-results"><span class="empty-mini">아직 뽑힌 번호가 없습니다.</span></div></div>
+          <div class="panel-body">
+            <div id="sessionResults" class="session-results"><span class="empty-mini">아직 뽑힌 번호가 없습니다.</span></div>
+            <div class="record-actions">
+              <button id="savePngBtn" class="secondary-btn" type="button" disabled>결과 PNG</button>
+              <button id="copyBtn" class="secondary-btn" type="button" disabled>결과 복사</button>
+              <button id="resetSessionBtn" class="secondary-btn danger" type="button">기록 초기화</button>
+            </div>
+          </div>
         </section>
       </aside>
     </div>

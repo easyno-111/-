@@ -15,8 +15,20 @@ js/
   admin.js, admin-enhancements.js       관리자 동작
   default-data.js                       기본 앱 목록·카테고리·테마 프리셋
   firebase-config.js                    Firebase 초기화
+  arena/                                랜덤 아레나(random.html) ES 모듈
+    main.js                             진입점 · DOM 연결 · 프리셋 · 엑셀 명단 가져오기
+    state.js, core.js, util.js          공유 상태 · 싱글턴(도트 버퍼/이펙트/오디오) · 유틸
+    pixel.js, palette.js, fx.js         소프트웨어 도트 래스터라이저 · 고정 팔레트 · 파티클/흔들림/히트스톱
+    audio.js                            칩튠 시퀀서(4채널) · 효과음 · 심장박동
+    physics.js, courses.js              핀볼 물리 · 코스 생성
+    render.js                           도트 무대 + 네오둥근모 HUD 렌더러
+    engines/race.js lotto.js teams.js order.js   모드별 엔진 (사진 판정·리플레이, 캡슐 공개, 팀 통, 셔플)
+    roster.js, presets.js, results.js   엑셀 파싱(이름 가리기) · 프리셋 저장 · 결과 보드/PNG/복사
+  vendor/xlsx.mini.min.js               SheetJS (엑셀 명단 읽기, Apache-2.0)
 assets/
   portal.css, chalkboard-theme.css      포털 스타일
+  arena.css                             랜덤 아레나 스타일
+  fonts/neodgm.woff2                    Neo둥근모 픽셀 글꼴 (OFL-1.1)
   chalkboard-bg.webp, cleanup_scene_*.png
   images/                               앱에서 쓰는 이미지 (수업 교재 이미지, 슈팅 게임 캐릭터)
 icons/                앱 아이콘 (192, 512)
@@ -36,7 +48,7 @@ icons/                앱 아이콘 (192, 512)
 | | `auction.html` | 마이너스 경매 |
 | 도구 | `editor.html` | 라이브 코드 에디터 |
 | | `seat.html` | 교실 올인원 배정기 (Apps Script 앱으로 이동) |
-| | `random.html` | 랜덤 아레나 (핀볼 랜덤 뽑기) |
+| | `random.html` | 랜덤 아레나 V7 (도트 스타일 로또 캡슐·핀볼 레이스·팀 나누기·전체 순서, 엑셀 명단 가져오기) |
 | 게임 | `shooter.html` | 로그라이트 화력 슈팅 |
 | | `survival.html` | Space Survivor |
 
@@ -47,6 +59,13 @@ icons/                앱 아이콘 (192, 512)
 - 앱 목록, 카테고리, 테마는 Firebase Realtime Database의 `portal/apps`, `portal/categories`, `portal/settings`에서 읽습니다.
 - 데이터가 없으면 `js/default-data.js`의 기본값을 사용합니다.
 - 관리자 페이지(`admin.html`)는 Firebase 이메일/비밀번호 로그인으로 접근하며, 앱 추가·수정·삭제·숨김과 테마 설정을 할 수 있습니다.
+
+## 랜덤 아레나 (random.html)
+
+- 무대는 저해상도 버퍼에 그린 뒤 정수 배율로 확대하는 도트 스타일입니다. 글꼴은 Neo둥근모를 `assets/fonts`에 포함했습니다.
+- `type="module"` 스크립트를 쓰므로 파일을 직접(file://) 열면 동작하지 않습니다. GitHub Pages나 로컬 서버에서 실행하세요.
+- **엑셀 명단 가져오기**: 조작 패널의 "엑셀 명단 가져오기"에 학적 현황표(.xlsx)를 올리면 머리글(`반`·`번호`·`성명`)을 찾아 반별 프리셋으로 저장합니다. 이름은 `이O후`처럼 가운데 글자를 가린 형태로만 저장되고 원본 이름은 저장되지 않습니다. `.xls`는 `.xlsx`로 다시 저장한 뒤 올리세요.
+- 프리셋과 마지막 설정은 이 기기의 localStorage에만 저장됩니다.
 
 ## 관리할 때 주의할 점
 

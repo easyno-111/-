@@ -1,0 +1,6 @@
+Neo둥근모 (NeoDunggeunmo) 웹 폰트
+Copyright (c) 2017-2026, Eunbin Jeong (Dalgona.) <project-neodgm@dalgona.dev>
+https://neodgm.dalgona.dev · https://github.com/neodgm/neodgm
+
+SIL Open Font License 1.1 (OFL-1.1) 에 따라 배포됩니다.
+원본 파일: https://github.com/neodgm/neodgm-webfont (neodgm/neodgm.woff2)

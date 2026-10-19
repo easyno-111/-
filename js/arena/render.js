@@ -521,3 +521,86 @@ export function drawShuffleScene(nums, t) {
   for (const [b, x, y, rr] of labels) drawBallLabel(b, x, y, rr);
   text("SHUFFLING...", state.W / 2, 40, { size: 20, color: PAL.violet2 });
 }
+
+// ---------- 1등 발표 전광판 ----------
+const glyphCache = new Map();
+// 문자열을 네오둥근모 16px로 래스터라이즈해 비트 격자로 만든다
+function rasterizeText(str) {
+  let g = glyphCache.get(str);
+  if (g) return g;
+  const c = document.createElement("canvas"), x = c.getContext("2d");
+  x.font = `16px ${FONT}`;
+  const w = Math.ceil(x.measureText(str).width) + 4, h = 22;
+  c.width = w; c.height = h;
+  x.font = `16px ${FONT}`; x.textBaseline = "top"; x.fillStyle = "#fff"; x.fillText(str, 2, 2);
+  const d = x.getImageData(0, 0, w, h).data;
+  let minX = w, maxX = -1, minY = h, maxY = -1;
+  const bits = [];
+  for (let yy = 0; yy < h; yy++) { const row = []; for (let xx = 0; xx < w; xx++) { const on = d[(yy * w + xx) * 4 + 3] > 110; row.push(on); if (on) { minX = Math.min(minX, xx); maxX = Math.max(maxX, xx); minY = Math.min(minY, yy); maxY = Math.max(maxY, yy); } } bits.push(row); }
+  if (maxX < 0) { g = { w: 1, h: 1, bits: [[false]] }; }
+  else g = { w: maxX - minX + 1, h: maxY - minY + 1, bits: bits.slice(minY, maxY + 1).map((r) => r.slice(minX, maxX + 1)) };
+  glyphCache.set(str, g);
+  return g;
+}
+// 도트 블록으로 큰 글자 찍기. revealRows: 위에서부터 켜진 행 수
+function stampDots(grid, x0, y0, block, colors, revealRows, flickerRow) {
+  const gap = block >= 4 ? 1 : 0;
+  for (let y = 0; y < grid.h; y++) {
+    if (y > revealRows) break;
+    const partial = y === revealRows && flickerRow;
+    for (let x = 0; x < grid.w; x++) {
+      if (!grid.bits[y][x]) continue;
+      if (partial && Math.random() < 0.5) continue;
+      const px0 = x0 + x * block, py0 = y0 + y * block;
+      pix.rect(px0 + 2, py0 + 2, block - gap, block - gap, colors.shadow);
+      pix.rect(px0, py0, block - gap, block - gap, colors.base);
+      if (block >= 5) pix.rect(px0, py0, Math.max(1, block - gap - 2), 1, colors.light);
+      if (block >= 5) pix.rect(px0, py0, 1, Math.max(1, block - gap - 2), colors.light);
+    }
+  }
+}
+export function drawWinnerScreen(results, t) {
+  const num = results[0], name = shortName(num), many = results.length > 1;
+  state.zoom = 1; state.zoomFocusX = state.W / 2; state.cameraY = 0;
+  drawBackground(0, "lotto"); pix.darken(0.3);
+  // 방사형 빛줄기 (디더)
+  const cx = pix.w >> 1, cy = Math.round(pix.h * (many ? 0.36 : 0.42));
+  const spin = t * 0.6;
+  for (let i = 0; i < 10; i++) {
+    const a = spin + (i * Math.PI) / 5, len = Math.max(pix.w, pix.h);
+    pix.dashedLine(cx, cy, Math.round(cx + Math.cos(a) * len), Math.round(cy + Math.sin(a) * len), PAL.gold0, 2, 3);
+  }
+  const grid = rasterizeText(String(num));
+  const maxW = pix.w * (many ? 0.46 : 0.6), maxH = pix.h * (many ? 0.28 : 0.38);
+  const block = Math.max(2, Math.floor(Math.min(maxW / grid.w, maxH / grid.h)));
+  const totalW = grid.w * block, totalH = grid.h * block, x0 = cx - (totalW >> 1), y0 = cy - (totalH >> 1);
+  const p = clamp((t - 0.3) / 0.8, 0, 1), revealRows = Math.floor(p * grid.h), done = t >= 1.1;
+  // 전광판 프레임
+  const pad = Math.max(6, block);
+  pix.rect(x0 - pad - 3, y0 - pad - 3, totalW + pad * 2 + 6, totalH + pad * 2 + 6, PAL.ink);
+  pix.ditherRect(x0 - pad, y0 - pad, totalW + pad * 2, totalH + pad * 2, PAL.bg3, 6);
+  pix.box(x0 - pad - 1, y0 - pad - 1, totalW + pad * 2 + 2, totalH + pad * 2 + 2, done ? PAL.gold1 : PAL.steel1);
+  // 꺼진 LED 자리
+  for (let y = 0; y < grid.h; y++) for (let x = 0; x < grid.w; x++) if (grid.bits[y][x] && y > revealRows) pix.rect(x0 + x * block + (block >> 1), y0 + y * block + (block >> 1), 1, 1, PAL.steel0);
+  stampDots(grid, x0, y0, block, { base: done && Math.floor(t * 6) % 2 === 0 ? PAL.gold3 : PAL.gold2, shadow: PAL.gold0, light: PAL.gold3 }, done ? grid.h : revealRows, !done);
+  // 완성 후 반짝이
+  if (done) for (let i = 0; i < 6; i++) { const sx = x0 - pad + Math.floor(Math.random() * (totalW + pad * 2)), sy = y0 - pad + Math.floor(Math.random() * (totalH + pad * 2)); pix.px(sx, sy, PAL.white); }
+  fx.drawWorld(pix, mapXY, 1 / state.scale);
+  fx.post(pix);
+  pix.blitTo(els.canvas.getContext("2d"), 0, 0, state.scale);
+  // HUD
+  hud.clearRect(0, 0, state.W, state.H);
+  const frameTop = (y0 - pad - 3) * state.scale, frameBottom = (y0 + totalH + pad + 3) * state.scale;
+  const label = state.mode === "rank" ? "1등" : many ? "당첨" : "WINNER";
+  text(label, state.W / 2, frameTop - 28, { size: state.W < 520 ? 20 : 28, color: PAL.gold2, outlineWidth: 4 });
+  if (done || t > 0.9) {
+    const a = clamp((t - 0.9) / 0.3, 0, 1);
+    text(name ? `${num}번 ${name}` : `${num}번`, state.W / 2, frameBottom + 30, { size: state.W < 520 ? 22 : 32, color: "#fff", outlineWidth: 5, alpha: a });
+    if (many) {
+      const rest = results.slice(1).map((n, i) => `${i + 2}. ${displayName(n)}`).join("   ");
+      text(rest, state.W / 2, frameBottom + 68, { size: state.W < 520 ? 12 : 16, color: PAL.steel3, alpha: a });
+    }
+  }
+  if (t > 2.2 && Math.floor(t * 2) % 2 === 0) text("▼ 결과 보드", state.W / 2, state.H - 30, { size: 12, color: PAL.steel2, outline: false });
+  return { row: revealRows, done };
+}

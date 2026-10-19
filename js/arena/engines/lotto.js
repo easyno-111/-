@@ -4,6 +4,7 @@ import { state, displayName } from "../state.js";
 import { fx, audio, host } from "../core.js";
 import { BALL_PALETTES } from "../palette.js";
 import { resizeCanvas, drawLottoScene, lottoGeometry } from "../render.js";
+import { winnerSequence } from "../winner.js";
 
 export async function runLottoMode(eligible, token) {
   state.engine = "lotto";
@@ -148,6 +149,6 @@ function finalizeLotto() {
   const results = [...state.results];
   state.lastResult = { type: "race", mode: state.mode, results, participants: [...state.participants], names: { ...state.names }, basis: "fair", style: state.style, createdAt: new Date() };
   host.afterRun(results);
-  host.showRaceResults(results);
-  audio.sfx("done");
+  const token = state.runToken;
+  winnerSequence(results).then((ok) => { if (ok && token === state.runToken) { host.showRaceResults(results); audio.sfx("done"); } });
 }

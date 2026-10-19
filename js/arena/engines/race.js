@@ -5,6 +5,7 @@ import { fx, audio, host } from "../core.js";
 import { buildCourse, raceWorldHeight, finishGeometry } from "../courses.js";
 import { makePhysicsBall, updateBall, collideBalls, applyComebackAssist, updateLeader } from "../physics.js";
 import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js";
+import { winnerSequence } from "../winner.js";
 
 const REPLAY_SECONDS = 2.4;
 const REPLAY_SPEED = 0.32;
@@ -181,6 +182,6 @@ function finalizeRace() {
   host.setStageLabel(`${results.map((n, i) => `${i + 1}등 ${displayName(n)}`).join(" · ")}`);
   state.lastResult = { type: "race", mode: state.mode, results, participants: [...state.participants], names: { ...state.names }, basis: state.basis, style: state.style, comeback: state.comeback, createdAt: new Date() };
   host.afterRun(results);
-  host.showRaceResults(results);
-  audio.sfx("done");
+  const token = state.runToken;
+  winnerSequence(results).then((ok) => { if (ok && token === state.runToken) { host.showRaceResults(results); audio.sfx("done"); } });
 }

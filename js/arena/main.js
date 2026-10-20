@@ -2,7 +2,7 @@
 import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js";
 import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js";
 import { fx, audio, host } from "./core.js";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawLottoScene } from "./render.js";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawLottoScene, drawOrderScene } from "./render.js";
 import { runRaceMode } from "./engines/race.js";
 import { runLottoMode } from "./engines/lotto.js";
 import { runTeamMode } from "./engines/teams.js";
@@ -314,7 +314,7 @@ function applyAudioButtons() {
 function toggleSound() { state.sound = !state.sound; applyAudioButtons(); if (state.sound) audio.sfx("ui"); saveLastConfig(); notify(state.sound ? "효과음을 켰습니다." : "효과음을 껐습니다."); }
 function toggleMusic() { state.music = !state.music; applyAudioButtons(); if (state.music && state.running && audio.track) audio.playTrack(audio.track, audio.intensity); saveLastConfig(); notify(state.music ? "음악을 켰습니다." : "음악을 껐습니다."); }
 function applyScanlines() { document.body.classList.toggle("crt", state.scanlines); els.scanlineToggle.checked = state.scanlines; }
-function redraw() { resizeCanvas(); if (!state.running) drawIdle(); else if (state.engine === "lotto") drawLottoScene(); else if (state.engine !== "list") drawScene(); }
+function redraw() { resizeCanvas(); if (!state.running) drawIdle(); else if (state.engine === "lotto") drawLottoScene(); else if (state.engine === "list") drawOrderScene(performance.now()); else drawScene(); }
 async function togglePresentation() {
   state.presenting = !state.presenting; document.body.classList.toggle("presenting", state.presenting);
   els.fullscreenBtn.textContent = state.presenting ? "원래 화면" : "무대 크게 보기";
@@ -343,12 +343,13 @@ function bindEvents() {
   els.excludeWinners.addEventListener("change", () => { refreshParticipants(); renderSessionResults(); saveLastConfig(); });
   els.replayToggle.addEventListener("change", () => { state.replay = els.replayToggle.checked; saveLastConfig(); });
   els.scanlineToggle.addEventListener("change", () => { state.scanlines = els.scanlineToggle.checked; applyScanlines(); saveLastConfig(); });
+  els.stage.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; if (state.running && state.engine === "list" && state.orderGame) { state.orderGame.fast = !state.orderGame.fast; audio.sfx("ui"); } });
   let resizeTimer = 0;
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(redraw, 120); });
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && state.presenting) { state.presenting = false; document.body.classList.remove("presenting"); els.fullscreenBtn.textContent = "무대 크게 보기"; setTimeout(redraw, 100); } });
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input,textarea,select") || els.rosterModal.open) return;
-    if (e.code === "Space") { e.preventDefault(); startDraw(); }
+    if (e.code === "Space") { e.preventDefault(); if (state.running && state.engine === "list" && state.orderGame) { state.orderGame.fast = !state.orderGame.fast; return; } startDraw(); }
     else if (e.key.toLowerCase() === "f") { e.preventDefault(); togglePresentation(); }
     else if (e.key === "Escape" && els.resultBoard.classList.contains("show")) hideResult();
   });

@@ -1,5 +1,5 @@
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand } from "./util.js";
+import { clamp, makeRand, lerp } from "./util.js";
 import { state, MODE_INFO, displayName, shortName } from "./state.js";
 import { pix, fx } from "./core.js";
 import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js";
@@ -366,6 +366,7 @@ function drawReplayTag(now) {
 // ---------- 대기 화면 ----------
 export function drawIdle() {
   if ((state.mode === "quick" || state.mode === "rank") && state.basis === "fair") { drawLottoIdle(); return; }
+  if (state.mode === "order") { drawOrderIdle(); return; }
   if (!state.W || !state.H) resizeCanvas();
   state.zoom = 1; state.zoomFocusX = state.W / 2; state.cameraY = 0; fx.shakeX = 0; fx.shakeY = 0;
   drawBackground(0, "race"); drawCourse();
@@ -503,25 +504,6 @@ function drawLottoIdle() {
   for (let i = 0; i < state.drawCount; i++) { const x = state.W / 2 + (i - (state.drawCount - 1) / 2) * g.slotGap; text(state.mode === "rank" ? `${i + 1}등` : `당첨 ${i + 1}`, x, g.slotY + 36, { size: 12, color: PAL.gold2, outline: false }); }
 }
 
-// ---------- 전체 순서 셔플 ----------
-export function drawShuffleScene(nums, t) {
-  drawBackground(0, "race");
-  const cols = Math.min(12, Math.max(6, Math.floor(state.W / 64))), gapX = (state.W - 60) / cols, rows = Math.ceil(nums.length / cols), gapY = Math.min(44, (state.H - 120) / Math.max(1, rows));
-  const labels = [], r = Math.max(2, Math.round((gapY < 30 ? 9 : 12) / state.scale));
-  nums.forEach((num, i) => {
-    const bx = 30 + gapX * (i % cols) + gapX / 2, by = 70 + gapY * Math.floor(i / cols) + gapY / 2;
-    const jig = Math.sin(t * 40 + i * 1.7) * (1 - t) * 26, jx = Math.cos(t * 30 + i * 2.3) * (1 - t) * 30;
-    const x = Math.round((bx + jx) / state.scale), y = Math.round((by + jig) / state.scale);
-    pix.ball(x, y, r, BALL_PALETTES[i % BALL_PALETTES.length]);
-    labels.push([{ num }, x * state.scale + state.scale / 2, y * state.scale + state.scale / 2, r]);
-  });
-  fx.post(pix);
-  pix.blitTo(els.canvas.getContext("2d"), 0, 0, state.scale);
-  hud.clearRect(0, 0, state.W, state.H);
-  for (const [b, x, y, rr] of labels) drawBallLabel(b, x, y, rr);
-  text("SHUFFLING...", state.W / 2, 40, { size: 20, color: PAL.violet2 });
-}
-
 // ---------- 1등 발표 전광판 ----------
 const glyphCache = new Map();
 // 문자열을 네오둥근모 16px로 래스터라이즈해 비트 격자로 만든다
@@ -603,4 +585,114 @@ export function drawWinnerScreen(results, t) {
   }
   if (t > 2.2 && Math.floor(t * 2) % 2 === 0) text("▼ 결과 보드", state.W / 2, state.H - 30, { size: 12, color: PAL.steel2, outline: false });
   return { row: revealRows, done };
+}
+
+// ---------- 전체 순서: 팝콘 상자 + 집게 ----------
+export function orderGeometry(n) {
+  const W = state.W, H = state.H;
+  const boxTop = 56, boxBottom = Math.round(H * 0.5), boxLeft = 20, boxRight = W - 20;
+  const cols = clamp(Math.ceil(Math.sqrt(n * 2.2)), 6, 16), rows = Math.max(1, Math.ceil(n / cols));
+  const boardTop = boxBottom + 64, boardBottom = H - 22;
+  const cellW = (W - 40) / cols, cellH = Math.min(46, (boardBottom - boardTop) / rows);
+  const boardH = cellH * rows, bTop = boardTop + Math.max(0, (boardBottom - boardTop - boardH) / 2);
+  return {
+    boxTop, boxBottom, boxLeft, boxRight, railY: boxTop - 14, chuteX: boxRight - 30, vents: 5,
+    ballR: clamp(16 - n * 0.06, 8, 15), boardTop: bTop, boardBottom: bTop + boardH, cols, rows, cellW, cellH,
+    cellBallR: clamp(Math.min(cellH * 0.3, cellW * 0.26), 5, 12), arcH: Math.min(120, H * 0.16),
+    cell(i) { const col = i % cols, row = Math.floor(i / cols); return { x: 20 + col * cellW, y: bTop + row * cellH, w: cellW, h: cellH, cx: 20 + col * cellW + cellW / 2, cy: bTop + row * cellH + cellH / 2 + 2 }; }
+  };
+}
+function drawClaw(c, g) {
+  const s = (v) => Math.round(v / state.scale), x = s(c.x), y = s(c.y), railY = s(g.railY);
+  // 레일과 케이블
+  pix.rect(s(g.boxLeft), railY - 1, s(g.boxRight) - s(g.boxLeft), 3, PAL.steel0); pix.hline(s(g.boxLeft), s(g.boxRight), railY, PAL.steel2);
+  pix.rect(x - 3, railY - 3, 7, 6, PAL.ink); pix.rect(x - 2, railY - 2, 5, 4, PAL.steel2);
+  pix.vline(x, railY + 2, y - 3, PAL.steel1); pix.vline(x + 1, railY + 2, y - 3, PAL.ink);
+  // 몸통
+  pix.rect(x - 4, y - 4, 9, 6, PAL.ink); pix.rect(x - 3, y - 3, 7, 4, PAL.steel2); pix.px(x - 2, y - 3, PAL.steel3);
+  // 집게 발 (열림/닫힘)
+  const spread = c.open ? 6 : 2, len = 7;
+  const prong = (dx) => { pix.line(x, y + 1, x + dx, y + len, PAL.ink, 3); pix.line(x, y + 1, x + dx, y + len, PAL.steel2, 1); pix.rect(x + dx - 1, y + len, 3, 2, PAL.steel3); };
+  prong(-spread); prong(spread); pix.rect(x - 1, y + 1, 3, len, PAL.ink); pix.vline(x, y + 1, y + len, PAL.steel2);
+}
+export function drawOrderScene(now) {
+  const game = state.orderGame; if (!game) return;
+  const g = orderGeometry(game.total), s = (v) => Math.round(v / state.scale);
+  state.zoom = 1; state.zoomFocusX = state.W / 2; state.cameraY = 0;
+  drawBackground(0, "lotto");
+  // 상자
+  const bx0 = s(g.boxLeft), bx1 = s(g.boxRight), by0 = s(g.boxTop), by1 = s(g.boxBottom);
+  pix.rect(bx0, by0, bx1 - bx0, by1 - by0, PAL.bg1);
+  pix.ditherRect(bx0, by0, bx1 - bx0, 8, PAL.bg3, 5);
+  const blowing = now < game.blowUntil;
+  for (let i = 0; i < g.vents; i++) {
+    const vx = s(g.boxLeft + ((i + 0.5) * (g.boxRight - g.boxLeft)) / g.vents);
+    pix.rect(vx - 5, by1 - 3, 11, 3, PAL.ink); pix.rect(vx - 4, by1 - 2, 9, 2, blowing ? PAL.cyan2 : PAL.steel0);
+    if (blowing) for (let k = 1; k <= 3; k++) pix.ditherRect(vx - 3 - k, by1 - 4 - k * 5, 7 + k * 2, 4, PAL.cyan1, 4);
+  }
+  pix.hline(bx0, bx1, by1, PAL.steel2); pix.hline(bx0, bx1, by1 + 1, PAL.ink);
+  // 상자 안 공
+  const labels = [];
+  const drawB = (b, x, y, rr) => { pix.ball(x, y, rr, b.color); labels.push([b, x * state.scale + state.scale / 2, y * state.scale + state.scale / 2, rr]); };
+  for (const b of game.balls) { if (b.gone || b.held) continue; drawB(b, s(b.x), s(b.y), Math.max(2, s(b.r))); }
+  // 유리 테두리
+  pix.box(bx0 - 1, by0 - 1, bx1 - bx0 + 2, by1 - by0 + 2, PAL.cyan1); pix.box(bx0 - 2, by0 - 2, bx1 - bx0 + 4, by1 - by0 + 4, PAL.ink);
+  pix.vline(bx0 + 2, by0 + 4, by1 - 6, PAL.cyan3); pix.hline(bx0 + 2, bx0 + 12, by0 + 2, PAL.cyan3);
+  // 투입구(슈트)
+  const cx = s(g.chuteX), chuteBottom = s(g.boardTop - 10);
+  pix.rect(cx - 7, by0 - 6, 15, by1 - by0 + 12, PAL.ink); pix.rect(cx - 6, by0 - 5, 13, by1 - by0 + 10, PAL.bg3);
+  pix.ditherRect(cx - 5, by0 - 4, 11, by1 - by0 + 8, PAL.cyan0, 5);
+  pix.vline(cx - 6, by0 - 5, by1 + 5, PAL.cyan1); pix.vline(cx + 6, by0 - 5, by1 + 5, PAL.cyan1);
+  pix.rect(cx - 7, by1 + 4, 15, chuteBottom - by1 - 4, PAL.ink); pix.rect(cx - 5, by1 + 4, 11, chuteBottom - by1 - 6, PAL.cyan0);
+  pix.rect(cx - 9, chuteBottom - 2, 19, 3, PAL.steel2);
+  // 집게와 들고 있는 공
+  drawClaw(game.claw, g);
+  if (game.claw.holding) { const b = game.claw.holding; drawB(b, s(b.x), s(b.y), Math.max(2, s(b.r))); }
+  // 순서판
+  for (let i = 0; i < game.total; i++) {
+    const c = g.cell(i), x = s(c.x) + 1, y = s(c.y) + 1, w = s(c.w) - 2, h = s(c.h) - 2;
+    const placed = game.placed.find((p) => p.index === i);
+    pix.rect(x, y, w, h, placed ? PAL.bg3 : PAL.bg1);
+    pix.box(x, y, w, h, placed ? (i === 0 ? PAL.gold1 : PAL.steel1) : PAL.steel0);
+    if (placed) { const rr = Math.max(2, s(g.cellBallR)); drawB({ num: placed.num, color: placed.color }, s(c.cx), s(c.cy), rr); }
+  }
+  if (game.lastPlaced && now - game.lastPlacedAt < 500) { const c = g.cell(game.lastPlaced.index); pix.box(s(c.x) - 1, s(c.y) - 1, s(c.w) + 2, s(c.h) + 2, Math.floor(now / 80) % 2 ? PAL.gold2 : PAL.white); }
+  // 날아가는 공
+  for (const f of game.flying) { if (f.landed) continue; const x = s(f.x), y = s(f.y), rr = Math.max(2, s(g.cellBallR + 2)); pix.ditherDisc(x + 2, y + 3, rr, f.color[2], 6); drawB(f, x, y, rr); }
+  fx.drawWorld(pix, mapXY, 1 / state.scale);
+  fx.post(pix);
+  pix.blitTo(els.canvas.getContext("2d"), 0, 0, state.scale);
+  // HUD
+  hud.clearRect(0, 0, state.W, state.H);
+  for (const [b, x, y, rr] of labels) drawBallLabel(b, x, y, rr);
+  for (let i = 0; i < game.total; i++) { const c = g.cell(i); text(String(i + 1), c.x + 4, c.y + 8, { size: 10, color: game.placed.some((p) => p.index === i) ? PAL.gold2 : PAL.steel1, align: "left", outline: false }); }
+  panel(12, 60, state.W < 520 ? 150 : 180, 50, { edge: PAL.violet1 });
+  text("ORDER DRAW", 22, 76, { size: 12, color: PAL.violet2, align: "left", outline: false });
+  text(`${game.placed.length} / ${game.total}`, 22, 97, { size: 16, color: "#fff", align: "left", outline: false });
+  const mid = (g.boxBottom + g.boardTop) / 2;
+  if (game.idle) return;
+  if (game.lastPlaced) {
+    const f = game.lastPlaced, age = (now - game.lastPlacedAt) / 1000, pop = 1 + Math.max(0, 0.25 - age) * 1.2;
+    hud.save(); hud.translate(state.W / 2, mid); hud.scale(pop, pop);
+    text(`${f.index + 1}번째`, -4, 0, { size: 14, color: f.index === 0 ? PAL.gold2 : PAL.cyan3, align: "right" });
+    text(displayName(f.num), 4, 0, { size: state.W < 520 ? 18 : 22, color: "#fff", align: "left", outlineWidth: 4 });
+    hud.restore();
+  } else text("집게가 첫 번째 공을 고르는 중...", state.W / 2, mid, { size: 14, color: PAL.steel3 });
+  if (!game.done) text(game.fast ? "⏩ 빨리 감기 중" : "SPACE 또는 화면 터치 · 빨리 감기", state.W - 16, state.H - 10, { size: 10, color: game.fast ? PAL.gold2 : PAL.steel1, align: "right", outline: false });
+}
+
+function drawOrderIdle() {
+  if (!state.W || !state.H) resizeCanvas();
+  const nums = (state.participants.length ? state.participants : Array.from({ length: 30 }, (_, i) => i + 1)).slice(0, 120);
+  const g = orderGeometry(nums.length), span = g.chuteX - 16 - g.boxLeft - 14, cols = Math.max(6, Math.floor(span / (g.ballR * 2.6)));
+  const saved = state.orderGame;
+  state.orderGame = {
+    total: nums.length, placed: [], flying: [], fast: false, done: true, idle: true, blowUntil: 0, lastPlaced: null, lastPlacedAt: 0,
+    claw: { x: state.W / 2, y: g.railY + 18, open: true, holding: null, phase: "wait" },
+    balls: nums.map((num, i) => ({ num, x: g.boxLeft + 14 + g.ballR + (i % cols) * ((span - g.ballR * 2) / Math.max(1, cols - 1)), y: g.boxBottom - 4 - g.ballR - Math.floor(i / cols) * (g.ballR * 2 + 3), r: g.ballR, color: BALL_PALETTES[i % BALL_PALETTES.length] }))
+  };
+  drawOrderScene(performance.now());
+  state.orderGame = saved;
+  text("전체 순서", state.W / 2, (g.boxBottom + g.boardTop) / 2 - 2, { size: clamp(Math.round(state.W * 0.034), 22, 34), color: "#fff", outlineWidth: 5 });
+  text("집게가 공을 하나씩 집어 순서판에 올립니다 · SPACE 시작", state.W / 2, (g.boxBottom + g.boardTop) / 2 + 26, { size: 12, color: PAL.steel3 });
 }

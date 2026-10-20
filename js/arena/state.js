@@ -30,6 +30,7 @@ export const state = {
   // 로또
   lottoBalls: [], lottoWinners: [], lottoPhase: "idle", lottoPhaseStart: 0, lottoCapture: null, lottoSpin: 0, capsule: null, revealFx: null,
   // 팀
+  orderGame: null,
   teamBins: [], teamQueue: [], teamAssignments: [], teamWave: 0, teamWaveSize: 36, nextWaveAt: 0, teamFx: null, rescueCount: 0
 };
 

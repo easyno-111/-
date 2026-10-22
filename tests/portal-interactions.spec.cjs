@@ -109,7 +109,14 @@ async function closeScenario({ context, errors }) {
 async function capture(page, name) {
   if (!process.env.PORTAL_TEST_ARTIFACTS) return;
   fs.mkdirSync(process.env.PORTAL_TEST_ARTIFACTS, { recursive: true });
-  await page.screenshot({ path: path.join(process.env.PORTAL_TEST_ARTIFACTS, `${name}.png`), fullPage: true });
+  // Let the entry animation and browser touch feedback settle before visual QA.
+  await page.waitForTimeout(250);
+  const modalOpen = await page.locator('dialog[open]').count() > 0;
+  await page.screenshot({
+    path: path.join(process.env.PORTAL_TEST_ARTIFACTS, `${name}.png`),
+    fullPage: !modalOpen,
+    animations: 'disabled'
+  });
 }
 async function center(locator) {
   await locator.scrollIntoViewIfNeeded();

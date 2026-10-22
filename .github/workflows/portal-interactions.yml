@@ -49,11 +49,11 @@ jobs:
         run: node tests/portal-interactions.spec.cjs
         env:
           PORTAL_TEST_ARTIFACTS: test-artifacts
-      - name: Upload failing browser screenshots
-        if: failure()
+      - name: Upload browser verification screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: portal-browser-failures
+          name: portal-ui-verification
           path: test-artifacts
           if-no-files-found: ignore
           retention-days: 7

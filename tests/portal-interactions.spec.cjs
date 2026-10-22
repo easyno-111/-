@@ -29,6 +29,7 @@ Object.assign(apps.app2, {
   primaryLabel: '교사용으로 열기', secondaryLabel: '학생용으로 참여',
   secondaryUrl: '/test-launched/student'
 });
+Object.assign(apps.app3, { primaryLabel: ' ', secondaryLabel: '', secondaryUrl: '/test-launched/blank-label' });
 const fixture = {
   apps,
   categories: { tools: { name: '수업 도구', order: 1 }, games: { name: '교실 게임', order: 2 } },
@@ -63,7 +64,7 @@ async function setup(options = {}) {
       return route.fulfill({ contentType: 'text/javascript', body: 'export const db = {};' });
     }
     if (url.hostname === 'www.gstatic.com' && url.pathname.endsWith('/firebase-database.js')) {
-      return route.fulfill({ contentType: 'text/javascript', body: `
+      return route.fulfill({ contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: `
         const fixtures = ${JSON.stringify(fixture)};
         export const ref = (db, path) => path;
         export function onValue(path, callback) {
@@ -105,6 +106,11 @@ async function closeScenario({ context, errors }) {
   await context.close();
   activeContexts.delete(context);
 }
+async function capture(page, name) {
+  if (!process.env.PORTAL_TEST_ARTIFACTS) return;
+  fs.mkdirSync(process.env.PORTAL_TEST_ARTIFACTS, { recursive: true });
+  await page.screenshot({ path: path.join(process.env.PORTAL_TEST_ARTIFACTS, `${name}.png`), fullPage: true });
+}
 async function center(locator) {
   await locator.scrollIntoViewIfNeeded();
   const box = await locator.boundingBox();
@@ -132,6 +138,7 @@ const tests = [
     assert.ok(await preview.isVisible(), 'Moving into the card keeps it open');
     const otherAfter = await tile(page, 'app3').boundingBox();
     assert.equal(otherAfter.x, otherBefore.x); assert.equal(otherAfter.y, otherBefore.y);
+    await capture(page, 'desktop-hover');
     await page.keyboard.press('Escape');
     await preview.waitFor({ state: 'hidden' });
     await closeScenario(s);
@@ -160,6 +167,7 @@ const tests = [
     assert.match(await dialog.innerText(), /1번 도구의 설명/);
     const bounds = await dialog.boundingBox();
     assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 391, 'Sheet fits narrow viewport');
+    await capture(page, 'mobile-details');
     const launch = dialog.locator('a').filter({ hasText: /사용하기/ }).first();
     assert.equal(await launch.getAttribute('href'), apps.app1.primaryUrl);
     const popupPromise = context.waitForEvent('page');
@@ -178,6 +186,11 @@ const tests = [
     const student = dialog.getByRole('link', { name: '학생용으로 참여' });
     assert.equal(await teacher.getAttribute('href'), apps.app2.primaryUrl);
     assert.equal(await student.getAttribute('href'), apps.app2.secondaryUrl);
+    await page.keyboard.press('Escape');
+    await opener(page, 'app3').tap();
+    await dialog.waitFor({ state: 'visible' });
+    assert.equal(await dialog.getByRole('link', { name: '사용하기', exact: true }).getAttribute('href'), apps.app3.primaryUrl);
+    assert.equal(await dialog.getByRole('link', { name: '두 번째 화면 열기' }).getAttribute('href'), apps.app3.secondaryUrl);
     await closeScenario(s);
   }],
   ['frequent apps preserve direct launching', async () => {
@@ -214,6 +227,21 @@ const tests = [
     assert.deepEqual(await order(b.page), initialOrder);
     await closeScenario(a); await closeScenario(b);
   }],
+  ['arranging search results preserves the unseen apps and reload order', async () => {
+    const s = await setup(); const { page } = s;
+    await page.locator('#searchInput').fill('수업 도구 1');
+    assert.deepEqual(await order(page), ['app1', 'app10']);
+    await action(page, 'edit').click();
+    await opener(page, 'app1').focus(); await page.keyboard.press('ArrowRight');
+    assert.deepEqual(await order(page), ['app10', 'app1']);
+    await action(page, 'done').click();
+    await page.locator('#searchInput').fill('');
+    const expected = ['app10', ...initialOrder.slice(1, -1), 'app1'];
+    assert.deepEqual(await order(page), expected);
+    await page.reload(); await tile(page, 'app1').waitFor();
+    assert.deepEqual(await order(page), expected);
+    await closeScenario(s);
+  }],
   ['long press enters arrange mode without opening or launching', async () => {
     const s = await setup(); const { page } = s;
     const p = await center(opener(page, 'app1'));
@@ -234,6 +262,20 @@ const tests = [
     await mouseDrag(page, opener(page, 'app1'), opener(page, 'app11'));
     assert.deepEqual(await order(page), before, 'Other category is rejected');
     assert.deepEqual(await order(page, 'games'), gamesBefore);
+    assert.equal(await page.locator('#launchChoiceDialog').isVisible(), false);
+    await closeScenario(s);
+  }],
+  ['Escape during a drag rolls back the draft movement', async () => {
+    const s = await setup(); const { page } = s;
+    await action(page, 'edit').click();
+    const a = await center(opener(page, 'app1')), b = await center(opener(page, 'app3'));
+    await page.mouse.move(a.x, a.y); await page.mouse.down();
+    await page.mouse.move(b.x, b.y, { steps: 16 });
+    assert.notDeepEqual(await order(page), initialOrder, 'Drag preview moves before cancellation');
+    await page.keyboard.press('Escape'); await page.mouse.up();
+    assert.deepEqual(await order(page), initialOrder);
+    assert.equal(await page.evaluate(key => localStorage.getItem(key), ORDER_KEY), null);
+    assert.equal(await page.locator('.reorder-ghost').count(), 0);
     assert.equal(await page.locator('#launchChoiceDialog').isVisible(), false);
     await closeScenario(s);
   }],
@@ -276,6 +318,23 @@ const tests = [
   ['malformed local arrangement data does not break the app list', async () => {
     const s = await setup({ seed: { [ORDER_KEY]: '{bad-json' } });
     assert.deepEqual(await order(s.page), initialOrder);
+    await closeScenario(s);
+  }],
+  ['dark mobile details and edit controls fit a narrow screen', async () => {
+    const s = await setup({ mobile: true, width: 360, seed: { teacherPortalTheme: 'dark' } });
+    const { page } = s;
+    assert.equal(await page.locator('html').getAttribute('data-theme'), 'dark');
+    await opener(page, 'app2').tap();
+    const dialog = page.locator('#launchChoiceDialog');
+    await dialog.waitFor({ state: 'visible' });
+    const bounds = await dialog.boundingBox();
+    assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 361 && bounds.y >= 0);
+    assert.ok(await dialog.evaluate(node => node.scrollWidth <= node.clientWidth));
+    await capture(page, 'mobile-dark-details');
+    await page.keyboard.press('Escape');
+    await action(page, 'edit').click();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await capture(page, 'mobile-dark-arrange');
     await closeScenario(s);
   }]
 ];

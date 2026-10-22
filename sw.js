@@ -1,9 +1,11 @@
-const CACHE_NAME = 'teacher-app-portal-v11-launcher';
+const CACHE_NAME = 'teacher-app-portal-v12-app-details';
 const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
 const CORE_ASSETS = [
   './', './index.html', './offline.html', './manifest.webmanifest',
-  './assets/portal.css', './assets/chalkboard-theme.css',
-  './js/portal.js', './js/portal-enhancements.js', './js/default-data.js',
+  './assets/portal.css?v=20260722-interaction2', './assets/chalkboard-theme.css?v=20261015-launcher1',
+  './assets/portal-interactions.css?v=20261022-app-details1', './assets/portal-reorder.css?v=20261022-app-details1',
+  './js/portal.js?v=20261022-app-details1', './js/portal-enhancements.js?v=20261015-launcher1',
+  './js/portal-preview.js?v=20261022-app-details1', './js/portal-reorder.js?v=20261022-app-details1', './js/default-data.js',
   './icons/app-icon-192.png', './icons/app-icon-512.png'
 ];
 
@@ -47,3 +49,4 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+

@@ -1,0 +1,102 @@
+/* Personal app layout: a stable grid with an explicit edit mode. */
+body.portal-view .reorder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 20px 0 0;
+  padding: 12px 15px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+body.portal-view .reorder-toolbar.is-editing {
+  position: sticky;
+  top: var(--reorder-toolbar-top, 90px);
+  z-index: 95;
+  border-color: var(--green-2);
+  box-shadow: var(--card-shadow);
+}
+body.portal-view .reorder-status {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+body.portal-view .reorder-status:empty { display: none; }
+body.portal-view .app-arrange-hint {
+  flex: 1 1 250px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+body.portal-view .reorder-toolbar.is-editing .app-arrange-hint { display: none; }
+body.portal-view .reorder-actions { display: flex; gap: 7px; align-items: center; }
+body.portal-view [data-reorder-action] {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--surface-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+body.portal-view [data-reorder-action="done"] { border-color: var(--green); color: #fff; background: var(--green); }
+body.portal-view [data-reorder-action][hidden] { display: none; }
+body.portal-view [data-reorder-action]:focus-visible { outline: 3px solid var(--tag-text); outline-offset: 3px; }
+body.portal-view [data-reorder-action]:disabled { opacity: .45; cursor: default; }
+body.portal-view .app-tile-open {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+body.portal-view .app-tile-open img { -webkit-user-drag: none; user-select: none; }
+body.portal-view.is-reordering .app-tile-open { touch-action: none; cursor: grab; }
+body.portal-view.is-reordering .app-tile .app-tile-icon { animation: appReorderWiggle .32s ease-in-out infinite alternate; }
+body.portal-view.is-reordering .app-tile:nth-child(2n) .app-tile-icon { animation-delay: -.22s; }
+body.portal-view.is-reordering .app-tile:nth-child(3n) .app-tile-icon { animation-delay: -.1s; }
+body.portal-view.is-reordering .app-tile .favorite-toggle { visibility: hidden; pointer-events: none; }
+body.portal-view.is-reordering .tile-grid {
+  outline: 1px dashed var(--line);
+  outline-offset: 9px;
+  border-radius: 8px;
+}
+body.portal-view.is-reordering .tile-grid.is-reorder-target { outline-color: var(--tag-text); }
+body.portal-view.is-reordering .app-tile.is-dragging { opacity: .25; }
+body.portal-view.is-app-dragging { cursor: grabbing; user-select: none; }
+body.portal-view .reorder-ghost {
+  position: fixed;
+  z-index: 1200;
+  left: 0;
+  top: 0;
+  margin: 0;
+  pointer-events: none;
+  transform-origin: center;
+  filter: drop-shadow(0 12px 12px rgba(0, 0, 0, .18));
+  will-change: transform;
+  opacity: .95;
+}
+body.portal-view .reorder-ghost .app-tile-icon { animation: none !important; transform: none !important; }
+body.portal-view .reorder-ghost .favorite-toggle { visibility: hidden; }
+body.portal-view .reorder-ghost.is-invalid-drop { opacity: .45; filter: grayscale(.7); }
+@keyframes appReorderWiggle {
+  from { transform: rotate(-1.6deg); }
+  to { transform: rotate(1.6deg); }
+}
+@media (max-width: 720px) {
+  body.portal-view .reorder-toolbar { padding: 10px 12px; gap: 8px; }
+  body.portal-view .reorder-toolbar.is-editing { top: var(--reorder-toolbar-top, 116px); }
+  body.portal-view .reorder-status { flex-basis: 100%; font-size: 11.5px; }
+  body.portal-view .reorder-actions { margin-left: auto; }
+  body.portal-view [data-reorder-action] { min-height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.portal-view.is-reordering .app-tile .app-tile-icon { animation: none; }
+  body.portal-view.is-reordering .app-tile .app-tile-open { outline: 1px dashed var(--tag-text); outline-offset: 3px; border-radius: 12px; }
+}

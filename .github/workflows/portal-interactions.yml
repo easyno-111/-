@@ -1,0 +1,59 @@
+name: Portal interaction checks
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'js/portal*.js'
+      - 'js/default-data.js'
+      - 'assets/portal*.css'
+      - 'assets/chalkboard-theme.css'
+      - 'sw.js'
+      - 'tests/**'
+      - '.github/workflows/portal-interactions.yml'
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'js/portal*.js'
+      - 'js/default-data.js'
+      - 'assets/portal*.css'
+      - 'assets/chalkboard-theme.css'
+      - 'sw.js'
+      - 'tests/**'
+      - '.github/workflows/portal-interactions.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          node --check js/portal.js
+          node --check js/portal-preview.js
+          node --check js/portal-reorder.js
+          node --check tests/portal-interactions.spec.cjs
+          node --check sw.js
+      - name: Install pinned browser test tools
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Verify desktop and touch interactions
+        run: node tests/portal-interactions.spec.cjs
+        env:
+          PORTAL_TEST_ARTIFACTS: test-artifacts
+      - name: Upload failing browser screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-browser-failures
+          path: test-artifacts
+          if-no-files-found: ignore
+          retention-days: 7

@@ -22,6 +22,8 @@
   </script>
   <link rel="stylesheet" href="assets/portal.css?v=20260722-interaction2">
   <link rel="stylesheet" href="assets/chalkboard-theme.css?v=20261015-launcher1">
+  <link rel="stylesheet" href="assets/portal-interactions.css?v=20261022-app-details1">
+  <link rel="stylesheet" href="assets/portal-reorder.css?v=20261022-app-details1">
 </head>
 <body class="portal-view">
   <div class="portal-shell">
@@ -67,6 +69,16 @@
 
       <p id="searchStatus" class="search-status hidden" aria-live="polite"></p>
 
+      <div id="appArrangeToolbar" class="reorder-toolbar" aria-label="이 기기의 앱 배치">
+        <p class="app-arrange-hint">앱을 눌러 설명을 확인하고, 길게 눌러 배치를 바꿔보세요.</p>
+        <div class="reorder-actions">
+          <button type="button" data-reorder-action="edit">앱 배치</button>
+          <button type="button" data-reorder-action="reset" hidden>기본 순서</button>
+          <button type="button" data-reorder-action="done" hidden>완료</button>
+        </div>
+        <p id="arrangeStatus" class="reorder-status" role="status" aria-live="polite"></p>
+      </div>
+
       <section id="categorySections" class="category-sections" aria-live="polite">
         <div class="category-section category-section-skeleton"><div class="skeleton"></div></div>
         <div class="category-section category-section-skeleton"><div class="skeleton"></div></div>
@@ -79,15 +91,16 @@
     </footer>
   </div>
 
-  <!-- 링크가 두 개인 앱(교사용 · 학생용 등)을 눌렀을 때 고르는 창 -->
-  <dialog id="launchChoiceDialog" class="launch-choice" aria-label="실행할 화면 선택"></dialog>
+  <aside id="appPreview" class="app-preview" aria-label="앱 미리보기" hidden></aside>
+  <dialog id="launchChoiceDialog" class="launch-choice app-details" aria-labelledby="appDetailsTitle" aria-describedby="appDetailsDescription"></dialog>
 
   <dialog id="lessonRunnerDialog" class="lesson-runner-dialog">
     <form method="dialog"><button class="lesson-runner-close" aria-label="닫기">×</button></form>
     <div id="lessonRunnerContent"></div>
   </dialog>
 
-  <script type="module" src="js/portal.js?v=20261015-launcher1"></script>
+  <script type="module" src="js/portal.js?v=20261022-app-details1"></script>
   <script type="module" src="js/portal-enhancements.js?v=20261015-launcher1"></script>
 </body>
 </html>
+

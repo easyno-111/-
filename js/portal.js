@@ -1,4 +1,6 @@
 import { DEFAULT_APPS, DEFAULT_CATEGORIES, DEFAULT_SETTINGS } from './default-data.js';
+import { createAppPreview } from './portal-preview.js?v=20261022-app-details1';
+import { createAppReorder } from './portal-reorder.js?v=20261022-app-details1';
 
 const els = {
   brandTitle: document.getElementById('brandTitle'),
@@ -38,7 +40,7 @@ const CACHE_KEY = 'teacherPortalCacheV1';
 const THEME_KEY = 'teacherPortalTheme';
 const FAVORITES_KEY = 'teacherPortalFavoritesV1';
 const RECENTS_KEY = 'teacherPortalRecentsV1';
-const PORTAL_VERSION = '2.0.0';
+const PORTAL_VERSION = '2.1.0';
 // 카테고리 제목 밑에 긋는 형광펜 색. 순서대로 돌아가며 쓴다.
 const SECTION_PALETTE = ['#ffe66d', '#ffc9d9', '#c6f0d8', '#cfe6ff', '#ffd9b5', '#e4d6ff'];
 const QUICK_ACCESS_LIMIT = 6;
@@ -49,6 +51,20 @@ const FIREBASE_STARTUP_TIMEOUT = 5000;
 let cacheFallbackTimer = 0;
 let firebaseStartupTimer = 0;
 let realtimeRenderTimer = 0;
+let preview;
+const reorder = createAppReorder({
+  container: els.categorySections,
+  toolbar: document.getElementById('appArrangeToolbar'),
+  status: document.getElementById('arrangeStatus'),
+  onEditChange: () => preview?.close()
+});
+preview = createAppPreview({
+  container: els.categorySections,
+  panel: document.getElementById('appPreview'),
+  getApp: appById,
+  renderContent: renderAppInfo,
+  isEditing: () => reorder.isEditing()
+});
 
 function currentTheme() {
   return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
@@ -368,17 +384,18 @@ function matchesSearch(app) {
 }
 
 function groupedApps() {
-  const apps = visibleApps().filter(matchesSearch);
+  const allApps = visibleApps();
+  const apps = allApps.filter(matchesSearch);
   const categories = categoryEntries();
   const knownIds = new Set(categories.map(item => item.id));
   const groups = categories
     .map(category => ({
       ...category,
-      apps: apps.filter(app => app.category === category.id)
+      apps: reorder.sortApps(category.id, allApps.filter(app => app.category === category.id)).filter(matchesSearch)
     }))
     .filter(group => group.apps.length > 0);
 
-  const uncategorized = apps.filter(app => !knownIds.has(app.category));
+  const uncategorized = reorder.sortApps('__other__', allApps.filter(app => !knownIds.has(app.category))).filter(matchesSearch);
   if (uncategorized.length) {
     groups.push({ id: '__other__', name: '기타', order: 99999, apps: uncategorized });
   }
@@ -456,62 +473,88 @@ function requestLaunch(app) {
   else launchApp(app);
 }
 
-function openLaunchChoice(app) {
-  const dialog = els.launchChoice;
-  dialog.replaceChildren();
-
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'launch-choice-close';
-  close.setAttribute('aria-label', '닫기');
-  close.textContent = '×';
-  close.addEventListener('click', () => dialog.close());
-
-  const head = document.createElement('div');
-  head.className = 'launch-choice-head';
+function renderAppInfo(host, app, kind = 'dialog') {
+  host.replaceChildren();
+  host.style.setProperty('--app-color', normalizeColor(app.color));
+  const heading = document.createElement('div');
+  heading.className = 'app-info-heading';
   const icon = document.createElement('span');
   icon.className = 'launch-choice-icon';
-  icon.style.setProperty('--app-color', normalizeColor(app.color));
   fillIcon(icon, app);
+  const titles = document.createElement('div');
+  titles.className = 'app-info-titles';
+  const category = document.createElement('span');
+  category.className = 'app-info-category';
+  category.textContent = cleanText(state.categories[app.category]?.name, '앱 안내');
   const title = document.createElement('h2');
+  title.id = kind === 'dialog' ? 'appDetailsTitle' : 'appPreviewTitle';
   title.textContent = cleanText(app.title, '앱');
-  head.append(icon, title);
-  const description = cleanText(app.description);
-  if (description) {
-    const copy = document.createElement('p');
-    copy.textContent = description;
-    head.appendChild(copy);
-  }
+  titles.append(category, title);
+  heading.append(icon, titles);
+  const description = document.createElement('p');
+  description.id = kind === 'dialog' ? 'appDetailsDescription' : 'appPreviewDescription';
+  description.className = 'app-info-description';
+  description.textContent = cleanText(app.description) || '사용하기를 눌러 앱을 시작하세요.';
 
   const actions = document.createElement('div');
   actions.className = 'launch-choice-actions';
+  const hasSecondary = Boolean(safeUrl(app.secondaryUrl));
   [
-    [app.primaryLabel, app.primaryUrl, '실행', 'primary'],
-    [app.secondaryLabel, app.secondaryUrl, '열기', 'secondary']
-  ].forEach(([label, url, fallback, kind]) => {
+    [hasSecondary ? (cleanText(app.primaryLabel) || '사용하기') : '사용하기', app.primaryUrl, 'primary'],
+    [cleanText(app.secondaryLabel) || '두 번째 화면 열기', app.secondaryUrl, 'secondary']
+  ].forEach(([label, url, style]) => {
     const safe = safeUrl(url);
     if (!safe) return;
     const link = document.createElement('a');
-    link.className = `launch-choice-button ${kind}`;
+    link.className = `launch-choice-button ${style}`;
     link.href = safe;
-    link.textContent = cleanText(label, fallback);
+    link.textContent = label;
     if (app.openMode !== 'same') {
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
     }
     link.addEventListener('click', () => {
       recordAppLaunch(app.id);
-      dialog.close();
+      if (kind === 'dialog') els.launchChoice.close();
     });
     actions.appendChild(link);
   });
+  host.append(heading, description, actions);
+  if (app.openMode !== 'same') {
+    const note = document.createElement('small');
+    note.className = 'app-info-footnote';
+    note.textContent = '새 창에서 열립니다';
+    host.appendChild(note);
+  }
+}
 
-  dialog.append(close, head, actions);
-  dialog.showModal();
+function openLaunchChoice(app) {
+  preview.close();
+  const dialog = els.launchChoice;
+  if (!dialog) return;
+  renderAppInfo(dialog, app);
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'launch-choice-close';
+  close.setAttribute('aria-label', '앱 설명 닫기');
+  close.textContent = '×';
+  close.addEventListener('click', () => dialog.close());
+  dialog.prepend(close);
+  document.body.classList.add('app-details-open');
+  if (!dialog.open) dialog.showModal();
+  close.focus({ preventScroll: true });
 }
 
 els.launchChoice?.addEventListener('click', event => {
-  if (event.target === els.launchChoice) els.launchChoice.close();
+  if (event.target !== els.launchChoice) return;
+  const rect = els.launchChoice.getBoundingClientRect();
+  if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+    els.launchChoice.close();
+  }
+});
+els.launchChoice?.addEventListener('close', () => {
+  document.body.classList.remove('app-details-open');
+  preview.close();
 });
 
 function createAppTile(app) {
@@ -519,13 +562,17 @@ function createAppTile(app) {
   tile.className = 'app-tile';
   tile.dataset.appId = app.id;
   tile.style.setProperty('--app-color', normalizeColor(app.color));
-  const description = cleanText(app.description);
-  if (description) tile.title = description;
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = 'app-tile-open';
+  open.setAttribute('aria-label', `${cleanText(app.title, '앱')} 설명 보기`);
+  open.setAttribute('aria-haspopup', 'dialog');
+  open.setAttribute('aria-controls', 'launchChoiceDialog');
 
-  const head = document.createElement('div');
+  const head = document.createElement('span');
   head.className = 'app-tile-head';
 
-  const icon = document.createElement('div');
+  const icon = document.createElement('span');
   icon.className = 'app-tile-icon';
   fillIcon(icon, app);
 
@@ -538,7 +585,7 @@ function createAppTile(app) {
   favorite.setAttribute('aria-label', `${cleanText(app.title, '앱')} ${isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}`);
   favorite.title = isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가';
   favorite.textContent = isFavorite ? '★' : '☆';
-  head.append(icon, favorite);
+  head.append(icon);
 
   if (app.isNew) {
     const badge = document.createElement('span');
@@ -547,7 +594,7 @@ function createAppTile(app) {
     head.appendChild(badge);
   }
 
-  const name = document.createElement('div');
+  const name = document.createElement('span');
   name.className = 'app-tile-name';
   name.textContent = cleanText(app.title, '이름 없는 앱');
   if (app.featured) {
@@ -557,20 +604,20 @@ function createAppTile(app) {
     name.appendChild(tag);
   }
 
-  tile.append(head, name);
+  open.append(head, name);
+  tile.append(open, favorite);
 
   if (safeUrl(app.secondaryUrl)) {
-    const sub = document.createElement('div');
+    const sub = document.createElement('span');
     sub.className = 'app-tile-sub';
     sub.textContent = `${cleanText(app.primaryLabel, '실행')} · ${cleanText(app.secondaryLabel, '열기')}`;
-    tile.appendChild(sub);
+    open.appendChild(sub);
   }
 
   if (safeUrl(app.primaryUrl)) {
     tile.classList.add('is-clickable');
-    tile.tabIndex = 0;
-    tile.setAttribute('role', 'link');
-    tile.setAttribute('aria-label', `${cleanText(app.title, '앱')} 실행`);
+  } else {
+    open.disabled = true;
   }
   return tile;
 }
@@ -612,6 +659,8 @@ function appendStatusState(className, titleText, detailText) {
 }
 
 function renderCategorySections() {
+  preview.close();
+  reorder.beforeRender();
   const { apps, groups } = groupedApps();
   if (els.searchStatus) {
     els.searchStatus.textContent = state.search ? `“${state.search}” 검색 결과 ${apps.length}개` : '';
@@ -655,6 +704,7 @@ function renderCategorySections() {
   }
 
   groups.forEach((group, index) => els.categorySections.appendChild(createCategorySection(group, index)));
+  reorder.afterRender();
 }
 
 function markLoaded(part) {
@@ -699,16 +749,8 @@ function tileApp(element) {
   return tile ? appById(tile.dataset.appId) : null;
 }
 
-els.categorySections.addEventListener('keydown', event => {
-  if (!['Enter', ' '].includes(event.key)) return;
-  if (event.target.closest('a, button, input, select, textarea')) return;
-  const app = tileApp(event.target);
-  if (!app) return;
-  event.preventDefault();
-  requestLaunch(app);
-});
-
 els.categorySections.addEventListener('click', event => {
+  if (reorder.consumesClick(event)) return;
   const favoriteButton = event.target.closest('[data-favorite-app]');
   if (favoriteButton) {
     const active = toggleFavorite(favoriteButton.dataset.favoriteApp);
@@ -719,10 +761,9 @@ els.categorySections.addEventListener('click', event => {
     return;
   }
 
-  // 명시적인 링크/버튼은 브라우저 기본 동작을 그대로 사용한다.
-  if (event.target.closest('a, button, input, select, textarea')) return;
+  if (!event.target.closest('.app-tile-open')) return;
   const app = tileApp(event.target);
-  if (app) requestLaunch(app);
+  if (app) openLaunchChoice(app);
 });
 
 loadUserPreferences();
@@ -814,3 +855,4 @@ async function connectRealtimeData() {
 }
 
 connectRealtimeData();
+

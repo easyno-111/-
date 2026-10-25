@@ -265,6 +265,7 @@ button.bar:hover{ background:var(--paper); }
     </label>
     <input type="file" id="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac" hidden>
   </header>
+
   <nav class="tabs" role="tablist" aria-label="화면">
     <button id="tabSound" role="tab" aria-selected="true">소리</button>
     <button id="tabScore" role="tab" aria-selected="false">악보</button>
@@ -310,11 +311,11 @@ button.bar:hover{ background:var(--paper); }
       <h2 id="hCtl">키 조절</h2>
       <div class="semis">
         <button class="step" id="minus" aria-label="반음 내리기">−</button>
-        <output id="semisOut" for="semis" aria-live="polite">+2</output>
+        <output id="semisOut" for="semis" aria-live="polite">0</output>
         <button class="step" id="plus" aria-label="반음 올리기">+</button>
       </div>
       <div class="unit">반음</div>
-      <input type="range" id="semis" min="-12" max="12" step="1" value="2" aria-label="반음 수">
+      <input type="range" id="semis" min="-12" max="12" step="1" value="0" aria-label="반음 수">
       <div class="ticks mono"><span>−12</span><span>−6</span><span>0</span><span>+6</span><span>+12</span></div>
       <div class="transpose"><span class="from" id="fromKey">G 장조</span><span aria-hidden="true">→</span><strong id="toKey">A 장조</strong></div>
       <div class="kbd" id="kbd" aria-hidden="true"></div>
@@ -638,7 +639,7 @@ E|-----------|"></textarea>
     </section>
   </div>
 
-  <p class="privacy">파일은 이 브라우저 안에서만 처리되고, 어디에도 올라가지 않아요. ±5반음 안쪽이 가장 자연스럽게 들려요.</p>
+  <p class="privacy">직접 연 음악 파일은 브라우저에서 처리해요. 이미지 악보 인식은 지원 환경에서 외부 AI로 전달될 수 있어요. ±5반음 안쪽이 가장 자연스럽게 들려요.</p>
 </div>
 
 <script>
@@ -2164,7 +2165,7 @@ function musicLib(){
 
   // ---------- state ----------
   var track = null, keyInfo = null;
-  var S = { semis:2, cents:0, vocal:'off', strength:0.85, hq:true, formant:false, transient:true };
+  var S = { semis:0, cents:0, vocal:'off', strength:0.85, hq:true, formant:false, transient:true };
   var shifted = null;           // { channels, sig }
   var liveJob = null, analysisId = 0;
   var fmt = 'mp3-192', scope = 'one', manySet = [-2, -1, 1, 2], saving = null;
@@ -2175,13 +2176,15 @@ function musicLib(){
 
   // render(st) -> { promise, cancel }
   function render(st, onProgress){
-    var workers = [], cancelled = false;
+    var sourceTrack = track;
+    var workers = [], cancelled = false, rejectJob;
     var promise = new Promise(function(resolve, reject){
-      if (isIdentity(st)){ resolve(track.channels); return; }
-      var L = track.channels[0], R = track.channels.length > 1 ? track.channels[1] : null, len = L.length;
-      var o = { ratio:ratioOf(st), sr:track.sr, hq:st.hq, formant:st.formant, transient:st.transient, vocal: R ? st.vocal : 'off', strength:st.strength };
-      var parts = track.duration < 12 ? 1 : CORES;
-      var p = DSP.plan(o, len, track.mono, parts);
+      rejectJob = reject;
+      if (isIdentity(st)){ resolve(sourceTrack.channels); return; }
+      var L = sourceTrack.channels[0], R = sourceTrack.channels.length > 1 ? sourceTrack.channels[1] : null, len = L.length;
+      var o = { ratio:ratioOf(st), sr:sourceTrack.sr, hq:st.hq, formant:st.formant, transient:st.transient, vocal: R ? st.vocal : 'off', strength:st.strength };
+      var parts = sourceTrack.duration < 12 ? 1 : CORES;
+      var p = DSP.plan(o, len, sourceTrack.mono, parts);
       var nParts = p.splits.length - 1;
       var yLen = p.frames * p.Hs + DSP.N + 16;
       var yL = new Float32Array(yLen), yR = R ? new Float32Array(yLen) : null;
@@ -2223,11 +2226,11 @@ function musicLib(){
         outs.forEach(function(a){ for (var k = 0; k < a.length; k++){ var v = a[k] < 0 ? -a[k] : a[k]; if (v > peak) peak = v; } });
         if (peak > 0.99){ var g = 0.99 / peak; outs.forEach(function(a){ for (var k = 0; k < a.length; k++) a[k] *= g; }); }
         // a mono source keeps any extra channels identical
-        for (var e = outs.length; e < track.channels.length; e++) outs.push(outs[0]);
+        for (var e = outs.length; e < sourceTrack.channels.length; e++) outs.push(outs[0]);
         if (!cancelled) resolve(outs);
       }
     });
-    function cancel(){ cancelled = true; workers.forEach(function(w){ w.terminate(); }); }
+    function cancel(){ if (cancelled) return; cancelled = true; workers.forEach(function(w){ w.terminate(); }); if (rejectJob) rejectJob(new Error('cancel')); }
     return { promise:promise, cancel:cancel };
   }
 
@@ -2420,7 +2423,7 @@ function musicLib(){
       var k = keyName(keyInfo.pc, keyInfo.minor);
       $('keyLetter').textContent = k.letter; $('keyMode').textContent = k.mode;
       var gap = keyInfo.keys[0].score - keyInfo.keys[1].score;
-      $('keySub').textContent = k.ko + ' · ' + k.en + (gap < 0.04 ? ' · 비슷한 후보가 있어요' : '');
+      $('keySub').textContent = k.ko + ' · ' + k.en + (' · 후보 차이: ' + (gap < 0.04 ? '작음 (직접 확인 권장)' : gap < 0.10 ? '보통' : '큼') + ' · 통계적 정확도는 아님');
       keyInfo.keys.slice(0, 3).forEach(function(c){
         var n = keyName(c.pc, c.minor), li = document.createElement('li');
         li.innerHTML = '<span>' + n.letter + ' ' + n.mode + '</span><span class="bar"><i style="width:' + (Math.max(0, Math.min(1, c.score)) * 100).toFixed(0) + '%"></i></span><span class="sc mono">' + c.score.toFixed(2) + '</span>';
@@ -2511,6 +2514,7 @@ function musicLib(){
   function setTrack(t){
     stopSrc(); playing = false; offset = 0; bufs = { orig:null, shift:null }; shifted = null; keyInfo = null;
     if (liveJob){ liveJob.cancel(); liveJob = null; }
+    clearTimeout(debounce);
     var chs = t.channels, len = chs[0].length, mono = new Float32Array(len);
     for (var c = 0; c < chs.length; c++){ var ch = chs[c]; for (var i = 0; i < len; i++) mono[i] += ch[i] / chs.length; }
     track = { name:t.name, sr:t.sampleRate, channels:chs, mono:mono, duration:len / t.sampleRate, demo:t.demo };
@@ -2530,30 +2534,36 @@ function musicLib(){
     if (isIdentity(S)) setStatus('same'); else runLive();
     trackGen++; notify();
   }
-  function loadFile(file){
+  var loadGeneration = 0;
+  async function loadFile(file){
     if (!file) return;
+    if (saving) throw new Error('저장이 끝난 후 음악을 바꿔 주세요.');
+    if (file.size > 80 * 1024 * 1024) throw new Error('80MB 이하의 파일을 선택해 주세요.');
+    var generation = ++loadGeneration;
     setStatus('load');
-    var reader = new FileReader();
-    reader.onload = function(){
-      var ac;
-      try { ac = ensureCtx(); } catch (e) { setStatus('error', '이 브라우저는 소리를 다룰 수 없어요.'); return; }
-      var ok = function(buf){
-        var chs = [];
-        for (var c = 0; c < Math.min(2, buf.numberOfChannels); c++) chs.push(new Float32Array(buf.getChannelData(c)));
-        setTrack({ name:file.name, sampleRate:buf.sampleRate, channels:chs, demo:false });
-      };
-      var fail = function(){ setStatus('error', '이 파일은 소리로 읽을 수 없어요. mp3, wav, m4a, ogg 파일을 올려 보세요.'); };
-      try { var pr = ac.decodeAudioData(reader.result, ok, fail); if (pr && pr.catch) pr.catch(function(){}); } catch (e) { fail(); }
-    };
-    reader.onerror = function(){ setStatus('error', '파일을 열지 못했어요.'); };
-    reader.readAsArrayBuffer(file);
+    try {
+      var ac = ensureCtx(), bytes = await file.arrayBuffer();
+      if (generation !== loadGeneration) return false;
+      var buf = await ac.decodeAudioData(bytes);
+      if (generation !== loadGeneration) return false;
+      if (buf.duration > 900) throw new Error('메모리 보호를 위해 15분 이하의 파일을 사용해 주세요.');
+      var chs = [];
+      for (var c = 0; c < Math.min(2, buf.numberOfChannels); c++) chs.push(new Float32Array(buf.getChannelData(c)));
+      S.semis = 0; S.cents = 0; S.vocal = 'off';
+      setTrack({ name:file.name, sampleRate:buf.sampleRate, channels:chs, demo:false });
+      return true;
+    } catch(e){
+      if (generation === loadGeneration) setStatus('error', e.message || '음원을 읽지 못했어요.');
+      throw e;
+    }
   }
-  $('file').addEventListener('change', function(){ loadFile(this.files[0]); this.value = ''; });
+  function openLocal(file){ loadFile(file).catch(function(e){ setStatus('error', e.message); }); }
+  $('file').addEventListener('change', function(){ openLocal(this.files[0]); this.value = ''; });
   document.querySelector('.filebtn').addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); $('file').click(); } });
   var deck = $('deck');
   document.addEventListener('dragover', function(ev){ ev.preventDefault(); deck.classList.add('drag'); });
   document.addEventListener('dragleave', function(ev){ if (!ev.relatedTarget) deck.classList.remove('drag'); });
-  document.addEventListener('drop', function(ev){ ev.preventDefault(); deck.classList.remove('drag'); var f = ev.dataTransfer && ev.dataTransfer.files[0]; if (f) loadFile(f); });
+  document.addEventListener('drop', function(ev){ ev.preventDefault(); deck.classList.remove('drag'); var f = ev.dataTransfer && ev.dataTransfer.files[0]; if (f) openLocal(f); });
 
   // ---------- saving: formats ----------
   var lameState = 'loading';
@@ -2772,6 +2782,7 @@ function musicLib(){
     var e = new Error('unavailable'); e.code = 'unavailable'; throw e;
   }
   window.KD = {
+    loadFile: loadFile,
     onChange: function(f){ listeners.push(f); },
     track: function(){ return track; },
     trackGen: function(){ return trackGen; },

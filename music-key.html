@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}*,*::before,*::after{box-sizing:border-box}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>키 조절 데스크</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -156,6 +157,14 @@ input[type=range]{ width:100%; accent-color:var(--accent); margin:0; }
 .list{ margin:0; padding:0; list-style:none; font-size:13px; color:var(--muted); display:flex; flex-wrap:wrap; gap:4px 12px; font-family:var(--font-mono); }
 .deck .status{ margin-top:-2px; }
 
+.recbar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; border-top:1px solid var(--line); padding-top:12px; }
+.recbar > .label{ font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+.recbar .btn{ padding:6px 12px; font-size:13px; }
+.recbar #recStop{ animation:recpulse 1.6s ease-in-out infinite; }
+@keyframes recpulse{ 50%{ opacity:.75; } }
+@media (prefers-reduced-motion: reduce){ .recbar #recStop{ animation:none; } }
+.recbar .note{ flex-basis:100%; }
+
 /* score tab */
 .tabs{ display:flex; gap:4px; border-bottom:1px solid var(--line); margin-top:-4px; }
 .tabs button{ border:none; background:transparent; padding:10px 18px 12px; font-size:16px; font-weight:600; color:var(--muted); border-bottom:3px solid transparent; margin-bottom:-1px; font-family:var(--font-display); }
@@ -227,6 +236,91 @@ button.bar:hover{ background:var(--paper); }
 .editbox{ display:flex; flex-direction:column; gap:8px; }
 .empty{ text-align:center; color:var(--muted); padding:28px 12px; }
 
+/* follow-along, beat fix, electric */
+body::before{ content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top, 0px); z-index:10; background:var(--paper); }
+.beatfix{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding-top:4px; }
+.beatfix .label{ font-size:13px; color:var(--muted); }
+.beatfix .btn{ padding:5px 11px; font-size:13px; }
+.beatfix .seg button{ padding:5px 12px; font-size:13px; }
+.beatfix .note{ flex-basis:100%; }
+.elbox{ display:flex; flex-direction:column; gap:12px; }
+.ticker{ position:sticky; top:env(safe-area-inset-top, 0px); z-index:6; display:grid; grid-template-columns:auto auto auto 1fr auto; align-items:center; gap:10px 18px; padding:10px 14px; border-radius:14px; background:var(--ink); color:var(--paper); box-shadow:0 6px 18px rgba(10,16,30,.18); }
+.ticker .play{ background:var(--paper); color:var(--ink); width:42px; height:42px; }
+.tk-now, .tk-next{ display:flex; flex-direction:column; line-height:1.1; min-width:0; }
+.tk-label{ font-size:11px; letter-spacing:.08em; opacity:.7; }
+.tk-chord{ font-family:var(--font-display); font-weight:800; font-size:38px; white-space:nowrap; }
+.tk-chord small{ font-family:var(--font-body); font-weight:500; font-size:13px; opacity:.75; margin-left:6px; }
+.tk-chord.small{ font-size:24px; opacity:.85; }
+.tk-diag{ color:var(--paper); }
+.tk-diag svg{ width:58px; height:auto; display:block; }
+.tk-beats{ display:flex; gap:4px; margin-top:5px; min-height:8px; }
+.tk-beats i{ width:8px; height:8px; border-radius:50%; background:var(--paper); opacity:.25; }
+.tk-beats i.on{ opacity:1; }
+.tk-side{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; font-size:12.5px; }
+.tk-side .mini{ display:flex; align-items:center; gap:5px; cursor:pointer; opacity:.85; }
+.tk-side .btn{ color:var(--paper); border-color:color-mix(in srgb, var(--paper) 40%, transparent); padding:5px 10px; font-size:12.5px; }
+@media (max-width:620px){ .ticker{ grid-template-columns:auto 1fr auto; } .tk-diag{ display:none; } .tk-next{ grid-column:2; grid-row:2; } .tk-side{ grid-column:3; grid-row:1 / span 2; } .tk-chord{ font-size:30px; } .tk-chord.small{ font-size:20px; } }
+.sg.now .cn, .bar .bc span.now{ background:var(--accent); color:var(--accent-ink); border-radius:6px; padding:0 5px; margin-left:-5px; }
+.sg.now .cn small, .bar .bc span.now small{ color:inherit; opacity:.8; }
+.sg.now .ly{ text-decoration:underline; text-decoration-color:var(--accent); text-decoration-thickness:3px; text-underline-offset:4px; }
+.sg.past .cn{ opacity:.55; }
+.sg[data-ci], .bar .bc span[data-ci]{ cursor:pointer; }
+.bar.unsure .bc{ text-decoration:underline dotted; text-decoration-color:var(--muted); text-underline-offset:4px; }
+.bar.unsure .bn::after{ content:" · 확인"; color:var(--danger); }
+@media (prefers-reduced-motion: no-preference){ .sg .cn, .bar .bc span{ transition:background .12s, color .12s; } }
+
+/* stage (performance view) — deliberately dark, single look */
+.stage{ position:fixed; inset:0; z-index:40; display:flex; flex-direction:column; gap:10px;
+  background:#0b0f17; color:#f1f4fa;
+  padding-top:max(14px, env(safe-area-inset-top, 0px)); padding-bottom:max(14px, env(safe-area-inset-bottom, 0px));
+  padding-left:max(20px, env(safe-area-inset-left, 0px)); padding-right:max(20px, env(safe-area-inset-right, 0px)); }
+.stage[hidden]{ display:none!important; }
+.st-close{ position:absolute; top:max(10px, env(safe-area-inset-top, 0px)); right:max(14px, env(safe-area-inset-right, 0px)); z-index:2;
+  border:1px solid #333d52; background:transparent; color:#c9d2e6; width:42px; height:42px; border-radius:50%; font-size:22px; line-height:1; }
+.st-chordrow{ display:grid; grid-template-columns:1fr auto 1fr; align-items:start; gap:clamp(10px, 3vw, 34px); padding:0 48px; }
+.st-side, .st-center{ display:flex; flex-direction:column; min-width:0; }
+.st-center{ align-items:center; text-align:center; }
+.st-side{ padding-top:clamp(10px, 2.5vh, 26px); }
+.st-side.sprev{ align-items:flex-end; text-align:right; }
+.st-side.snext{ align-items:flex-start; }
+.st-label{ font-size:12px; letter-spacing:.1em; color:#8e99ad; }
+.st-chord{ font-family:var(--font-display); font-weight:800; font-size:clamp(58px, 13vw, 150px); line-height:1.02; color:#9fb0ff; white-space:nowrap; }
+.st-chord small{ font-family:var(--font-body); font-weight:500; font-size:clamp(13px, 2vw, 20px); color:#8e99ad; margin-left:10px; }
+.st-chord-sm{ font-family:var(--font-display); font-weight:700; font-size:clamp(22px, 4.5vw, 46px); line-height:1.1; color:#c9d2e6; opacity:.45; white-space:nowrap; }
+.st-chord-sm small{ font-family:var(--font-body); font-weight:500; font-size:.45em; color:#8e99ad; margin-left:5px; }
+.st-side.snext .st-chord-sm{ opacity:.6; }
+.st-diag{ margin-top:6px; color:#eef1f8; }
+.st-diag svg{ width:clamp(150px, 23vw, 250px); height:auto; }
+.st-center.hasdiag .st-chord{ font-size:clamp(30px, 5.5vw, 62px); }
+.st-beats{ display:flex; gap:6px; margin-top:8px; min-height:10px; }
+.st-beats i{ width:10px; height:10px; border-radius:50%; background:#f1f4fa; opacity:.22; }
+.st-beats i.on{ opacity:1; background:#9fb0ff; }
+.st-lines{ flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:clamp(12px, 3vh, 30px); overflow:hidden; }
+.st-line{ display:flex; flex-wrap:wrap; align-items:flex-end; row-gap:8px; justify-content:center; text-align:center; }
+.st-line .sg{ display:inline-flex; flex-direction:column; white-space:pre; }
+.st-line .cn{ font-weight:700; color:#9fb0ff; font-size:clamp(15px, 2.6vw, 26px); min-height:1.25em; padding:0 7px; border-radius:8px; }
+.st-line .cn small{ font-weight:500; font-size:.55em; color:#8e99ad; margin-left:4px; }
+.st-line .ly{ font-size:clamp(26px, 5.2vw, 54px); line-height:1.22; min-height:1.22em; font-weight:600; }
+.st-line.now .sg.on .cn{ background:#4e63e0; color:#fff; }
+.st-line.now .sg.on .cn small{ color:#dfe5f1; }
+.st-line.now .sg.on .ly{ color:#ffd76a; }
+.st-line.now .sg.past .ly{ color:#7d8698; }
+.st-line.now .sg.past .cn{ color:#5d6a85; }
+.st-line.prev, .st-line.next{ opacity:.4; }
+.st-line.prev .ly, .st-line.next .ly{ font-size:clamp(17px, 3vw, 30px); font-weight:500; }
+.st-line.prev .cn, .st-line.next .cn{ font-size:clamp(12px, 1.8vw, 18px); }
+.st-line.now .bigchord{ font-family:var(--font-display); font-weight:800; font-size:clamp(40px, 8vw, 86px); color:#c9d2e6; padding:0 18px; }
+.st-line.now .bigchord.on{ color:#ffd76a; }
+.st-line.prev .bigchord, .st-line.next .bigchord{ font-size:clamp(20px, 3.4vw, 36px); font-family:var(--font-display); font-weight:700; padding:0 10px; }
+.st-empty{ color:#8e99ad; font-size:16px; }
+.st-ctl{ display:flex; align-items:center; justify-content:center; gap:16px; }
+.st-ctl .btn{ color:#f1f4fa; border-color:#333d52; background:transparent; padding:10px 16px; }
+.st-ctl .play{ background:#4e63e0; color:#fff; width:54px; height:54px; }
+.st-ctl .play svg{ width:22px; height:22px; }
+.st-time{ color:#8e99ad; min-width:5ch; text-align:right; font-variant-numeric:tabular-nums; }
+@media (max-width:620px){ .st-diag svg{ width:clamp(120px, 42vw, 180px); } .st-chordrow{ padding:0 4px; gap:8px; } .st-chord{ font-size:clamp(46px, 17vw, 78px); } .st-center.hasdiag .st-chord{ font-size:clamp(24px, 9vw, 40px); } .st-chord-sm{ font-size:clamp(16px, 5.5vw, 26px); } .st-side{ padding-top:14px; } }
+@media (prefers-reduced-motion: no-preference){ .st-line.now .sg .ly, .st-line.now .bigchord{ transition:color .12s; } }
+
 /* harmony tab */
 #viewHarmony{ display:flex; flex-direction:column; gap:20px; }
 #viewHarmony[hidden]{ display:none!important; }
@@ -265,7 +359,6 @@ button.bar:hover{ background:var(--paper); }
     </label>
     <input type="file" id="file" accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.aac" hidden>
   </header>
-
   <nav class="tabs" role="tablist" aria-label="화면">
     <button id="tabSound" role="tab" aria-selected="true">소리</button>
     <button id="tabScore" role="tab" aria-selected="false">악보</button>
@@ -273,6 +366,31 @@ button.bar:hover{ background:var(--paper); }
   </nav>
 
   <div id="viewSound">
+  <section class="deck" id="youtubePanel" aria-labelledby="ytTitle" style="margin-bottom:20px;padding:20px">
+    <h2 id="ytTitle">유튜브 음원 가져오기 <small style="font-size:13px">비밀번호 보호 · 내 컴퓨터 서버 필요</small></h2>
+    <p>주소를 넣으면 음원을 가져와 키 조절·MR·악보·화음 연습에 사용할 수 있어요. 직접 제작했거나 다운로드 권한이 있는 영상에 사용해 주세요. <b>서버 없이</b> 쓰려면 위 소리 칸의 ‘다른 탭 소리 녹음’을 쓰면 돼요.</p>
+    <details class="ytsetup">
+      <summary>처음 설정 — 이 파일 하나로 서버까지 준비하기</summary>
+      <ol style="margin:10px 0 4px;padding-left:22px;line-height:1.7;font-size:14px">
+        <li><a href="https://www.python.org/downloads/" target="_blank" rel="noopener">Python 3.11+</a>, <a href="https://nodejs.org/" target="_blank" rel="noopener">Node.js</a>, <a href="https://ffmpeg.org/download.html" target="_blank" rel="noopener">FFmpeg</a>를 설치해요 (설치 때 PATH 추가 선택).</li>
+        <li>이 HTML 파일을 새 폴더에 넣고, 아래 버튼으로 <b>server.py</b>를 같은 폴더에 저장해요.</li>
+        <li>그 폴더에서 터미널을 열고: <code>py -m pip install -U "yt-dlp[default]"</code> 그다음 <code>py server.py</code></li>
+        <li>처음 실행 때 터미널에서 비밀번호를 만들어요. 서버가 켜지면 브라우저가 <b>http://127.0.0.1:8765</b> 를 자동으로 열어요. (HTML을 더블클릭해 연 화면에서는 가져오기가 안 돼요.)</li>
+        <li>가져오기가 실패하면 <code>py -m pip install -U "yt-dlp[default]"</code> 로 업데이트해 보세요.</li>
+      </ol>
+      <div class="loopbar" style="margin-top:6px"><button class="btn" type="button" id="ytServerSave">server.py 저장</button><span id="ytServerMsg" style="font-size:13px"></span></div>
+    </details>
+    <form id="ytLogin" class="loopbar">
+      <label for="ytPassword">비밀번호</label><input id="ytPassword" type="password" autocomplete="current-password" required maxlength="128" style="min-width:0;max-width:100%">
+      <button class="btn" type="submit">잠금 해제</button>
+    </form>
+    <form id="ytImport" hidden>
+      <label for="ytUrl">유튜브 영상 주소</label>
+      <input id="ytUrl" type="url" placeholder="https://www.youtube.com/watch?v=…" required style="width:100%;box-sizing:border-box;margin:10px 0" maxlength="2048">
+      <div class="loopbar"><button class="btn" id="ytStart" type="submit">음원 가져오기</button><button class="btn" type="button" id="ytCancel" hidden>작업 취소</button><button class="btn" type="button" id="ytLock">다시 잠그기</button></div>
+    </form>
+    <p id="ytStatus" role="status" aria-live="polite">최대 15분 · 한 번에 한 곡 · 서버 실행 중에만 작동해요</p>
+  </section>
   <section class="deck" id="deck" aria-label="파형과 재생">
     <div class="trackinfo">
       <span class="tag" id="srcTag">예시</span>
@@ -293,6 +411,13 @@ button.bar:hover{ background:var(--paper); }
     </div>
     <div class="status" id="status"><div class="pbar"><i id="pbar"></i></div><span id="statusText">준비 중</span></div>
     <div class="hint">파일을 이 칸에 끌어다 놓아도 돼요. mp3, wav, m4a, ogg를 읽을 수 있어요. 파형은 지금 고른 버전의 모양이에요.</div>
+    <div class="recbar">
+      <span class="label">파일 없이 가져오기</span>
+      <button class="btn" id="recTab">다른 탭 소리 녹음</button>
+      <button class="btn" id="recMic">마이크 녹음</button>
+      <button class="btn primary" id="recStop" hidden>■ 끝내기 <span class="mono" id="recTime">0:00</span></button>
+      <span class="note" id="recNote">유튜브 같은 다른 탭의 소리를 재생되는 그대로 실시간 녹음해서 불러와요. 데스크톱 크롬·엣지에서 돼요.</span>
+    </div>
   </section>
 
   <div class="grid">
@@ -404,6 +529,7 @@ button.bar:hover{ background:var(--paper); }
   </div>
   </div>
 
+
   <div id="viewScore" hidden>
     <section class="panel" aria-labelledby="hSrc">
       <h2 id="hSrc">악보 가져오기</h2>
@@ -420,6 +546,21 @@ button.bar:hover{ background:var(--paper); }
         <div class="savebox">
           <button class="btn primary" id="runChords">코드 뽑기</button>
           <div class="status" id="chordStatus"><div class="pbar"><i id="chordBar"></i></div><span id="chordText">준비</span></div>
+        </div>
+        <div class="beatfix" id="beatFix" hidden>
+          <span class="label">박자</span>
+          <div class="seg" role="group" aria-label="박자" id="meterSeg">
+            <button data-m="auto" aria-pressed="true">자동</button>
+            <button data-m="4" aria-pressed="false">4/4</button>
+            <button data-m="3" aria-pressed="false">3/4</button>
+          </div>
+          <span class="label">첫 박</span>
+          <button class="btn" id="phPrev" aria-label="마디 시작을 한 박 앞으로">◀ 한 박</button>
+          <button class="btn" id="phNext" aria-label="마디 시작을 한 박 뒤로">한 박 ▶</button>
+          <span class="label">빠르기</span>
+          <button class="btn" id="tmHalf">절반으로</button>
+          <button class="btn" id="tmDouble">두 배로</button>
+          <span class="note" id="beatInfo"></span>
         </div>
       </div>
 
@@ -493,9 +634,31 @@ E|-----------|"></textarea>
           <div class="seg wide instseg" role="group" aria-label="악기">
             <button data-inst="guitar" aria-pressed="true">통기타</button>
             <button data-inst="uke" aria-pressed="false">우쿨렐레</button>
+            <button data-inst="electric" aria-pressed="false">일렉기타<small>파워코드</small></button>
             <button data-inst="piano" aria-pressed="false">피아노</button>
             <button data-inst="bb" aria-pressed="false">B♭ 악기<small>트럼펫·클라리넷</small></button>
             <button data-inst="eb" aria-pressed="false">E♭ 악기<small>알토 색소폰</small></button>
+          </div>
+        </div>
+        <div class="elbox" id="elBox" hidden>
+          <label class="switch" for="elFollow">
+            <input type="checkbox" id="elFollow" checked>
+            <strong>베이스음 따라가기</strong>
+            <span>Bm/A처럼 베이스음이 따로 적힌 코드는 그 베이스음(A5)으로 쳐요. 록에서 흔히 쓰는 방식이에요.</span>
+          </label>
+          <label class="switch" for="elOct">
+            <input type="checkbox" id="elOct">
+            <strong>3줄로 두껍게 (옥타브 추가)</strong>
+            <span>근음·5도에 한 옥타브 위 근음을 더해 소리를 더 꽉 차게 해요.</span>
+          </label>
+          <div class="group">
+            <div class="label">리듬 패턴 <output>타브 악보에 적용</output></div>
+            <div class="seg wide" role="group" aria-label="리듬 패턴" id="elPattern">
+              <button data-p="eighths" aria-pressed="true">8분 뮤트<small>P.M. 다운피킹</small></button>
+              <button data-p="gallop" aria-pressed="false">갤럽<small>빠른 셋잇단</small></button>
+              <button data-p="quarters" aria-pressed="false">4분<small>한 박에 한 번</small></button>
+              <button data-p="whole" aria-pressed="false">길게<small>마디 첫 박만</small></button>
+            </div>
           </div>
         </div>
         <label class="switch" for="sCapo">
@@ -534,6 +697,49 @@ E|-----------|"></textarea>
         <div class="actions"><button class="btn primary" id="editApply">적용</button><button class="btn" id="editCancel">닫기</button></div>
       </div>
       <p class="note" id="sheetMsg" hidden></p>
+      <div class="ticker" id="ticker" hidden>
+        <button class="play" id="tkPlay" aria-label="재생">
+          <svg id="tkIcoPlay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+          <svg id="tkIcoPause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><rect x="6" y="4.5" width="4.5" height="15" rx="1"/><rect x="13.5" y="4.5" width="4.5" height="15" rx="1"/></svg>
+        </button>
+        <div class="tk-now"><span class="tk-label">지금</span><span class="tk-chord" id="tkNow" aria-live="off">—</span></div>
+        <div class="tk-diag" id="tkDiag" aria-hidden="true"></div>
+        <div class="tk-next"><span class="tk-label">다음</span><span class="tk-chord small" id="tkNext">—</span><span class="tk-beats" id="tkBeats" aria-hidden="true"></span></div>
+        <div class="tk-side">
+          <span class="mono" id="tkTime">0:00</span>
+          <label class="mini" for="tkScroll"><input type="checkbox" id="tkScroll" checked> 따라 스크롤</label>
+          <button class="btn" id="tkStage" hidden>무대 화면</button>
+          <button class="btn" id="tkAlign" hidden>음악과 맞추기</button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage" hidden role="dialog" aria-modal="true" aria-label="무대 화면">
+        <button class="st-close" id="stClose" aria-label="무대 화면 닫기">×</button>
+        <div class="st-chordrow">
+          <div class="st-side sprev"><span class="st-label">전</span><span class="st-chord-sm" id="stPrevCh">—</span></div>
+          <div class="st-center">
+            <span class="st-label">지금</span>
+            <span class="st-chord" id="stChord">—</span>
+            <span class="st-diag" id="stDiag" aria-hidden="true"></span>
+          </div>
+          <div class="st-side snext"><span class="st-label">다음</span><span class="st-chord-sm" id="stNext">—</span><span class="st-beats" id="stBeats" aria-hidden="true"></span></div>
+        </div>
+        <div class="st-lines">
+          <div class="st-line prev" id="stPrev"></div>
+          <div class="st-line now" id="stNow"><span class="st-empty">재생하면 지금 부르는 줄이 여기에 크게 나와요.</span></div>
+          <div class="st-line next" id="stNextLine"></div>
+        </div>
+        <div class="st-ctl">
+          <button class="btn" id="stPrevBtn">◀ 앞 줄</button>
+          <button class="play" id="stPlay" aria-label="재생">
+            <svg id="stIcoPlay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>
+            <svg id="stIcoPause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><rect x="6" y="4.5" width="4.5" height="15" rx="1"/><rect x="13.5" y="4.5" width="4.5" height="15" rx="1"/></svg>
+          </button>
+          <button class="btn" id="stNextBtn">다음 줄 ▶</button>
+          <span class="mono st-time" id="stTime">0:00</span>
+        </div>
+      </div>
+      <p class="note" id="alignNote" hidden></p>
       <div class="paper" id="paper">
         <div class="ptitle" id="pTitle"></div>
         <div class="pmeta" id="pMeta"></div>
@@ -639,7 +845,7 @@ E|-----------|"></textarea>
     </section>
   </div>
 
-  <p class="privacy">직접 연 음악 파일은 브라우저에서 처리해요. 이미지 악보 인식은 지원 환경에서 외부 AI로 전달될 수 있어요. ±5반음 안쪽이 가장 자연스럽게 들려요.</p>
+  <p class="privacy">직접 연 음악 파일은 브라우저에서 처리해요. 유튜브 가져오기는 내 컴퓨터의 서버가 음원을 내려받고, 사진 악보를 Claude로 읽을 때만 그 그림이 Claude에게 전달돼요. ±5반음 안쪽이 가장 자연스럽게 들려요.</p>
 </div>
 
 <script>
@@ -1037,15 +1243,23 @@ function dspLib(){
     }
     sd = Math.sqrt(sd / Math.max(1, nF1)) || 1;
     for (var a3 = 0; a3 < nF1; a3++) e2[a3] /= sd;
-    // 2. tempo by autocorrelation with a preference around 100 BPM
-    var minLag = Math.round(fps * 60 / 190), maxLag = Math.round(fps * 60 / 55), bestLag = Math.round(fps * 60 / 100), bestV = -1, acf = [];
+    // 2. tempo by autocorrelation; each candidate beat period is also checked at 2x and 3x (bar-level
+    //    support), which keeps 3/4 songs and fast songs from locking onto a wrong fraction of the beat
+    var minLag = Math.round(fps * 60 / 200), maxLag = Math.min(nF1 - 2, Math.round(fps * 60 / 18)), acf = [];
     for (var lag = minLag; lag <= maxLag; lag++){
       var s = 0; for (var t = lag; t < nF1; t++) s += e2[t] * e2[t - lag];
-      s /= (nF1 - lag) || 1;
-      var bpm = 60 * fps / lag, wgt = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 100) / 0.8, 2));
-      acf[lag] = s;
-      if (s * wgt > bestV){ bestV = s * wgt; bestLag = lag; }
+      acf[lag] = s / ((nF1 - lag) || 1);
     }
+    function acfAt(x){ var i = Math.floor(x), f = x - i; if (i < minLag || i + 1 > maxLag) return 0; return acf[i] * (1 - f) + acf[i + 1] * f; }
+    var bestLag = Math.round(fps * 60 / 100), bestV = -Infinity;
+    for (var lag2 = Math.round(fps * 60 / 190); lag2 <= Math.round(fps * 60 / 55); lag2++){
+      var bpm = 60 * fps / lag2, wgt = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 105) / 0.9, 2));
+      var sup = acf[lag2] + 0.5 * Math.max(acfAt(2 * lag2), acfAt(3 * lag2)) + 0.25 * acfAt(lag2 / 2);
+      var v2 = sup * wgt;
+      if (v2 > bestV){ bestV = v2; bestLag = lag2; }
+    }
+    // a slow pick whose half period is also strong is usually the real beat counted at half speed
+    if (60 * fps / bestLag < 86 && acfAt(bestLag / 2) > 0.55 * acf[bestLag]) bestLag = Math.round(bestLag / 2);
     var per = bestLag;
     if (acf[bestLag - 1] != null && acf[bestLag + 1] != null){
       var y0 = acf[bestLag - 1], y1 = acf[bestLag], y2 = acf[bestLag + 1], den = y0 - 2 * y1 + y2;
@@ -1074,45 +1288,79 @@ function dspLib(){
     var dur = L / sr2;
     while (beats.length && beats[beats.length - 1] + per / fps < dur - 0.05) beats.push(beats[beats.length - 1] + per / fps);
     if (onProgress) onProgress(0.55);
-    // 4. chroma frames
+    // 4. spectrogram (80–2100 Hz) + tuning estimate
     var N2 = 4096, H2 = 1024, w2 = hann(N2), nF2 = Math.max(1, Math.floor((L - N2) / H2) + 1);
     var re2 = new Float64Array(N2), im2 = new Float64Array(N2);
-    var binPc = new Int8Array(N2 / 2), binB = new Int8Array(N2 / 2);
-    for (var bb = 1; bb < N2 / 2; bb++){
-      var fq = bb * sr2 / N2, mm = Math.round(12 * Math.log2(fq / 440)) + 69, pcv = ((mm % 12) + 12) % 12;
-      binPc[bb] = fq >= 80 && fq <= 2100 ? pcv : -1;
-      binB[bb] = fq >= 40 && fq <= 260 ? pcv : -1;
-    }
-    var chF = [], bsF = [], enF = [], tF = [];
+    var bLo = Math.ceil(40 * N2 / sr2), bHi = Math.floor(2100 * N2 / sr2), nb2 = bHi - bLo + 1;
+    var spec = new Float32Array(nF2 * nb2), tF = new Float64Array(nF2);
+    var tunS = 0, tunC = 0;
     for (var k2 = 0; k2 < nF2; k2++){
       var o2 = k2 * H2;
       for (var n2 = 0; n2 < N2; n2++){ var vv = o2 + n2 < L ? d[o2 + n2] : 0; re2[n2] = vv * w2[n2]; im2[n2] = 0; }
       fft(re2, im2, false);
-      var c = new Float64Array(12), bs = new Float64Array(12), en = 0;
-      for (var b2 = 1; b2 < N2 / 2; b2++){
-        var mg = Math.sqrt(re2[b2] * re2[b2] + im2[b2] * im2[b2]);
-        if (binPc[b2] >= 0){ c[binPc[b2]] += mg; en += mg; }
-        if (binB[b2] >= 0) bs[binB[b2]] += mg;
+      var base = k2 * nb2, fmax = 0;
+      for (var b2 = bLo; b2 <= bHi; b2++){ var mg2 = Math.sqrt(re2[b2] * re2[b2] + im2[b2] * im2[b2]); spec[base + b2 - bLo] = mg2; if (mg2 > fmax) fmax = mg2; }
+      // tuning: deviation of strong local peaks from the 440 Hz grid (sampled every 4th frame)
+      if ((k2 & 3) === 0 && fmax > 0){
+        for (var b3 = bLo + 1; b3 < bHi; b3++){
+          var y1 = spec[base + b3 - bLo];
+          if (y1 < 0.25 * fmax) continue;
+          var y0 = spec[base + b3 - bLo - 1], y2 = spec[base + b3 - bLo + 1];
+          if (!(y1 > y0 && y1 >= y2) || b3 * sr2 / N2 < 100) continue;
+          var den = y0 - 2 * y1 + y2, off = den < 0 ? 0.5 * (y0 - y2) / den : 0;
+          var semi = 12 * Math.log2((b3 + off) * sr2 / N2 / 440), dev = semi - Math.round(semi);
+          tunS += Math.sin(2 * Math.PI * dev) * y1; tunC += Math.cos(2 * Math.PI * dev) * y1;
+        }
       }
-      chF.push(c); bsF.push(bs); enF.push(en); tF.push((o2 + N2 / 2) / sr2);
-      if (onProgress && (k2 & 127) === 0) onProgress(0.55 + 0.3 * k2 / nF2);
+      tF[k2] = (o2 + N2 / 2) / sr2;
+      if (onProgress && (k2 & 127) === 0) onProgress(0.55 + 0.2 * k2 / nF2);
     }
-    // 5. beat-synchronous chroma
-    var nb = beats.length, beatCh = [], beatBs = [], beatEn = [], fi = 0;
+    var tuning = Math.atan2(tunS, tunC) / (2 * Math.PI);   // in semitones, -0.5..0.5
+    if (!isFinite(tuning)) tuning = 0;
+    // 5. drum suppression: per-bin median over 9 frames keeps sustained (harmonic) energy
+    var MED = 4, buf9 = new Float32Array(2 * MED + 1);
+    var harm = new Float32Array(nF2 * nb2);
+    for (var bi0 = 0; bi0 < nb2; bi0++){
+      for (var k3 = 0; k3 < nF2; k3++){
+        var cnt9 = 0;
+        for (var q9 = k3 - MED; q9 <= k3 + MED; q9++) if (q9 >= 0 && q9 < nF2) buf9[cnt9++] = spec[q9 * nb2 + bi0];
+        var arr9 = buf9.subarray(0, cnt9); arr9.sort();
+        harm[k3 * nb2 + bi0] = Math.min(spec[k3 * nb2 + bi0], arr9[cnt9 >> 1]);
+      }
+    }
+    var binPc = new Int8Array(nb2), binB = new Int8Array(nb2);
+    for (var bb = 0; bb < nb2; bb++){
+      var fq = (bb + bLo) * sr2 / N2, mm = Math.round(12 * Math.log2(fq / 440) - tuning) + 69, pcv = ((mm % 12) + 12) % 12;
+      binPc[bb] = fq >= 80 && fq <= 2100 ? pcv : -1;
+      binB[bb] = fq >= 40 && fq <= 260 ? pcv : -1;
+    }
+    var chF = [], bsF = [], enF = [];
+    for (var k4 = 0; k4 < nF2; k4++){
+      var c = new Float64Array(12), bs = new Float64Array(12), en = 0, base4 = k4 * nb2;
+      for (var b4 = 0; b4 < nb2; b4++){
+        var mgh = harm[base4 + b4];
+        if (binPc[b4] >= 0){ c[binPc[b4]] += mgh; en += spec[base4 + b4]; }
+        if (binB[b4] >= 0) bs[binB[b4]] += mgh;
+      }
+      chF.push(c); bsF.push(bs); enF.push(en);
+    }
+    if (onProgress) onProgress(0.8);
+    // 6. beat-synchronous chroma
+    var nb = beats.length, beatCh = [], beatBs = [], beatEn = [];
     for (var bi2 = 0; bi2 < nb; bi2++){
       var t0 = beats[bi2], t1 = bi2 + 1 < nb ? beats[bi2 + 1] : dur;
       var c2 = new Float64Array(12), bs2 = new Float64Array(12), cnt = 0, en2 = 0;
-      for (var q = 0; q < tF.length; q++){
+      for (var q = 0; q < nF2; q++){
         if (tF[q] >= t0 && tF[q] < t1){ for (var z = 0; z < 12; z++){ c2[z] += Math.log(1 + chF[q][z]); bs2[z] += bsF[q][z]; } en2 += enF[q]; cnt++; }
       }
       if (!cnt){
-        var near = 0, nd = Infinity; for (var q2 = 0; q2 < tF.length; q2++){ var dd = Math.abs(tF[q2] - (t0 + t1) / 2); if (dd < nd){ nd = dd; near = q2; } }
+        var near = 0, nd = Infinity; for (var q2 = 0; q2 < nF2; q2++){ var dd = Math.abs(tF[q2] - (t0 + t1) / 2); if (dd < nd){ nd = dd; near = q2; } }
         for (var z2 = 0; z2 < 12; z2++){ c2[z2] = Math.log(1 + chF[near][z2]); bs2[z2] = bsF[near][z2]; } en2 = enF[near]; cnt = 1;
       }
       beatCh.push(c2); beatBs.push(bs2); beatEn.push(en2 / cnt);
     }
     var enSorted = beatEn.slice().sort(function(a, b){ return a - b; }), enMed = enSorted[Math.floor(enSorted.length / 2)] || 1;
-    // 6. chord scores
+    // 7. chord scores
     var scale = keyHint ? (keyHint.minor ? [0,2,3,5,7,8,10] : [0,2,4,5,7,9,11]).map(function(x){ return (x + keyHint.pc) % 12; }) : null;
     var states = [];
     for (var r = 0; r < 12; r++) CH_Q.forEach(function(qd){ states.push({ pc:r, q:qd[0], iv:qd[1], pen:qd[2] }); });
@@ -1123,23 +1371,25 @@ function dspLib(){
       st.vec = v;
       st.diatonic = scale ? st.iv.slice(0, 3).every(function(iv){ return scale.indexOf((st.pc + iv) % 12) >= 0; }) : false;
     });
-    var NS = states.length, emit = [];
+    var NS = states.length, emit = [], beatX = [];
     for (var bi3 = 0; bi3 < nb; bi3++){
       var cv = beatCh[bi3], cn = 0, mean = 0;
       for (var z4 = 0; z4 < 12; z4++) mean += cv[z4] / 12;
       var x = new Float64Array(12); for (var z5 = 0; z5 < 12; z5++){ x[z5] = Math.max(0, cv[z5] - 0.6 * mean); cn += x[z5] * x[z5]; }
       cn = Math.sqrt(cn) || 1;
+      for (var z8 = 0; z8 < 12; z8++) x[z8] /= cn;
+      beatX.push(Array.prototype.slice.call(x));
       var bmax = 0; for (var z6 = 0; z6 < 12; z6++) bmax = Math.max(bmax, beatBs[bi3][z6]);
       var row = new Float64Array(NS + 1);
       for (var si = 0; si < NS; si++){
         var st2 = states[si], dot = 0;
-        for (var z7 = 0; z7 < 12; z7++) dot += x[z7] / cn * st2.vec[z7];
+        for (var z7 = 0; z7 < 12; z7++) dot += x[z7] * st2.vec[z7];
         row[si] = dot + (bmax ? 0.18 * beatBs[bi3][st2.pc] / bmax : 0) - st2.pen + (st2.diatonic ? 0.05 : 0);
       }
       row[NS] = beatEn[bi3] < 0.12 * enMed ? 1.2 : 0.2;   // N (no chord)
       emit.push(row);
     }
-    // 7. Viterbi smoothing
+    // 8. Viterbi smoothing
     var K = 14, SW = 2.0, dp = new Float64Array(NS + 1), bk = [];
     for (var s0 = 0; s0 <= NS; s0++) dp[s0] = K * emit[0][s0];
     for (var bi4 = 1; bi4 < nb; bi4++){
@@ -1156,40 +1406,123 @@ function dspLib(){
     var last = 0, lv = -Infinity; for (var s3 = 0; s3 <= NS; s3++) if (dp[s3] > lv){ lv = dp[s3]; last = s3; }
     var path = new Array(nb); path[nb - 1] = last;
     for (var bi5 = nb - 1; bi5 > 0; bi5--) path[bi5 - 1] = bk[bi5 - 1][path[bi5]];
-    // 8. downbeat phase (4/4): chord changes and bass onsets on beat 1
-    var bestPh = 0, bestPhS = -Infinity;
-    for (var ph = 0; ph < 4; ph++){
-      var sc2 = 0;
-      for (var bi6 = 0; bi6 < nb; bi6++){
-        if ((bi6 - ph) % 4 !== 0 || bi6 < ph) continue;
-        if (bi6 > 0 && path[bi6] !== path[bi6 - 1]) sc2 += 1;
-        var fr = Math.round((beats[bi6] * sr2 - N1 / 2) / H1);
-        if (fr >= 0 && fr < nF1) sc2 += 0.15 * bassEnv[fr] / (sd || 1);
+    // per-beat confidence: chosen chord vs best chord with a different root or quality family
+    var conf = [];
+    for (var bi7 = 0; bi7 < nb; bi7++){
+      var ps = path[bi7];
+      if (ps === NS){ conf.push(1); continue; }
+      var mine = emit[bi7][ps], other = -Infinity;
+      for (var s4 = 0; s4 < NS; s4++){
+        if (s4 === ps) continue;
+        if (states[s4].pc === states[ps].pc && (states[s4].q === 'm') === (states[ps].q === 'm' || states[ps].q === 'm7')) continue;
+        if (emit[bi7][s4] > other) other = emit[bi7][s4];
       }
-      if (sc2 > bestPhS){ bestPhS = sc2; bestPh = ph; }
+      conf.push(Math.max(0, Math.min(1, (mine - other) / 0.15 + 0.5)));
     }
-    // 9. bars
-    var bars = [];
-    function lab(si){ return si === NS ? null : { pc:states[si].pc, q:states[si].q }; }
-    function sameLab(a, b){ return a === b; }
-    var startB = bestPh > 0 ? 0 : 0;
-    var groups = [];
-    if (bestPh > 0) groups.push([0, bestPh]);
-    for (var g = bestPh; g < nb; g += 4) groups.push([g, Math.min(nb, g + 4)]);
-    groups.forEach(function(gr){
-      var a = gr[0], z = gr[1], labs = path.slice(a, z);
-      var chords = [];
-      var firstHalf = labs.slice(0, 2), secondHalf = labs.slice(2);
-      function major(arr){ var cnt = {}, best = null, bc = 0; arr.forEach(function(x){ cnt[x] = (cnt[x] || 0) + 1; if (cnt[x] > bc){ bc = cnt[x]; best = x; } }); return best; }
-      if (labs.length >= 3){
-        var m1 = labs[0] === labs[1] ? labs[0] : major(firstHalf), m2 = secondHalf.length ? (secondHalf.every(function(x){ return x === secondHalf[0]; }) ? secondHalf[0] : major(secondHalf)) : m1;
-        chords.push({ beat:0, lab:lab(m1) });
-        if (m2 !== m1 && labs[2] !== m1) chords.push({ beat:2, lab:lab(m2) });
-      } else chords.push({ beat:0, lab:lab(major(labs)) });
-      bars.push({ t0:beats[a], t1: z < nb ? beats[z] : dur, beats:z - a, chords:chords, pickup: a === 0 && bestPh > 0 });
-    });
+    // 9. downbeat phase for 4/4 and 3/4; pick the meter whose bar lines line up better with chord changes and bass hits
+    function phaseScore(period){
+      var res = [];
+      for (var ph = 0; ph < period; ph++){
+        var sc2 = 0, n9 = 0;
+        for (var bi6 = ph; bi6 < nb; bi6 += period){
+          n9++;
+          if (bi6 > 0 && path[bi6] !== path[bi6 - 1]) sc2 += 1;
+          var fr = Math.round((beats[bi6] * sr2 - N1 / 2) / H1);
+          if (fr >= 0 && fr < nF1) sc2 += 0.15 * bassEnv[fr] / (sd || 1);
+        }
+        // changes that fall inside the bar (not on beat 1 or the half bar) count against this phase
+        var inside = 0;
+        for (var bi8 = 1; bi8 < nb; bi8++){
+          if (path[bi8] === path[bi8 - 1]) continue;
+          var pos = ((bi8 - ph) % period + period) % period;
+          if (pos !== 0 && !(period === 4 && pos === 2)) inside++;
+        }
+        res.push({ ph:ph, score:(sc2 - 0.6 * inside) / Math.max(1, n9) });
+      }
+      res.sort(function(a, b){ return b.score - a.score; });
+      return res[0];
+    }
+    var p4 = phaseScore(4), p3 = phaseScore(3);
+    var meter = p3.score > p4.score * 1.25 + 0.05 ? 3 : 4;
+    var labs = path.map(function(si){ return si === NS ? null : { pc:states[si].pc, q:states[si].q }; });
     if (onProgress) onProgress(1);
-    return { tempo: 60 * fps / per, beats:beats, bars:bars, duration:dur };
+    return { tempo: 60 * fps / per, beats:beats, duration:dur, labels:labs, conf:conf, beatChroma:beatX,
+             meter:meter, phase4:p4.ph, phase3:p3.ph, tuning:tuning };
+  }
+  // group per-beat chord labels into bars (meter 3 or 4, downbeat phase); used by the score tab
+  function groupBars(res, meter, phase){
+    var nb = res.beats.length, bars = [], labs = res.labels, conf = res.conf;
+    function key(l){ return l ? l.pc + ':' + l.q : 'N'; }
+    function major(arr){ var cnt = {}, best = null, bc = 0; arr.forEach(function(x){ var kk = key(x); cnt[kk] = (cnt[kk] || 0) + 1; if (cnt[kk] > bc){ bc = cnt[kk]; best = x; } }); return best; }
+    var groups = [];
+    if (phase > 0) groups.push([0, phase]);
+    for (var g = phase; g < nb; g += meter) groups.push([g, Math.min(nb, g + meter)]);
+    groups.forEach(function(gr){
+      var a = gr[0], z = gr[1], ls = labs.slice(a, z), chords = [], times = [];
+      var half = meter === 4 ? 2 : meter === 3 ? 2 : Math.ceil(ls.length / 2);
+      if (ls.length >= 3){
+        var first = ls.slice(0, half), second = ls.slice(half);
+        var m1 = key(ls[0]) === key(ls[1]) ? ls[0] : major(first);
+        var m2 = second.every(function(x){ return key(x) === key(second[0]); }) ? second[0] : major(second);
+        chords.push(m1); times.push(res.beats[a]);
+        if (key(m2) !== key(m1) && key(ls[half]) !== key(m1)){ chords.push(m2); times.push(res.beats[a + half]); }
+      } else { chords.push(major(ls)); times.push(res.beats[a]); }
+      var cs = conf.slice(a, z), cAvg = cs.reduce(function(p, v){ return p + v; }, 0) / Math.max(1, cs.length);
+      bars.push({ t0:res.beats[a], t1: z < nb ? res.beats[z] : res.duration, beats:z - a, labs:chords, ct:times, conf:cAvg, pickup: a === 0 && phase > 0, b0:a, b1:z });
+    });
+    return bars;
+  }
+  // align a written chord sequence to the per-beat chroma of a recording.
+  // seq: [{pcs:[...], lineStart:bool, lineEnd:bool}], returns per-beat state (-1 = outside the sheet)
+  function alignChords(beatChroma, seq, opt){
+    opt = opt || {};
+    var nb = beatChroma.length, n = seq.length, OUT = n, INF = 1e18;
+    var tmpl = seq.map(function(c){
+      var v = new Float64Array(12), nn = 0;
+      c.pcs.forEach(function(pc, i){ var w = i === 0 ? 1 : i === 3 ? 0.65 : 0.9; v[pc] = Math.max(v[pc], w); });
+      for (var z = 0; z < 12; z++) nn += v[z] * v[z]; nn = Math.sqrt(nn) || 1;
+      for (var z2 = 0; z2 < 12; z2++) v[z2] /= nn;
+      return v;
+    });
+    var cOut = opt.outCost == null ? 0.55 : opt.outCost, pSkip = 0.6, pJump = opt.jump == null ? 1.6 : opt.jump, pEnter = 0.4;
+    var starts = [], ends = [];
+    seq.forEach(function(c, i){ if (c.lineStart) starts.push(i); if (c.lineEnd) ends.push(i); });
+    if (!starts.length) starts.push(0);
+    if (!ends.length) ends.push(n - 1);
+    var isEnd = new Uint8Array(n); ends.forEach(function(i){ isEnd[i] = 1; });
+    var cost = function(i, j){ var x = beatChroma[j], v = tmpl[i], d = 0; for (var z = 0; z < 12; z++) d += x[z] * v[z]; return 1 - d; };
+    var D = new Float64Array(n + 1).fill(INF), back = new Array(nb);
+    D[OUT] = cOut; starts.forEach(function(i){ D[i] = cost(i, 0) + (i === starts[0] ? 0 : pJump); });
+    back[0] = new Int32Array(n + 1).fill(-1);
+    for (var j = 1; j < nb; j++){
+      var N2 = new Float64Array(n + 1).fill(INF), bk = new Int32Array(n + 1);
+      // best line-end (for jumps / leaving the sheet)
+      var bestEnd = INF, bestEndI = -1;
+      for (var e = 0; e < n; e++) if (isEnd[e] && D[e] < bestEnd){ bestEnd = D[e]; bestEndI = e; }
+      for (var i = 0; i < n; i++){
+        var c = cost(i, j), best = D[i], from = i;
+        if (i > 0 && D[i - 1] < best){ best = D[i - 1]; from = i - 1; }
+        if (i > 1 && D[i - 2] + pSkip < best){ best = D[i - 2] + pSkip; from = i - 2; }
+        N2[i] = best + c; bk[i] = from;
+      }
+      // entering a line start from a line end (repeat / jump) or from outside
+      starts.forEach(function(i){
+        var c = cost(i, j);
+        if (bestEndI >= 0 && bestEndI !== i - 1 && bestEnd + pJump + c < N2[i]){ N2[i] = bestEnd + pJump + c; bk[i] = bestEndI; }
+        if (D[OUT] + pEnter + c < N2[i]){ N2[i] = D[OUT] + pEnter + c; bk[i] = OUT; }
+      });
+      // outside: stay, or leave from a line end
+      var oBest = D[OUT], oFrom = OUT;
+      if (bestEnd + pEnter < oBest){ oBest = bestEnd + pEnter; oFrom = bestEndI; }
+      N2[OUT] = oBest + cOut; bk[OUT] = oFrom;
+      back[j] = bk; D = N2;
+    }
+    var endBest = INF, endI = OUT;
+    for (var k = 0; k <= n; k++) if (D[k] < endBest){ endBest = D[k]; endI = k; }
+    var path = new Int32Array(nb); path[nb - 1] = endI;
+    for (var j2 = nb - 1; j2 > 0; j2--) path[j2 - 1] = back[j2][path[j2]];
+    var outPath = Array.prototype.map.call(path, function(p){ return p === OUT ? -1 : p; });
+    return { path:outPath, cost:endBest / nb };
   }
 
 
@@ -1304,7 +1637,7 @@ function dspLib(){
     return { hop: Hp / sr2, offset: (N / 2) / sr2, midi: out, conf: conf };
   }
 
-  return { trackPitch: trackPitch, chordAnalyze: chordAnalyze, analyze: analyze, processAudio: processAudio, plan: plan, inputRange: inputRange, padded: padded, stretchRange: stretchRange, resample: resample, fft: fft, N: N };
+  return { groupBars: groupBars, alignChords: alignChords, trackPitch: trackPitch, chordAnalyze: chordAnalyze, analyze: analyze, processAudio: processAudio, plan: plan, inputRange: inputRange, padded: padded, stretchRange: stretchRange, resample: resample, fft: fft, N: N };
 }
 
 
@@ -2108,7 +2441,113 @@ function musicLib(){
   function melodyEvents(mel){ var ev = []; mel.bars.forEach(function(b, bi){ b.notes.forEach(function(n){ if (n.midi != null) ev.push({ notes:[{ str:0, fret:0 }], pitches:[n.midi], bar:bi, q:n.q }); }); }); return ev; }
   function midiName(m, sharp){ return spellPc(mod(m, 12), sharp) + (Math.floor(m / 12) - 1); }
 
+
+  // ================= electric guitar: power chords =================
+  function powerChord(c, followBass){
+    var usesBass = followBass && c.bass;
+    var root = usesBass ? c.bass : c.root, pc = usesBass ? c.bassPc : c.pc;
+    var flat5 = !usesBass && /^(dim|dim7|m7b5)$/.test(c.fam);
+    return { root:root, pc:pc, flat5:flat5, name: root + (flat5 ? '5(b5)' : '5'), from:chordName(c) };
+  }
+  function powerShapes(pw, opts){
+    var out = [], oct = opts.octave;
+    [[0, 4], [1, 9], [2, 2]].forEach(function(sd){
+      var str = sd[0], f0 = mod(pw.pc - sd[1], 12);
+      [f0, f0 + 12].forEach(function(f){
+        if (f > 15) return;
+        var fr = [-1,-1,-1,-1,-1,-1];
+        fr[str] = f; fr[str + 1] = f + (pw.flat5 ? 1 : 2);
+        if (oct && !pw.flat5){ fr[str + 2] = str === 2 ? f + 3 : f + 2; }
+        out.push({ frets:fr, str:str, f:f });
+      });
+    });
+    return out;
+  }
+  function powerPlan(seq, opts){
+    opts = opts || {};
+    var mode = opts.mode || 'move', names = seq.map(function(c){ return powerChord(c, opts.followBass !== false); });
+    var cands = names.map(function(pw){ return powerShapes(pw, opts); });
+    function own(s){
+      var c = s.str === 2 ? 0.45 : 0;
+      if (mode === 'low') c += 0.06 * s.f + (s.f === 0 ? -0.25 : 0);
+      else if (mode === 'mid') c += (s.f < 4 || s.f > 10 ? 0.35 : 0) + 0.04 * Math.abs(s.f - 7) + (s.f === 0 ? 0.4 : 0);
+      else c += (s.f > 9 ? 0.25 : 0) + 0.03 * s.f;
+      return c;
+    }
+    function move(a, b){
+      if (a.f === b.f && a.str === b.str) return 0;
+      var pa = a.f === 0 ? 1 : a.f, pb = b.f === 0 ? 1 : b.f;
+      var d = Math.abs(pa - pb) * (a.f === 0 || b.f === 0 ? 0.6 : 1);
+      return 0.13 * d + 0.06 * Math.abs(a.str - b.str);
+    }
+    var prev = null, rows = [];
+    cands.forEach(function(cs, i){
+      var row = cs.map(function(s){
+        if (!prev) return { cost:own(s), from:-1 };
+        var best = Infinity, from = 0;
+        prev.forEach(function(p, pi){ var v = p.cost + move(cands[i - 1][pi], s); if (v < best){ best = v; from = pi; } });
+        return { cost:best + own(s), from:from };
+      });
+      rows.push(row); prev = row;
+    });
+    var path = new Array(seq.length);
+    if (seq.length){
+      var last = rows[rows.length - 1], bi = 0;
+      last.forEach(function(r, k){ if (r.cost < last[bi].cost) bi = k; });
+      for (var i = seq.length - 1; i >= 0; i--){ path[i] = cands[i][bi]; bi = rows[i][bi].from; }
+    }
+    var voice = {}, tally = {}, map = {}, moves = 0, maxFret = 0, total = 0;
+    seq.forEach(function(c, i){
+      var key = chordName(c), pw = names[i], s = path[i];
+      map[key] = pw;
+      var tk = pw.name + '@' + s.frets.join(',');
+      tally[pw.name] = tally[pw.name] || {}; tally[pw.name][tk] = (tally[pw.name][tk] || 0) + 1;
+      if (!voice[pw.name] || tally[pw.name][tk] > tally[pw.name][voice[pw.name].tk]) voice[pw.name] = { frets:s.frets, str:s.str, f:s.f, tk:tk, info: voicingInfo(s.frets) };
+      if (i > 0){ var d = Math.abs((path[i].f || 0) - (path[i - 1].f || 0)); if (d >= 4) moves++; }
+      maxFret = Math.max(maxFret, s.f + 2);
+    });
+    if (rows.length){ var lr = rows[rows.length - 1]; total = Math.min.apply(null, lr.map(function(r){ return r.cost; })); }
+    return { inst:'electric', mode:mode, map:map, voice:voice, path:path, names:names, moves:moves, maxFret:maxFret, score: total / Math.max(1, seq.length) };
+  }
+  // a rough rhythm tab: one bar per chord on lyric lines, bar lines kept on bar lines
+  function powerTab(barsList, plan, opts){
+    opts = opts || {};
+    var meter = opts.meter || 4, pattern = opts.pattern || 'eighths';
+    var per = pattern === 'eighths' ? meter * 2 : pattern === 'gallop' ? meter * 3 : pattern === 'quarters' ? meter : 1;
+    var labels = ['e','B','G','D','A','E'], out = [], pm = pattern === 'eighths' || pattern === 'gallop';
+    var occ = 0;
+    for (var start = 0; start < barsList.length; start += 4){
+      var rows = labels.map(function(l){ return l + '|'; }), names = '  ', pmRow = '  ';
+      barsList.slice(start, start + 4).forEach(function(bar){
+        var cs = bar.length ? bar : [null], slots = per;
+        var each = Math.max(1, Math.floor(slots / cs.length));
+        cs.forEach(function(c, ci){
+          var n = ci === cs.length - 1 ? slots - each * (cs.length - 1) : each;
+          var s = c ? plan.path[occ++] : null;
+          var w = s ? Math.max.apply(null, s.frets.map(function(f){ return String(f).length; })) : 1;
+          var colW = pattern === 'whole' ? Math.max(8, w + 1) * meter / 2 : w + 1;
+          var label = c ? pretty(plan.names[occ - 1].name) : '';
+          var segW = 0;
+          for (var k = 0; k < n; k++){
+            var hit = pattern !== 'whole' || k === 0;
+            for (var r = 0; r < 6; r++){
+              var f = s ? s.frets[5 - r] : -1, txt = hit && f >= 0 ? String(f) : '';
+              rows[r] += txt + new Array(colW - txt.length + 1).join('-');
+            }
+            segW += colW;
+          }
+          names += (label + new Array(segW + 1).join(' ')).slice(0, segW);
+          pmRow += (pm && c ? ('P.M.' + new Array(segW + 1).join(' ')) : new Array(segW + 1).join(' ')).slice(0, segW);
+        });
+        rows = rows.map(function(r){ return r + '|'; }); names += ' '; pmRow += ' ';
+      });
+      out.push(names.replace(/\s+$/, '') + '\n' + (pm ? pmRow.replace(/\s+$/, '') + '\n' : '') + rows.join('\n'));
+    }
+    return out.join('\n\n');
+  }
+
   return {
+    powerChord:powerChord, powerPlan:powerPlan, powerTab:powerTab,
     parseNote:parseNote, trNote:trNote, pretty:pretty, keyName:keyName, keySharp:keySharp, spellPc:spellPc, letterShift:letterShift,
     parseChord:parseChord, chordName:chordName, trChord:trChord, chordPcs:chordPcs, family:family, keyFromChords:keyFromChords, sourceUsesFlats:sourceUsesFlats,
     INSTR:INSTR, candidates:candidates, planFor:planFor, bestPlans:bestPlans, voicingInfo:voicingInfo,
@@ -2423,7 +2862,7 @@ function musicLib(){
       var k = keyName(keyInfo.pc, keyInfo.minor);
       $('keyLetter').textContent = k.letter; $('keyMode').textContent = k.mode;
       var gap = keyInfo.keys[0].score - keyInfo.keys[1].score;
-      $('keySub').textContent = k.ko + ' · ' + k.en + (' · 후보 차이: ' + (gap < 0.04 ? '작음 (직접 확인 권장)' : gap < 0.10 ? '보통' : '큼') + ' · 통계적 정확도는 아님');
+      $('keySub').textContent = k.ko + ' · ' + k.en + ' · 후보 차이 ' + (gap < 0.04 ? '작음 (직접 확인 권장)' : gap < 0.10 ? '보통' : '큼');
       keyInfo.keys.slice(0, 3).forEach(function(c){
         var n = keyName(c.pc, c.minor), li = document.createElement('li');
         li.innerHTML = '<span>' + n.letter + ' ' + n.mode + '</span><span class="bar"><i style="width:' + (Math.max(0, Math.min(1, c.score)) * 100).toFixed(0) + '%"></i></span><span class="sc mono">' + c.score.toFixed(2) + '</span>';
@@ -2512,9 +2951,9 @@ function musicLib(){
 
   // ---------- loading ----------
   function setTrack(t){
+    clearTimeout(debounce);
     stopSrc(); playing = false; offset = 0; bufs = { orig:null, shift:null }; shifted = null; keyInfo = null;
     if (liveJob){ liveJob.cancel(); liveJob = null; }
-    clearTimeout(debounce);
     var chs = t.channels, len = chs[0].length, mono = new Float32Array(len);
     for (var c = 0; c < chs.length; c++){ var ch = chs[c]; for (var i = 0; i < len; i++) mono[i] += ch[i] / chs.length; }
     track = { name:t.name, sr:t.sampleRate, channels:chs, mono:mono, duration:len / t.sampleRate, demo:t.demo };
@@ -2536,9 +2975,9 @@ function musicLib(){
   }
   var loadGeneration = 0;
   async function loadFile(file){
-    if (!file) return;
-    if (saving) throw new Error('저장이 끝난 후 음악을 바꿔 주세요.');
-    if (file.size > 80 * 1024 * 1024) throw new Error('80MB 이하의 파일을 선택해 주세요.');
+    if (!file) return false;
+    if (saving) throw new Error('저장이 끝난 뒤에 음악을 바꿔 주세요.');
+    if (file.size > 80 * 1024 * 1024) throw new Error('80MB 이하의 파일을 골라 주세요.');
     var generation = ++loadGeneration;
     setStatus('load');
     try {
@@ -2546,24 +2985,95 @@ function musicLib(){
       if (generation !== loadGeneration) return false;
       var buf = await ac.decodeAudioData(bytes);
       if (generation !== loadGeneration) return false;
-      if (buf.duration > 900) throw new Error('메모리 보호를 위해 15분 이하의 파일을 사용해 주세요.');
+      if (buf.duration > 900) throw new Error('메모리를 아끼려고 15분 이하 파일만 받아요.');
       var chs = [];
       for (var c = 0; c < Math.min(2, buf.numberOfChannels); c++) chs.push(new Float32Array(buf.getChannelData(c)));
       S.semis = 0; S.cents = 0; S.vocal = 'off';
       setTrack({ name:file.name, sampleRate:buf.sampleRate, channels:chs, demo:false });
       return true;
-    } catch(e){
-      if (generation === loadGeneration) setStatus('error', e.message || '음원을 읽지 못했어요.');
-      throw e;
+    } catch (e){
+      var msg = e && e.message && /[가-힣]/.test(e.message) ? e.message : '이 파일은 소리로 읽을 수 없어요. mp3, wav, m4a, ogg 파일을 올려 보세요.';
+      if (generation === loadGeneration) setStatus('error', msg);
+      var err = new Error(msg); throw err;
     }
   }
-  function openLocal(file){ loadFile(file).catch(function(e){ setStatus('error', e.message); }); }
+  function openLocal(file){ loadFile(file).catch(function(){}); }
   $('file').addEventListener('change', function(){ openLocal(this.files[0]); this.value = ''; });
   document.querySelector('.filebtn').addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); $('file').click(); } });
   var deck = $('deck');
   document.addEventListener('dragover', function(ev){ ev.preventDefault(); deck.classList.add('drag'); });
   document.addEventListener('dragleave', function(ev){ if (!ev.relatedTarget) deck.classList.remove('drag'); });
   document.addEventListener('drop', function(ev){ ev.preventDefault(); deck.classList.remove('drag'); var f = ev.dataTransfer && ev.dataTransfer.files[0]; if (f) openLocal(f); });
+
+  // ---------- record from another tab / the mic (no server needed) ----------
+  var rec = null;
+  function recNote(t, warn){ var n = $('recNote'); n.textContent = t; n.classList.toggle('warn', !!warn); }
+  function recUI(on){ $('recStop').hidden = !on; $('recTab').disabled = on; $('recMic').disabled = on; }
+  function trimSilence(chs, sr){
+    var thr = 0.004, len = chs[0].length, a = 0, b = len, c;
+    outer: for (; a < len; a++){ for (c = 0; c < chs.length; c++) if (Math.abs(chs[c][a]) > thr) break outer; }
+    outer2: for (; b > a; b--){ for (c = 0; c < chs.length; c++) if (Math.abs(chs[c][b - 1]) > thr) break outer2; }
+    a = Math.max(0, a - Math.round(0.15 * sr)); b = Math.min(len, b + Math.round(0.3 * sr));
+    if (b - a < sr * 0.5 || (a === 0 && b === len)) return chs;
+    return chs.map(function(ch){ return ch.slice(a, b); });
+  }
+  async function startRec(kind){
+    if (rec) return;
+    if (window.claude && window.claude.use){ recNote('claude.ai 화면에서는 녹음이 막혀 있어요. 채팅에서 받은 HTML 파일을 컴퓨터에서 열면 쓸 수 있어요.', true); return; }
+    var stream;
+    try {
+      if (kind === 'tab'){
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) throw new Error('nosupport');
+        stream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
+        stream.getVideoTracks().forEach(function(t){ t.stop(); stream.removeTrack(t); });
+        if (!stream.getAudioTracks().length){
+          stream.getTracks().forEach(function(t){ t.stop(); });
+          recNote('소리가 같이 공유되지 않았어요. 공유 창에서 "Chrome 탭"을 고르고 "오디오도 공유"를 켠 뒤 유튜브 탭을 선택해 주세요.', true); return;
+        }
+      } else {
+        stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+      }
+    } catch (e){
+      recNote(e && e.message === 'nosupport' ? '이 브라우저는 탭 소리 녹음을 지원하지 않아요. 데스크톱 크롬이나 엣지에서 열어 주세요.' : '녹음을 허락하지 않아서 시작하지 못했어요.', true);
+      return;
+    }
+    if (playing) pause();
+    var mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', ''].find(function(x){ return !x || (window.MediaRecorder && MediaRecorder.isTypeSupported(x)); }) || '';
+    var mr;
+    try { mr = new MediaRecorder(stream, mime ? { mimeType:mime, audioBitsPerSecond:192000 } : undefined); }
+    catch (e){ stream.getTracks().forEach(function(t){ t.stop(); }); recNote('이 브라우저에서는 녹음을 만들 수 없어요.', true); return; }
+    var parts = [], t0 = Date.now();
+    var timer = setInterval(function(){
+      var s = Math.floor((Date.now() - t0) / 1000);
+      $('recTime').textContent = fmtTime(s);
+      if (s >= 900){ recNote('15분이 되어 녹음을 끝냈어요.'); stopRec(); }
+    }, 500);
+    rec = { mr:mr, stream:stream, timer:timer };
+    mr.ondataavailable = function(e){ if (e.data && e.data.size) parts.push(e.data); };
+    mr.onstop = async function(){
+      clearInterval(timer); stream.getTracks().forEach(function(t){ t.stop(); }); rec = null; recUI(false);
+      try {
+        recNote('녹음을 읽는 중이에요.');
+        var blob = new Blob(parts, { type: mime || 'audio/webm' });
+        if (blob.size < 2000) throw new Error('녹음된 소리가 없어요. 재생 중에 녹음했는지 확인해 주세요.');
+        var buf = await ensureCtx().decodeAudioData(await blob.arrayBuffer());
+        if (buf.duration > 905) throw new Error('15분 이하만 불러올 수 있어요.');
+        var chs = []; for (var c = 0; c < Math.min(2, buf.numberOfChannels); c++) chs.push(new Float32Array(buf.getChannelData(c)));
+        chs = trimSilence(chs, buf.sampleRate);
+        S.semis = 0; S.cents = 0; S.vocal = 'off';
+        setTrack({ name:(kind === 'tab' ? '탭 녹음' : '마이크 녹음') + ' ' + new Date().toTimeString().slice(0, 5), sampleRate:buf.sampleRate, channels:chs, demo:false });
+        recNote('불러왔어요. 앞뒤의 조용한 부분은 잘라 냈어요.');
+      } catch (e){ recNote(e && e.message && /[가-힣]/.test(e.message) ? e.message : '녹음을 소리로 읽지 못했어요. 다시 해 보세요.', true); }
+    };
+    stream.getAudioTracks()[0].addEventListener('ended', stopRec);
+    mr.start(1000);
+    recUI(true); $('recTime').textContent = '0:00';
+    recNote(kind === 'tab' ? '녹음 중 · 유튜브 탭에서 곡을 재생하고, 끝나면 ■ 끝내기를 누르세요. 탭 공유를 멈춰도 끝나요.' : '녹음 중 · 노래나 연주를 들려주세요.');
+  }
+  function stopRec(){ if (rec && rec.mr.state !== 'inactive') rec.mr.stop(); }
+  $('recTab').addEventListener('click', function(){ startRec('tab'); });
+  $('recMic').addEventListener('click', function(){ startRec('mic'); });
+  $('recStop').addEventListener('click', stopRec);
 
   // ---------- saving: formats ----------
   var lameState = 'loading';
@@ -2782,7 +3292,6 @@ function musicLib(){
     var e = new Error('unavailable'); e.code = 'unavailable'; throw e;
   }
   window.KD = {
-    loadFile: loadFile,
     onChange: function(f){ listeners.push(f); },
     track: function(){ return track; },
     trackGen: function(){ return trackGen; },
@@ -2803,6 +3312,7 @@ function musicLib(){
       });
     },
     saveBlob: saveBlob,
+    loadFile: loadFile,
     render: function(st, onProgress){ return render(Object.assign({ semis:0, cents:0, vocal:'off', strength:1, hq:true, formant:false, transient:true }, st), onProgress); },
     trackPitch: function(mono, sr, onProgress){
       return new Promise(function(resolve, reject){
@@ -2874,8 +3384,11 @@ function musicLib(){
   var SC = {
     source:'audio', sheet:null, tab:null, mel:null, title:'', audio:null,
     keyAuto:null, keyOverride:null, semis:0, sync:true,
-    inst:'guitar', capo:true, easy:false, planIdx:0, plans:null, tabRes:null
+    inst:'guitar', capo:true, easy:false, planIdx:0, plans:null, tabRes:null,
+    res:null, resGen:-1, beat:{ meter:'auto', shift:0, mul:1 }, meter:4, align:null, timeline:null,
+    el:{ followBass:true, octave:false, pattern:'eighths' }
   };
+  var DSPm = dspLib();
 
   // ---------- source switching ----------
   var SRC = ['Audio','Pdf','Text','Tab','Xml'];
@@ -2885,8 +3398,9 @@ function musicLib(){
     });
   });
   function setSource(kind){
-    SC.source = kind; SC.planIdx = 0;
+    SC.source = kind; SC.planIdx = 0; SC.align = null;
     $('sSyncRow').hidden = kind !== 'audio';
+    $('beatFix').hidden = kind !== 'audio' || !SC.res;
     if (kind === 'audio' && SC.sync) SC.semis = KD.semis();
   }
 
@@ -2914,30 +3428,75 @@ function musicLib(){
     KD.chords(function(p){ $('chordBar').style.width = (p * 100).toFixed(0) + '%'; $('chordText').textContent = '박자와 코드를 찾는 중 ' + Math.round(p * 100) + '%'; }).then(function(res){
       audioRunning = false; $('runChords').disabled = false;
       if (gen !== KD.trackGen()) return;
-      var key = KD.key() || null;
-      var sharp = key ? M.keySharp(key.pc, key.minor) : true;
-      var QS = { maj:'', m:'m', '7':'7', m7:'m7', maj7:'maj7' };
-      var bars = res.bars.map(function(b, i){
-        return { t0:b.t0, t1:b.t1, pickup:b.pickup, chords: b.chords.map(function(c){ return c.lab ? M.parseChord(M.spellPc(c.lab.pc, sharp) + QS[c.lab.q]) : null; }) };
-      });
-      // merge the empty pickup into nothing; keep N as an empty bar
-      var lines = [], row = [];
-      bars.forEach(function(b){ row.push(b); if (row.length === 4){ lines.push({ type:'bars', bars:row }); row = []; } });
-      if (row.length) lines.push({ type:'bars', bars:row });
+      SC.res = res; SC.resGen = gen; SC.beat = { meter:'auto', shift:0, mul:1 };
       SC.audio = { tempo:res.tempo, name:KD.track().name };
-      SC.sheet = { lines:lines, meta:{} };
-      SC.tab = null; SC.mel = null; SC.title = KD.track().name.replace(/\.[^.]+$/, '');
-      var chords = M.sheetChords(SC.sheet);
-      SC.keyAuto = key || M.keyFromChords(chords);
+      SC.tab = null; SC.mel = null; SC.align = null; SC.title = KD.track().name.replace(/\.[^.]+$/, '');
+      buildAudioSheet();
       setSource('audio');
       $('chordStatus').classList.add('ready'); $('chordBar').style.width = '100%';
-      $('chordText').textContent = '찾았어요 · 빠르기 약 ' + Math.round(res.tempo) + ' BPM · ' + bars.length + '마디';
       render();
     }, function(){
       audioRunning = false; $('runChords').disabled = false;
       $('chordText').textContent = '코드를 찾지 못했어요. 다시 눌러 보세요.';
     });
   }
+  // tempo ×2 / ÷2 without re-analysis
+  function scaledRes(res, mul){
+    if (mul === 1) return res;
+    var o = { tempo:res.tempo * mul, duration:res.duration, beats:[], labels:[], conf:[], beatChroma:[] };
+    if (mul < 1){
+      for (var i = 0; i < res.beats.length; i += 2){ o.beats.push(res.beats[i]); o.labels.push(res.labels[i]); o.conf.push(res.conf[i]); o.beatChroma.push(res.beatChroma[i]); }
+    } else {
+      for (var j = 0; j < res.beats.length; j++){
+        var t1 = j + 1 < res.beats.length ? res.beats[j + 1] : res.duration;
+        [res.beats[j], (res.beats[j] + t1) / 2].forEach(function(t){ o.beats.push(t); o.labels.push(res.labels[j]); o.conf.push(res.conf[j]); o.beatChroma.push(res.beatChroma[j]); });
+      }
+    }
+    return o;
+  }
+  function labelPhase(res, meter){
+    var best = 0, bs = -Infinity, key = function(l){ return l ? l.pc + ':' + l.q : 'N'; };
+    for (var ph = 0; ph < meter; ph++){
+      var sc = 0;
+      for (var i = 1; i < res.labels.length; i++){
+        if (key(res.labels[i]) === key(res.labels[i - 1])) continue;
+        var pos = ((i - ph) % meter + meter) % meter;
+        sc += pos === 0 ? 1 : (meter === 4 && pos === 2) ? 0.2 : -0.6;
+      }
+      if (sc > bs){ bs = sc; best = ph; }
+    }
+    return best;
+  }
+  function buildAudioSheet(){
+    var res0 = SC.res, B = SC.beat, res = scaledRes(res0, B.mul);
+    var meterAuto = res0.meter || 4, meter = B.meter === 'auto' ? meterAuto : +B.meter;
+    var phase0 = B.mul === 1 ? (meter === 3 ? res0.phase3 : res0.phase4) : labelPhase(res, meter);
+    var phase = ((phase0 + B.shift) % meter + meter) % meter;
+    var key = KD.key() || null, sharp = key ? M.keySharp(key.pc, key.minor) : true;
+    var QS = { maj:'', m:'m', '7':'7', m7:'m7', maj7:'maj7' };
+    var bars = DSPm.groupBars(res, meter, phase).map(function(b){
+      var chords = [], ct = [];
+      b.labs.forEach(function(l, k){ chords.push(l ? M.parseChord(M.spellPc(l.pc, sharp) + QS[l.q]) : null); ct.push(b.ct[k]); });
+      return { t0:b.t0, t1:b.t1, ct:ct, conf:b.conf, pickup:b.pickup, chords:chords };
+    });
+    var lines = [], row = [];
+    bars.forEach(function(b){ row.push(b); if (row.length === 4){ lines.push({ type:'bars', bars:row }); row = []; } });
+    if (row.length) lines.push({ type:'bars', bars:row });
+    SC.sheet = { lines:lines, meta:{} }; SC.meter = meter; SC.audio.tempo = res.tempo;
+    SC.keyAuto = key || M.keyFromChords(M.sheetChords(SC.sheet));
+    var unsure = bars.filter(function(b){ return b.conf < 0.45 && b.chords.some(Boolean); }).length;
+    $('chordText').textContent = '찾았어요 · 약 ' + Math.round(res.tempo) + ' BPM · ' + meter + '/4박자 · ' + bars.length + '마디' + (unsure ? ' · 확인이 필요한 마디 ' + unsure + '개' : '');
+    $('beatFix').hidden = false;
+    Array.prototype.forEach.call($('meterSeg').children, function(x){ x.setAttribute('aria-pressed', String(x.dataset.m === String(B.meter))); });
+    $('meterSeg').children[0].textContent = '자동 (' + meterAuto + '/4)';
+    $('beatInfo').textContent = '마디가 한 박씩 밀려 보이면 첫 박을, 마디가 너무 길거나 짧으면 빠르기를 고쳐 주세요. 점선 마디는 코드가 확실하지 않은 곳이에요.' + (Math.abs(res0.tuning) > 0.12 ? ' 이 곡은 표준 음높이보다 ' + Math.round(Math.abs(res0.tuning) * 100) + '센트 ' + (res0.tuning > 0 ? '높게' : '낮게') + ' 조율돼 있어서 보정했어요.' : '');
+  }
+  function rebuildAudio(){ if (!SC.res || SC.source !== 'audio') return; buildAudioSheet(); render(); }
+  Array.prototype.forEach.call($('meterSeg').children, function(b){ b.addEventListener('click', function(){ SC.beat.meter = b.dataset.m; SC.beat.shift = 0; rebuildAudio(); }); });
+  $('phPrev').addEventListener('click', function(){ SC.beat.shift--; rebuildAudio(); });
+  $('phNext').addEventListener('click', function(){ SC.beat.shift++; rebuildAudio(); });
+  $('tmHalf').addEventListener('click', function(){ SC.beat.mul = SC.beat.mul === 2 ? 1 : 0.5; SC.beat.shift = 0; rebuildAudio(); });
+  $('tmDouble').addEventListener('click', function(){ SC.beat.mul = SC.beat.mul === 0.5 ? 1 : 2; SC.beat.shift = 0; rebuildAudio(); });
   $('runChords').addEventListener('click', runAudio);
 
   // ---------- 2. PDF / photo ----------
@@ -3171,6 +3730,9 @@ function musicLib(){
     Array.prototype.forEach.call(document.querySelectorAll('.instseg button'), function(b){ b.setAttribute('aria-pressed', String(b.dataset.inst === SC.inst)); });
     $('sCapo').disabled = !(SC.inst === 'guitar' || SC.inst === 'uke');
     $('sEasy').disabled = !(SC.inst === 'guitar' || SC.inst === 'uke') || !!SC.tab;
+    $('elBox').hidden = SC.inst !== 'electric';
+    $('sCapo').closest('.switch').hidden = SC.inst === 'electric';
+    $('sEasy').closest('.switch').hidden = SC.inst === 'electric';
     $('origKey').value = SC.keyOverride ? SC.keyOverride.pc + (SC.keyOverride.minor ? 'm' : '') : 'auto';
     var autoOpt = $('origKey').options[0];
     autoOpt.textContent = SC.keyAuto ? '자동 · ' + keyLabel(SC.keyAuto) : '자동';
@@ -3178,10 +3740,10 @@ function musicLib(){
     if (!hasSrc){
       $('sheet').innerHTML = '<div class="empty">위에서 음악, PDF, 코드 악보, 타브 중 하나를 불러오면 여기에 바뀐 악보가 나와요.</div>';
       $('plans').innerHTML = ''; $('diagrams').innerHTML = ''; $('pTitle').textContent = ''; $('pMeta').innerHTML = '';
-      $('staff').hidden = true; $('tabOut').hidden = true; return;
+      $('staff').hidden = true; $('tabOut').hidden = true; SC.timeline = null; syncTicker(); return;
     }
     msg('');
-    if (SC.tab) return renderTabSource();
+    if (SC.tab){ SC.timeline = null; syncTicker(); return renderTabSource(); }
     var ok = origKey(), off = INST_OFF[SC.inst] || 0, semisAll = SC.semis + off;
     var tKey = { pc:M.mod(ok.pc + SC.semis, 12), minor:ok.minor }, wKey = { pc:M.mod(ok.pc + semisAll, 12), minor:ok.minor };
     var ls = M.letterShift(M.keyName(ok.pc, ok.minor), M.keyName(wKey.pc, wKey.minor)), sharp = M.keySharp(wKey.pc, wKey.minor);
@@ -3189,7 +3751,7 @@ function musicLib(){
     $('sTo').textContent = keyLabel(tKey) + (off ? ' (악보는 ' + keyLabel(wKey) + ')' : '');
     var written = M.mapSheet(SC.sheet, function(c){ return M.trChord(c, semisAll, ls, sharp); });
     var display = written, plan = null, names = function(c){ return M.chordName(c); };
-    var fretted = SC.inst === 'guitar' || SC.inst === 'uke';
+    var fretted = SC.inst === 'guitar' || SC.inst === 'uke', electric = SC.inst === 'electric', ptab = null;
     if (fretted){
       var seq = M.sheetChords(written);
       var opts = { easy:SC.easy, capo:SC.capo };
@@ -3200,6 +3762,22 @@ function musicLib(){
       renderPlans(choices, seq.length);
       renderNudge(seq, ok, opts, plan);
       display = M.mapSheet(written, function(c){ var u = plan.chords[M.chordName(c)]; return Object.assign({}, u ? u.shape : c, { _sound: c, _v: u ? plan.voice[M.chordName(c)] : null }); });
+    } else if (electric){
+      var seqE = M.sheetChords(written), seen = {}, eChoices = [];
+      ['move','low','mid'].forEach(function(mode){
+        var pl = M.powerPlan(seqE, { mode:mode, octave:SC.el.octave, followBass:SC.el.followBass });
+        var sig = pl.path.map(function(s){ return s.str + ':' + s.f; }).join(',');
+        if (!seen[sig]){ seen[sig] = 1; eChoices.push(pl); }
+      });
+      if (SC.planIdx >= eChoices.length) SC.planIdx = 0;
+      plan = eChoices[SC.planIdx];
+      renderPowerPlans(eChoices);
+      $('nudge').hidden = true;
+      display = M.mapSheet(written, function(c){
+        var pw = plan.map[M.chordName(c)];
+        return { root:pw.root, suffix: pw.flat5 ? '5(b5)' : '5', bass:null, pc:pw.pc, bassPc:null, fam:'5', _sound:c, _v: plan.voice[pw.name] };
+      });
+      ptab = M.powerTab(barsForTab(display), plan, { meter:SC.meter || 4, pattern:SC.el.pattern });
     } else {
       $('plans').innerHTML = '<div class="note">' + (SC.inst === 'piano' ? '피아노는 카포가 없어서 코드를 그대로 옮겨요. 아래 건반 그림은 각 코드의 구성음이에요.' : SC.inst === 'bb' ? 'B♭ 악기는 실제 소리보다 장2도(반음 2개) 높게 적어요. 악보의 코드와 키도 그만큼 올려서 보여 줘요.' : 'E♭ 알토 색소폰은 실제 소리보다 장6도(반음 9개) 높게 적어요. 악보의 코드와 키도 그만큼 올려서 보여 줘요.') + '</div>';
       $('nudge').hidden = true;
@@ -3208,13 +3786,39 @@ function musicLib(){
     $('pTitle').textContent = SC.title || '';
     var meta = '<span>' + keyLabel(ok) + ' → ' + keyLabel(tKey) + (SC.semis ? ' (' + signed(SC.semis) + ')' : '') + '</span>';
     if (off) meta += '<span>' + ({ bb:'B♭ 악기용 · ', eb:'E♭ 악기용 · ' })[SC.inst] + '악보 키 ' + keyLabel(wKey) + '</span>';
-    if (plan && plan.capo) meta += '<span class="capo">카포 ' + plan.capo + '</span><span>' + P(plan.shapeKey.name) + (plan.shapeKey.minor ? 'm' : '') + ' 모양으로 연주</span>';
-    if (plan && !plan.capo) meta += '<span>' + M.INSTR[SC.inst].name + ' · 카포 없음</span>';
-    if (SC.audio && SC.source === 'audio') meta += '<span>약 ' + Math.round(SC.audio.tempo) + ' BPM</span>';
+    if (electric) meta += '<span class="capo">일렉기타 · 파워코드</span><span>' + ({ move:'손 이동 최소', low:'낮은 자리', mid:'한 자리' })[plan.mode] + '</span>';
+    else if (plan && plan.capo) meta += '<span class="capo">카포 ' + plan.capo + '</span><span>' + P(plan.shapeKey.name) + (plan.shapeKey.minor ? 'm' : '') + ' 모양으로 연주</span>';
+    else if (plan && !plan.capo) meta += '<span>' + M.INSTR[SC.inst].name + ' · 카포 없음</span>';
+    if (SC.audio && SC.source === 'audio') meta += '<span>약 ' + Math.round(SC.audio.tempo) + ' BPM · ' + SC.meter + '/4</span>';
     $('pMeta').innerHTML = meta;
+    SC.display = display; SC.plan = plan;
     renderDiagrams(display, plan);
     renderSheet(display, plan);
     renderMelody(semisAll, plan);
+    if (ptab){ var to = $('tabOut'); to.hidden = false; to.textContent = '리듬 타브 (대략적인 연습용 · ' + ({ eighths:'8분 팜뮤트', gallop:'갤럽', quarters:'4분', whole:'길게' })[SC.el.pattern] + ')\n\n' + ptab; }
+    SC.timeline = buildTimeline(display);
+    buildStageLines(display);
+    syncTicker();
+    if (stageOpen) updateStage(KD.pos(), true);
+  }
+  function barsForTab(display){
+    var out = [];
+    display.lines.forEach(function(l){
+      if (l.type === 'bars') l.bars.forEach(function(b){ out.push(b.chords.filter(Boolean)); });
+      else if (l.type === 'lyric') l.segs.forEach(function(s){ if (s.chord) out.push([s.chord]); });
+    });
+    return out;
+  }
+  function renderPowerPlans(choices){
+    var LBL = { move:['손 이동 최소', '코드 사이 거리가 가장 짧은 자리'], low:['낮은 자리', '개방현(E5·A5·D5)을 최대한 써요'], mid:['한 자리에서', '5~9프렛 부근에서만 움직여요'] };
+    var html = '';
+    choices.forEach(function(p, i){
+      var used = {}; p.path.forEach(function(s){ used[['6번 줄','5번 줄','4번 줄'][s.str]] = 1; });
+      html += '<button class="plan" data-i="' + i + '" aria-pressed="' + (i === SC.planIdx) + '"><span class="pt">' + LBL[p.mode][0] + '</span>' + (i === 0 ? '<span class="badge best">추천</span>' : '<span class="badge">다른 방법</span>') +
+        '<span class="pb"><span>근음 줄 <b>' + Object.keys(used).join('·') + '</b></span><span>크게 옮김 <b>' + p.moves + '</b>번</span><span>가장 높은 프렛 <b>' + p.maxFret + '</b></span></span><span class="ps">' + LBL[p.mode][1] + '</span></button>';
+    });
+    $('plans').innerHTML = html;
+    Array.prototype.forEach.call($('plans').children, function(b){ b.addEventListener('click', function(){ SC.planIdx = +b.dataset.i; render(); }); });
   }
   function pickCards(plans){
     var out = plans.slice(0, 2), c0 = plans.find(function(p){ return p.capo === 0; });
@@ -3278,12 +3882,12 @@ function musicLib(){
   function chordHtml(c, plan){
     if (!c) return '';
     var n = P(M.chordName(c)), small = '';
-    if (plan && plan.capo && c._sound) small = '<small title="실제 소리">(' + esc(P(M.chordName(c._sound))) + ')</small>';
+    if (plan && (plan.capo || plan.inst === 'electric') && c._sound && M.chordName(c._sound) !== M.chordName(c)) small = '<small title="' + (plan.inst === 'electric' ? '원래 코드' : '실제 소리') + '">(' + esc(P(M.chordName(c._sound))) + ')</small>';
     return esc(n) + small;
   }
-  var barEls = [];
+  var chordEls = [], barEls = [];
   function renderSheet(display, plan){
-    var html = '', barNo = 0; barEls = [];
+    var html = '', barNo = 0, ci = 0;
     display.lines.forEach(function(l){
       if (l.type === 'gap'){ html += '<div style="height:4px"></div>'; return; }
       if (l.type === 'label'){ html += '<div class="slabel">' + esc(l.text) + '</div>'; return; }
@@ -3291,33 +3895,193 @@ function musicLib(){
         html += '<div class="barrow">';
         l.bars.forEach(function(b){
           barNo++;
-          var inner = '<span class="bn">' + barNo + (b.t0 != null ? ' · ' + fmt(b.t0) : '') + '</span><span class="bc">' + (b.chords.filter(Boolean).map(function(c){ return '<span>' + chordHtml(c, plan) + '</span>'; }).join('') || '<span>—</span>') + '</span>';
-          if (b.t0 != null) html += '<button class="bar" data-t="' + b.t0 + '" data-t1="' + b.t1 + '">' + inner + '</button>';
-          else html += '<div class="bar">' + inner + '</div>';
+          var spans = b.chords.filter(Boolean).map(function(c){ return '<span data-ci="' + (ci++) + '">' + chordHtml(c, plan) + '</span>'; }).join('') || '<span>—</span>';
+          var inner = '<span class="bn">' + barNo + (b.t0 != null ? ' · ' + fmt(b.t0) : '') + '</span><span class="bc">' + spans + '</span>';
+          var cls = 'bar' + (b.conf != null && b.conf < 0.45 && b.chords.some(Boolean) ? ' unsure' : '');
+          if (b.t0 != null) html += '<button class="' + cls + '" data-t="' + b.t0 + '" data-t1="' + b.t1 + '"' + (b.conf != null && b.conf < 0.45 ? ' title="코드가 확실하지 않은 마디예요. 들어 보고 고쳐 주세요."' : '') + '>' + inner + '</button>';
+          else html += '<div class="' + cls + '">' + inner + '</div>';
         });
         html += '</div>'; return;
       }
       html += '<div class="sl">';
       l.segs.forEach(function(s){
         var sub = plan && s.chord && s.chord._v && s.chord._v.sub;
-        html += '<span class="sg' + (sub ? ' sub' : '') + '"><span class="cn">' + chordHtml(s.chord, plan) + '</span><span class="ly">' + esc(s.text || (s.chord ? ' ' : '')) + '</span></span>';
+        html += '<span class="sg' + (sub ? ' sub' : '') + '"' + (s.chord ? ' data-ci="' + (ci++) + '"' : '') + '><span class="cn">' + chordHtml(s.chord, plan) + '</span><span class="ly">' + esc(s.text || (s.chord ? ' ' : '')) + '</span></span>';
       });
       html += '</div>';
     });
     $('sheet').innerHTML = html;
+    chordEls = []; nowCi = -1; nowBar = null;
+    Array.prototype.forEach.call($('sheet').querySelectorAll('[data-ci]'), function(el){ chordEls[+el.dataset.ci] = el; });
     barEls = Array.prototype.slice.call($('sheet').querySelectorAll('button.bar'));
-    barEls.forEach(function(b){ b.addEventListener('click', function(){ KD.playFrom(+b.dataset.t); followLoop(); }); });
+    barEls.forEach(function(b){ b.addEventListener('click', function(ev){ if (ev.target.closest('[data-ci]')) return; KD.playFrom(+b.dataset.t); followLoop(); }); });
+    chordEls.forEach(function(el, i){ if (el) el.addEventListener('click', function(ev){ ev.stopPropagation(); seekToChord(i); }); });
   }
   function fmt(t){ var m = Math.floor(t / 60), s = Math.floor(t % 60); return m + ':' + (s < 10 ? '0' : '') + s; }
-  var following = false;
+
+  // ---------- timeline: when each chord on the sheet sounds ----------
+  function buildTimeline(display){
+    if (SC.align && SC.align.sheet === SC.sheet && SC.align.gen === KD.trackGen()) return SC.align.segs;
+    var segs = [], ci = 0, timed = false;
+    display.lines.forEach(function(l){
+      if (l.type === 'bars') l.bars.forEach(function(b){
+        var cs = b.chords.filter(Boolean);
+        cs.forEach(function(c, k){
+          if (b.t0 != null && KD.track() && SC.source === 'audio' && SC.resGen === KD.trackGen()){
+            timed = true;
+            var idx = b.chords.indexOf(c), t0 = b.ct && b.ct[idx] != null ? b.ct[idx] : b.t0 + (b.t1 - b.t0) * k / cs.length;
+            var nxt = k + 1 < cs.length ? (b.ct && b.ct[b.chords.indexOf(cs[k + 1])] != null ? b.ct[b.chords.indexOf(cs[k + 1])] : b.t0 + (b.t1 - b.t0) * (k + 1) / cs.length) : b.t1;
+            segs.push({ t0:t0, t1:nxt, ci:ci });
+          }
+          ci++;
+        });
+      });
+      else if (l.type === 'lyric') l.segs.forEach(function(s){ if (s.chord) ci++; });
+    });
+    return timed ? segs : null;
+  }
+  function segAt(t){
+    var tl = SC.timeline; if (!tl || !tl.length) return -1;
+    var lo = 0, hi = tl.length - 1, ans = -1;
+    while (lo <= hi){ var mid = (lo + hi) >> 1; if (tl[mid].t0 <= t){ ans = mid; lo = mid + 1; } else hi = mid - 1; }
+    return ans >= 0 && t < tl[ans].t1 ? ans : -1;
+  }
+  function seekToChord(ci){
+    var tl = SC.timeline; if (!tl) return;
+    var t = KD.pos(), cands = tl.filter(function(s){ return s.ci === ci; });
+    if (!cands.length) return;
+    var pick = cands.find(function(s){ return s.t0 >= t - 0.5; }) || cands[0];
+    KD.playFrom(pick.t0); followLoop();
+  }
+
+  // ---------- follow-along ----------
+  var following = false, nowCi = -1, nowBar = null, lastScroll = 0;
+  function chordLabelHtml(ci){
+    var el = chordEls[ci]; if (!el) return '—';
+    var cn = el.querySelector('.cn') || el;
+    return cn.innerHTML || '—';
+  }
+  function setNow(ci){
+    if (ci === nowCi) return;
+    if (nowCi >= 0 && chordEls[nowCi]) chordEls[nowCi].classList.remove('now');
+    if (nowBar){ nowBar.classList.remove('now'); nowBar = null; }
+    nowCi = ci;
+    if (ci < 0 || !chordEls[ci]) return;
+    var el = chordEls[ci]; el.classList.add('now');
+    var bar = el.closest('.bar'); if (bar){ bar.classList.add('now'); nowBar = bar; }
+    if ($('tkScroll').checked && !$('viewScore').hidden && !stageOpen){
+      var r = (bar || el).getBoundingClientRect(), tk = $('ticker').getBoundingClientRect(), top = Math.max(tk.bottom, 0) + 8, vh = window.innerHeight;
+      if ((r.top < top || r.bottom > vh - 24) && performance.now() - lastScroll > 400){
+        lastScroll = performance.now();
+        var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        window.scrollBy({ top: r.top - top - (vh - top) * 0.25, behavior: reduce ? 'auto' : 'smooth' });
+      }
+    }
+  }
+  function updateTicker(t){
+    var tl = SC.timeline, i = segAt(t);
+    $('tkTime').textContent = fmt(t);
+    if (!tl){ $('tkNow').innerHTML = '—'; $('tkNext').innerHTML = '—'; $('tkBeats').innerHTML = ''; $('tkDiag').innerHTML = ''; setNow(-1); return; }
+    var cur = i >= 0 ? tl[i] : null, j = i + 1;
+    if (i < 0){ j = 0; while (j < tl.length && tl[j].t1 <= t) j++; }
+    while (j < tl.length && cur && tl[j].ci === cur.ci) j++;
+    var nxt = j < tl.length ? tl[j] : null;
+    setNow(cur ? cur.ci : -1);
+    $('tkNow').innerHTML = cur ? chordLabelHtml(cur.ci) : (nxt ? '<small>준비</small>' : '—');
+    $('tkNext').innerHTML = nxt ? chordLabelHtml(nxt.ci) : '—';
+    var beatLen = SC.audio && SC.audio.tempo ? 60 / SC.audio.tempo : 0.5, dots = '';
+    if (nxt){
+      var left = Math.ceil((nxt.t0 - t) / beatLen - 0.05), shown = Math.min(4, Math.max(0, left));
+      for (var k = 0; k < 4; k++) dots += '<i class="' + (k < shown ? 'on' : '') + '"></i>';
+    }
+    $('tkBeats').innerHTML = dots;
+    var v = cur && SC.display ? displayChord(cur.ci) : null;
+    var key = v && v._v ? v._v.frets.join(',') : '';
+    if ($('tkDiag').dataset.k !== key){ $('tkDiag').dataset.k = key; $('tkDiag').innerHTML = v && v._v ? diagramSvg(v._v.frets) : ''; }
+  }
+  var dispCache = null;
+  function displayChord(ci){
+    if (!dispCache || dispCache.src !== SC.display){ dispCache = { src:SC.display, list:M.sheetChords(SC.display) }; }
+    return dispCache.list[ci] || null;
+  }
+  function syncTicker(){
+    var show = !!(SC.sheet && KD.track() && !SC.tab);
+    $('ticker').hidden = !show;
+    if (!show) return;
+    $('tkAlign').hidden = SC.source === 'audio';
+    $('tkStage').hidden = !SC.timeline;
+    $('tkAlign').textContent = SC.timeline ? '다시 맞추기' : '음악과 맞추기';
+    var playing = KD.playing();
+    $('tkIcoPlay').hidden = playing; $('tkIcoPause').hidden = !playing;
+    $('tkPlay').setAttribute('aria-label', playing ? '일시정지' : '재생');
+    updateTicker(KD.pos());
+    if (playing) followLoop();
+  }
   function followLoop(){
     if (following) return; following = true;
     (function tick(){
-      if (!KD.playing() || !barEls.length){ following = false; barEls.forEach(function(b){ b.classList.remove('now'); }); return; }
-      var t = KD.pos();
-      barEls.forEach(function(b){ b.classList.toggle('now', t >= +b.dataset.t && t < +b.dataset.t1); });
+      var playing = KD.playing();
+      $('tkIcoPlay').hidden = playing; $('tkIcoPause').hidden = !playing;
+      if (!$('ticker').hidden) updateTicker(KD.pos());
+      if (stageOpen) updateStage(KD.pos());
+      else setNow(SC.timeline ? (segAt(KD.pos()) >= 0 ? SC.timeline[segAt(KD.pos())].ci : -1) : -1);
+      if (!playing){ following = false; return; }
       requestAnimationFrame(tick);
     })();
+  }
+  window.addEventListener('kd:play', function(){ followLoop(); });
+  $('tkPlay').addEventListener('click', function(){
+    if (KD.playing()) KD.pause();
+    else { var t = KD.pos(), tr = KD.track(); KD.playFrom(tr && t >= tr.duration - 0.05 ? 0 : t); }
+    followLoop();
+  });
+
+  // ---------- align a pasted / PDF sheet to the loaded music ----------
+  $('tkAlign').addEventListener('click', runAlign);
+  async function runAlign(){
+    if (!SC.sheet || !KD.track()) return;
+    var note = $('alignNote'), btn = $('tkAlign');
+    note.hidden = false; note.classList.remove('warn'); btn.disabled = true;
+    try {
+      var gen = KD.trackGen();
+      if (!SC.res || SC.resGen !== gen){
+        note.textContent = '음악의 박자와 코드를 듣는 중이에요.';
+        SC.res = await KD.chords(function(p){ note.textContent = '음악의 박자와 코드를 듣는 중 ' + Math.round(p * 100) + '%'; });
+        SC.resGen = gen;
+      }
+      note.textContent = '악보와 음악을 맞추는 중이에요.';
+      await new Promise(function(r){ setTimeout(r, 30); });
+      var seq = [];
+      SC.sheet.lines.forEach(function(l){
+        var cs = [];
+        if (l.type === 'bars') l.bars.forEach(function(b){ b.chords.forEach(function(c){ if (c) cs.push(c); }); });
+        else if (l.type === 'lyric') l.segs.forEach(function(s){ if (s.chord) cs.push(s.chord); });
+        cs.forEach(function(c, k){ seq.push({ pcs:M.chordPcs(c), lineStart:k === 0, lineEnd:k === cs.length - 1 }); });
+      });
+      if (seq.length < 2){ note.textContent = '악보에 코드가 너무 적어서 맞출 수 없어요.'; note.classList.add('warn'); return; }
+      var best = null;
+      for (var off = 0; off < 12; off++){
+        var sq = seq.map(function(c){ return { pcs:c.pcs.map(function(p){ return (p + off) % 12; }), lineStart:c.lineStart, lineEnd:c.lineEnd }; });
+        var a = DSPm.alignChords(SC.res.beatChroma, sq);
+        if (!best || a.cost < best.cost){ best = a; best.off = off; }
+      }
+      var beats = SC.res.beats, segs = [];
+      for (var j = 0; j < best.path.length; j++){
+        var st = best.path[j]; if (st < 0) continue;
+        var t0 = beats[j], z = j; while (z + 1 < best.path.length && best.path[z + 1] === st) z++;
+        segs.push({ t0:t0, t1: z + 1 < beats.length ? beats[z + 1] : SC.res.duration, ci:st }); j = z;
+      }
+      SC.align = { gen:gen, sheet:SC.sheet, segs:segs, off:best.off, cost:best.cost };
+      SC.audio = SC.audio || {}; SC.audio.tempo = SC.res.tempo;
+      var off2 = best.off > 6 ? best.off - 12 : best.off, covered = new Set(segs.map(function(s){ return s.ci; })).size;
+      var good = best.cost < 0.42;
+      note.classList.toggle('warn', !good);
+      note.textContent = (good ? '맞췄어요. 재생하면 지금 코드가 표시돼요.' : '잘 맞지 않는 것 같아요. 같은 곡인지, 악보에 반복 표시(D.S. 등)가 많은지 확인해 주세요.') +
+        ' 악보 코드 ' + seq.length + '개 중 ' + covered + '개가 음악에서 들렸어요' + (off2 ? ' · 음악이 악보보다 ' + Math.abs(off2) + '반음 ' + (off2 > 0 ? '높아요' : '낮아요') : '') + '. 틀린 곳은 그 코드를 눌러 위치를 확인할 수 있어요.';
+      render();
+    } catch (e){
+      note.textContent = '맞추지 못했어요. 다시 눌러 보세요.'; note.classList.add('warn');
+    } finally { btn.disabled = false; }
   }
 
   // melody (MusicXML) → staff + guitar tab
@@ -3392,7 +4156,7 @@ function musicLib(){
       if (SC.source === 'audio'){
         var oldBars = [].concat.apply([], SC.sheet.lines.filter(function(l){ return l.type === 'bars'; }).map(function(l){ return l.bars; }));
         var k = 0;
-        sh.lines.forEach(function(l){ if (l.type === 'bars') l.bars.forEach(function(b){ var o = oldBars[k++]; if (o){ b.t0 = o.t0; b.t1 = o.t1; } }); });
+        sh.lines.forEach(function(l){ if (l.type === 'bars') l.bars.forEach(function(b){ var o = oldBars[k++]; if (o){ b.t0 = o.t0; b.t1 = o.t1; if (o.ct && o.chords.filter(Boolean).length === b.chords.filter(Boolean).length) b.ct = o.ct.filter(function(t, i){ return o.chords[i]; }); } }); });
       }
       SC.sheet = sh; if (SC.mel) SC.mel = null;
       SC.keyAuto = M.keyFromChords(M.sheetChords(sh)); render();
@@ -3403,6 +4167,9 @@ function musicLib(){
   // ---------- export ----------
   function exportText(){
     if (SC.tab) return (SC.title ? SC.title + '\n' : '') + $('pMeta').textContent + '\n\n' + $('tabOut').textContent;
+    if (SC.inst === 'electric' && SC.display){
+      return (SC.title ? SC.title + '\n' : '') + $('pMeta').innerText.replace(/\n+/g, ' · ') + '\n\n' + M.sheetToText(SC.display) + '\n\n' + $('tabOut').textContent + '\n';
+    }
     var plan = null, fretted = SC.inst === 'guitar' || SC.inst === 'uke';
     var cards = fretted && SC.plans ? pickCards(SC.plans) : null; if (cards) plan = cards[SC.planIdx];
     var ok = origKey(), off = INST_OFF[SC.inst] || 0, semisAll = SC.semis + off;
@@ -3450,6 +4217,126 @@ function musicLib(){
   KD.whenSaveReady(function(mode){
     if (mode === 'none'){ ['txtBtn','pngBtn'].forEach(function(id){ $(id).disabled = true; $(id).title = '이 화면에서는 파일 저장이 막혀 있어요'; }); }
   });
+
+  // ---------- stage (performance view) ----------
+  var stageOpen = false, stageLines = [], ciLine = [], stLineIdx = -1, stCi = -2, wakeLock = null;
+  function buildStageLines(display){
+    stageLines = []; ciLine = [];
+    var ci = 0;
+    display.lines.forEach(function(l){
+      if (l.type === 'lyric'){
+        var segs = l.segs.map(function(s){
+          var e = { ci: s.chord ? ci : -1, label: s.chord ? chordHtml(s.chord, SC.plan) : '', text: s.text || (s.chord ? ' ' : '') };
+          if (s.chord){ ciLine[ci] = stageLines.length; ci++; }
+          return e;
+        });
+        if (segs.some(function(s){ return s.ci >= 0 || s.text.trim(); })) stageLines.push({ kind:'lyric', segs:segs });
+      } else if (l.type === 'bars'){
+        var cs = [];
+        l.bars.forEach(function(b){ b.chords.forEach(function(c){ if (c){ cs.push({ ci:ci, label: chordHtml(c, SC.plan) }); ciLine[ci] = stageLines.length; ci++; } }); });
+        if (cs.length) stageLines.push({ kind:'bars', cs:cs });
+      }
+    });
+  }
+  function stageLineHtml(idx, isNow, nowCiV){
+    var L = stageLines[idx];
+    if (!L) return '';
+    if (L.kind === 'bars') return L.cs.map(function(c){ return '<span class="bigchord' + (isNow && c.ci === nowCiV ? ' on' : '') + '">' + c.label + '</span>'; }).join('');
+    var past = true;
+    return L.segs.map(function(s){
+      var cls = '';
+      if (isNow && s.ci >= 0){ if (s.ci === nowCiV){ cls = ' on'; past = false; } else cls = past ? ' past' : ''; }
+      return '<span class="sg' + cls + '"><span class="cn">' + s.label + '</span><span class="ly">' + esc(s.text) + '</span></span>';
+    }).join('');
+  }
+  function updateStage(t, force){
+    var tl = SC.timeline;
+    $('stTime').textContent = fmt(t);
+    var playing = KD.playing();
+    $('stIcoPlay').hidden = playing; $('stIcoPause').hidden = !playing;
+    if (!tl){ return; }
+    var i = segAt(t), cur = i >= 0 ? tl[i] : null, j = i + 1;
+    if (i < 0){ j = 0; while (j < tl.length && tl[j].t1 <= t) j++; }
+    while (j < tl.length && cur && tl[j].ci === cur.ci) j++;
+    var nxt = j < tl.length ? tl[j] : null;
+    var ciV = cur ? cur.ci : (nxt ? nxt.ci : -1);
+    var li = ciV >= 0 && ciLine[ciV] != null ? ciLine[ciV] : -1;
+    if (force || ciV !== stCi || li !== stLineIdx){
+      stCi = ciV; stLineIdx = li;
+      var pk = (i >= 0 ? i : j) - 1;
+      while (pk >= 0 && cur && tl[pk].ci === cur.ci) pk--;
+      var prv = pk >= 0 ? tl[pk] : null;
+      $('stPrevCh').innerHTML = prv ? chordLabelHtml(prv.ci) : '—';
+      $('stChord').innerHTML = cur ? chordLabelHtml(cur.ci) : (nxt ? '<small>준비</small>' : '—');
+      $('stNext').innerHTML = nxt ? chordLabelHtml(nxt.ci) : '—';
+      var v = cur && SC.display ? displayChord(cur.ci) : null;
+      var dg = v && v._v ? diagramSvg(v._v.frets) : '';
+      $('stDiag').innerHTML = dg;
+      $('stDiag').parentElement.classList.toggle('hasdiag', !!dg);
+      $('stPrev').innerHTML = li > 0 ? stageLineHtml(li - 1, false) : '';
+      $('stNow').innerHTML = li >= 0 ? stageLineHtml(li, true, cur ? cur.ci : -1) : '<span class="st-empty">노래가 쉬는 부분이에요.</span>';
+      $('stNextLine').innerHTML = li >= 0 && li + 1 < stageLines.length ? stageLineHtml(li + 1, false) : '';
+    }
+    var beatLen = SC.audio && SC.audio.tempo ? 60 / SC.audio.tempo : 0.5, dots = '';
+    if (nxt){
+      var left = Math.ceil((nxt.t0 - t) / beatLen - 0.05), shown = Math.min(4, Math.max(0, left));
+      for (var k = 0; k < 4; k++) dots += '<i class="' + (k < shown ? 'on' : '') + '"></i>';
+    }
+    $('stBeats').innerHTML = dots;
+  }
+  async function stageWake(on){
+    try {
+      if (on && navigator.wakeLock && !wakeLock){ wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', function(){ wakeLock = null; }); }
+      else if (!on && wakeLock){ await wakeLock.release(); wakeLock = null; }
+    } catch (e) { wakeLock = null; }
+  }
+  function openStage(){
+    if (!SC.timeline) return;
+    stageOpen = true; stCi = -2; stLineIdx = -1;
+    $('stage').hidden = false;
+    document.documentElement.style.overflow = 'hidden';
+    updateStage(KD.pos(), true); stageWake(true); followLoop();
+    $('stClose').focus();
+  }
+  function closeStage(){
+    stageOpen = false; $('stage').hidden = true;
+    document.documentElement.style.overflow = '';
+    stageWake(false);
+  }
+  $('tkStage').addEventListener('click', openStage);
+  $('stClose').addEventListener('click', closeStage);
+  document.addEventListener('keydown', function(ev){ if (ev.key === 'Escape' && stageOpen) closeStage(); });
+  document.addEventListener('visibilitychange', function(){ if (stageOpen && document.visibilityState === 'visible') stageWake(true); });
+  $('stPlay').addEventListener('click', function(){
+    if (KD.playing()) KD.pause();
+    else { var t = KD.pos(), tr = KD.track(); KD.playFrom(tr && t >= tr.duration - 0.05 ? 0 : t); }
+    updateStage(KD.pos(), true); followLoop();
+  });
+  function seekLine(dir){
+    var tl = SC.timeline; if (!tl || !stageLines.length) return;
+    var t = KD.pos(), i = segAt(t), ciV = i >= 0 ? tl[i].ci : -1;
+    var li = ciV >= 0 && ciLine[ciV] != null ? ciLine[ciV] : (dir > 0 ? -1 : stageLines.length);
+    var target = Math.max(0, Math.min(stageLines.length - 1, li + dir));
+    var L = stageLines[target], first = L.kind === 'bars' ? L.cs[0].ci : (L.segs.find(function(s){ return s.ci >= 0; }) || {}).ci;
+    if (first == null || first < 0) return;
+    var cands = tl.filter(function(s){ return s.ci === first; });
+    if (!cands.length) return;
+    var pick;
+    if (dir < 0){ pick = null; for (var k = 0; k < cands.length; k++) if (cands[k].t0 < t - 0.3) pick = cands[k]; pick = pick || cands[0]; }
+    else { pick = cands.find(function(s){ return s.t0 > t + 0.05; }) || cands[cands.length - 1]; }
+    KD.playFrom(pick.t0); updateStage(KD.pos(), true); followLoop();
+  }
+  $('stPrevBtn').addEventListener('click', function(){ seekLine(-1); });
+  $('stNextBtn').addEventListener('click', function(){ seekLine(1); });
+
+  // electric options
+  $('elFollow').addEventListener('change', function(){ SC.el.followBass = this.checked; render(); });
+  $('elOct').addEventListener('change', function(){ SC.el.octave = this.checked; render(); });
+  Array.prototype.forEach.call($('elPattern').children, function(b){
+    b.addEventListener('click', function(){ SC.el.pattern = b.dataset.p; Array.prototype.forEach.call($('elPattern').children, function(x){ x.setAttribute('aria-pressed', String(x === b)); }); render(); });
+  });
+  KD.onChange(function(){ syncTicker(); });
+  window.addEventListener('kd:view', function(e){ if (e.detail === 'score') syncTicker(); });
 
   // ---------- boot: chords of the demo song ----------
   render();
@@ -3847,5 +4734,80 @@ function musicLib(){
   syncKeyUI();
 })();
 </script>
-
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let token = '', jobId = '', busy = false, cancelled = false;
+  const status = message => { $('ytStatus').textContent = message; };
+  function lockUI(){ token = ''; $('ytLogin').hidden = false; $('ytImport').hidden = true; }
+  async function api(path, method = 'GET', body) {
+    const response = await fetch(path, {method, headers: {...(body ? {'Content-Type':'application/json'} : {}), ...(token ? {Authorization: 'Bearer '+token} : {})}, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(30000)});
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      if (response.status === 401) lockUI();
+      throw new Error(result.error || '서버 연결을 확인해 주세요.');
+    }
+    return response;
+  }
+  function busyUI(value){ busy = value; $('ytStart').disabled = value; $('ytUrl').disabled = value; $('ytLock').disabled = value; $('ytCancel').hidden = !value; }
+  $('ytLogin').addEventListener('submit', async event => {
+    event.preventDefault(); const button = event.submitter; button.disabled = true;
+    try {
+      if (location.protocol === 'file:') throw new Error('HTML을 직접 열면 가져오기를 쓸 수 없어요. 서버를 실행하고 http://127.0.0.1:8765 로 접속해 주세요.');
+      const password = $('ytPassword').value; $('ytPassword').value = '';
+      const result = await (await api('/api/login', 'POST', {password})).json();
+      token = result.token; $('ytLogin').hidden = true; $('ytImport').hidden = false; $('ytUrl').focus();
+      status('잠금 해제됨 · 1시간 후 또는 새로고침하면 다시 입력해 주세요.');
+    } catch (error) { status(error.message); } finally { button.disabled = false; }
+  });
+  $('ytLock').addEventListener('click', async () => {
+    try { await api('/api/logout', 'POST', {}); lockUI(); status('다시 잠갔어요.'); }
+    catch (error) { status(error.message); }
+  });
+  $('ytCancel').addEventListener('click', async () => {
+    cancelled = true; status('취소 요청 중…');
+    if (jobId) try { await api('/api/jobs/'+jobId, 'DELETE'); } catch (error) { status(error.message); }
+  });
+  $('ytImport').addEventListener('submit', async event => {
+    event.preventDefault(); if (busy) return;
+    busyUI(true); cancelled = false; jobId = '';
+    try {
+      status('서버에 요청 중…');
+      jobId = (await (await api('/api/jobs', 'POST', {url: $('ytUrl').value.trim()})).json()).id;
+      while (!cancelled) {
+        const state = await (await api('/api/jobs/'+jobId)).json();
+        status(state.message);
+        if (state.state === 'error' || state.state === 'cancelled') throw new Error(state.message);
+        if (state.state === 'ready') {
+          const blob = await (await api('/api/jobs/'+jobId+'/audio')).blob();
+          if (cancelled) break;
+          status('음원을 작업실에 불러오는 중…');
+          const loaded = await window.KD.loadFile(new File([blob], (state.title || 'YouTube')+'.mp3', {type:'audio/mpeg'}));
+          status(loaded ? '불러왔어요. 소리·악보·화음 탭에서 작업할 수 있어요.' : '다른 파일이 선택되어 가져오기를 마쳤어요.');
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      if (cancelled) status('가져오기를 취소했어요.');
+    } catch (error) { status(error.message); }
+    finally {
+      if (jobId) await api('/api/jobs/'+jobId, 'DELETE').catch(() => {});
+      jobId = ''; busyUI(false);
+    }
+  });
+})();
+</script>
+<script>
+var SERVER_PY = "\"\"\"Private music desk: same-origin UI and authenticated yt-dlp worker.\"\"\"\nimport hashlib, hmac, json, os, re, secrets, shutil, subprocess, sys, tempfile, threading, time\nfrom pathlib import Path\nfrom urllib.parse import urlsplit, parse_qs\nfrom http.server import BaseHTTPRequestHandler, ThreadingHTTPServer\n\nROOT = Path(__file__).resolve().parent\n\n\ndef load_config():\n    f = ROOT / 'auth.json'\n    return json.loads(f.read_text()) if f.exists() else None\n\n\nCONFIG = load_config()\nLOCK = threading.RLock()\nSESSIONS, JOBS, ATTEMPTS = {}, {}, {}\nPORT = int(os.getenv('PORT', '8765'))\nORIGIN = os.getenv('PUBLIC_ORIGIN', f'http://127.0.0.1:{PORT}').rstrip('/')\nLIMIT = 80 * 1024 * 1024\n\n\ndef canonical_url(value):\n    u = urlsplit(value)\n    if u.scheme != 'https' or u.username or u.password or u.port not in (None, 443):\n        raise ValueError('HTTPS 유튜브 주소를 입력해 주세요.')\n    host = (u.hostname or '').lower()\n    if host == 'youtu.be':\n        video = u.path.strip('/')\n    elif host in ('youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com'):\n        if u.path == '/watch': video = parse_qs(u.query).get('v', [''])[0]\n        else:\n            m = re.fullmatch(r'/(?:shorts|embed|live)/([\\w-]{11})/?', u.path)\n            video = m[1] if m else ''\n    else: raise ValueError('유튜브 영상 주소만 사용할 수 있어요.')\n    if not re.fullmatch(r'[A-Za-z0-9_-]{11}', video):\n        raise ValueError('한 곡의 영상 주소를 입력해 주세요. 재생목록은 지원하지 않아요.')\n    return 'https://www.youtube.com/watch?v=' + video\n\n\ndef run_command(job, args):\n    with tempfile.TemporaryFile() as output:\n        proc = subprocess.Popen(args, stdout=output, stderr=subprocess.DEVNULL, cwd=job['dir'])\n        with LOCK: job['process'] = proc\n        deadline = time.monotonic() + 240\n        try:\n            while proc.poll() is None:\n                if job['cancel'].is_set(): raise RuntimeError('작업을 취소했어요.')\n                if time.monotonic() > deadline: raise RuntimeError('처리 시간이 초과됐어요. 잠시 후 다시 시도해 주세요.')\n                if sum(p.stat().st_size for p in Path(job['dir']).glob('*') if p.is_file()) > LIMIT:\n                    raise RuntimeError('음원이 너무 커서 작업을 중단했어요.')\n                time.sleep(.2)\n            if job['cancel'].is_set(): raise RuntimeError('작업을 취소했어요.')\n            if proc.returncode: raise RuntimeError('유튜브에서 음원을 받지 못했어요. 비공개·제한 영상, 네트워크 또는 yt-dlp 업데이트 상태를 확인해 주세요.')\n            output.seek(0)\n            return output.read(4 * 1024 * 1024)\n        finally:\n            if proc.poll() is None: proc.kill()\n            proc.wait()\n            with LOCK: job['process'] = None\n\n\ndef work(job, url):\n    try:\n        base = [sys.executable, '-m', 'yt_dlp', '--ignore-config', '--no-playlist', '--no-warnings', '--socket-timeout', '15', '--retries', '2', '--extractor-retries', '2', '--js-runtimes', 'node']\n        info = json.loads(run_command(job, base + ['--skip-download', '--dump-single-json', '--', url]))\n        if info.get('is_live') or not isinstance(info.get('duration'), (int, float)) or not 0 < info['duration'] <= 900:\n            raise RuntimeError('라이브 영상은 지원하지 않아요. 15분 이하의 영상을 골라 주세요.')\n        job['title'] = str(info.get('title', 'YouTube'))[:200]\n        job['message'] = '오디오 내려받는 중'\n        run_command(job, base + ['-f', 'bestaudio', '--max-filesize', '80M', '--no-part', '-o', 'source.%(ext)s', '--', url])\n        candidates = list(Path(job['dir']).glob('source.*'))\n        if len(candidates) != 1: raise RuntimeError('음원 파일을 받지 못했어요.')\n        job['message'] = '브라우저 호환 음원으로 변환 중'\n        target = Path(job['dir']) / 'audio.mp3'\n        run_command(job, ['ffmpeg', '-nostdin', '-v', 'error', '-i', str(candidates[0]), '-t', '900', '-vn', '-ac', '2', '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '192k', '-y', str(target)])\n        with LOCK:\n            if job['cancel'].is_set(): raise RuntimeError('작업을 취소했어요.')\n            job.update(state='ready', message='가져오기 준비 완료', file=target)\n    except Exception as exc:\n        with LOCK:\n            job.update(state='cancelled' if job['cancel'].is_set() else 'error', message=str(exc) if isinstance(exc, RuntimeError) else '서버 도구를 확인해 주세요. yt-dlp, FFmpeg, Node.js가 필요해요.')\n    finally:\n        with LOCK:\n            job['finished'] = time.time()\n            if job['state'] != 'ready': shutil.rmtree(job['dir'], ignore_errors=True)\n\n\ndef cleanup():\n    while True:\n        time.sleep(30)\n        with LOCK:\n            now = time.time()\n            for token, expiry in list(SESSIONS.items()):\n                if expiry < now: SESSIONS.pop(token, None)\n            for ip, times in list(ATTEMPTS.items()):\n                recent = [t for t in times if now-t < 600]\n                if recent: ATTEMPTS[ip] = recent\n                else: ATTEMPTS.pop(ip, None)\n            for key, job in list(JOBS.items()):\n                if job.get('finished') and now-job['finished'] > 600:\n                    shutil.rmtree(job['dir'], ignore_errors=True); JOBS.pop(key, None)\n\n\nclass Handler(BaseHTTPRequestHandler):\n    def log_message(self, *_): pass  # Do not log passwords, URLs or tokens.\n\n    def reply(self, code, obj):\n        data = json.dumps(obj, ensure_ascii=False).encode()\n        self.send_response(code)\n        self.send_header('Content-Type', 'application/json; charset=utf-8')\n        self.send_header('Content-Length', str(len(data)))\n        self.send_header('Cache-Control', 'no-store')\n        self.send_header('X-Content-Type-Options', 'nosniff')\n        self.end_headers(); self.wfile.write(data)\n\n    def handle_request(self):\n        try:\n            self.route()\n        except (BrokenPipeError, ConnectionResetError): pass\n        except ValueError as exc: self.reply(400, {'error': str(exc)})\n        except Exception: self.reply(500, {'error': '서버 처리 중 문제가 발생했어요.'})\n\n    do_GET = do_POST = do_DELETE = handle_request\n\n    def route(self):\n        if self.headers.get('Host') != urlsplit(ORIGIN).netloc:\n            return self.reply(403, {'error': '서버 접속 주소가 일치하지 않아요.'})\n        if self.headers.get('Origin') not in (None, ORIGIN):\n            return self.reply(403, {'error': '허용되지 않은 출처예요.'})\n        path = urlsplit(self.path).path\n        if self.command == 'GET' and path in ('/', '/index.html', '/youtube.js'):\n            f = ROOT / 'public' / ('index.html' if path == '/' else path[1:])\n            if not f.exists() and path != '/youtube.js':\n                htmls = sorted(ROOT.glob('*.html'), key=lambda p: p.stat().st_mtime, reverse=True)\n                if htmls: f = htmls[0]\n            if not f.exists():\n                if path == '/youtube.js': return self.reply(404, {'error': '요청을 찾을 수 없어요.'})\n                return self.reply(500, {'error': 'server.py와 같은 폴더에 음악 작업실 HTML 파일을 놓아 주세요.'})\n            data = f.read_bytes(); self.send_response(200)\n            self.send_header('Content-Type', 'text/html; charset=utf-8' if f.suffix == '.html' else 'text/javascript; charset=utf-8')\n            self.send_header('Content-Length', str(len(data))); self.send_header('X-Content-Type-Options', 'nosniff')\n            self.send_header('Referrer-Policy', 'no-referrer'); self.send_header('X-Frame-Options', 'DENY')\n            self.end_headers(); return self.wfile.write(data)\n        body = {}\n        if self.command == 'POST':\n            if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':\n                return self.reply(415, {'error': 'JSON 요청이 필요해요.'})\n            size = int(self.headers.get('Content-Length', '0'))\n            if not 0 < size <= 4096: return self.reply(413, {'error': '요청이 너무 커요.'})\n            self.connection.settimeout(10)\n            body = json.loads(self.rfile.read(size))\n            if not isinstance(body, dict): raise ValueError('잘못된 요청이에요.')\n        if path == '/api/login' and self.command == 'POST':\n            if not CONFIG: return self.reply(500, {'error': '비밀번호가 설정되지 않았어요. 서버 터미널에서 다시 시작해 주세요.'})\n            ip = self.client_address[0]\n            with LOCK:\n                now = time.time(); attempts = [t for t in ATTEMPTS.get(ip, []) if now-t < 600]\n                if len(attempts) >= 5: return self.reply(429, {'error': '시도 횟수를 초과했어요. 10분 뒤 다시 시도해 주세요.'})\n                ATTEMPTS[ip] = attempts + [now]\n            password = body.get('password', '')\n            if not isinstance(password, str) or len(password) > 128: raise ValueError('비밀번호를 확인해 주세요.')\n            digest = hashlib.scrypt(password.encode(), salt=bytes.fromhex(CONFIG['salt']), n=16384, r=8, p=1).hex()\n            if not hmac.compare_digest(digest, CONFIG['hash']): return self.reply(401, {'error': '비밀번호가 맞지 않아요.'})\n            with LOCK:\n                ATTEMPTS.pop(ip, None)\n                token = secrets.token_urlsafe(32); SESSIONS[token] = time.time()+3600\n            return self.reply(200, {'token': token})\n        token = self.headers.get('Authorization', '').removeprefix('Bearer ')\n        with LOCK: authenticated = SESSIONS.get(token, 0) > time.time()\n        if not authenticated: return self.reply(401, {'error': '비밀번호를 입력해 잠금을 해제해 주세요.'})\n        if path == '/api/logout' and self.command == 'POST':\n            with LOCK:\n                SESSIONS.pop(token, None)\n                for job in JOBS.values():\n                    if job['owner'] == token:\n                        job['cancel'].set()\n                        if job.get('finished'): shutil.rmtree(job['dir'], ignore_errors=True)\n            return self.reply(200, {'ok': True})\n        if path == '/api/jobs' and self.command == 'POST':\n            url = canonical_url(str(body.get('url', '')))\n            with LOCK:\n                if sum(j['state'] == 'running' for j in JOBS.values()) >= 2 or any(j['owner'] == token and j['state'] == 'running' for j in JOBS.values()):\n                    return self.reply(429, {'error': '진행 중인 작업이 있어요. 잠시 후 다시 시도해 주세요.'})\n                if len(JOBS) >= 30: return self.reply(429, {'error': '임시 저장 공간 정리 중이에요. 잠시 후 다시 시도해 주세요.'})\n                key = secrets.token_urlsafe(18)\n                job = dict(owner=token, state='running', message='영상 정보 확인 중', title='', dir=tempfile.mkdtemp(prefix='music-desk-'), cancel=threading.Event(), process=None)\n                JOBS[key] = job\n            threading.Thread(target=work, args=(job, url), daemon=True).start()\n            return self.reply(202, {'id': key})\n        match = re.fullmatch(r'/api/jobs/([\\w-]+)(/audio)?', path)\n        if match:\n            with LOCK: job = JOBS.get(match[1])\n            if not job or job['owner'] != token: return self.reply(404, {'error': '작업을 찾지 못했어요.'})\n            if self.command == 'DELETE' and not match[2]:\n                with LOCK:\n                    job['cancel'].set()\n                    if job.get('finished'):\n                        shutil.rmtree(job['dir'], ignore_errors=True)\n                        job.update(state='cancelled', message='작업을 취소했어요.')\n                return self.reply(200, {'ok': True})\n            if self.command == 'GET' and not match[2]:\n                return self.reply(200, {k: job[k] for k in ('state', 'message', 'title')})\n            if self.command == 'GET' and match[2] and job['state'] == 'ready':\n                with open(job['file'], 'rb') as f:\n                    self.send_response(200); self.send_header('Content-Type', 'audio/mpeg')\n                    self.send_header('Content-Length', str(os.fstat(f.fileno()).st_size)); self.send_header('Cache-Control', 'no-store')\n                    self.end_headers(); shutil.copyfileobj(f, self.wfile)\n                return\n        self.reply(404, {'error': '요청을 찾을 수 없어요.'})\n\n\nif __name__ == '__main__':\n    if CONFIG is None:\n        import getpass\n        print('처음 실행이에요. 유튜브 가져오기에 쓸 비밀번호를 만들어 주세요.')\n        while True:\n            pw = getpass.getpass('새 비밀번호 (4자 이상): ')\n            if len(pw) < 4:\n                print('4자 이상으로 해 주세요.'); continue\n            if getpass.getpass('다시 입력: ') != pw:\n                print('두 입력이 서로 달라요. 다시 해 주세요.'); continue\n            break\n        salt = secrets.token_bytes(16)\n        digest = hashlib.scrypt(pw.encode(), salt=salt, n=16384, r=8, p=1)\n        (ROOT / 'auth.json').write_text(json.dumps({'salt': salt.hex(), 'hash': digest.hex()}))\n        CONFIG = load_config()\n        print('비밀번호를 auth.json에 저장했어요. 비밀번호를 바꾸려면 auth.json을 지우고 다시 실행하세요.')\n    threading.Thread(target=cleanup, daemon=True).start()\n    server = ThreadingHTTPServer((os.getenv('BIND', '127.0.0.1'), PORT), Handler)\n    print('음악 작업실: ' + ORIGIN, flush=True)\n    print('팁: 매번 켜기 귀찮으면 Win+R → shell:startup 폴더에 server.py 바로가기를 넣어 두세요. 컴퓨터를 켤 때 같이 켜져요.', flush=True)\n    if os.getenv('NO_BROWSER') != '1':\n        import webbrowser\n        threading.Timer(0.8, lambda: webbrowser.open(ORIGIN)).start()\n    try: server.serve_forever()\n    finally:\n        server.server_close()\n        for job in JOBS.values():\n            job['cancel'].set()\n            if job.get('process'): job['process'].kill()\n            shutil.rmtree(job['dir'], ignore_errors=True)\n";
+document.getElementById('ytServerSave').addEventListener('click', function(){
+  try {
+    var blob = new Blob([SERVER_PY], { type:'text/x-python' });
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = 'server.py'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    document.getElementById('ytServerMsg').textContent = '내려받기 폴더에 저장했어요. 이 HTML과 같은 폴더로 옮겨 주세요.';
+  } catch (e) { document.getElementById('ytServerMsg').textContent = '저장하지 못했어요. 이 화면이 저장을 막고 있으면 파일을 컴퓨터에서 직접 열어 주세요.'; }
+});
+</script>
 </body></html>

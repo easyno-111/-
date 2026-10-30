@@ -1,8 +1,8 @@
 // The shuffled order is fixed once; animation only reveals it in a bounded time.
-import { secureShuffle } from '../util.js?v=8.6';
-import { state } from '../state.js?v=8.6';
-import { fx, audio, host } from '../core.js?v=8.6';
-import { resizeCanvas, drawOrderScene } from '../render.js?v=8.6';
+import { secureShuffle } from '../util.js?v=8.7';
+import { state } from '../state.js?v=8.7';
+import { fx, audio, host } from '../core.js?v=8.7';
+import { resizeCanvas, drawOrderScene } from '../render.js?v=8.7';
 
 export async function runListMode(eligible, token) {
   state.engine = 'list'; fx.reset(); resizeCanvas();

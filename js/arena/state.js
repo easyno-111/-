@@ -1,5 +1,5 @@
 // 앱 전역 상태와 모드 정보. 엔진·렌더러·UI가 공유한다.
-export const VERSION = "8.6.0";
+export const VERSION = "8.7.0";
 export const PRESET_KEY = "randomArenaPresetsV6";
 export const LAST_KEY = "randomArenaLastV8";
 

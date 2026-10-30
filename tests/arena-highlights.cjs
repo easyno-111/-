@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 (async () => {
-  const { RaceHighlights } = await import('../js/arena/highlights.js?v=8.6');
+  const { RaceHighlights } = await import('../js/arena/highlights.js?v=8.7');
   const balls = [1,2,3,4,5].map((num,i) => ({ num, active:true, y:500-i*30, vx:13, vy:18 }));
   const h = new RaceHighlights();
   assert.equal(h.observe(balls, 0), null);

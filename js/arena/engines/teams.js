@@ -1,10 +1,10 @@
 // 팀 나누기 엔진: 파도 출발, 정원이 차면 닫히는 팀 통, 튕겨 나오기
-import { clamp, secureShuffle } from "../util.js?v=8.6";
-import { state, displayName } from "../state.js?v=8.6";
-import { fx, audio, host } from "../core.js?v=8.6";
-import { teamWorldHeight, prepareTeamBins, buildTeamCourse, updateTeamDividers } from "../courses.js?v=8.6";
-import { makePhysicsBall, updateBall, collideBalls, updateLeader } from "../physics.js?v=8.6";
-import { resizeCanvas, drawScene } from "../render.js?v=8.6";
+import { clamp, secureShuffle } from "../util.js?v=8.7";
+import { state, displayName } from "../state.js?v=8.7";
+import { fx, audio, host } from "../core.js?v=8.7";
+import { teamWorldHeight, prepareTeamBins, buildTeamCourse, updateTeamDividers } from "../courses.js?v=8.7";
+import { makePhysicsBall, updateBall, collideBalls, updateLeader } from "../physics.js?v=8.7";
+import { resizeCanvas, drawScene } from "../render.js?v=8.7";
 
 export async function runTeamMode(eligible, token) {
   state.engine = "teams";

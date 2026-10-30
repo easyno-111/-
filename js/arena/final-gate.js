@@ -1,4 +1,4 @@
-import { clamp } from './util.js?v=8.6';
+import { clamp } from './util.js?v=8.7';
 
 export const FINAL_GATE_HEIGHT=1400;
 export function buildFinalGate(W,mainHeight,rand){
@@ -26,7 +26,7 @@ export function buildFinalGate(W,mainHeight,rand){
   makeRail(W-20,startY+720,W/2+throatHalf,mergeY,'speed');
   makeRail(W/2-throatHalf,mergeY,W/2-throatHalf,endY,'bounce');
   makeRail(W/2+throatHalf,mergeY,W/2+throatHalf,endY,'bounce');
-  const kicker={x:W/2,y:startY+1220,r:48,speed:2.8,angle:rand()*Math.PI*2,hit:0,color:'#ffc94a',
+  const kicker={x:W/2,y:startY+1220,r:throatHalf-12,speed:2.8,angle:rand()*Math.PI*2,hit:0,color:'#ffc94a',
     spokesOnly:true,spokeCount:3,restitution:.95,kick:90,finalGate:true,finalKicker:true};
   wheels.push(kicker);
   return{mainHeight,startY,endY,lanes,rails,wheels,mergeY,throatHalf,kicker};

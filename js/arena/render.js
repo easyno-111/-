@@ -1,11 +1,11 @@
-import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.6';
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.7';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.6";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.6";
-import { pix, fx } from "./core.js?v=8.6";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.6";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.6";
-import { secureShuffle } from "./util.js?v=8.6";
+import { clamp, makeRand, lerp } from "./util.js?v=8.7";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.7";
+import { pix, fx } from "./core.js?v=8.7";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.7";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.7";
+import { secureShuffle } from "./util.js?v=8.7";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };

@@ -1,8 +1,8 @@
-import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.6';
+import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.7';
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js?v=8.6";
-import { state } from "./state.js?v=8.6";
-import { PAL, TEAM_COLORS } from "./palette.js?v=8.6";
+import { clamp, makeRand } from "./util.js?v=8.7";
+import { state } from "./state.js?v=8.7";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.7";
 
 export function raceMainHeight() {
   if (state.course === 'factory') return state.style === 'tension' ? 3600 : 2600;

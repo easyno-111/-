@@ -37,9 +37,9 @@ function teamLoop(now) {
   const frameDt = Math.min((now - state.lastFrame) / 1000, 0.05); state.lastFrame = now;
   fx.update(frameDt);
   updateTeamCamera(now, frameDt);
-  if (!fx.isFrozen(now)) state.physicsAccumulator += frameDt; else state.physicsAccumulator = 0;
+  if (!fx.isFrozen(now)) state.physicsAccumulator += frameDt * state.spectatorSpeed; else state.physicsAccumulator = 0;
   const fixed = 1 / 120; let loops = 0;
-  while (state.physicsAccumulator >= fixed && loops < 12) { updateTeam(now, fixed); state.physicsAccumulator -= fixed; loops++; }
+  while (state.physicsAccumulator >= fixed && loops < 30) { updateTeam(now, fixed); state.physicsAccumulator -= fixed; loops++; }
   audio.setIntensity(0.3 + 0.6 * (state.participants.length ? state.results.length / state.participants.length : 0));
   drawScene();
   if (state.ending && now - state.endingAt > 1200) { finalizeTeams(); return; }
@@ -130,3 +130,4 @@ function finalizeTeams() {
   host.showTeamResults(teams);
   audio.sfx("done");
 }
+

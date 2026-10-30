@@ -1,4 +1,4 @@
-/* 랜덤 아레나 V7 · 무대는 도트, 조작 패널은 깔끔하게 */
+/* 랜덤 아레나 V8 · 무대는 도트, 조작 패널은 깔끔하게 */
 @font-face {
   font-family: "NeoDunggeunmo";
   font-style: normal;
@@ -252,3 +252,40 @@ details[open] > summary::before { content: "▾"; }
 .topbar .mode-strip { margin: 0; }
 @media (max-width: 1100px) { .mode-strip { grid-template-columns: repeat(4, minmax(0, 120px)); } .mode-card { padding: 0 9px; } }
 @media (max-width: 900px) { .start-card { position: static; } .control-panel .panel-card:first-child { grid-column: 1 / -1; grid-row: auto; } .control-panel .panel-card:nth-child(2) { grid-row: span 2; } }
+
+
+/* V8: preparation gives way to a spacious, controllable spectator stage. */
+.mode-strip { grid-template-columns: repeat(3, minmax(0, 160px)); }
+.setup-guide { padding: 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; color: var(--cyan); }
+.stage-chip { max-width: min(65%, 560px); }
+.stage-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stage-tools { flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.racing .workspace { grid-template-columns: minmax(0, 1fr); }
+.racing .control-panel { display: none; }
+.racing .stage { height: min(82dvh, 950px); }
+.racing .stage-foot { display: flex; min-width: 0; }
+.racing .live-ranks { flex: 1; min-width: 0; }
+.spectator-controls { position: absolute; z-index: 21; left: 12px; bottom: 12px; display: flex; gap: 6px; align-items: center; background: #0b1020ec; padding: 8px; border: 1px solid #385475; border-radius: 8px; font-size: 12px; }
+.spectator-controls label { display: flex; align-items: center; gap: 6px; }
+.spectator-controls select { max-width: 150px; min-height: 36px; background: #16223a; color: #fff; border: 1px solid #385475; border-radius: 4px; }
+.spectator-controls button { min-height: 36px; padding: 0 10px; background: #1b3650; border-radius: 5px; }
+.spectator-controls button[aria-pressed=true] { background: #205e43; color: #b8ffdc; }
+.race-notice { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.racing .mode-card { opacity: .6; }
+@media (max-width: 720px) {
+  .mode-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .mode-card { padding: 0 8px; gap: 5px; }
+  .stage-toolbar { top: 7px; left: 7px; right: 7px; gap: 5px; }
+  .racing .stage-chip { display: none; }
+  .stage-tools { margin-left: auto; }
+  .stage-tools button { width: auto; min-width: 40px; min-height: 36px; height: auto; white-space: nowrap; font-size: 11px; padding: 6px 8px; }
+  #paceBtn { min-width: 86px; }
+  .racing .stage { height: 76dvh; min-height: 460px; }
+  .racing .stage-head { display: none; }
+  .spectator-controls { padding: 6px; left: 7px; bottom: 7px; font-size: 11px; }
+  .spectator-controls select { max-width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) { .countdown, .countdown span, .confetti { animation: none !important; } }
+
+.number-details .number-pad { margin-top: 12px; }
+.number-details .participant-summary { margin-top: 10px; }

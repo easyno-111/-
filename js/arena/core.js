@@ -9,7 +9,8 @@ export const audio = new ArenaAudio();
 
 // main.js가 채워 넣는 UI 콜백. 엔진은 DOM을 직접 만지지 않는다.
 export const host = {
-  setStatus() {}, setStageLabel() {}, renderLiveRanks() {}, setResultCount() {},
+  raceNotice() {}, setStatus() {}, setStageLabel() {}, renderLiveRanks() {}, setResultCount() {},
   showRaceResults() {}, showTeamResults() {}, showOrderResults() {},
   afterRun() {}, notify() {}, celebrate() {}, countdown: async () => true
 };
+

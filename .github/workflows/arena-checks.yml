@@ -1,0 +1,36 @@
+name: Arena V8 checks
+on:
+  push:
+    paths: ['random.html', 'js/arena/**', 'assets/arena.css', 'tests/arena-*', '.github/workflows/arena-checks.yml']
+  pull_request:
+    paths: ['random.html', 'js/arena/**', 'assets/arena.css', 'tests/arena-*', '.github/workflows/arena-checks.yml']
+permissions:
+  contents: read
+jobs:
+  arena:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and highlight logic
+        run: |
+          for f in js/arena/*.js js/arena/engines/*.js; do node --check "$f"; done
+          node tests/arena-highlights.cjs
+      - name: Install browser
+        run: |
+          npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Browser and physics checks
+        env:
+          ARENA_ARTIFACTS: arena-artifacts
+        run: node tests/arena-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arena-v8-screenshots
+          path: arena-artifacts
+          if-no-files-found: ignore
+          retention-days: 7

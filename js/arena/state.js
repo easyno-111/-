@@ -1,19 +1,19 @@
 // 앱 전역 상태와 모드 정보. 엔진·렌더러·UI가 공유한다.
-export const VERSION = "7.0.0";
+export const VERSION = "8.0.0";
 export const PRESET_KEY = "randomArenaPresetsV6";
-export const LAST_KEY = "randomArenaLastV7";
+export const LAST_KEY = "randomArenaLastV8";
 
 export const MODE_INFO = {
-  quick: { name: "빠른 추첨", start: "빠른 추첨 시작", hint: "빠른 레이스", accent: "#5ed4ff" },
-  rank: { name: "1~3등 뽑기", start: "1~3등 추첨 시작", hint: "1~3등 순차 추첨", accent: "#f2b61b" },
+  quick: { name: "번호 뽑기", start: "핀볼 레이스 시작", hint: "실제 골인 순서", accent: "#5ed4ff" },
   teams: { name: "팀 나누기", start: "팀 나누기 시작", hint: "균등 팀 배치", accent: "#2fc278" },
   order: { name: "전체 순서", start: "전체 순서 정하기", hint: "전체 무작위 순서", accent: "#8a5cf6" }
 };
 
 export const state = {
   // 설정
-  mode: "quick", inputType: "range", style: "quick", basis: "fair", comeback: "natural", cameraMode: "auto", trackedNum: null,
+  mode: "quick", inputType: "range", style: "quick", basis: "physics", comeback: "pure", cameraMode: "auto", trackedNum: null,
   drawCount: 1, teamCount: 4, sound: true, music: true, scanlines: true, replay: true,
+  course: "factory", raceCount: 30, spectatorSpeed: 1, cheerNum: null, raceEvent: null,
   // 참가자
   participants: [], names: {}, rosterLabel: "", sessionDrawn: new Set(),
   // 진행
@@ -27,8 +27,6 @@ export const state = {
   cinematicCandidate: null, cinematicText: "", freezeUntil: 0, freezeFocus: null, winnerFx: null,
   chaseWind: 0, chaseWindTarget: 0, currentLeaderNum: null, previousLeaderNum: null, leaderChangedAt: 0,
   photoFinish: false, photoFinishAt: 0, replayState: null, replayFrames: [], physicsStep: 0,
-  // 로또
-  lottoBalls: [], lottoWinners: [], lottoPhase: "idle", lottoPhaseStart: 0, lottoCapture: null, lottoSpin: 0, capsule: null, revealFx: null,
   // 팀
   orderGame: null,
   teamBins: [], teamQueue: [], teamAssignments: [], teamWave: 0, teamWaveSize: 36, nextWaveAt: 0, teamFx: null, rescueCount: 0
@@ -41,3 +39,4 @@ export function displayName(num) {
 export function shortName(num) {
   return state.names?.[num] || "";
 }
+

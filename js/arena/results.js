@@ -17,12 +17,12 @@ function showResultShell(title, sub, eyebrow) {
   els.stageLabel.style.visibility = "hidden"; els.closeResultBtn.hidden = false;
 }
 export function showRaceResults(results) {
-  showResultShell(state.mode === "rank" ? "최종 순위" : "추첨 결과", `${results.length}명의 번호가 결정되었습니다.`, state.basis === "fair" ? "FAIR RANDOM RESULT" : "PHYSICS RACE RESULT");
+  showResultShell("레이스 결과", `${results.length}명의 번호가 결정되었습니다.`, "PHYSICS RACE RESULT");
   if (results.length <= 3) {
     const podium = el("div", "podium"), order = results.length === 3 ? [1, 0, 2] : results.length === 2 ? [1, 0] : [0];
     order.forEach((idx) => {
       const card = el("div", `podium-card p${idx + 1}`); card.style.animationDelay = `${idx * 0.12}s`;
-      card.append(el("div", "medal", state.mode === "rank" ? `${idx + 1}등` : `당첨 ${idx + 1}`), el("div", "podium-num", results[idx]));
+      card.append(el("div", "medal", `${idx + 1}등`), el("div", "podium-num", results[idx]));
       const name = nameOf(results[idx]);
       card.append(el("div", "podium-name", name ? `${results[idx]}번 ${name}` : `${results[idx]}번`));
       podium.appendChild(card);
@@ -75,7 +75,7 @@ export function hideResult() { els.resultBoard.classList.remove("show"); els.sta
 export function formatResultText() {
   const r = state.lastResult; if (!r) return "";
   const nm = (n) => { const name = nameOf(n, r.names); return name ? `${n}번 ${name}` : `${n}번`; };
-  if (r.type === "race") return `[랜덤 아레나 V${VERSION}]\n${r.results.map((n, i) => `${r.mode === "rank" ? `${i + 1}등` : `당첨 ${i + 1}`}: ${nm(n)}`).join("\n")}`;
+  if (r.type === "race") return `[랜덤 아레나 V${VERSION}]\n${r.results.map((n, i) => `${`${i + 1}등`}: ${nm(n)}`).join("\n")}`;
   if (r.type === "teams") return `[랜덤 아레나 V${VERSION} 팀 결과]\n${r.teams.map((t, i) => `${i + 1}조: ${t.map(nm).join(", ")}`).join("\n")}`;
   return `[랜덤 아레나 V${VERSION} 전체 순서]\n${r.order.map((n, i) => `${i + 1}. ${nm(n)}`).join("\n")}`;
 }
@@ -95,7 +95,7 @@ export function saveResultsPng() {
   for (let i = 0; i < 160; i++) { g.fillStyle = i % 3 ? "#2a3a63" : "#56709e"; g.fillRect((i * 971) % 1600, (i * 557) % 1000, 3, 3); }
   g.fillStyle = "#5ed4ff"; g.font = `24px ${F}`; g.fillText(`RANDOM ARENA · V${VERSION}`, 90, 80);
   g.fillStyle = "#fff"; g.font = `56px ${F}`;
-  const title = r.type === "teams" ? "팀 나누기 결과" : r.type === "order" ? "전체 순서" : r.mode === "rank" ? "최종 순위" : "추첨 결과";
+  const title = r.type === "teams" ? "팀 나누기 결과" : r.type === "order" ? "전체 순서" : "레이스 결과";
   g.fillText(title, 90, 150); g.fillStyle = "#9aa8c7"; g.font = "600 20px sans-serif"; g.fillText(new Date(r.createdAt).toLocaleString("ko-KR"), 92, 190);
   const names = r.names || {};
   if (r.type === "race") drawRacePng(g, r.results, r.mode, names, F); else if (r.type === "teams") drawTeamsPng(g, r.teams, names, F); else drawOrderPng(g, r.order, names, F);
@@ -112,7 +112,7 @@ function drawRacePng(g, results, mode, names, F) {
   results.slice(0, 10).forEach((n, i) => {
     const row = Math.floor(i / 5), col = i % 5, x = (results.length <= 5 ? start : 100) + col * (cardW + 26), y = 270 + row * 300;
     pixelCard(g, x, y, cardW, 250, i === 0 ? "#f2b61b" : "#5e6c8f");
-    g.textAlign = "center"; g.fillStyle = i === 0 ? "#ffe27a" : "#9aa8c7"; g.font = `22px ${F}`; g.fillText(mode === "rank" ? `${i + 1}등` : `당첨 ${i + 1}`, x + cardW / 2, y + 50);
+    g.textAlign = "center"; g.fillStyle = i === 0 ? "#ffe27a" : "#9aa8c7"; g.font = `22px ${F}`; g.fillText(`${i + 1}등`, x + cardW / 2, y + 50);
     g.fillStyle = "#fff"; g.font = `88px ${F}`; g.fillText(n, x + cardW / 2, y + 150);
     g.font = `24px ${F}`; g.fillStyle = "#d8e4f0"; g.fillText(names[n] ? `${n}번 ${names[n]}` : `${n}번`, x + cardW / 2, y + 210);
   });
@@ -138,3 +138,4 @@ function drawOrderPng(g, order, names, F) {
     g.fillStyle = "#c7b2ff"; g.textAlign = "left"; g.fillText(`${i + 1}.`, x + 14, y + 36); g.fillStyle = "#fff"; g.fillText(names[n] ? `${n} ${names[n]}` : String(n), x + 62, y + 36);
   });
 }
+

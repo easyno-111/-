@@ -1,0 +1,21 @@
+const assert = require('node:assert/strict');
+(async () => {
+  const { RaceHighlights } = await import('../js/arena/highlights.js');
+  const balls = [1,2,3,4,5].map((num,i) => ({ num, active:true, y:500-i*30, vx:13, vy:18 }));
+  const h = new RaceHighlights();
+  assert.equal(h.observe(balls, 0), null);
+  balls[1].y=550;
+  assert.equal(h.observe(balls,100),null);
+  assert.equal(h.observe(balls,350),null,'Unstable lead must not announce');
+  const lead=h.observe(balls,410); assert.equal(lead.type,'lead'); assert.equal(lead.num,2); assert.equal(lead.previous,1);
+  const snapshot=JSON.stringify(balls); h.observe(balls,500); assert.equal(JSON.stringify(balls),snapshot,'Observer never changes physics');
+  balls[1].active=false; assert.equal(h.observe(balls,1000),null,'Finisher removal is not an overtake');
+  h.reset(); balls.forEach((b,i)=>{b.active=true;b.y=500-i*30;});h.observe(balls,0);
+  balls[4].y=480; const climb=h.observe(balls,1700);assert.equal(climb.type,'climb');assert.equal(climb.gain,3);assert.equal(climb.from,5);assert.equal(climb.to,2);
+  assert.equal(h.observe(balls,1800),null,'No repeated event every frame');
+  h.reset();h.observe([],0);assert.equal(h.observe([],1000),null);
+  const rescue = new RaceHighlights();balls.forEach((b,i)=>{b.y=500-i*30;});rescue.observe(balls,0);balls[4].y=490;balls[4].rescueGlow=1;
+  assert.equal(rescue.observe(balls,1700),null,'Rescue motion should not announce a climb');
+  assert.equal(h.observe(balls,5000,{enabled:false}),null);
+  console.log('PASS highlight stability, climb detection, cooldown, finisher/removal, rescue exclusion and physics isolation');
+})().catch(e=>{console.error(e);process.exitCode=1;});

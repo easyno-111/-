@@ -1,14 +1,14 @@
-import { ChaseEvents, racePace } from '../chase-events.js?v=8.3';
+import { ChaseEvents, racePace } from '../chase-events.js?v=8.4';
 // 핀볼 물리 레이스 엔진: 시네마틱 카메라, 사진 판정, 히트스톱, 리플레이
-import { clamp, secureShuffle } from "../util.js?v=8.3";
-import { state, displayName } from "../state.js?v=8.3";
-import { fx, audio, host } from "../core.js?v=8.3";
-import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.3";
-import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.3";
-import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.3";
-import { winnerSequence } from "../winner.js?v=8.3";
+import { clamp, secureShuffle } from "../util.js?v=8.4";
+import { state, displayName } from "../state.js?v=8.4";
+import { fx, audio, host } from "../core.js?v=8.4";
+import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.4";
+import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.4";
+import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.4";
+import { winnerSequence } from "../winner.js?v=8.4";
 
-import { RaceHighlights } from "../highlights.js?v=8.3";
+import { RaceHighlights } from "../highlights.js?v=8.4";
 const highlights = new RaceHighlights();
 const chase = new ChaseEvents();
 
@@ -50,7 +50,7 @@ function raceLoop(now) {
     if (result?.ended) {
       highlights.reset(); state.replayFrames = []; audio.unduck();
       if (result.type === 'final') state.finalSlowUntil = now + 800;
-      host.setStageLabel('추격 재개 · 선두를 넘지 않고 합류했습니다');
+      host.setStageLabel('역전 부스터 가동 · 선두 추격 중!');
     } else if (phase !== state.chase.phase) { host.chaseNotice(state.chase); if(state.chase.phase==='boost')audio.sfx('go'); }
     drawScene(); state.animationId = requestAnimationFrame(raceLoop); return;
   }

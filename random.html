@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#05070f">
-  <title>랜덤 아레나 V8.3</title>
-  <link rel="stylesheet" href="assets/arena.css?v=8.3">
+  <title>랜덤 아레나 V8.4</title>
+  <link rel="stylesheet" href="assets/arena.css?v=8.4">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">R</div>
-      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V8.3</span></h1></div>
+      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V8.4</span></h1></div>
     </div>
     <nav class="mode-strip" aria-label="추첨 모드">
       <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">01</span><span class="mode-title">번호 뽑기</span></button>
@@ -133,8 +133,8 @@
             <div id="comebackBlock" class="setting-block">
               <span class="field-label">추격 부스터 연출</span>
               <label class="check-line"><input id="boostMidToggle" type="checkbox" checked> 중간 지점 · 하위 50% 추격</label>
-              <label class="check-line"><input id="boostFinalToggle" type="checkbox" checked> 결승 직전 · 꼴찌 탈출 부스터</label>
-              <p id="comebackHelp" class="hint">시간을 멈추고 바로 앞 공과의 격차만 일부 줄입니다. 가로 위치는 유지하며, 결승 부스터는 꼴찌 탈출을 돕습니다.</p>
+              <label class="check-line"><input id="boostFinalToggle" type="checkbox" checked> 결승 직전 · 최후의 역전 부스터</label>
+              <p id="comebackHelp" class="hint">선두와의 격차를 크게 줄인 뒤 실제 가속으로 추월에 도전합니다. 가로 위치와 장애물 충돌은 유지되며, 부스터로 우승할 수도 있습니다.</p>
             </div>
             <div id="excludeBlock" class="setting-block"><label class="check-line"><input id="excludeWinners" type="checkbox" checked> 당첨 번호를 다음 추첨에서 제외</label></div>
             <details id="advancedDetails" class="advanced">
@@ -167,7 +167,7 @@
         </section>
       </aside>
     </div>
-    <footer class="footer">랜덤 아레나 V8.3 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
+    <footer class="footer">랜덤 아레나 V8.4 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
   </main>
 
   <dialog id="rosterModal" class="roster-modal">
@@ -185,7 +185,7 @@
   <script>
     if (location.protocol === "file:") document.getElementById("fileWarning").hidden = false;
   </script>
-  <script type="module" src="js/arena/main.js?v=8.3"></script>
+  <script type="module" src="js/arena/main.js?v=8.4"></script>
 </body>
 </html>
 

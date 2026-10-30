@@ -1,11 +1,11 @@
-import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.3';
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.4';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.3";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.3";
-import { pix, fx } from "./core.js?v=8.3";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.3";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.3";
-import { secureShuffle } from "./util.js?v=8.3";
+import { clamp, makeRand, lerp } from "./util.js?v=8.4";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.4";
+import { pix, fx } from "./core.js?v=8.4";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.4";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.4";
+import { secureShuffle } from "./util.js?v=8.4";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -336,8 +336,8 @@ function drawChaseBanner() {
   const e = state.chase, w = Math.min(state.W - 30, 390), y = state.W < 520 ? 195 : 80;
   panel((state.W - w) / 2, y, w, 72, { edge: PAL.orange1, fill: 'rgba(35,16,5,.96)' });
   const phase = { freeze: '시간 정지', pan: '추격 대상을 비춥니다', charge: '부스터 점화!', boost: '추격 발진!', return: '경기 재개 준비' }[e.phase];
-  text(e.type === 'mid' ? `하위 50% · ${e.plans.length}명 부스터` : `꼴찌 탈출 · ${e.plans[0].num}번`, state.W / 2, y + 23, { size: state.W < 520 ? 17 : 22, color: PAL.gold2 });
-  text(e.type === 'final' && e.phase === 'boost' ? `${e.plans[0].targetNum}번을 향해 추격!` : phase, state.W / 2, y + 50, { size: 14 });
+  text(e.type === 'mid' ? `하위 50% · ${e.plans.length}명 부스터` : `최후의 역전 · ${e.plans[0].num}번`, state.W / 2, y + 23, { size: state.W < 520 ? 17 : 22, color: PAL.gold2 });
+  text(e.type === 'final' && e.phase === 'boost' ? `${e.plans[0].targetNum}번 선두를 추격!` : phase, state.W / 2, y + 50, { size: 14 });
 }
 function drawComebackBanner(now) {
   const event = state.raceEvent;

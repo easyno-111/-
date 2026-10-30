@@ -1,5 +1,5 @@
 // 칩튠 오디오 엔진: 효과음 + 4채널 시퀀서(펄스·펄스·삼각파 베이스·노이즈) + 심장박동
-import { clamp } from "./util.js?v=8.3";
+import { clamp } from "./util.js?v=8.4";
 
 const NOTE_BASE = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 };
 export function noteFreq(name) {

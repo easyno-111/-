@@ -1,5 +1,5 @@
-import { clamp } from './util.js?v=8.3';
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.3';
+import { clamp } from './util.js?v=8.4';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.4';
 
 function segmentBlocks(x, y, r, segment) {
   const p = closestOnSegment(x, y, segment);
@@ -36,7 +36,7 @@ function landing(s, ball, nominal, maxY, reserved) {
 }
 export class ChaseEvents {
   constructor(){this.reset();}
-  reset(s){this.midDone=false;this.finalDone=false;this.event=null;if(s){s.chase=null;for(const b of s.balls)b.boostFlame=0;}}
+  reset(s){this.midDone=false;this.finalDone=false;this.event=null;if(s){s.chase=null;for(const b of s.balls){b.boostFlame=0;b.chaseBoostLeft=0;b.chaseBoostKind=null;}}}
   maybeStart(s) {
     if(this.event || s.ending || s.results.length || s.engine!=='race')return false;
     const ranked=s.balls.filter(b=>b.active).sort((a,b)=>b.y-a.y||a.num-b.num);
@@ -44,21 +44,19 @@ export class ChaseEvents {
     const leader=ranked[0], goal=s.worldH-54;
     let type=null;
     if(!this.midDone && s.boostMidEnabled!==false && leader.y>=goal*.48)type='mid';
-    else if(!this.finalDone && s.boostFinalEnabled!==false && leader.y>=goal-140 && leader.vy>0)type='final';
+    else if(!this.finalDone && s.boostFinalEnabled!==false && leader.y>=goal-420 && leader.vy>0)type='final';
     if(!type)return false;
     if(type==='mid')this.midDone=true;else this.finalDone=true;
     const selected=type==='mid'?ranked.slice(-Math.floor(ranked.length/2)):[ranked[ranked.length-1]];
     const reserved=[],plans=[];
-    selected.forEach(ball=>{
-      // Snapshot the immediate predecessor, even if it is also being boosted.
-      // This closes part of one gap instead of lifting the whole pack to the leader.
-      const ahead=ranked[ranked.indexOf(ball)-1];
-      const fraction=type==='mid'?.45:ranked.length===2?.25:.40;
-      const gap=Math.max(0,ahead.y-ball.y);
-      const maxY=Math.min(ahead.y-ahead.r-ball.r-12,leader.y-leader.r-ball.r-22,goal-70);
+    selected.forEach((ball,index)=>{
+      // Recover most of the gap to the leader, then earn overtakes in live physics.
+      const gap=Math.max(0,leader.y-ball.y),fraction=type==='mid'?.75:.90;
+      const guard=type==='mid'?110+index*(ball.r*2+10):140;
+      const maxY=Math.min(leader.y-guard,goal-240);
       const nominal=Math.min(maxY,ball.y+gap*fraction);
       const to=landing(s,ball,nominal,maxY,reserved);reserved.push({...to,r:ball.r});
-      plans.push({ball,num:ball.num,targetNum:ahead.num,targetY:ahead.y,fraction,from:{x:ball.x,y:ball.y},to,vx:ball.vx,vy:ball.vy});
+      plans.push({ball,num:ball.num,targetNum:leader.num,targetY:leader.y,fraction,from:{x:ball.x,y:ball.y},to,vx:ball.vx,vy:ball.vy});
     });
     this.event={type,phase:'freeze',age:0,plans,leaderNum:leader.num,leaderY:leader.y,
       startCamera:s.cameraY,startZoom:s.zoom,startFocus:s.zoomFocusX,cancelled:false};
@@ -76,7 +74,8 @@ export class ChaseEvents {
       p.ball.boostFlame=a>=panEnd?1:0;p.ball.boostDx=p.to.x-p.from.x;p.ball.boostDy=Math.max(1,p.to.y-p.from.y);
     }
     const points=e.plans.map(p=>p.ball);
-    if(e.type==='final'){const ahead=s.balls.find(b=>b.num===e.plans[0].targetNum);if(ahead)points.push(ahead);}
+    // Visit the last ball first; include the leader once both fit the shot.
+    if(e.type==='final'){const ahead=s.balls.find(b=>b.num===e.plans[0].targetNum);if(ahead&&Math.abs(ahead.y-points[0].y)<s.H*.65/.35-130)points.push(ahead);}
     const ys=points.map(b=>b.y);
     const middle=ys.reduce((a,b)=>a+b,0)/ys.length;
     const leader=s.balls.find(b=>b.num===e.leaderNum);
@@ -93,7 +92,7 @@ export class ChaseEvents {
     if(a>=total){
       // Stuck detection and temporary collision timers pause with the race too.
       for(const b of s.balls)for(const key of ['motionAt','lastProgressAt','lastSafeAt','lastBoostAt','ghostUntil','shrinkUntil'])if(Number.isFinite(b[key])&&b[key])b[key]+=e.age*1000;
-      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=clamp(p.vy,-120,120);p.ball.boostFlame=0;}
+      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=clamp(Math.max(p.vy,e.type==='mid'?250:300),0,437);p.ball.chaseBoostLeft=e.type==='mid'?1.6:1.4;p.ball.chaseBoostKind=e.type;p.ball.boostFlame=1;p.ball.boostDx=0;p.ball.boostDy=1;}
       this.event=null;s.chase=null;return{ended:true,type:e.type};
     }
     return{ended:false,phase:e.phase,type:e.type};

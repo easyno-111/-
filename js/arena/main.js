@@ -1,14 +1,14 @@
 // 랜덤 아레나 V7 진입점: DOM 연결, 참가자/설정, 프리셋, 엑셀 명단, 실행 흐름
-import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.5";
-import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.5";
-import { fx, audio, host } from "./core.js?v=8.5";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.5";
-import { runRaceMode } from "./engines/race.js?v=8.5";
-import { runTeamMode } from "./engines/teams.js?v=8.5";
-import { runListMode, revealAllOrder } from "./engines/order.js?v=8.5";
-import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.5";
-import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.5";
-import { parseRosterFile } from "./roster.js?v=8.5";
+import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.6";
+import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.6";
+import { fx, audio, host } from "./core.js?v=8.6";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.6";
+import { runRaceMode } from "./engines/race.js?v=8.6";
+import { runTeamMode } from "./engines/teams.js?v=8.6";
+import { runListMode, revealAllOrder } from "./engines/order.js?v=8.6";
+import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.6";
+import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.6";
+import { parseRosterFile } from "./roster.js?v=8.6";
 
 const $ = (id) => document.getElementById(id);
 const els = {};
@@ -56,7 +56,7 @@ function renderTrackOptions() {
   extra.cheerSelect.replaceChildren(new Option('선택 안 함', ''), ...nums.map(n => new Option(displayName(n), n)));
   if (state.cheerNum != null && nums.includes(state.cheerNum)) extra.cheerSelect.value = String(state.cheerNum);
   else state.cheerNum = null;
-  if (current != null && nums.includes(current)) els.trackSelect.value = String(current); else if (current != null) state.trackedNum = null;
+  if (current != null && nums.includes(current)) els.trackSelect.value = String(current); else if (current != null) { state.trackedNum = null; if(state.cameraMode==='track')state.cameraMode='auto'; }
 }
 function renderParticipantChips() {
   els.participantChips.replaceChildren();
@@ -155,6 +155,7 @@ async function startDraw() {
   if ((state.mode === "teams" || state.mode === "order") && eligible.length > 120) { notify("팀과 순서 모드는 최대 120명까지 사용할 수 있습니다.", true); return; }
   hideResult(); state.results = []; state.lastResult = null; renderLiveRanks(); els.savePngBtn.disabled = true; els.copyBtn.disabled = true;
   state.runToken++; const token = state.runToken; state.running = true; state.ending = false; els.startBtn.disabled = true; setStatus("카운트");
+  state.cameraMode="auto";state.trackedNum=null;state.cheerNum=null;renderTrackOptions();updateSegmented();
   state.courseSeed = newSeed(); state.spectatorSpeed = 1; state.raceEvent = null;
   setRunView(true); saveLastConfig();
   try {
@@ -291,7 +292,7 @@ function saveRosterSelection() {
 
 // ---------- 설정 저장 ----------
 function saveLastConfig() {
-  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, course: state.course, style: state.style, basis: state.basis, boostMidEnabled: state.boostMidEnabled, boostFinalEnabled: state.boostFinalEnabled, cameraMode: state.cameraMode, trackedNum: state.trackedNum, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
+  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, course: state.course, style: state.style, basis: state.basis, boostMidEnabled: state.boostMidEnabled, boostFinalEnabled: state.boostFinalEnabled, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
   try { localStorage.setItem(LAST_KEY, JSON.stringify(data)); } catch {}
 }
 function restoreLastConfig() {
@@ -304,8 +305,8 @@ function restoreLastConfig() {
   state.inputType = d.inputType === "direct" ? "direct" : "range";
   state.style = d.style === "tension" ? "tension" : "quick"; state.basis = "physics"; state.course = ["factory", "split", "tower"].includes(d.course) ? d.course : "factory";
   state.comeback = "pure"; state.boostMidEnabled = d.boostMidEnabled !== false; state.boostFinalEnabled = d.boostFinalEnabled !== false;
-  state.cameraMode = ["auto", "overview", "track"].includes(d.cameraMode) ? d.cameraMode : "auto";
-  state.trackedNum = Number.isFinite(Number(d.trackedNum)) && d.trackedNum !== null ? Number(d.trackedNum) : null;
+  // Camera tracking is per round; never restore an invisible stale selection.
+  state.cameraMode = "auto"; state.trackedNum = null; state.cheerNum = null;
   state.drawCount = clamp(Number(d.drawCount) || 1, 1, 10); state.teamCount = clamp(Number(d.teamCount) || 4, 2, 8);
   state.sound = d.sound !== false; state.music = d.music !== false; state.scanlines = d.scanlines !== false; state.replay = d.replay !== false;
   state.names = d.names && typeof d.names === "object" ? d.names : {}; state.rosterLabel = d.rosterLabel || "";
@@ -348,7 +349,7 @@ function bindEvents() {
   const segment = (attr, key) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => { if (state.running) return; state[key] = b.dataset[attr]; audio.sfx("ui"); updateSegmented(); state.courseSeed = newSeed(); resizeCanvas(); drawIdle(); saveLastConfig(); }));
   segment("style", "style");
   document.querySelectorAll("[data-camera]").forEach((b) => b.addEventListener("click", () => { state.cameraMode = b.dataset.camera; if (state.cameraMode === "track" && state.trackedNum == null && state.participants.length) { state.trackedNum = state.participants[0]; els.trackSelect.value = String(state.trackedNum); } updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); }));
-  els.trackSelect.addEventListener("change", () => { state.trackedNum = els.trackSelect.value === "" ? null : Number(els.trackSelect.value); if (state.trackedNum != null) state.cameraMode = "track"; updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); });
+  els.trackSelect.addEventListener("change", () => { state.trackedNum = els.trackSelect.value === "" ? null : Number(els.trackSelect.value); state.cameraMode = state.trackedNum != null ? "track" : "auto"; updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); });
   [els.minNum, els.maxNum, els.excludeInput, els.directInput].forEach((el) => el.addEventListener("input", () => { if (!state.running) { refreshParticipants(); drawIdle(); } }));
   $("countMinus").addEventListener("click", () => changeCount(-1)); $("countPlus").addEventListener("click", () => changeCount(1));
   $("teamMinus").addEventListener("click", () => changeTeams(-1)); $("teamPlus").addEventListener("click", () => changeTeams(1));
@@ -384,14 +385,14 @@ async function init() {
   Object.assign(host, {
     setStatus, setStageLabel, renderLiveRanks,
     chaseNotice(event) { const phase = { freeze:'시간 정지', pan:'카메라 이동', charge:'점화', boost:'발진', return:'경기 재개' }[event.phase]; extra.raceNotice.textContent = event.type === 'mid' ? `하위 ${event.plans.length}명 추격 부스터 · ${phase}` : `최후의 역전 · ${event.plans[0].num}번이 선두 ${event.plans[0].targetNum}번 추격 · ${phase}`; },
-    raceNotice(event) { extra.raceNotice.textContent = event.type === 'lead' ? `선두 교체 · ${displayName(event.previous)} → ${displayName(event.num)}` : `${displayName(event.num)} · ${event.gain}계단 상승! ${event.from}위 → ${event.to}위`; }, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
+    raceNotice(event) { extra.raceNotice.textContent = event.type === 'lead' ? `선두 교체 · ${displayName(event.previous)} → ${displayName(event.num)}` : `${displayName(event.num)} · ${event.gain}계단 상승! ${event.from}위 → ${event.to}위`; }, syncCamera() { renderTrackOptions();updateSegmented(); }, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
     showRaceResults, showTeamResults, showOrderResults, afterRun, notify, celebrate, countdown
   });
   extra.boostMidToggle.addEventListener('change', () => { state.boostMidEnabled = extra.boostMidToggle.checked; saveLastConfig(); });
   extra.boostFinalToggle.addEventListener('change', () => { state.boostFinalEnabled = extra.boostFinalToggle.checked; saveLastConfig(); });
   extra.courseSelect.addEventListener('change', () => { if (state.running) return; state.course = extra.courseSelect.value; resetStageForMode(); saveLastConfig(); });
-  extra.cheerSelect.addEventListener('change', () => { state.cheerNum = extra.cheerSelect.value ? Number(extra.cheerSelect.value) : null; if (state.cameraMode === 'track') state.trackedNum = state.cheerNum; updateSegmented(); });
-  extra.followBtn.addEventListener('click', () => { if (state.cheerNum == null) { notify('응원할 번호를 먼저 선택하세요.'); return; } state.cameraMode = state.cameraMode === 'track' ? 'auto' : 'track'; state.trackedNum = state.cheerNum; updateSegmented(); });
+  extra.cheerSelect.addEventListener('change', () => { state.cheerNum = extra.cheerSelect.value ? Number(extra.cheerSelect.value) : null; if (state.cameraMode === 'track') {state.trackedNum = state.cheerNum;if(state.cheerNum==null)state.cameraMode='auto';} updateSegmented(); });
+  extra.followBtn.addEventListener('click', () => { if (state.cheerNum == null) { notify('응원할 번호를 먼저 선택하세요.'); return; } state.cameraMode = state.cameraMode === 'track' ? 'auto' : 'track'; state.trackedNum = state.cameraMode==='track'?state.cheerNum:null; updateSegmented(); });
   extra.stopBtn.addEventListener('click', cancelRun);
   extra.paceBtn.addEventListener('click', () => { if (state.engine === 'list') revealAllOrder(); else { state.spectatorSpeed = state.spectatorSpeed === 1 ? 4 : 1; extra.paceBtn.textContent = state.spectatorSpeed === 1 ? '빠르게 진행' : '기본 속도'; } });
   buildNumberPad(); bindEvents(); renderPresets(); restoreLastConfig();

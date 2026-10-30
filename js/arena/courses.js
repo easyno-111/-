@@ -1,8 +1,8 @@
-import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.5';
+import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.6';
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js?v=8.5";
-import { state } from "./state.js?v=8.5";
-import { PAL, TEAM_COLORS } from "./palette.js?v=8.5";
+import { clamp, makeRand } from "./util.js?v=8.6";
+import { state } from "./state.js?v=8.6";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.6";
 
 export function raceMainHeight() {
   if (state.course === 'factory') return state.style === 'tension' ? 3600 : 2600;
@@ -19,7 +19,7 @@ export function finishGeometry() {
 }
 
 function clearCourse() {
-  state.pegs = []; state.bumpers = []; state.rotors = []; state.wheels = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = []; state.finalGate=null; state.warpEvent=null;
+  state.pegs = []; state.bumpers = []; state.rotors = []; state.wheels = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = []; state.finalGate=null;
 }
 export function buildCourse() {
   const rand = makeRand(state.courseSeed), W = state.W, worldH = state.worldH || state.H;
@@ -27,7 +27,7 @@ export function buildCourse() {
   buildArenaCourse(rand, W, worldH-FINAL_GATE_HEIGHT);
   state.finalGate=buildFinalGate(W,worldH-FINAL_GATE_HEIGHT,rand);
   state.rails.push(...state.finalGate.rails);state.wheels.push(...state.finalGate.wheels);
-  state.sections.push({y:state.finalGate.startY-60,label:'마지막 관문 · 5개 입구'}, {y:state.finalGate.startY+680,label:'갈림길 · A 1→5 / B 5→2'}, {y:state.finalGate.endY-50,label:'최종 합류 · 결승'});
+  state.sections.push({y:state.finalGate.startY-60,label:'마지막 관문 · 고속 / 갈림길 / 회전 통로'}, {y:state.finalGate.mergeY-35,label:'하나의 통로로 합류'}, {y:state.finalGate.kicker.y-85,label:'최종 회전 범퍼 · 끝까지 승부!'});
   if (state.comeback === "boost") addBoosters(W, worldH);
   buildFinishFunnel(W, worldH);
 }
@@ -151,10 +151,10 @@ function buildSplitGarden(rand, W, start, end) {
   }
 }
 export function buildFinishFunnel(W, worldH) {
-  const f = finishGeometry();
+  const f = finishGeometry(), left=state.finalGate?f.center-state.finalGate.throatHalf:20,right=state.finalGate?f.center+state.finalGate.throatHalf:W-20;
   state.rails.push(
-    rail(20, f.topY, f.center - f.half, f.gateY, 8, "finish", { finish: true }),
-    rail(W - 20, f.topY, f.center + f.half, f.gateY, 8, "finish", { finish: true }),
+    rail(left, f.topY, f.center - f.half, f.gateY, 8, "finish", { finish: true }),
+    rail(right, f.topY, f.center + f.half, f.gateY, 8, "finish", { finish: true }),
     rail(19, f.gateY + 8, f.center - f.half, f.gateY + 8, 9, "finish", { finish: true, floor: true }),
     rail(f.center + f.half, f.gateY + 8, W - 19, f.gateY + 8, 9, "finish", { finish: true, floor: true })
   );

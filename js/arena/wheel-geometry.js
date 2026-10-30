@@ -1,13 +1,15 @@
 // Shared by rendering, moving collisions and booster landing checks.
-// Four spokes and four short rim braces leave large openings into the wheel.
+// Default wheels have four spokes and open rim braces; corridor paddles omit braces.
 export function wheelSegments(wheel) {
   const angle = wheel.angle || 0;
   if (wheel._segmentsAngle === angle && wheel._segmentsRadius === wheel.r) return wheel._segments;
   const segments = [], hub = wheelHubRadius(wheel), width = 10;
-  for (let i = 0; i < 4; i++) {
-    const a = angle + i * Math.PI / 2;
+  const spokes=wheel.spokeCount||4;
+  for (let i = 0; i < spokes; i++) {
+    const a = angle + i * Math.PI * 2 / spokes;
     segments.push({ x1: wheel.x + Math.cos(a) * hub, y1: wheel.y + Math.sin(a) * hub,
       x2: wheel.x + Math.cos(a) * wheel.r, y2: wheel.y + Math.sin(a) * wheel.r, w: width });
+    if(wheel.spokesOnly)continue;
     const halfArc = Math.PI / 10;
     for (let j = 0; j < 3; j++) {
       const p = a - halfArc + j * halfArc * 2 / 3, q = p + halfArc * 2 / 3;

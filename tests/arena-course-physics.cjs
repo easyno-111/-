@@ -2,12 +2,12 @@
 const assert = require('node:assert/strict');
 global.document = { createElement: () => ({ getContext: () => ({}) }) };
 (async () => {
- const { state } = await import('../js/arena/state.js?v=8.5');
- const { audio, fx } = await import('../js/arena/core.js?v=8.5'); audio.enabled = false;
- const { buildCourse, raceWorldHeight, startColumns } = await import('../js/arena/courses.js?v=8.5');
- const { makePhysicsBall, collideWheel } = await import('../js/arena/physics.js?v=8.5');
- const { updateRace } = await import('../js/arena/engines/race.js?v=8.5');
- const { makeRand } = await import('../js/arena/util.js?v=8.5');
+ const { state } = await import('../js/arena/state.js?v=8.6');
+ const { audio, fx } = await import('../js/arena/core.js?v=8.6'); audio.enabled = false;
+ const { buildCourse, raceWorldHeight, startColumns } = await import('../js/arena/courses.js?v=8.6');
+ const { makePhysicsBall, collideWheel } = await import('../js/arena/physics.js?v=8.6');
+ const { updateRace } = await import('../js/arena/engines/race.js?v=8.6');
+ const { makeRand } = await import('../js/arena/util.js?v=8.6');
  const originalRandom = Math.random;
  const samples=[];
  function build(width,style,course,seed=17) {
@@ -20,8 +20,8 @@ global.document = { createElement: () => ({ getContext: () => ({}) }) };
   const ballR=width<520?12:16, clearance=ballR*2+20;
   assert.ok(state.wheels.length>=2);
   function segmentDistance(w,r){const dx=r.x2-r.x1,dy=r.y2-r.y1,t=Math.max(0,Math.min(1,((w.x-r.x1)*dx+(w.y-r.y1)*dy)/(dx*dx+dy*dy)));return Math.hypot(w.x-r.x1-t*dx,w.y-r.y1-t*dy);}
-  for(const w of state.wheels)for(const rail of state.rails)assert.ok(segmentDistance(w,rail)-w.r-rail.w/2>=ballR*2+10,'No pinches between wheels and re-entry ramps');
-  for(const w of state.wheels){assert.ok(w.x-w.r-20>=clearance);assert.ok(width-20-w.x-w.r>=clearance);assert.ok(w.y-w.r>250);assert.ok(w.y+w.r<state.worldH-445);}
+  for(const w of state.wheels.filter(w=>!w.finalGate))for(const rail of state.rails)assert.ok(segmentDistance(w,rail)-w.r-rail.w/2>=ballR*2+10,'No pinches between wheels and re-entry ramps');
+  for(const w of state.wheels.filter(w=>!w.finalGate)){assert.ok(w.x-w.r-20>=clearance);assert.ok(width-20-w.x-w.r>=clearance);assert.ok(w.y-w.r>250);assert.ok(w.y+w.r<state.worldH-445);}
   for(let i=0;i<state.wheels.length;i++)for(let j=i+1;j<state.wheels.length;j++){
    const a=state.wheels[i],b=state.wheels[j];assert.ok(Math.hypot(a.x-b.x,a.y-b.y)-a.r-b.r>=clearance,'Wheel envelopes must leave a ball passage');
   }

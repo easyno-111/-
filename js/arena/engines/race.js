@@ -1,14 +1,14 @@
-import { ChaseEvents, racePace } from '../chase-events.js?v=8.5';
+import { ChaseEvents, racePace } from '../chase-events.js?v=8.6';
 // 핀볼 물리 레이스 엔진: 시네마틱 카메라, 사진 판정, 히트스톱, 리플레이
-import { clamp, secureShuffle } from "../util.js?v=8.5";
-import { state, displayName } from "../state.js?v=8.5";
-import { fx, audio, host } from "../core.js?v=8.5";
-import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.5";
-import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.5";
-import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.5";
-import { winnerSequence } from "../winner.js?v=8.5";
+import { clamp, secureShuffle } from "../util.js?v=8.6";
+import { state, displayName } from "../state.js?v=8.6";
+import { fx, audio, host } from "../core.js?v=8.6";
+import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.6";
+import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.6";
+import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.6";
+import { winnerSequence } from "../winner.js?v=8.6";
 
-import { RaceHighlights } from "../highlights.js?v=8.5";
+import { RaceHighlights } from "../highlights.js?v=8.6";
 const highlights = new RaceHighlights();
 const chase = new ChaseEvents();
 
@@ -86,7 +86,6 @@ function raceLoop(now) {
 export function updateRace(now, dt) {
   if (state.chase) return;
   state.physicsStep++;
-  if(state.warpEvent){state.warpEvent.age+=dt;if(state.warpEvent.age>1.1)state.warpEvent=null;}
   for (const wheel of state.wheels) { wheel.angle += wheel.speed * dt; wheel.hit = Math.max(0, wheel.hit - dt); }
   for (const rotor of state.rotors) { rotor.angle += rotor.speed * dt; rotor.hit = Math.max(0, (rotor.hit || 0) - dt * 2); }
   for (const gate of state.gates) { gate.phase += gate.speed * dt; gate.gapX = state.W / 2 + Math.sin(gate.phase) * state.W * 0.24; gate.pulse = Math.max(0, gate.pulse - dt * 2.5); }
@@ -112,7 +111,8 @@ function recordReplayFrame(now) {
   if (state.replayFrames.length > limit) state.replayFrames.splice(0, state.replayFrames.length - limit);
 }
 
-function updateCinematic(now, dt) {
+export function updateCinematic(now, dt) {
+  if(state.cameraMode==='track'&&!state.balls.some(b=>b.active&&b.num===state.trackedNum)){state.cameraMode='auto';state.trackedNum=null;host.syncCamera();}
   const active = state.balls.filter((b) => b.active), f = finishGeometry(), finalStart = f.topY - Math.max(250, state.H * 0.38);
   let candidate = null, deep = false, manual = false;
   if (now < state.freezeUntil && state.freezeFocus) { candidate = state.freezeFocus; deep = true; state.cinematicText = `${displayName(state.freezeFocus.num)} 골인!`; }
@@ -128,8 +128,8 @@ function updateCinematic(now, dt) {
     state.cameraY += (clamp(target, 0, Math.max(0, state.worldH - state.H / state.zoom)) - state.cameraY) * (1 - Math.exp(-dt * 3.8));
     return;
   } else {
-    const near = active.filter((b) => b.y > finalStart && b.vy > -90).sort((a, b) => (b.y - Math.abs(b.x - f.center) * 0.22) - (a.y - Math.abs(a.x - f.center) * 0.22));
-    candidate = near[0] || null;
+    const near = [...active].sort((a,b)=>b.y-a.y);
+    candidate = near[0]?.y > finalStart ? near[0] : null;
     if (candidate) {
       deep = candidate.y > f.gateY - 145 && Math.abs(candidate.x - f.center) < f.half * 1.9 && candidate.vy > 0;
       // 사진 판정: 결승 구간에 두 공이 아주 가까이 붙어 있을 때

@@ -1,9 +1,10 @@
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.2';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.1";
-import { state } from "./state.js?v=8.1";
-import { fx, audio } from "./core.js?v=8.1";
-import { BALL_PALETTES } from "./palette.js?v=8.1";
-import { finishGeometry } from "./courses.js?v=8.1";
+import { clamp } from "./util.js?v=8.2";
+import { state } from "./state.js?v=8.2";
+import { fx, audio } from "./core.js?v=8.2";
+import { BALL_PALETTES } from "./palette.js?v=8.2";
+import { finishGeometry } from "./courses.js?v=8.2";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {
@@ -113,23 +114,33 @@ export function collideCircle(b, x, y, r, bounce, boost = 18) {
   return true;
 }
 
-// Solid rotating plate: the visible rim is also the collision boundary.
-// Tangential friction carries a ball off the top, instead of trapping it on a flat hub.
+// Only the visible spokes/rim braces collide; the spaces between them are open.
 export function collideWheel(b, wheel, dt) {
-  const dx = b.x - wheel.x, dy = b.y - wheel.y;
-  const distance = Math.hypot(dx, dy), minDistance = wheel.r + b.r;
-  if (distance >= minDistance) return false;
-  const nx = distance > .0001 ? dx / distance : 1, ny = distance > .0001 ? dy / distance : 0;
-  b.x = wheel.x + nx * (minDistance + .15); b.y = wheel.y + ny * (minDistance + .15);
-  const normal = b.vx * nx + b.vy * ny;
-  if (normal < 0) { b.vx -= normal * 1.42 * nx; b.vy -= normal * 1.42 * ny; }
-  const tx = -ny, ty = nx;
-  const target = Math.sign(wheel.speed) * clamp(Math.abs(wheel.speed * wheel.r), 65, 175);
-  const tangent = b.vx * tx + b.vy * ty;
-  const impulse = (target - tangent) * (1 - Math.exp(-dt * 14));
-  b.vx += tx * impulse; b.vy += ty * impulse;
-  wheel.hit = .22;
-  return true;
+  let hit = false;
+  const hub = wheelHubRadius(wheel), dx = b.x - wheel.x, dy = b.y - wheel.y, distance = Math.hypot(dx, dy);
+  if (distance < hub + b.r) {
+    const nx = distance > .0001 ? dx / distance : 1, ny = distance > .0001 ? dy / distance : 0;
+    b.x = wheel.x + nx * (hub + b.r + .2); b.y = wheel.y + ny * (hub + b.r + .2);
+    const normal = b.vx * nx + b.vy * ny;
+    if (normal < 0) { b.vx -= normal * 1.4 * nx; b.vy -= normal * 1.4 * ny; }
+    hit = true;
+  }
+  for (const segment of wheelSegments(wheel)) {
+    const p = closestOnSegment(b.x, b.y, segment), dx = b.x - p.x, dy = b.y - p.y;
+    const distance = Math.hypot(dx, dy), min = b.r + segment.w / 2;
+    if (distance >= min) continue;
+    const sx = segment.x2 - segment.x1, sy = segment.y2 - segment.y1, len = Math.hypot(sx, sy);
+    const nx = distance > .0001 ? dx / distance : -sy / len, ny = distance > .0001 ? dy / distance : sx / len;
+    b.x += nx * (min - distance + .15); b.y += ny * (min - distance + .15);
+    const svx = -(p.y - wheel.y) * wheel.speed, svy = (p.x - wheel.x) * wheel.speed;
+    const normal = (b.vx - svx) * nx + (b.vy - svy) * ny;
+    if (normal < 0) { b.vx -= normal * 1.5 * nx; b.vy -= normal * 1.5 * ny; }
+    const tx = -ny, ty = nx, tangent = (svx - b.vx) * tx + (svy - b.vy) * ty;
+    const friction = tangent * (1 - Math.exp(-dt * 10));
+    b.vx += tx * friction; b.vy += ty * friction; hit = true;
+  }
+  if (hit) wheel.hit = .22;
+  return hit;
 }
 
 export function collideRotor(b, r) {

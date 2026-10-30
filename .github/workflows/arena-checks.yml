@@ -20,6 +20,7 @@ jobs:
           for f in js/arena/*.js js/arena/engines/*.js; do node --check "$f"; done
           node tests/arena-highlights.cjs
           ARENA_FULL_MATRIX=1 node tests/arena-course-physics.cjs
+          node tests/arena-chase.cjs
       - name: Install browser
         run: |
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.62.1

@@ -1,12 +1,12 @@
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js?v=8.1";
-import { state } from "./state.js?v=8.1";
-import { PAL, TEAM_COLORS } from "./palette.js?v=8.1";
+import { clamp, makeRand } from "./util.js?v=8.2";
+import { state } from "./state.js?v=8.2";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.2";
 
 export function raceWorldHeight() {
-  // Dense bumper rooms take longer per metre than wheel/garden rooms.
-  if (state.course === 'factory') return state.style === 'tension' ? 20000 : 10000;
-  return state.style === 'tension' ? 30000 : 14000;
+  if (state.course === 'factory') return state.style === 'tension' ? 3600 : 2600;
+  if (state.course === 'split') return state.style === 'tension' ? 5600 : 4000;
+  return state.style === 'tension' ? 6500 : 4500;
 }
 export function startColumns() { return Math.max(3, Math.min(10, Math.floor((state.W * .72) / 36))); }
 export function startDepth() { return Math.max(260, Math.ceil((state.raceCount || 30) / startColumns()) * 38 + 100); }

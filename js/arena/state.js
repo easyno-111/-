@@ -1,5 +1,5 @@
 // 앱 전역 상태와 모드 정보. 엔진·렌더러·UI가 공유한다.
-export const VERSION = "8.1.0";
+export const VERSION = "8.2.0";
 export const PRESET_KEY = "randomArenaPresetsV6";
 export const LAST_KEY = "randomArenaLastV8";
 
@@ -13,6 +13,7 @@ export const state = {
   // 설정
   mode: "quick", inputType: "range", style: "quick", basis: "physics", comeback: "pure", cameraMode: "auto", trackedNum: null,
   drawCount: 1, teamCount: 4, sound: true, music: true, scanlines: true, replay: true,
+  boostMidEnabled: true, boostFinalEnabled: true, chase: null, raceElapsed: 0, finalSlowUntil: 0,
   course: "factory", raceCount: 30, spectatorSpeed: 1, cheerNum: null, raceEvent: null,
   // 참가자
   participants: [], names: {}, rosterLabel: "", sessionDrawn: new Set(),

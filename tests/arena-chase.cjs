@@ -1,13 +1,13 @@
 const assert=require('node:assert/strict');
 global.document={createElement:()=>({getContext:()=>({})})};
 (async()=>{
- const {ChaseEvents,clearLanding,racePace}=await import('../js/arena/chase-events.js?v=8.4');
- const {state}=await import('../js/arena/state.js?v=8.4');
- const {audio,fx}=await import('../js/arena/core.js?v=8.4');audio.enabled=false;
- const {buildCourse,raceWorldHeight,startColumns}=await import('../js/arena/courses.js?v=8.4');
- const {makePhysicsBall,updateBall}=await import('../js/arena/physics.js?v=8.4');
- const {updateRace}=await import('../js/arena/engines/race.js?v=8.4');
- const {makeRand}=await import('../js/arena/util.js?v=8.4');
+ const {ChaseEvents,clearLanding,racePace}=await import('../js/arena/chase-events.js?v=8.5');
+ const {state}=await import('../js/arena/state.js?v=8.5');
+ const {audio,fx}=await import('../js/arena/core.js?v=8.5');audio.enabled=false;
+ const {buildCourse,raceWorldHeight,startColumns}=await import('../js/arena/courses.js?v=8.5');
+ const {makePhysicsBall,updateBall}=await import('../js/arena/physics.js?v=8.5');
+ const {updateRace}=await import('../js/arena/engines/race.js?v=8.5');
+ const {makeRand}=await import('../js/arena/util.js?v=8.5');
  const fixture=()=>({W:600,H:700,worldH:4000,cameraY:1700,zoom:1,zoomFocusX:300,engine:'race',ending:false,results:[],raceElapsed:12,
   pegs:[],bumpers:[],wheels:[],rotors:[],rails:[],gates:[],balls:Array.from({length:10},(_,i)=>({num:i+1,x:70+i%5*100,y:2200-i*160,r:12,vx:0,vy:120,active:true,motionAt:500}))});
  let s=fixture(), c=new ChaseEvents();assert.ok(c.maybeStart(s));assert.equal(s.chase.type,'mid');assert.equal(s.chase.plans.length,5);
@@ -67,20 +67,22 @@ global.document={createElement:()=>({getContext:()=>({})})};
    state.worldH=raceWorldHeight();buildCourse();fx.reset();const chase=new ChaseEvents();chase.reset(state);
    const cols=startColumns(),gap=width*.72/(cols-1),r=width<520?12:16;
    state.balls=Array.from({length:30},(_,i)=>{const b=makePhysicsBall(i+1,width*.14+i%cols*gap,52+Math.floor(i/cols)*38,r,i,1);b.vx=(Math.random()-.5)*155+(width/2-b.x)*.39;b.vy=55+Math.random()*71;return b;});
-   let wall=0,acc=0,events=0,slow=0,finalLast=null,finalLeader=null;
+   let wall=0,acc=0,events=0,slow=0,finalLast=null,finalLeader=null,gateFirst=null;
    for(let frame=0;frame<60*55&&!state.ending;frame++){
     wall+=1/60;fx.update(1/60);
+    if(gateFirst===null){const first=state.balls.filter(b=>b.active&&b.y>=state.finalGate.startY).sort((a,b)=>b.y-a.y)[0];if(first)gateFirst=first.num;}
     if(chase.maybeStart(state)){events++;acc=0;if(state.chase.type==='final'){finalLast=state.chase.plans[0].num;finalLeader=state.chase.leaderNum;}}
     if(state.chase){const event=chase.step(state,1/60);if(event?.ended&&event.type==='final')slow=wall+.8;continue;}
     state.raceElapsed+=1/60;const scale=wall<slow?.42:1;acc+=1/60*racePace(state)*scale;
     let loops=0;while(acc>=1/120&&loops++<48){if(chase.maybeStart(state)){events++;acc=0;if(state.chase.type==='final'){finalLast=state.chase.plans[0].num;finalLeader=state.chase.leaderNum;}break;}updateRace(wall*1000+1,1/120);acc-=1/120;}
    }
-   const total=wall+2.44+5.4;const result={width,style,course,enabled,count,seed,seconds:+total.toFixed(2),finished:state.results.length,events,winner:state.results[0],finalLast,finalLeader};samples.push(result);console.log('ROUND',JSON.stringify(result));
+   const total=wall+2.44+5.4;const result={width,style,course,enabled,count,seed,seconds:+total.toFixed(2),finished:state.results.length,events,winner:state.results[0],finalLast,finalLeader,gateFirst,warps:state.balls.reduce((n,b)=>n+(b.warpCount||0),0)};samples.push(result);console.log('ROUND',JSON.stringify(result));
    assert.equal(state.results.length,count,'Round must finish its requested count');assert.ok(total<60,`Round budget: ${JSON.stringify(result)}`);assert.equal(events,enabled?2:0);
   }
  }finally{Math.random=old;}
  const finals=samples.filter(r=>r.enabled&&r.count===1),lastWins=finals.filter(r=>r.winner===r.finalLast).length;
  assert.ok(lastWins>0,'Natural course samples must include a real last-place victory');assert.ok(lastWins<finals.length,'Booster must not guarantee a last-place win');
- console.log(`COMEBACK last-place wins ${lastWins}/${finals.length}`);
+ const gateLosses=samples.filter(r=>r.count===1&&r.gateFirst!==null&&r.winner!==r.gateFirst).length;assert.ok(gateLosses>0,'The final gate must allow its first entrant to lose');
+ console.log(`COMEBACK last-place wins ${lastWins}/${finals.length}; gate first-entrant losses ${gateLosses}`);
  console.log(`PASS ${samples.length} complete round budgets including countdown and result/replay allowance`);
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,13 +1,15 @@
+import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.5';
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js?v=8.4";
-import { state } from "./state.js?v=8.4";
-import { PAL, TEAM_COLORS } from "./palette.js?v=8.4";
+import { clamp, makeRand } from "./util.js?v=8.5";
+import { state } from "./state.js?v=8.5";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.5";
 
-export function raceWorldHeight() {
+export function raceMainHeight() {
   if (state.course === 'factory') return state.style === 'tension' ? 3600 : 2600;
   if (state.course === 'split') return state.style === 'tension' ? 5600 : 4000;
   return state.style === 'tension' ? 6500 : 4500;
 }
+export function raceWorldHeight() { return raceMainHeight()+FINAL_GATE_HEIGHT; }
 export function startColumns() { return Math.max(3, Math.min(10, Math.floor((state.W * .72) / 36))); }
 export function startDepth() { return Math.max(260, Math.ceil((state.raceCount || 30) / startColumns()) * 38 + 100); }
 export function teamWorldHeight() { return Math.max(state.H * 3.9, 2750); }
@@ -17,12 +19,15 @@ export function finishGeometry() {
 }
 
 function clearCourse() {
-  state.pegs = []; state.bumpers = []; state.rotors = []; state.wheels = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = [];
+  state.pegs = []; state.bumpers = []; state.rotors = []; state.wheels = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = []; state.finalGate=null; state.warpEvent=null;
 }
 export function buildCourse() {
   const rand = makeRand(state.courseSeed), W = state.W, worldH = state.worldH || state.H;
   clearCourse();
-  buildArenaCourse(rand, W, worldH);
+  buildArenaCourse(rand, W, worldH-FINAL_GATE_HEIGHT);
+  state.finalGate=buildFinalGate(W,worldH-FINAL_GATE_HEIGHT,rand);
+  state.rails.push(...state.finalGate.rails);state.wheels.push(...state.finalGate.wheels);
+  state.sections.push({y:state.finalGate.startY-60,label:'마지막 관문 · 5개 입구'}, {y:state.finalGate.startY+680,label:'갈림길 · A 1→5 / B 5→2'}, {y:state.finalGate.endY-50,label:'최종 합류 · 결승'});
   if (state.comeback === "boost") addBoosters(W, worldH);
   buildFinishFunnel(W, worldH);
 }
@@ -66,13 +71,13 @@ export function addBoosters(W, worldH) {
 }
 // Length creates additional obstacle rooms, rather than stretching a few objects apart.
 function buildArenaCourse(rand, W, worldH) {
-  const start = startDepth() + 60, end = finishGeometry().topY - 200;
+  const start = startDepth() + 60, end = worldH - 445;
   const names = { factory: '범퍼 공장', split: '갈림길 정원', tower: '회전 타워' };
   state.sections = [{ y: start - 35, label: names[state.course] || names.factory }];
   if (state.course === 'tower') buildWheelTower(rand, W, start, end);
   else if (state.course === 'split') buildSplitGarden(rand, W, start, end);
   else buildBumperFactory(rand, W, start, end);
-  state.sections.push({ y: end + 100, label: '마지막 합류 · 결승 진입' });
+  state.sections.push({ y: end + 100, label: '마지막 관문 진입 준비' });
 }
 
 function buildWheelTower(rand, W, start, end) {

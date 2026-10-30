@@ -1,6 +1,6 @@
 // 결과 보드(DOM), 결과 복사, PNG 저장
-import { state, VERSION, shortName } from "./state.js?v=8.4";
-import { roundRect, dateStamp } from "./util.js?v=8.4";
+import { state, VERSION, shortName } from "./state.js?v=8.5";
+import { roundRect, dateStamp } from "./util.js?v=8.5";
 
 let els = null, actions = null;
 export function initResults(elements, handlers) { els = elements; actions = handlers; }

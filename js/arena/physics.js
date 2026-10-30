@@ -1,10 +1,11 @@
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.4';
+import { updateFinalGate } from './final-gate.js?v=8.5';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.5';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.4";
-import { state } from "./state.js?v=8.4";
-import { fx, audio } from "./core.js?v=8.4";
-import { BALL_PALETTES } from "./palette.js?v=8.4";
-import { finishGeometry } from "./courses.js?v=8.4";
+import { clamp } from "./util.js?v=8.5";
+import { state } from "./state.js?v=8.5";
+import { fx, audio } from "./core.js?v=8.5";
+import { BALL_PALETTES } from "./palette.js?v=8.5";
+import { finishGeometry } from "./courses.js?v=8.5";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {
@@ -15,7 +16,7 @@ export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
 }
 
 export function updateBall(b, now, dt, teamMode = false) {
-  const prevY = b.y, f = finishGeometry();
+  const prevY = b.y, previous={x:b.x,y:b.y}, f = finishGeometry();
   const boostEnabled=b.chaseBoostKind==='mid'?state.boostMidEnabled!==false:state.boostFinalEnabled!==false;
   const boosting=!teamMode && boostEnabled && (b.chaseBoostLeft||0)>0;
   if(boosting){
@@ -26,7 +27,7 @@ export function updateBall(b, now, dt, teamMode = false) {
   b.vx *= Math.pow(0.9982, dt * 60); b.vy *= Math.pow(0.999, dt * 60);
   b.glow = Math.max(0, b.glow - dt * 0.7);
   b.squash = Math.max(0, b.squash - dt * 6);
-  b.vx = clamp(b.vx, -465, 465); b.vy = clamp(b.vy, -340, boosting ? (b.chaseBoostKind==='final'?720:610) : teamMode ? 460 : state.style === "quick" ? 437 : 398);
+  b.vx = clamp(b.vx, -465, 465); b.vy = clamp(b.vy, -340, boosting ? (b.chaseBoostKind==='final'?(state.finalGate?560:720):610) : teamMode ? 460 : state.style === "quick" ? 437 : 398);
   b.x += b.vx * dt; b.y += b.vy * dt;
   const wall = 20 + b.r;
   if (b.x < wall) { b.x = wall; b.vx = Math.abs(b.vx) * 0.76 + 22; hitSquash(b, 0.4, 0); }
@@ -71,6 +72,8 @@ export function updateBall(b, now, dt, teamMode = false) {
     handleStuck(b, now);
     return null;
   }
+  state.physicsNow=now;
+  if(updateFinalGate(state,b,previous,dt)) {audio.sfx("booster");fx.ring(b.x,b.y,b.warpColor,75,.55,2);return null;}
   if (isGoalCrossing(b, prevY)) return "goal";
   const insideMouth = Math.abs(b.x - f.center) <= Math.max(10, f.half - b.r - 6);
   if (!insideMouth && b.y > f.gateY - b.r) { b.y = f.gateY - b.r; b.vy = -Math.abs(b.vy) * 0.42 - 38; b.vx += (f.center - b.x) * 0.12; }

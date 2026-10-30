@@ -1,11 +1,11 @@
-import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.4';
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.5';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.4";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.4";
-import { pix, fx } from "./core.js?v=8.4";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.4";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.4";
-import { secureShuffle } from "./util.js?v=8.4";
+import { clamp, makeRand, lerp } from "./util.js?v=8.5";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.5";
+import { pix, fx } from "./core.js?v=8.5";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.5";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.5";
+import { secureShuffle } from "./util.js?v=8.5";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -109,6 +109,37 @@ function thickLine(x1, y1, x2, y2, w, colors) {
   pix.line(x1, y1, x2, y2, colors.core, t);
   pix.line(x1, y1 - ((t >> 1) + 0), x2, y2 - ((t >> 1) + 0), colors.glow, 1);
 }
+function drawFinalGateWorld(){
+  const g=state.finalGate;if(!g)return;
+  const [top,bottom]=visibleRange(),u=unit();
+  for(const lane of g.lanes){
+    if(g.startY<top-40||g.startY>bottom+40)continue;
+    const x=mapX(lane.x),y=mapY(g.startY),half=Math.round(lane.half*u);
+    pix.rect(x-half,y-5,half*2,10,PAL.ink);pix.line(x-half,y-6,x+half,y-6,PAL.gold1,2);pix.line(x-half,y+6,x+half,y+6,PAL.gold1,2);
+  }
+  for(const p of g.portals)for(const [point,entry] of [[p.entry,true],[p.exit,false]]){
+    if(point.y<top-50||point.y>bottom+50)continue;
+    const x=mapX(point.x),y=mapY(point.y),half=Math.max(8,Math.round((entry?p.entry.half:24)*u));
+    pix.rect(x-half,y-5,half*2,10,PAL.ink);pix.line(x-half,y-6,x+half,y-6,p.color,2);pix.line(x-half,y+6,x+half,y+6,p.color,2);
+    for(let i=0;i<3;i++)pix.line(x-3+i,y-2+i,x+3-i,y-2+i,p.color,1);
+  }
+  const e=state.warpEvent;if(e){
+    pix.dashedLine(mapX(e.entry.x),mapY(e.entry.y),mapX(e.exit.x),mapY(e.exit.y),e.color,3,5);
+    pix.ring(mapX(e.exit.x),mapY(e.exit.y),Math.round((24+e.age*35)*u),e.color);
+  }
+}
+function drawFinalGateLabels(){
+  const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange();
+  if(g.startY>top-40&&g.startY<bottom+40)for(const lane of g.lanes)text(String(lane.num),hudX(lane.x),hudY(g.startY)-19,{size:15,color:PAL.gold2});
+  for(const p of g.portals)for(const [point,label] of [[p.entry,`${p.id} ${p.from}→${p.to}`],[p.exit,`${p.id} 출구`]]){
+    if(point.y<top||point.y>bottom)continue;
+    text(label,hudX(point.x),hudY(point.y)-21,{size:state.W<520?11:13,color:p.color});
+  }
+  const e=state.warpEvent;if(e&&!state.chase){
+    panel(state.W/2-105,state.H-92,210,32,{edge:e.color});
+    text(`${e.num}번 · 워프 ${e.id} ${e.from}→${e.to}`,state.W/2,state.H-75,{size:13,color:e.color});
+  }
+}
 function drawCourse() {
   const [top, bottom] = visibleRange(), u = unit();
   // 벽
@@ -182,6 +213,7 @@ function drawCourse() {
     seg2(-0.5, -0.17, r.hit > 0 ? PAL.cyan3 : PAL.cyan2); seg2(-0.17, 0.17, PAL.steel3); seg2(0.17, 0.5, r.hit > 0 ? PAL.pink2 : PAL.pink1);
     pix.disc(cx, cy, Math.max(2, t), PAL.ink); pix.disc(cx, cy, Math.max(1, t - 1), PAL.violet1); pix.px(cx - 1, cy - 1, PAL.violet2);
   }
+  drawFinalGateWorld();
   if (state.engine === "teams" || (!state.running && state.mode === "teams")) drawTeamBins(); else drawFinish();
 }
 function drawFinish() {
@@ -266,6 +298,7 @@ export function drawScene() {
   hud.clearRect(0, 0, state.W, state.H);
   for (const [b, x, y, rr] of labels) drawBallLabel(b, x, y, rr);
   drawSectionLabels();
+  drawFinalGateLabels();
   drawLetterbox();
   if (replay) { drawReplayTag(now); drawFloaters(); return; }
   if (state.engine === "teams") drawTeamHud(); else drawRaceHud();
@@ -413,6 +446,7 @@ export function drawIdle() {
   hud.clearRect(0, 0, state.W, state.H);
   for (const [b, x, y, rr] of labels) drawBallLabel(b, x, y, rr);
   drawSectionLabels();
+  drawFinalGateLabels();
   text(MODE_INFO[state.mode].name, state.W / 2, state.H * 0.44, { size: clamp(Math.round(state.W * 0.04), 24, 40), color: "#fff", outlineWidth: 5 });
   const sub = state.mode === "teams" ? "참가 번호를 팀별로 고르게 나눕니다" : state.mode === "order" ? "모든 번호의 발표 순서를 한 번에 정합니다" : "번호 공이 출발할 준비를 하고 있습니다";
   text(sub, state.W / 2, state.H * 0.44 + 34, { size: 14, color: PAL.steel3 });

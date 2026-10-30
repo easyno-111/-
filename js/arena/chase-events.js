@@ -1,30 +1,7 @@
-import { clamp } from './util.js?v=8.4';
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.4';
+import { clamp } from './util.js?v=8.5';
+import { clearLanding } from './landing.js?v=8.5';
+export { clearLanding } from './landing.js?v=8.5';
 
-function segmentBlocks(x, y, r, segment) {
-  const p = closestOnSegment(x, y, segment);
-  return Math.hypot(x - p.x, y - p.y) < r + (segment.w || 8) / 2 + 4;
-}
-export function clearLanding(s, ball, x, y, reserved = []) {
-  const r = ball.r;
-  if (x < 20 + r + 4 || x > s.W - 20 - r - 4 || y < 28 || y > s.worldH - 124) return false;
-  for (const c of [...s.pegs, ...s.bumpers]) if (Math.hypot(x-c.x,y-c.y) < r+c.r+4) return false;
-  for (const w of s.wheels) {
-    if (Math.abs(y-w.y) > w.r+r+8) continue;
-    if (Math.hypot(x-w.x,y-w.y) < wheelHubRadius(w)+r+4) return false;
-    if (wheelSegments(w).some(seg => segmentBlocks(x,y,r,seg))) return false;
-  }
-  for (const rotor of s.rotors) {
-    const dx=Math.cos(rotor.angle)*rotor.len/2,dy=Math.sin(rotor.angle)*rotor.len/2;
-    if(segmentBlocks(x,y,r,{x1:rotor.x-dx,y1:rotor.y-dy,x2:rotor.x+dx,y2:rotor.y+dy,w:12}))return false;
-  }
-  for(const rail of s.rails) if(segmentBlocks(x,y,r,rail))return false;
-  for(const g of s.gates) {
-    if(segmentBlocks(x,y,r,{x1:20,y1:g.y,x2:g.gapX-g.gapW/2,y2:g.y,w:8}) || segmentBlocks(x,y,r,{x1:g.gapX+g.gapW/2,y1:g.y,x2:s.W-20,y2:g.y,w:8}))return false;
-  }
-  for(const b of s.balls) if(b.active && b!==ball && Math.hypot(x-b.x,y-b.y)<r+b.r+5)return false;
-  return !reserved.some(p=>Math.hypot(x-p.x,y-p.y)<r+p.r+5);
-}
 function landing(s, ball, nominal, maxY, reserved) {
   if(maxY<=ball.y+8)return{x:ball.x,y:ball.y};
   // Preserve the lane: never trade a blocked landing for a better horizontal route.
@@ -41,10 +18,11 @@ export class ChaseEvents {
     if(this.event || s.ending || s.results.length || s.engine!=='race')return false;
     const ranked=s.balls.filter(b=>b.active).sort((a,b)=>b.y-a.y||a.num-b.num);
     if(ranked.length<2)return false;
-    const leader=ranked[0], goal=s.worldH-54;
+    const leader=ranked[0], goal=s.worldH-54, gate=s.finalGate;
+    const midGoal=gate?gate.mainHeight-54:goal,finalStart=gate?gate.startY-60:goal-420;
     let type=null;
-    if(!this.midDone && s.boostMidEnabled!==false && leader.y>=goal*.48)type='mid';
-    else if(!this.finalDone && s.boostFinalEnabled!==false && leader.y>=goal-420 && leader.vy>0)type='final';
+    if(!this.midDone && s.boostMidEnabled!==false && leader.y>=midGoal*.48)type='mid';
+    else if(!this.finalDone && s.boostFinalEnabled!==false && leader.y>=finalStart && leader.vy>0)type='final';
     if(!type)return false;
     if(type==='mid')this.midDone=true;else this.finalDone=true;
     const selected=type==='mid'?ranked.slice(-Math.floor(ranked.length/2)):[ranked[ranked.length-1]];
@@ -53,7 +31,7 @@ export class ChaseEvents {
       // Recover most of the gap to the leader, then earn overtakes in live physics.
       const gap=Math.max(0,leader.y-ball.y),fraction=type==='mid'?.75:.90;
       const guard=type==='mid'?110+index*(ball.r*2+10):140;
-      const maxY=Math.min(leader.y-guard,goal-240);
+      const maxY=Math.min(leader.y-guard,type==='final'&&gate?gate.startY-80:goal-240);
       const nominal=Math.min(maxY,ball.y+gap*fraction);
       const to=landing(s,ball,nominal,maxY,reserved);reserved.push({...to,r:ball.r});
       plans.push({ball,num:ball.num,targetNum:leader.num,targetY:leader.y,fraction,from:{x:ball.x,y:ball.y},to,vx:ball.vx,vy:ball.vy});
@@ -92,7 +70,7 @@ export class ChaseEvents {
     if(a>=total){
       // Stuck detection and temporary collision timers pause with the race too.
       for(const b of s.balls)for(const key of ['motionAt','lastProgressAt','lastSafeAt','lastBoostAt','ghostUntil','shrinkUntil'])if(Number.isFinite(b[key])&&b[key])b[key]+=e.age*1000;
-      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=clamp(Math.max(p.vy,e.type==='mid'?250:300),0,437);p.ball.chaseBoostLeft=e.type==='mid'?1.6:1.4;p.ball.chaseBoostKind=e.type;p.ball.boostFlame=1;p.ball.boostDx=0;p.ball.boostDy=1;}
+      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=clamp(Math.max(p.vy,e.type==='mid'?250:300),0,437);p.ball.chaseBoostLeft=e.type==='mid'?1.6:(s.finalGate ? .9 : 1.4);p.ball.chaseBoostKind=e.type;p.ball.boostFlame=1;p.ball.boostDx=0;p.ball.boostDy=1;}
       this.event=null;s.chase=null;return{ended:true,type:e.type};
     }
     return{ended:false,phase:e.phase,type:e.type};
@@ -101,7 +79,7 @@ export class ChaseEvents {
 // Global pace only changes how much real physics runs; it does not pick winners.
 export function racePace(s) {
   const active=s.balls.filter(b=>b.active),leader=active.reduce((n,b)=>Math.max(n,b.y),0);
-  const progress=clamp(leader/(s.worldH-54),.03,1),target=s.style==='tension'?25:19;
+  const progress=clamp(leader/((s.finalGate?.mainHeight||s.worldH)-54),.03,1),target=s.style==='tension'?25:19;
   const scheduled=clamp((s.raceElapsed||0)/target,0,1);
   let pace=clamp((scheduled+.18)/(progress+.18),.6,3.4);
   if(s.results.length)pace=Math.max(1.15,pace);

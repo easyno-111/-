@@ -1,10 +1,10 @@
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.2';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.3';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.2";
-import { state } from "./state.js?v=8.2";
-import { fx, audio } from "./core.js?v=8.2";
-import { BALL_PALETTES } from "./palette.js?v=8.2";
-import { finishGeometry } from "./courses.js?v=8.2";
+import { clamp } from "./util.js?v=8.3";
+import { state } from "./state.js?v=8.3";
+import { fx, audio } from "./core.js?v=8.3";
+import { BALL_PALETTES } from "./palette.js?v=8.3";
+import { finishGeometry } from "./courses.js?v=8.3";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {

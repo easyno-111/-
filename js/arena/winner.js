@@ -1,8 +1,8 @@
 // 1등 발표 화면: 무대 위에 도트 전광판처럼 당첨 번호를 한 줄씩 켜서 보여준다.
-import { clamp } from "./util.js?v=8.2";
-import { state } from "./state.js?v=8.2";
-import { fx, audio } from "./core.js?v=8.2";
-import { drawWinnerScreen } from "./render.js?v=8.2";
+import { clamp } from "./util.js?v=8.3";
+import { state } from "./state.js?v=8.3";
+import { fx, audio } from "./core.js?v=8.3";
+import { drawWinnerScreen } from "./render.js?v=8.3";
 
 const DURATION = 2.2;
 

@@ -1,5 +1,5 @@
-import { clamp } from './util.js?v=8.2';
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.2';
+import { clamp } from './util.js?v=8.3';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.3';
 
 function segmentBlocks(x, y, r, segment) {
   const p = closestOnSegment(x, y, segment);
@@ -27,12 +27,10 @@ export function clearLanding(s, ball, x, y, reserved = []) {
 }
 function landing(s, ball, nominal, maxY, reserved) {
   if(maxY<=ball.y+8)return{x:ball.x,y:ball.y};
-  const step=ball.r*2+12, xs=[];
-  for(let x=24+ball.r;x<=s.W-24-ball.r;x+=step)xs.push(x);
-  xs.push(s.W/2,ball.x);xs.sort((a,b)=>Math.abs(a-ball.x)-Math.abs(b-ball.x));
-  // Search upstream from the desired progress, always behind the frozen leader.
+  // Preserve the lane: never trade a blocked landing for a better horizontal route.
+  const step=ball.r+4;
   for(let y=Math.min(maxY,Math.max(ball.y,nominal));y>=ball.y+4;y-=step) {
-    for(const x of xs)if(clearLanding(s,ball,x,y,reserved))return{x,y};
+    if(clearLanding(s,ball,ball.x,y,reserved))return{x:ball.x,y};
   }
   return{x:ball.x,y:ball.y};
 }
@@ -51,11 +49,16 @@ export class ChaseEvents {
     if(type==='mid')this.midDone=true;else this.finalDone=true;
     const selected=type==='mid'?ranked.slice(-Math.floor(ranked.length/2)):[ranked[ranked.length-1]];
     const reserved=[],plans=[];
-    selected.forEach((ball,index)=>{
-      const guard=leader.r+ball.r+(type==='mid'?85:22),maxY=Math.min(leader.y-guard,goal-70);
-      const nominal=type==='mid'?maxY-index*(ball.r*2+14):maxY;
+    selected.forEach(ball=>{
+      // Snapshot the immediate predecessor, even if it is also being boosted.
+      // This closes part of one gap instead of lifting the whole pack to the leader.
+      const ahead=ranked[ranked.indexOf(ball)-1];
+      const fraction=type==='mid'?.45:ranked.length===2?.25:.40;
+      const gap=Math.max(0,ahead.y-ball.y);
+      const maxY=Math.min(ahead.y-ahead.r-ball.r-12,leader.y-leader.r-ball.r-22,goal-70);
+      const nominal=Math.min(maxY,ball.y+gap*fraction);
       const to=landing(s,ball,nominal,maxY,reserved);reserved.push({...to,r:ball.r});
-      plans.push({ball,num:ball.num,from:{x:ball.x,y:ball.y},to,vx:ball.vx,vy:ball.vy});
+      plans.push({ball,num:ball.num,targetNum:ahead.num,targetY:ahead.y,fraction,from:{x:ball.x,y:ball.y},to,vx:ball.vx,vy:ball.vy});
     });
     this.event={type,phase:'freeze',age:0,plans,leaderNum:leader.num,leaderY:leader.y,
       startCamera:s.cameraY,startZoom:s.zoom,startFocus:s.zoomFocusX,cancelled:false};
@@ -72,7 +75,9 @@ export class ChaseEvents {
       p.ball.x=p.from.x+(p.to.x-p.from.x)*ease;p.ball.y=p.from.y+(p.to.y-p.from.y)*ease;
       p.ball.boostFlame=a>=panEnd?1:0;p.ball.boostDx=p.to.x-p.from.x;p.ball.boostDy=Math.max(1,p.to.y-p.from.y);
     }
-    const points=e.plans.map(p=>p.ball),ys=points.map(b=>b.y);
+    const points=e.plans.map(p=>p.ball);
+    if(e.type==='final'){const ahead=s.balls.find(b=>b.num===e.plans[0].targetNum);if(ahead)points.push(ahead);}
+    const ys=points.map(b=>b.y);
     const middle=ys.reduce((a,b)=>a+b,0)/ys.length;
     const leader=s.balls.find(b=>b.num===e.leaderNum);
     const returnMix=clamp((a-launchEnd)/(total-launchEnd),0,1);
@@ -88,7 +93,7 @@ export class ChaseEvents {
     if(a>=total){
       // Stuck detection and temporary collision timers pause with the race too.
       for(const b of s.balls)for(const key of ['motionAt','lastProgressAt','lastSafeAt','lastBoostAt','ghostUntil','shrinkUntil'])if(Number.isFinite(b[key])&&b[key])b[key]+=e.age*1000;
-      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=Math.max(p.vy,180);}
+      for(const p of e.plans){p.ball.x=p.to.x;p.ball.y=p.to.y;p.ball.vx=clamp(p.vx,-80,80);p.ball.vy=clamp(p.vy,-120,120);p.ball.boostFlame=0;}
       this.event=null;s.chase=null;return{ended:true,type:e.type};
     }
     return{ended:false,phase:e.phase,type:e.type};

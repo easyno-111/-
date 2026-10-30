@@ -1,26 +1,32 @@
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.3';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.4';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.3";
-import { state } from "./state.js?v=8.3";
-import { fx, audio } from "./core.js?v=8.3";
-import { BALL_PALETTES } from "./palette.js?v=8.3";
-import { finishGeometry } from "./courses.js?v=8.3";
+import { clamp } from "./util.js?v=8.4";
+import { state } from "./state.js?v=8.4";
+import { fx, audio } from "./core.js?v=8.4";
+import { BALL_PALETTES } from "./palette.js?v=8.4";
+import { finishGeometry } from "./courses.js?v=8.4";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {
     num, x, y, vx: 0, vy: 0, r, baseR: r, color: BALL_PALETTES[i % BALL_PALETTES.length], active: true, finished: false,
     lastProgress: y, lastProgressAt: now, lastBoostAt: -9999, glow: 0, chaseGlow: 0, motionX: x, motionY: y, motionAt: now,
-    lastSafeX: x, lastSafeY: y, lastSafeAt: now, rescueStage: 0, ghostUntil: 0, shrinkUntil: 0, rescueGlow: 0, trail: [], squash: 0, squashAngle: 0
+    lastSafeX: x, lastSafeY: y, lastSafeAt: now, rescueStage: 0, ghostUntil: 0, shrinkUntil: 0, rescueGlow: 0, trail: [], squash: 0, squashAngle: 0, chaseBoostLeft: 0, chaseBoostKind: null
   };
 }
 
 export function updateBall(b, now, dt, teamMode = false) {
   const prevY = b.y, f = finishGeometry();
+  const boostEnabled=b.chaseBoostKind==='mid'?state.boostMidEnabled!==false:state.boostFinalEnabled!==false;
+  const boosting=!teamMode && boostEnabled && (b.chaseBoostLeft||0)>0;
+  if(boosting){
+    b.chaseBoostLeft=Math.max(0,b.chaseBoostLeft-dt);
+    b.vy+=1000*dt;b.boostFlame=Math.min(1,b.chaseBoostLeft/.2);b.boostDx=0;b.boostDy=1;
+  } else if(b.chaseBoostLeft){b.chaseBoostLeft=0;b.boostFlame=0;}
   b.vy += (teamMode ? 294 : state.style === "quick" ? 277 : 254) * dt;
   b.vx *= Math.pow(0.9982, dt * 60); b.vy *= Math.pow(0.999, dt * 60);
   b.glow = Math.max(0, b.glow - dt * 0.7);
   b.squash = Math.max(0, b.squash - dt * 6);
-  b.vx = clamp(b.vx, -465, 465); b.vy = clamp(b.vy, -340, teamMode ? 460 : state.style === "quick" ? 437 : 398);
+  b.vx = clamp(b.vx, -465, 465); b.vy = clamp(b.vy, -340, boosting ? (b.chaseBoostKind==='final'?720:610) : teamMode ? 460 : state.style === "quick" ? 437 : 398);
   b.x += b.vx * dt; b.y += b.vy * dt;
   const wall = 20 + b.r;
   if (b.x < wall) { b.x = wall; b.vx = Math.abs(b.vx) * 0.76 + 22; hitSquash(b, 0.4, 0); }

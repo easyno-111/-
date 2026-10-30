@@ -2,12 +2,12 @@
 const assert = require('node:assert/strict');
 global.document = { createElement: () => ({ getContext: () => ({}) }) };
 (async () => {
- const { state } = await import('../js/arena/state.js?v=8.2');
- const { audio, fx } = await import('../js/arena/core.js?v=8.2'); audio.enabled = false;
- const { buildCourse, raceWorldHeight, startColumns } = await import('../js/arena/courses.js?v=8.2');
- const { makePhysicsBall, collideWheel } = await import('../js/arena/physics.js?v=8.2');
- const { updateRace } = await import('../js/arena/engines/race.js?v=8.2');
- const { makeRand } = await import('../js/arena/util.js?v=8.2');
+ const { state } = await import('../js/arena/state.js?v=8.3');
+ const { audio, fx } = await import('../js/arena/core.js?v=8.3'); audio.enabled = false;
+ const { buildCourse, raceWorldHeight, startColumns } = await import('../js/arena/courses.js?v=8.3');
+ const { makePhysicsBall, collideWheel } = await import('../js/arena/physics.js?v=8.3');
+ const { updateRace } = await import('../js/arena/engines/race.js?v=8.3');
+ const { makeRand } = await import('../js/arena/util.js?v=8.3');
  const originalRandom = Math.random;
  const samples=[];
  function build(width,style,course,seed=17) {

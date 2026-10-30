@@ -1,14 +1,14 @@
-import { ChaseEvents, racePace } from '../chase-events.js?v=8.2';
+import { ChaseEvents, racePace } from '../chase-events.js?v=8.3';
 // 핀볼 물리 레이스 엔진: 시네마틱 카메라, 사진 판정, 히트스톱, 리플레이
-import { clamp, secureShuffle } from "../util.js?v=8.2";
-import { state, displayName } from "../state.js?v=8.2";
-import { fx, audio, host } from "../core.js?v=8.2";
-import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.2";
-import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.2";
-import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.2";
-import { winnerSequence } from "../winner.js?v=8.2";
+import { clamp, secureShuffle } from "../util.js?v=8.3";
+import { state, displayName } from "../state.js?v=8.3";
+import { fx, audio, host } from "../core.js?v=8.3";
+import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.3";
+import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.3";
+import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.3";
+import { winnerSequence } from "../winner.js?v=8.3";
 
-import { RaceHighlights } from "../highlights.js?v=8.2";
+import { RaceHighlights } from "../highlights.js?v=8.3";
 const highlights = new RaceHighlights();
 const chase = new ChaseEvents();
 

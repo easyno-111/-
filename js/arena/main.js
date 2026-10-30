@@ -1,14 +1,14 @@
 // 랜덤 아레나 V7 진입점: DOM 연결, 참가자/설정, 프리셋, 엑셀 명단, 실행 흐름
-import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.2";
-import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.2";
-import { fx, audio, host } from "./core.js?v=8.2";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.2";
-import { runRaceMode } from "./engines/race.js?v=8.2";
-import { runTeamMode } from "./engines/teams.js?v=8.2";
-import { runListMode, revealAllOrder } from "./engines/order.js?v=8.2";
-import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.2";
-import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.2";
-import { parseRosterFile } from "./roster.js?v=8.2";
+import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.3";
+import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.3";
+import { fx, audio, host } from "./core.js?v=8.3";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.3";
+import { runRaceMode } from "./engines/race.js?v=8.3";
+import { runTeamMode } from "./engines/teams.js?v=8.3";
+import { runListMode, revealAllOrder } from "./engines/order.js?v=8.3";
+import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.3";
+import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.3";
+import { parseRosterFile } from "./roster.js?v=8.3";
 
 const $ = (id) => document.getElementById(id);
 const els = {};
@@ -383,7 +383,7 @@ async function init() {
   initResults({ resultBoard: els.resultBoard, stageLabel: els.stageLabel, closeResultBtn: els.closeResultBtn }, { again: startDraw, notify });
   Object.assign(host, {
     setStatus, setStageLabel, renderLiveRanks,
-    chaseNotice(event) { const phase = { freeze:'시간 정지', pan:'카메라 이동', charge:'점화', boost:'발진', return:'경기 재개' }[event.phase]; extra.raceNotice.textContent = event.type === 'mid' ? `하위 ${event.plans.length}명 추격 부스터 · ${phase}` : `꼴등 ${event.plans[0].num}번 부스터 · ${phase}`; },
+    chaseNotice(event) { const phase = { freeze:'시간 정지', pan:'카메라 이동', charge:'점화', boost:'발진', return:'경기 재개' }[event.phase]; extra.raceNotice.textContent = event.type === 'mid' ? `하위 ${event.plans.length}명 추격 부스터 · ${phase}` : `꼴찌 탈출 · ${event.plans[0].num}번이 ${event.plans[0].targetNum}번 추격 · ${phase}`; },
     raceNotice(event) { extra.raceNotice.textContent = event.type === 'lead' ? `선두 교체 · ${displayName(event.previous)} → ${displayName(event.num)}` : `${displayName(event.num)} · ${event.gain}계단 상승! ${event.from}위 → ${event.to}위`; }, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
     showRaceResults, showTeamResults, showOrderResults, afterRun, notify, celebrate, countdown
   });

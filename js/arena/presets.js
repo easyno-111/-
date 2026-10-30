@@ -1,6 +1,6 @@
 // 번호 프리셋 저장소 (localStorage). 기존 V6 프리셋과 호환되며 names(가려진 이름)를 추가로 보관한다.
-import { PRESET_KEY } from "./state.js";
-import { randomInt } from "./util.js";
+import { PRESET_KEY } from "./state.js?v=8.1";
+import { randomInt } from "./util.js?v=8.1";
 
 export function loadPresets() {
   try {
@@ -29,3 +29,4 @@ export function deletePreset(id) {
   persist(loadPresets().filter((p) => p.id !== id));
 }
 export function findPreset(id) { return loadPresets().find((p) => p.id === id) || null; }
+

@@ -1,10 +1,10 @@
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js";
-import { state, MODE_INFO, displayName, shortName } from "./state.js";
-import { pix, fx } from "./core.js";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js";
-import { secureShuffle } from "./util.js";
+import { clamp, makeRand, lerp } from "./util.js?v=8.1";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.1";
+import { pix, fx } from "./core.js?v=8.1";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.1";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.1";
+import { secureShuffle } from "./util.js?v=8.1";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -157,6 +157,26 @@ function drawCourse() {
     const rr = Math.round(b.r * u * (1 + b.pulse * 0.25)), x = mapX(b.x), y = mapY(b.y);
     pix.disc(x, y, rr + 1, PAL.ink); pix.disc(x, y, rr, PAL.green0); pix.disc(x, y - 1, Math.max(1, rr - 2), PAL.green1); pix.ring(x, y, Math.max(1, rr - 1), PAL.green2);
     for (let i = 0; i < 3; i++) { pix.hline(x - 2 + i, x + 2 - i, y - 1 + i, PAL.ink); }
+  }
+  for (const wheel of state.wheels) {
+    if (wheel.y + wheel.r < top || wheel.y - wheel.r > bottom) continue;
+    const x = mapX(wheel.x), y = mapY(wheel.y), r = Math.max(4, Math.round(wheel.r * u));
+    const [light, base, dark] = shades(wheel.color);
+    pix.disc(x, y, r + 2, PAL.ink); pix.disc(x, y, r, dark);
+    pix.ditherDisc(x, y, r - 3, base, 3);
+    pix.ring(x, y, r - 1, wheel.hit > 0 ? PAL.white : light);
+    pix.ring(x, y, Math.max(2, r - 5), base);
+    // Six broad rotating spokes, riveted rim and a solid axle.
+    for (let i = 0; i < 6; i++) {
+      const angle = wheel.angle + i * Math.PI / 3;
+      const ex = Math.round(x + Math.cos(angle) * (r - 7)), ey = Math.round(y + Math.sin(angle) * (r - 7));
+      pix.line(x, y, ex, ey, PAL.ink, Math.max(3, Math.round(13 * u)));
+      pix.line(x, y, ex, ey, i % 2 ? base : light, Math.max(1, Math.round(7 * u)));
+      pix.disc(ex, ey, Math.max(1, Math.round(3 * u)), PAL.steel3);
+    }
+    const hub = Math.max(3, Math.round(18 * u));
+    pix.disc(x, y, hub + 2, PAL.ink); pix.disc(x, y, hub, PAL.steel1);
+    pix.ring(x, y, Math.max(2, hub - 2), PAL.steel3); pix.disc(x, y, Math.max(2, hub / 3 | 0), light);
   }
   for (const r of state.rotors) {
     if (r.y < top - 80 || r.y > bottom + 80) continue;

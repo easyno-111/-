@@ -1,5 +1,5 @@
 // 앱 전역 상태와 모드 정보. 엔진·렌더러·UI가 공유한다.
-export const VERSION = "8.0.0";
+export const VERSION = "8.1.0";
 export const PRESET_KEY = "randomArenaPresetsV6";
 export const LAST_KEY = "randomArenaLastV8";
 
@@ -20,7 +20,7 @@ export const state = {
   results: [], lastResult: null, running: false, ending: false, runToken: 0, engine: "idle", presenting: false,
   // 캔버스/월드
   W: 0, H: 0, dpr: 1, scale: 3, worldH: 0, cameraY: 0, courseSeed: 1,
-  balls: [], pegs: [], bumpers: [], rotors: [], gates: [], boosters: [], rails: [], sections: [],
+  balls: [], pegs: [], bumpers: [], rotors: [], wheels: [], gates: [], boosters: [], rails: [], sections: [],
   // 레이스 연출
   raceStart: 0, lastFrame: 0, endingAt: 0, animationId: 0,
   physicsAccumulator: 0, physicsTimeScale: 1, zoom: 1, zoomTarget: 1, zoomFocusX: 0,

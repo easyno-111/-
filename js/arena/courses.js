@@ -1,9 +1,13 @@
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js";
-import { state } from "./state.js";
-import { PAL, TEAM_COLORS } from "./palette.js";
+import { clamp, makeRand } from "./util.js?v=8.1";
+import { state } from "./state.js?v=8.1";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.1";
 
-export function raceWorldHeight() { return state.style === 'tension' ? 3500 : 2450; }
+export function raceWorldHeight() {
+  // Dense bumper rooms take longer per metre than wheel/garden rooms.
+  if (state.course === 'factory') return state.style === 'tension' ? 20000 : 10000;
+  return state.style === 'tension' ? 30000 : 14000;
+}
 export function startColumns() { return Math.max(3, Math.min(10, Math.floor((state.W * .72) / 36))); }
 export function startDepth() { return Math.max(260, Math.ceil((state.raceCount || 30) / startColumns()) * 38 + 100); }
 export function teamWorldHeight() { return Math.max(state.H * 3.9, 2750); }
@@ -13,7 +17,7 @@ export function finishGeometry() {
 }
 
 function clearCourse() {
-  state.pegs = []; state.bumpers = []; state.rotors = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = [];
+  state.pegs = []; state.bumpers = []; state.rotors = []; state.wheels = []; state.gates = []; state.boosters = []; state.rails = []; state.sections = [];
 }
 export function buildCourse() {
   const rand = makeRand(state.courseSeed), W = state.W, worldH = state.worldH || state.H;
@@ -60,28 +64,86 @@ export function addBoosters(W, worldH) {
     xs.forEach((x, i) => state.boosters.push({ x, y: y + (i % 2) * 58, r: 19, pulse: 0, color: PAL.green1 }));
   });
 }
+// Length creates additional obstacle rooms, rather than stretching a few objects apart.
 function buildArenaCourse(rand, W, worldH) {
-  const start = startDepth(), end = finishGeometry().topY - 150, span = end - start;
-  const at = t => start + span * t;
+  const start = startDepth() + 60, end = finishGeometry().topY - 200;
   const names = { factory: '범퍼 공장', split: '갈림길 정원', tower: '회전 타워' };
-  state.sections = [{ y: start - 30, label: names[state.course] || names.factory }, { y: at(.4), label: '합류 구간' }, { y: at(.76), label: '마지막 역전 구간' }, { y: end + 85, label: '결승 진입' }];
-  addPegBand(rand, W, start, at(.14), 90);
-  if (state.course === 'split') {
-    [.17, .46].forEach((t, i) => addSplitLane(W, at(t), !!i));
-    [.37, .69].forEach((t, i) => addTimedGate(W, at(t), i * 2, i ? -.9 : 1.1));
-    state.bumpers.push(bumper(W * .24, at(.39), 24, PAL.green1), bumper(W * .76, at(.39), 24, PAL.pink1), bumper(W * .5, at(.82), 27, PAL.gold1));
-  } else if (state.course === 'tower') {
-    [.2, .38, .56, .74].forEach((t, i) => {
-      state.rotors.push({ x: W * (i % 2 ? .64 : .36), y: at(t), len: Math.min(140, W * .34), angle: rand() * Math.PI, speed: (i % 2 ? -1 : 1) * 1.6, hit: 0 });
-    });
-    addTimedGate(W, at(.46), .7, 1.15); addTimedGate(W, at(.86), 2.1, -.95);
-  } else {
-    [.24, .44, .64].forEach((t, i) => {
-      state.bumpers.push(bumper(W * .25, at(t), 24, PAL.cyan2), bumper(W * .75, at(t), 24, PAL.pink1), bumper(W * .5, at(t + .075), 27, PAL.gold1));
-    });
-    addSplitLane(W, at(.18)); addTimedGate(W, at(.83), .6, 1.1);
+  state.sections = [{ y: start - 35, label: names[state.course] || names.factory }];
+  if (state.course === 'tower') buildWheelTower(rand, W, start, end);
+  else if (state.course === 'split') buildSplitGarden(rand, W, start, end);
+  else buildBumperFactory(rand, W, start, end);
+  state.sections.push({ y: end + 100, label: '마지막 합류 · 결승 진입' });
+}
+
+function buildWheelTower(rand, W, start, end) {
+  const ballR = W < 520 ? 12 : 16;
+  const clearance = ballR * 2 + 22;
+  // Both side passages fit a full ball plus clearance, even on narrow phones.
+  const radius = Math.min(420, W * .36, (W - 40 - 2 * clearance) / 2);
+  const pitch = radius * 2 + clearance + 220;
+  const left = 20 + radius + clearance, right = W - 20 - radius - clearance;
+  let index = 0;
+  for (let y = start + radius + 30; y + radius < end; y += pitch, index++) {
+    const x = index % 2 ? right : left;
+    state.wheels.push({ x, y, r: radius, angle: rand() * Math.PI * 2,
+      speed: (index % 2 ? -1 : 1) * (105 + rand() * 70) / radius, hit: 0,
+      color: index % 2 ? PAL.pink1 : PAL.cyan2 });
+    // Re-entry ramps sit wholly between the plates. They return balls from the
+    // wall passages to the next wheel, avoiding a straight bypass down the edges.
+    if (y + pitch + radius < end) {
+      const rampY = y + radius + clearance;
+      state.rails.push(rail(20, rampY, W * .36, rampY + 110, 7, 'speed'),
+        rail(W - 20, rampY, W * .64, rampY + 110, 7, 'speed'));
+    }
+    if (index % 4 === 0) state.sections.push({ y: y - radius - 20, label: `${index + 1}번 대형 회전판 · ${index % 2 ? '반시계' : '시계'} 회전` });
   }
-  addPegBand(rand, W, at(.9), end, 85);
+}
+
+function buildBumperFactory(rand, W, start, end) {
+  const ballR = W < 520 ? 12 : 16;
+  const radius = clamp(W * .055, 19, 31);
+  const clearance = ballR * 2 + 20;
+  const left = 20 + radius + clearance + 9, right = W - left;
+  const columns = clamp(Math.floor((right - left) / (radius * 2 + clearance)) + 1, 2, 9);
+  const pitch = radius * 2 + clearance + 75;
+  let row = 0;
+  for (let y = start + 45; y < end - radius; row++) {
+    // Alternating missing slots break straight chutes and preserve open routes.
+    const count = row % 2 ? columns - 1 : columns;
+    const gap = (row * 2 + Math.floor(row / 4)) % count;
+    const offset = row % 2 ? .5 : 0;
+    const drift = Math.sin(row * .93) * Math.min(9, (right - left) / columns * .08);
+    for (let c = 0; c < count; c++) {
+      if (count > 1 && c === gap) continue;
+      const x = left + (c + offset) * (right - left) / (columns - 1) + drift;
+      const r = radius * (.86 + rand() * .14);
+      state.bumpers.push({ ...bumper(x, y + (c % 2 ? 16 : 0), r,
+        [PAL.cyan2, PAL.pink1, PAL.gold1, PAL.green1, PAL.violet1][(row + c) % 5]),
+        restitution: .96, kick: 100 + rand() * 30 });
+    }
+    if (row % 6 === 0) state.sections.push({ y: y - 30, label: `범퍼 연속 구간 ${Math.floor(row / 6) + 1}` });
+    if (row % 6 === 5 && y + 450 < end) {
+      // Route the wall passages back into the next bumper room. The ramps live
+      // in their own clear band so they cannot form narrow pockets with circles.
+      const rampY = y + radius + clearance + 45;
+      state.rails.push(rail(20, rampY, W * .36, rampY + 110, 7, 'speed'),
+        rail(W - 20, rampY, W * .64, rampY + 110, 7, 'speed'));
+      y = rampY + 110 + radius + clearance + 40;
+    } else y += pitch;
+  }
+}
+
+function buildSplitGarden(rand, W, start, end) {
+  let room = 0;
+  for (let y = start + 30; y + 680 < end; y += 760, room++) {
+    // One room at a time: rails, reunion bumpers, then a moving gate.
+    const flip = room % 2;
+    state.rails.push(rail(W * .5, y, W * .24, y + 220, 7, flip ? 'bounce' : 'speed'),
+      rail(W * .5, y, W * .76, y + 220, 7, flip ? 'speed' : 'bounce'));
+    state.bumpers.push(bumper(W * .3, y + 335, 24, PAL.green1), bumper(W * .7, y + 335, 24, PAL.pink1));
+    if (room % 3 === 1) addTimedGate(W, y + 490, rand() * Math.PI * 2, room % 2 ? -.95 : 1.05);
+    state.sections.push({ y: y - 25, label: `갈림길 ${room + 1} · 우회 후 합류` });
+  }
 }
 export function buildFinishFunnel(W, worldH) {
   const f = finishGeometry();

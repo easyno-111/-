@@ -1,6 +1,6 @@
 // 도트 이펙트: 파티클, 충격 링, 화면 흔들림, 히트스톱, 플래시, 색수차
-import { clamp } from "./util.js";
-import { PAL, rgb as pixColor } from "./palette.js";
+import { clamp } from "./util.js?v=8.1";
+import { PAL, rgb as pixColor } from "./palette.js?v=8.1";
 
 export class Fx {
   constructor() {
@@ -91,3 +91,4 @@ export class Fx {
     if (this.flashAmt > 0.01) pix.flash(this.flashAmt, this.flashColor);
   }
 }
+

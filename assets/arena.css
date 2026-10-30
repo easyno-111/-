@@ -278,10 +278,14 @@ details[open] > summary::before { content: "▾"; }
   .stage-toolbar { top: 7px; left: 7px; right: 7px; gap: 5px; }
   .racing .stage-chip { display: none; }
   .stage-tools { margin-left: auto; }
-  .stage-tools button { min-height: 36px; font-size: 11px; padding: 6px 8px; }
+  .stage-tools button { width: auto; min-width: 40px; min-height: 36px; height: auto; white-space: nowrap; font-size: 11px; padding: 6px 8px; }
+  #paceBtn { min-width: 86px; }
   .racing .stage { height: 76dvh; min-height: 460px; }
   .racing .stage-head { display: none; }
   .spectator-controls { padding: 6px; left: 7px; bottom: 7px; font-size: 11px; }
   .spectator-controls select { max-width: 110px; }
 }
 @media (prefers-reduced-motion: reduce) { .countdown, .countdown span, .confetti { animation: none !important; } }
+
+.number-details .number-pad { margin-top: 12px; }
+.number-details .participant-summary { margin-top: 10px; }

@@ -128,7 +128,7 @@ function updateSegmented() {
   els.comebackBlock.hidden = state.mode !== 'quick';
   els.cameraBlock.hidden = state.mode === 'order';
   els.trackSelect.disabled = state.cameraMode !== 'track';
-  els.cameraHelp.textContent = '자동은 선두, 전체는 전체 코스, 번호 추적은 선택한 공을 따라갑니다.';
+  els.cameraHelp.textContent = '자동은 선두, 전체는 넓은 범위, 번호 추적은 선택한 공을 따라갑니다.';
   els.comebackHelp.textContent = state.comeback === 'pure' ? '갈림길·범퍼·통과문으로 역전합니다. 막힌 공을 푸는 공통 구조 동작은 적용됩니다.' : '뒤처진 공에 추격 바람을 적용합니다. 결승 구간에서는 꺼지며, 특정 번호를 지정하지 않습니다.';
   extra.followBtn.setAttribute('aria-pressed', String(state.cameraMode === 'track' && state.trackedNum === state.cheerNum && state.cheerNum != null));
   if (state.mode === 'quick') { els.startBtn.textContent = '핀볼 레이스 시작'; els.settingHint.textContent = `${state.drawCount}명 선발 · 실제 골인 순서`; }

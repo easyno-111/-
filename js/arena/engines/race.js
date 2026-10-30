@@ -197,7 +197,7 @@ function finalizeRace() {
   host.setStatus("완료");
   const results = [...state.results];
   host.setStageLabel(`${results.map((n, i) => `${i + 1}등 ${displayName(n)}`).join(" · ")}`);
-  state.lastResult = { type: "race", mode: state.mode, results, participants: [...state.participants], names: { ...state.names }, basis: state.basis, style: state.style, comeback: state.comeback, createdAt: new Date() };
+  state.lastResult = { type: "race", mode: state.mode, results, participants: [...state.participants], names: { ...state.names }, basis: state.basis, course: state.course, style: state.style, comeback: state.comeback, createdAt: new Date() };
   const token = state.runToken;
   winnerSequence(results).then((ok) => { if (ok && token === state.runToken) { host.afterRun(results); host.showRaceResults(results); audio.sfx("done"); } });
 }

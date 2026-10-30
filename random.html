@@ -96,11 +96,14 @@
             <div id="directView" class="input-view">
               <label class="field"><span class="field-label">참가할 번호 <em>쉼표·띄어쓰기·범위 사용 가능</em></span><textarea id="directInput" class="text-area" placeholder="예: 2, 5, 8, 11, 15-20"></textarea></label>
             </div>
+            <details class="sub-details number-details">
+              <summary>번호 목록 펼치기 · 개별 제외</summary>
             <div id="numberPad" class="number-pad" aria-label="1번부터 40번 빠른 선택"></div>
             <div class="participant-summary">
               <div class="summary-line"><span>현재 참가 번호</span><b id="selectedCount">30명</b></div>
               <div id="participantChips" class="chips"></div>
             </div>
+            </details>
             <details class="sub-details">
               <summary>이 번호를 반으로 저장</summary>
               <div class="preset-row"><input id="presetName" class="text-input" type="text" maxlength="24" placeholder="예: 1학년 4반"><button id="savePresetBtn" class="mini-btn" type="button">저장</button><button id="deletePresetBtn" class="mini-btn danger" type="button" title="선택한 프리셋 삭제">삭제</button></div>

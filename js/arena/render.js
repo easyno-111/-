@@ -282,7 +282,7 @@ function drawRaceHud() {
   }
   if (state.cinematicCandidate && state.cinematicText) {
     const deep = state.zoomTarget > 1.4;
-    text(state.cinematicText, state.W / 2, state.H - 34, { size: deep ? 20 : 14, color: deep ? PAL.gold2 : PAL.cyan3, outlineWidth: deep ? 4 : 3 });
+    text(state.cinematicText, state.W / 2, state.H - 88, { size: deep ? 20 : 14, color: deep ? PAL.gold2 : PAL.cyan3, outlineWidth: deep ? 4 : 3 });
   }
 }
 function drawTeamHud() {
@@ -292,7 +292,7 @@ function drawTeamHud() {
   text(`${assigned} / ${total}명 배치`, 22, 96, { size: 16, color: "#fff", align: "left", outline: false });
   hud.fillStyle = "rgba(255,255,255,.1)"; hud.fillRect(22, 108, boxW - 20, 6); hud.fillStyle = PAL.green1; hud.fillRect(22, 108, Math.round((boxW - 20) * (total ? assigned / total : 0)), 6);
   text(`구조 ${state.rescueCount}회 · 대기 ${state.teamQueue.length}명`, 22, 126, { size: 10, color: PAL.steel2, align: "left", outline: false });
-  if (state.cinematicText) text(state.cinematicText, state.W / 2, state.H - 34, { size: 14, color: PAL.cyan3 });
+  if (state.cinematicText) text(state.cinematicText, state.W / 2, state.H - 88, { size: 14, color: PAL.cyan3 });
   // 팀 라벨
   for (const bin of state.teamBins) {
     const y = hudY(bin.gateY); if (y < -40 || y > state.H + 40) continue;
@@ -325,8 +325,8 @@ function drawTrackingIndicator() {
   if (selected == null) return;
   const b = state.balls.find((v) => v.active && v.num === selected); if (!b) return;
   const sx = hudX(b.x), sy = hudY(b.y);
-  if (sx > 18 && sx < state.W - 18 && sy > 45 && sy < state.H - 18) return;
-  const x = clamp(sx, 38, state.W - 38), y = clamp(sy, 58, state.H - 38), a = Math.atan2(sy - y, sx - x);
+  if (sx > 18 && sx < state.W - 18 && sy > 45 && sy < state.H - 80) return;
+  const x = clamp(sx, 38, state.W - 38), y = clamp(sy, 58, state.H - 88), a = Math.atan2(sy - y, sx - x);
   hud.save(); hud.translate(x, y); hud.rotate(a); hud.fillStyle = PAL.green2; hud.beginPath(); hud.moveTo(14, 0); hud.lineTo(-7, -7); hud.lineTo(-7, 7); hud.closePath(); hud.fill(); hud.restore();
   text(`${b.num}번`, x, y - 14, { size: 12, color: PAL.green2 });
 }
@@ -361,7 +361,7 @@ export function drawWinnerEffect(now) {
 function drawFloaters() { for (const f of fx.floaters) text(f.text, hudX(f.x), hudY(f.y), { size: 12, color: f.color, alpha: clamp(f.life / f.max, 0, 1) }); }
 function drawReplayTag(now) {
   if (Math.floor(now / 400) % 2 === 0) text("◀ REPLAY", 24, 76, { size: 16, color: PAL.red2, align: "left" });
-  text("결승 순간 다시 보기 · 0.3배속", state.W / 2, state.H - 34, { size: 14, color: PAL.steel3 });
+  text("결승 순간 다시 보기 · 0.3배속", state.W / 2, state.H - 88, { size: 14, color: PAL.steel3 });
 }
 
 // ---------- 대기 화면 ----------

@@ -1,4 +1,4 @@
-# 랜덤 아레나 V8.3 검증과 조작
+# 랜덤 아레나 V8.4 검증과 조작
 
 ```sh
 npm install --no-save --package-lock=false playwright@1.62.1

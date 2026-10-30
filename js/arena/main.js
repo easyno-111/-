@@ -1,14 +1,14 @@
 // 랜덤 아레나 V7 진입점: DOM 연결, 참가자/설정, 프리셋, 엑셀 명단, 실행 흐름
-import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.4";
-import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.4";
-import { fx, audio, host } from "./core.js?v=8.4";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.4";
-import { runRaceMode } from "./engines/race.js?v=8.4";
-import { runTeamMode } from "./engines/teams.js?v=8.4";
-import { runListMode, revealAllOrder } from "./engines/order.js?v=8.4";
-import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.4";
-import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.4";
-import { parseRosterFile } from "./roster.js?v=8.4";
+import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.5";
+import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.5";
+import { fx, audio, host } from "./core.js?v=8.5";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.5";
+import { runRaceMode } from "./engines/race.js?v=8.5";
+import { runTeamMode } from "./engines/teams.js?v=8.5";
+import { runListMode, revealAllOrder } from "./engines/order.js?v=8.5";
+import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.5";
+import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.5";
+import { parseRosterFile } from "./roster.js?v=8.5";
 
 const $ = (id) => document.getElementById(id);
 const els = {};

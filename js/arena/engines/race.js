@@ -1,14 +1,14 @@
-import { ChaseEvents, racePace } from '../chase-events.js?v=8.4';
+import { ChaseEvents, racePace } from '../chase-events.js?v=8.5';
 // 핀볼 물리 레이스 엔진: 시네마틱 카메라, 사진 판정, 히트스톱, 리플레이
-import { clamp, secureShuffle } from "../util.js?v=8.4";
-import { state, displayName } from "../state.js?v=8.4";
-import { fx, audio, host } from "../core.js?v=8.4";
-import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.4";
-import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.4";
-import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.4";
-import { winnerSequence } from "../winner.js?v=8.4";
+import { clamp, secureShuffle } from "../util.js?v=8.5";
+import { state, displayName } from "../state.js?v=8.5";
+import { fx, audio, host } from "../core.js?v=8.5";
+import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js?v=8.5";
+import { makePhysicsBall, updateBall, collideBalls } from "../physics.js?v=8.5";
+import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js?v=8.5";
+import { winnerSequence } from "../winner.js?v=8.5";
 
-import { RaceHighlights } from "../highlights.js?v=8.4";
+import { RaceHighlights } from "../highlights.js?v=8.5";
 const highlights = new RaceHighlights();
 const chase = new ChaseEvents();
 
@@ -86,6 +86,7 @@ function raceLoop(now) {
 export function updateRace(now, dt) {
   if (state.chase) return;
   state.physicsStep++;
+  if(state.warpEvent){state.warpEvent.age+=dt;if(state.warpEvent.age>1.1)state.warpEvent=null;}
   for (const wheel of state.wheels) { wheel.angle += wheel.speed * dt; wheel.hit = Math.max(0, wheel.hit - dt); }
   for (const rotor of state.rotors) { rotor.angle += rotor.speed * dt; rotor.hit = Math.max(0, (rotor.hit || 0) - dt * 2); }
   for (const gate of state.gates) { gate.phase += gate.speed * dt; gate.gapX = state.W / 2 + Math.sin(gate.phase) * state.W * 0.24; gate.pulse = Math.max(0, gate.pulse - dt * 2.5); }

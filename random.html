@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#05070f">
-  <title>랜덤 아레나 V8.4</title>
-  <link rel="stylesheet" href="assets/arena.css?v=8.4">
+  <title>랜덤 아레나 V8.5</title>
+  <link rel="stylesheet" href="assets/arena.css?v=8.5">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">R</div>
-      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V8.4</span></h1></div>
+      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V8.5</span></h1></div>
     </div>
     <nav class="mode-strip" aria-label="추첨 모드">
       <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">01</span><span class="mode-title">번호 뽑기</span></button>
@@ -124,7 +124,7 @@
             </div>
             <div class="setting-block">
               <label class="field"><span class="field-label">핀볼 코스</span><select id="courseSelect" class="select-input"><option value="factory">범퍼 공장 · 튕김과 속도</option><option value="split">갈림길 정원 · 합류와 역전</option><option value="tower">회전 타워 · 통과 타이밍</option></select></label>
-              <p class="hint">출발 위치는 매번 섞고 골인 순서로 결정합니다. 기본은 약 30초, 긴 코스도 1분 이내를 목표로 진행 속도를 조절합니다.</p>
+              <p class="hint">출발 위치는 매번 섞고 골인 순서로 결정합니다. 앞 코스 뒤에 5개 입구와 워프가 있는 마지막 관문이 이어집니다.</p>
             </div>
             <div id="styleBlock" class="setting-block">
               <span id="styleLabel" class="field-label">추첨 연출</span>
@@ -133,8 +133,8 @@
             <div id="comebackBlock" class="setting-block">
               <span class="field-label">추격 부스터 연출</span>
               <label class="check-line"><input id="boostMidToggle" type="checkbox" checked> 중간 지점 · 하위 50% 추격</label>
-              <label class="check-line"><input id="boostFinalToggle" type="checkbox" checked> 결승 직전 · 최후의 역전 부스터</label>
-              <p id="comebackHelp" class="hint">선두와의 격차를 크게 줄인 뒤 실제 가속으로 추월에 도전합니다. 가로 위치와 장애물 충돌은 유지되며, 부스터로 우승할 수도 있습니다.</p>
+              <label class="check-line"><input id="boostFinalToggle" type="checkbox" checked> 관문 입구 · 역전 부스터</label>
+              <p id="comebackHelp" class="hint">선두와의 격차를 줄여 마지막 관문 입구에 합류합니다. 5개 입구·회전 뼈대·워프를 통과한 뒤 실제 골인으로 순위를 정합니다.</p>
             </div>
             <div id="excludeBlock" class="setting-block"><label class="check-line"><input id="excludeWinners" type="checkbox" checked> 당첨 번호를 다음 추첨에서 제외</label></div>
             <details id="advancedDetails" class="advanced">
@@ -167,7 +167,7 @@
         </section>
       </aside>
     </div>
-    <footer class="footer">랜덤 아레나 V8.4 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
+    <footer class="footer">랜덤 아레나 V8.5 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
   </main>
 
   <dialog id="rosterModal" class="roster-modal">
@@ -185,7 +185,7 @@
   <script>
     if (location.protocol === "file:") document.getElementById("fileWarning").hidden = false;
   </script>
-  <script type="module" src="js/arena/main.js?v=8.4"></script>
+  <script type="module" src="js/arena/main.js?v=8.5"></script>
 </body>
 </html>
 

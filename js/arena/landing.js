@@ -1,4 +1,4 @@
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.5';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.6';
 
 function segmentBlocks(x, y, r, segment) {
   const p = closestOnSegment(x, y, segment);

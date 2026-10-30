@@ -1,11 +1,11 @@
-import { updateFinalGate } from './final-gate.js?v=8.5';
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.5';
+import { updateFinalGate } from './final-gate.js?v=8.6';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.6';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.5";
-import { state } from "./state.js?v=8.5";
-import { fx, audio } from "./core.js?v=8.5";
-import { BALL_PALETTES } from "./palette.js?v=8.5";
-import { finishGeometry } from "./courses.js?v=8.5";
+import { clamp } from "./util.js?v=8.6";
+import { state } from "./state.js?v=8.6";
+import { fx, audio } from "./core.js?v=8.6";
+import { BALL_PALETTES } from "./palette.js?v=8.6";
+import { finishGeometry } from "./courses.js?v=8.6";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {
@@ -16,7 +16,7 @@ export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
 }
 
 export function updateBall(b, now, dt, teamMode = false) {
-  const prevY = b.y, previous={x:b.x,y:b.y}, f = finishGeometry();
+  const prevY = b.y, f = finishGeometry();
   const boostEnabled=b.chaseBoostKind==='mid'?state.boostMidEnabled!==false:state.boostFinalEnabled!==false;
   const boosting=!teamMode && boostEnabled && (b.chaseBoostLeft||0)>0;
   if(boosting){
@@ -72,8 +72,7 @@ export function updateBall(b, now, dt, teamMode = false) {
     handleStuck(b, now);
     return null;
   }
-  state.physicsNow=now;
-  if(updateFinalGate(state,b,previous,dt)) {audio.sfx("booster");fx.ring(b.x,b.y,b.warpColor,75,.55,2);return null;}
+  updateFinalGate(state,b,dt);
   if (isGoalCrossing(b, prevY)) return "goal";
   const insideMouth = Math.abs(b.x - f.center) <= Math.max(10, f.half - b.r - 6);
   if (!insideMouth && b.y > f.gateY - b.r) { b.y = f.gateY - b.r; b.vy = -Math.abs(b.vy) * 0.42 - 38; b.vx += (f.center - b.x) * 0.12; }
@@ -143,12 +142,12 @@ export function collideWheel(b, wheel, dt) {
     b.x += nx * (min - distance + .15); b.y += ny * (min - distance + .15);
     const svx = -(p.y - wheel.y) * wheel.speed, svy = (p.x - wheel.x) * wheel.speed;
     const normal = (b.vx - svx) * nx + (b.vy - svy) * ny;
-    if (normal < 0) { b.vx -= normal * 1.5 * nx; b.vy -= normal * 1.5 * ny; }
+    if (normal < 0) { const impulse=-normal*(1+(wheel.restitution??.5))+(wheel.kick||0);b.vx+=impulse*nx;b.vy+=impulse*ny;if(wheel.finalKicker)b.finalKickerHits=(b.finalKickerHits||0)+1; }
     const tx = -ny, ty = nx, tangent = (svx - b.vx) * tx + (svy - b.vy) * ty;
     const friction = tangent * (1 - Math.exp(-dt * 10));
     b.vx += tx * friction; b.vy += ty * friction; hit = true;
   }
-  if (hit) wheel.hit = .22;
+  if(hit){if(wheel.finalKicker&&wheel.hit<=0){audio.sfx('bumper');fx.ring(b.x,b.y,'#ffc94a',65,.4,2);}wheel.hit=.22;}
   return hit;
 }
 

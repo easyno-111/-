@@ -1,11 +1,11 @@
-import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.5';
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.6';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.5";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.5";
-import { pix, fx } from "./core.js?v=8.5";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.5";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.5";
-import { secureShuffle } from "./util.js?v=8.5";
+import { clamp, makeRand, lerp } from "./util.js?v=8.6";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.6";
+import { pix, fx } from "./core.js?v=8.6";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.6";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.6";
+import { secureShuffle } from "./util.js?v=8.6";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -110,35 +110,21 @@ function thickLine(x1, y1, x2, y2, w, colors) {
   pix.line(x1, y1 - ((t >> 1) + 0), x2, y2 - ((t >> 1) + 0), colors.glow, 1);
 }
 function drawFinalGateWorld(){
-  const g=state.finalGate;if(!g)return;
-  const [top,bottom]=visibleRange(),u=unit();
+  const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange(),u=unit();
   for(const lane of g.lanes){
-    if(g.startY<top-40||g.startY>bottom+40)continue;
-    const x=mapX(lane.x),y=mapY(g.startY),half=Math.round(lane.half*u);
-    pix.rect(x-half,y-5,half*2,10,PAL.ink);pix.line(x-half,y-6,x+half,y-6,PAL.gold1,2);pix.line(x-half,y+6,x+half,y+6,PAL.gold1,2);
-  }
-  for(const p of g.portals)for(const [point,entry] of [[p.entry,true],[p.exit,false]]){
-    if(point.y<top-50||point.y>bottom+50)continue;
-    const x=mapX(point.x),y=mapY(point.y),half=Math.max(8,Math.round((entry?p.entry.half:24)*u));
-    pix.rect(x-half,y-5,half*2,10,PAL.ink);pix.line(x-half,y-6,x+half,y-6,p.color,2);pix.line(x-half,y+6,x+half,y+6,p.color,2);
-    for(let i=0;i<3;i++)pix.line(x-3+i,y-2+i,x+3-i,y-2+i,p.color,1);
-  }
-  const e=state.warpEvent;if(e){
-    pix.dashedLine(mapX(e.entry.x),mapY(e.entry.y),mapX(e.exit.x),mapY(e.exit.y),e.color,3,5);
-    pix.ring(mapX(e.exit.x),mapY(e.exit.y),Math.round((24+e.age*35)*u),e.color);
+    if(g.startY+400<top||g.startY>bottom)continue;
+    for(let y=g.startY+160;y<g.startY+680;y+=100){
+      const x=mapX(lane.x),py=mapY(y);if(lane.type==='speed')for(let i=0;i<3;i++)pix.line(x-3+i,py+i,x+3-i,py+i,lane.color,1);
+    }
   }
 }
 function drawFinalGateLabels(){
   const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange();
-  if(g.startY>top-40&&g.startY<bottom+40)for(const lane of g.lanes)text(String(lane.num),hudX(lane.x),hudY(g.startY)-19,{size:15,color:PAL.gold2});
-  for(const p of g.portals)for(const [point,label] of [[p.entry,`${p.id} ${p.from}→${p.to}`],[p.exit,`${p.id} 출구`]]){
-    if(point.y<top||point.y>bottom)continue;
-    text(label,hudX(point.x),hudY(point.y)-21,{size:state.W<520?11:13,color:p.color});
+  if(g.startY+100>top&&g.startY+100<bottom)for(const lane of g.lanes){
+    const label={speed:'고속',fork:'갈림길',wheel:'회전'}[lane.type];
+    text(`${lane.num} ${label}`,hudX(lane.x),hudY(g.startY+70),{size:state.W<600?12:14,color:lane.color});
   }
-  const e=state.warpEvent;if(e&&!state.chase){
-    panel(state.W/2-105,state.H-92,210,32,{edge:e.color});
-    text(`${e.num}번 · 워프 ${e.id} ${e.from}→${e.to}`,state.W/2,state.H-75,{size:13,color:e.color});
-  }
+  if(g.kicker.y>top&&g.kicker.y<bottom)text('FINAL BOUNCE',hudX(state.W/2),hudY(g.kicker.y)-72,{size:12,color:PAL.gold2});
 }
 function drawCourse() {
   const [top, bottom] = visibleRange(), u = unit();
@@ -151,7 +137,7 @@ function drawCourse() {
     const y = mapY(section.y) + 4; pix.dashedLine(mapX(30), y, mapX(state.W - 30), y, PAL.steel0, 3, 5);
   }
   for (const r of state.rails) {
-    const cy = (r.y1 + r.y2) / 2; if (cy < top - 200 || cy > bottom + 200) continue;
+    if (Math.max(r.y1,r.y2)<top || Math.min(r.y1,r.y2)>bottom) continue;
     thickLine(mapX(r.x1), mapY(r.y1), mapX(r.x2), mapY(r.y2), r.w, RAIL_COLORS[r.finish ? "finish" : r.railType || "normal"]);
   }
   const pr = Math.max(1, Math.round(5.2 * u));
@@ -219,7 +205,7 @@ function drawCourse() {
 function drawFinish() {
   const f = finishGeometry(), [top, bottom] = visibleRange();
   if (f.topY > bottom + 100) return;
-  const u = unit(), x0 = mapX(20), x1 = mapX(state.W - 20), yTop = mapY(f.topY), yGate = mapY(f.gateY);
+  const u = unit(), x0 = mapX(state.finalGate?f.center-state.finalGate.throatHalf:20), x1 = mapX(state.finalGate?f.center+state.finalGate.throatHalf:state.W - 20), yTop = mapY(f.topY), yGate = mapY(f.gateY);
   for (let y = yTop; y < yGate; y += 1) {
     const t = (y - yTop) / Math.max(1, yGate - yTop), lx = Math.round(x0 + (mapX(f.center - f.half) - x0) * t), rx = Math.round(x1 + (mapX(f.center + f.half) - x1) * t);
     if ((y & 1) === 0) pix.ditherRect(lx, y, rx - lx, 1, PAL.gold0, Math.round(t * 7));

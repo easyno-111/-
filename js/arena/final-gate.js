@@ -1,42 +1,45 @@
-import { clamp } from './util.js?v=8.5';
-import { clearLanding } from './landing.js?v=8.5';
+import { clamp } from './util.js?v=8.6';
 
 export const FINAL_GATE_HEIGHT=1400;
 export function buildFinalGate(W,mainHeight,rand){
-  const startY=mainHeight-245,laneW=(W-40)/5;
-  const lanes=Array.from({length:5},(_,i)=>({num:i+1,x:20+laneW*(i+.5),half:laneW/2-5}));
-  const rails=[];
-  for(let i=1;i<5;i++)rails.push({x1:20+laneW*i,y1:startY-24,x2:20+laneW*i,y2:startY+260,w:6,railType:'normal',finalGate:true});
-  // A second fork between the two open-wheel rooms.
-  rails.push({x1:W*.5,y1:startY+700,x2:W*.35,y2:startY+820,w:7,railType:'speed',finalGate:true},
-    {x1:W*.5,y1:startY+700,x2:W*.65,y2:startY+820,w:7,railType:'bounce',finalGate:true});
-  const radius=Math.min(105,(W-40)*.18),clearance=(W<520?12:16)*2+20;
-  const wheelX=clamp(W*.3,20+radius+clearance+6,W-20-radius-clearance-6);
-  const wheels=[{x:wheelX,y:startY+450,r:radius,speed:1.25,color:'#5ed4ff'},
-    {x:W-wheelX,y:startY+1000,r:radius,speed:-1.55,color:'#ff75b5'}].map(w=>({...w,angle:rand()*Math.PI*2,hit:0,finalGate:true}));
-  // Directed pairs: shortcut A and detour B. Each can be used once per ball.
-  const portals=[{id:'A',from:1,to:5,color:'#5ed4ff',entry:{x:lanes[0].x,y:startY+220,half:lanes[0].half},exit:{x:lanes[4].x,y:startY+650}},
-    {id:'B',from:5,to:2,color:'#d58aff',entry:{x:lanes[4].x,y:startY+820,half:lanes[4].half},exit:{x:lanes[1].x,y:startY+300}}];
-  return{mainHeight,startY,endY:startY+FINAL_GATE_HEIGHT,lanes,rails,wheels,portals};
+  const startY=mainHeight-245,count=W<360?2:W<760?3:5,cell=(W-40)/count;
+  const width=Math.min(132,cell-12),rails=[],wheels=[];
+  const makeRail=(x1,y1,x2,y2,type='normal',extra={})=>rails.push({x1,y1,x2,y2,w:6,railType:type,finalGate:true,...extra});
+  const profiles=['speed','fork','wheel','speed','fork'];
+  const lanes=Array.from({length:count},(_,i)=>({num:i+1,x:20+cell*(i+.5),half:width/2,type:profiles[i],color:profiles[i]==='speed'?'#5ed4ff':profiles[i]==='fork'?'#d58aff':'#ff75b5'}));
+  for(const [i,lane] of lanes.entries()){
+    const type=lane.type==='speed'?'speed':'normal';
+    // Separate funnels feed continuous narrow walls, rather than an open room.
+    makeRail(20+cell*i,startY-24,lane.x-lane.half,startY+130,'speed');
+    makeRail(20+cell*(i+1),startY-24,lane.x+lane.half,startY+130,'speed');
+    makeRail(lane.x-lane.half,startY+130,lane.x-lane.half,startY+720,type);
+    makeRail(lane.x+lane.half,startY+130,lane.x+lane.half,startY+720,type);
+    if(lane.type==='fork'){
+      makeRail(lane.x,startY+240,lane.x-width*.08,startY+355,'bounce',{w:4});
+      makeRail(lane.x,startY+240,lane.x+width*.08,startY+355,'bounce',{w:4});
+    }
+    if(lane.type!=='speed')wheels.push({x:lane.x,y:startY+(lane.type==='fork'?520:350),r:Math.max(12,Math.min(36,(width-2*((W<520?12:16)*2+8)-6)/2)),
+      speed:i%2?-1.9:1.7,angle:rand()*Math.PI*2,hit:0,color:lane.color,spokesOnly:true,spokeCount:2,finalGate:true,laneNum:lane.num});
+  }
+  const throatHalf=92,mergeY=startY+1040,endY=startY+FINAL_GATE_HEIGHT;
+  makeRail(20,startY+720,W/2-throatHalf,mergeY,'speed');
+  makeRail(W-20,startY+720,W/2+throatHalf,mergeY,'speed');
+  makeRail(W/2-throatHalf,mergeY,W/2-throatHalf,endY,'bounce');
+  makeRail(W/2+throatHalf,mergeY,W/2+throatHalf,endY,'bounce');
+  const kicker={x:W/2,y:startY+1220,r:48,speed:2.8,angle:rand()*Math.PI*2,hit:0,color:'#ffc94a',
+    spokesOnly:true,spokeCount:3,restitution:.95,kick:90,finalGate:true,finalKicker:true};
+  wheels.push(kicker);
+  return{mainHeight,startY,endY,lanes,rails,wheels,mergeY,throatHalf,kicker};
 }
-export function updateFinalGate(s,b,previous,dt){
+export function updateFinalGate(s,b,dt){
   const g=s.finalGate;if(!g)return false;
-  b.warpFlash=Math.max(0,(b.warpFlash||0)-dt*2);
-  if(!b.finalGateEntry&&b.y>=g.startY){b.finalGateEntry=clamp(Math.floor((b.x-20)/((s.W-40)/5))+1,1,5);b.gateEnteredAt=s.raceElapsed||0;}
-  if((b.warpCount||0)>=2)return false;
-  for(const p of g.portals){
-    if(b.usedWarps?.includes(p.id)||b.vy<=0||previous.y>=p.entry.y||b.y<p.entry.y)continue;
-    const t=(p.entry.y-previous.y)/(b.y-previous.y),crossX=previous.x+(b.x-previous.x)*t;
-    if(Math.abs(crossX-p.entry.x)>p.entry.half-b.r)continue;
-    // Congested exits never create overlaps; a blocked portal leaves its physical path open.
-    let destination=null;
-    for(const dy of [0,36,72,108])if(clearLanding(s,b,p.exit.x,p.exit.y+dy)){destination={x:p.exit.x,y:p.exit.y+dy};break;}
-    if(!destination)continue;
-    b.x=destination.x;b.y=destination.y;b.vx=clamp(b.vx,-65,65);b.vy=clamp(Math.max(160,b.vy*.7),160,320);
-    b.chaseBoostLeft=0;b.boostFlame=0;b.trail=[];b.warpFlash=1;b.warpColor=p.color;b.usedWarps=[...(b.usedWarps||[]),p.id];b.warpCount=(b.warpCount||0)+1;
-    b.motionX=b.x;b.motionY=b.y;b.motionAt=b.lastProgressAt=b.lastSafeAt=s.physicsNow||0;b.lastSafeX=b.x;b.lastSafeY=b.y;b.rescueStage=0;
-    s.warpEvent={num:b.num,id:p.id,from:p.from,to:p.to,color:p.color,entry:p.entry,exit:destination,age:0};
-    return true;
+  if(!b.finalGateEntry&&b.y>=g.startY){
+    b.finalGateEntry=clamp(Math.floor((b.x-20)/((s.W-40)/g.lanes.length))+1,1,g.lanes.length);b.gateEnteredAt=s.raceElapsed||0;
+  }
+  if(b.y>g.startY+130&&b.y<g.startY+720){
+    const lane=g.lanes.find(l=>Math.abs(b.x-l.x)<l.half);
+    if(lane?.type==='speed')b.vy=Math.min(480,b.vy+180*dt);
+    else if(lane&&b.vy>0)b.vy*=Math.exp(-dt*.65);
   }
   return false;
 }

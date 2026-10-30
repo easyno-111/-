@@ -1,6 +1,6 @@
 // 소프트웨어 도트 래스터라이저.
 // 저해상도 버퍼(Uint32, ABGR)에 정수 좌표로만 그린 뒤 정수 배율로 확대해 진짜 도트 질감을 만든다.
-import { rgb } from "./palette.js?v=8.5";
+import { rgb } from "./palette.js?v=8.6";
 
 const BAYER4 = [
   [0, 8, 2, 10],

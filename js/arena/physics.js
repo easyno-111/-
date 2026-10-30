@@ -1,9 +1,9 @@
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js";
-import { state } from "./state.js";
-import { fx, audio } from "./core.js";
-import { BALL_PALETTES } from "./palette.js";
-import { finishGeometry } from "./courses.js";
+import { clamp } from "./util.js?v=8.1";
+import { state } from "./state.js?v=8.1";
+import { fx, audio } from "./core.js?v=8.1";
+import { BALL_PALETTES } from "./palette.js?v=8.1";
+import { finishGeometry } from "./courses.js?v=8.1";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {
@@ -31,11 +31,15 @@ export function updateBall(b, now, dt, teamMode = false) {
   }
   for (const bp of state.bumpers) {
     if (Math.abs(bp.y - b.y) > bp.r + b.r + 4) continue;
-    if (collideCircle(b, bp.x, bp.y, bp.r, 0.92, 72)) {
+    if (collideCircle(b, bp.x, bp.y, bp.r, bp.restitution ?? 0.92, bp.kick ?? 72)) {
       bp.pulse = 0.4; hitSquash(b, 0.8, Math.atan2(b.y - bp.y, b.x - bp.x));
       fx.burst(b.x, b.y, [bp.color, "#ffffff"], 5, { speed: 170, life: 0.4 }); fx.ring(bp.x, bp.y, bp.color, bp.r * 2.1, 0.32);
       audio.sfx("bumper");
     }
+  }
+  for (const wheel of state.wheels) {
+    if (Math.abs(wheel.y - b.y) > wheel.r + b.r + 4) continue;
+    collideWheel(b, wheel, dt);
   }
   for (const r of state.rotors) { if (Math.abs(r.y - b.y) > r.len * 0.55) continue; collideRotor(b, r); }
   for (const gate of state.gates) {
@@ -106,6 +110,25 @@ export function collideCircle(b, x, y, r, bounce, boost = 18) {
   const dot = b.vx * nx + b.vy * ny;
   if (dot < 0) { b.vx -= dot * (1 + bounce) * nx; b.vy -= dot * (1 + bounce) * ny; }
   b.vx += nx * boost; b.vy += ny * boost;
+  return true;
+}
+
+// Solid rotating plate: the visible rim is also the collision boundary.
+// Tangential friction carries a ball off the top, instead of trapping it on a flat hub.
+export function collideWheel(b, wheel, dt) {
+  const dx = b.x - wheel.x, dy = b.y - wheel.y;
+  const distance = Math.hypot(dx, dy), minDistance = wheel.r + b.r;
+  if (distance >= minDistance) return false;
+  const nx = distance > .0001 ? dx / distance : 1, ny = distance > .0001 ? dy / distance : 0;
+  b.x = wheel.x + nx * (minDistance + .15); b.y = wheel.y + ny * (minDistance + .15);
+  const normal = b.vx * nx + b.vy * ny;
+  if (normal < 0) { b.vx -= normal * 1.42 * nx; b.vy -= normal * 1.42 * ny; }
+  const tx = -ny, ty = nx;
+  const target = Math.sign(wheel.speed) * clamp(Math.abs(wheel.speed * wheel.r), 65, 175);
+  const tangent = b.vx * tx + b.vy * ty;
+  const impulse = (target - tangent) * (1 - Math.exp(-dt * 14));
+  b.vx += tx * impulse; b.vy += ty * impulse;
+  wheel.hit = .22;
   return true;
 }
 

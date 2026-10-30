@@ -1,7 +1,7 @@
 // 싱글턴 인스턴스: 도트 버퍼, 이펙트, 오디오, 엔진 → UI 콜백 브리지
-import { PixelSurface } from "./pixel.js";
-import { Fx } from "./fx.js";
-import { ArenaAudio } from "./audio.js";
+import { PixelSurface } from "./pixel.js?v=8.1";
+import { Fx } from "./fx.js?v=8.1";
+import { ArenaAudio } from "./audio.js?v=8.1";
 
 export const pix = new PixelSurface();
 export const fx = new Fx();

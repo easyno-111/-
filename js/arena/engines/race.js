@@ -2,10 +2,13 @@
 import { clamp, secureShuffle } from "../util.js";
 import { state, displayName } from "../state.js";
 import { fx, audio, host } from "../core.js";
-import { buildCourse, raceWorldHeight, finishGeometry } from "../courses.js";
-import { makePhysicsBall, updateBall, collideBalls, applyComebackAssist, updateLeader } from "../physics.js";
+import { buildCourse, raceWorldHeight, finishGeometry, startColumns } from "../courses.js";
+import { makePhysicsBall, updateBall, collideBalls, applyComebackAssist } from "../physics.js";
 import { resizeCanvas, drawScene, cinematicAnchorY } from "../render.js";
 import { winnerSequence } from "../winner.js";
+
+import { RaceHighlights } from "../highlights.js";
+const highlights = new RaceHighlights();
 
 const REPLAY_SECONDS = 2.4;
 const REPLAY_SPEED = 0.32;
@@ -13,9 +16,9 @@ const REPLAY_SPEED = 0.32;
 export async function runRaceMode(eligible, token) {
   state.engine = "race"; state.courseSeed = Math.max(1, state.courseSeed);
   Object.assign(state, { physicsAccumulator: 0, physicsTimeScale: 1, zoom: 1, zoomTarget: 1, cinematicCandidate: null, cinematicText: "", freezeUntil: 0, freezeFocus: null, winnerFx: null, chaseWind: 0, chaseWindTarget: 0, currentLeaderNum: null, previousLeaderNum: null, leaderChangedAt: 0, photoFinish: false, photoFinishAt: 0, replayState: null, replayFrames: [], physicsStep: 0 });
-  fx.reset();
+  fx.reset(); highlights.reset(); state.raceCount = eligible.length;
   buildRace(eligible); drawScene();
-  host.setStageLabel(state.style === "quick" ? "장거리 코스 출발 게이트 준비 중" : "울트라 코스 출발 게이트 준비 중");
+  host.setStageLabel(state.style === "quick" ? "기본 코스 출발 게이트 준비 중" : "긴 코스 출발 게이트 준비 중");
   if (!(await host.countdown(token))) return;
   state.raceStart = performance.now(); state.lastFrame = state.raceStart;
   host.setStatus("질주"); host.setStageLabel("중앙 골을 향한 실제 물리 레이스 진행 중");
@@ -26,8 +29,8 @@ export async function runRaceMode(eligible, token) {
 
 function buildRace(eligible) {
   resizeCanvas(); state.worldH = raceWorldHeight(); state.cameraY = 0; buildCourse();
-  const shuffled = secureShuffle(eligible), cols = Math.min(10, Math.max(5, Math.floor(state.W / 58))), left = state.W * 0.14, right = state.W * 0.86, gap = (right - left) / Math.max(1, cols - 1);
-  state.balls = shuffled.map((num, i) => makePhysicsBall(num, left + (i % cols) * gap + (Math.random() - 0.5) * 5, 52 + Math.floor(i / cols) * 34, state.W < 520 ? 12 : 16, i));
+  const shuffled = secureShuffle(eligible), cols = startColumns(), left = state.W * 0.14, right = state.W * 0.86, gap = (right - left) / Math.max(1, cols - 1);
+  state.balls = shuffled.map((num, i) => makePhysicsBall(num, left + (i % cols) * gap + (Math.random() - 0.5) * 5, 52 + Math.floor(i / cols) * 38, state.W < 520 ? 12 : 16, i));
 }
 
 function raceLoop(now) {
@@ -37,9 +40,17 @@ function raceLoop(now) {
   if (state.replayState) { updateReplay(now, frameDt); drawScene(); if (state.replayState?.done) { finalizeRace(); return; } state.animationId = requestAnimationFrame(raceLoop); return; }
   updateCinematic(now, frameDt);
   const frozen = fx.isFrozen(now) || now < state.freezeUntil;
-  if (!frozen) state.physicsAccumulator += frameDt * state.physicsTimeScale; else state.physicsAccumulator = 0;
+  if (!frozen) state.physicsAccumulator += frameDt * state.physicsTimeScale * state.spectatorSpeed; else state.physicsAccumulator = 0;
   const fixed = 1 / 120; let loops = 0;
-  while (state.physicsAccumulator >= fixed && loops < 12) { updateRace(now, fixed); state.physicsAccumulator -= fixed; loops++; }
+  while (state.physicsAccumulator >= fixed && loops < 30) { updateRace(now, fixed); state.physicsAccumulator -= fixed; loops++; }
+  const event = highlights.observe(state.balls, now, { enabled: !state.ending && now - state.raceStart > 1200 });
+  if (highlights.leader != null) state.currentLeaderNum = highlights.leader;
+  if (event) {
+    state.raceEvent = event; host.raceNotice(event);
+    const ball = state.balls.find(b => b.num === event.num);
+    if (ball) { ball.overtakeUntil = now + 2000; fx.ring(ball.x, ball.y, '#ffe27a', 90, .65, 2); fx.burst(ball.x, ball.y, ['#ffe27a','#5ed4ff','#fff'], 20, { speed: 160, life: .6 }); }
+    audio.sfx('assign');
+  }
   updateMusic();
   drawScene();
   if (state.ending && now - state.endingAt > 900) {
@@ -49,13 +60,20 @@ function raceLoop(now) {
   state.animationId = requestAnimationFrame(raceLoop);
 }
 
-function updateRace(now, dt) {
+export function updateRace(now, dt) {
   state.physicsStep++;
   for (const rotor of state.rotors) { rotor.angle += rotor.speed * dt; rotor.hit = Math.max(0, (rotor.hit || 0) - dt * 2); }
   for (const gate of state.gates) { gate.phase += gate.speed * dt; gate.gapX = state.W / 2 + Math.sin(gate.phase) * state.W * 0.24; gate.pulse = Math.max(0, gate.pulse - dt * 2.5); }
   for (const p of state.pegs) if (p.hit > 0) p.hit = Math.max(0, p.hit - dt * 2.2);
   for (const bp of state.bumpers) bp.pulse = Math.max(0, bp.pulse - dt * 2.2);
-  for (const b of state.balls) { if (b.active && updateBall(b, now, dt) === "goal") finishBall(b, now); }
+  const crossings = [];
+  for (const b of state.balls) {
+    if (!b.active) continue;
+    const previousY = b.y;
+    if (updateBall(b, now, dt) === 'goal') crossings.push({ ball: b, time: (finishGeometry().gateY - previousY) / (b.y - previousY) });
+  }
+  // Resolve same-step crossings by crossing time, never by the ball array order.
+  crossings.sort((a, b) => a.time - b.time).forEach(c => finishBall(c.ball, now));
   collideBalls(now);
   applyComebackAssist(dt);
   recordReplayFrame(now);
@@ -71,7 +89,6 @@ function recordReplayFrame(now) {
 
 function updateCinematic(now, dt) {
   const active = state.balls.filter((b) => b.active), f = finishGeometry(), finalStart = f.topY - Math.max(250, state.H * 0.38);
-  updateLeader(active, now);
   let candidate = null, deep = false, manual = false;
   if (now < state.freezeUntil && state.freezeFocus) { candidate = state.freezeFocus; deep = true; state.cinematicText = `${displayName(state.freezeFocus.num)} 골인!`; }
   else if (state.cameraMode === "track" && state.trackedNum != null) {
@@ -101,8 +118,8 @@ function updateCinematic(now, dt) {
   const wasDeep = state.zoomTarget > 1.4;
   state.cinematicCandidate = candidate;
   const later = state.results.length > 0;
-  state.zoomTarget = candidate ? (state.photoFinish ? 1.8 : deep ? 1.64 : manual ? 1.34 : 1.2) : 1;
-  state.physicsTimeScale = candidate && !manual ? (state.photoFinish ? 0.2 : deep ? (later ? 0.42 : 0.31) : later ? 0.86 : 0.78) : 1;
+  state.zoomTarget = candidate ? (state.photoFinish ? 1.45 : deep ? 1.22 : manual ? 1.16 : 1.08) : 1;
+  state.physicsTimeScale = candidate && !manual ? (state.photoFinish ? 0.45 : deep && state.photoFinish ? .42 : 1) : 1;
   if (deep && !wasDeep && !manual) audio.sfx("slowmo");
   state.zoom += (state.zoomTarget - state.zoom) * (1 - Math.exp(-dt * (deep ? 7 : 4.5)));
   const focusTarget = candidate ? candidate.x : state.W / 2;
@@ -136,7 +153,7 @@ function finishBall(ball, now) {
   state.freezeUntil = now + (place === 1 ? 260 : 190); state.freezeFocus = { x: ball.x, y: ball.y, num: ball.num };
   state.winnerFx = { x: ball.x, num: ball.num, place, start: now };
   state.photoFinish = false;
-  fx.hitstop(place === 1 ? 150 : 110, now); fx.shake(place === 1 ? 7 : 5); fx.flash(0.75, "#fff6c4"); fx.aberration(1);
+  fx.hitstop(place === 1 ? 150 : 110, now); fx.shake(place === 1 ? 4 : 2); fx.flash(0.75, "#fff6c4"); fx.aberration(1);
   fx.burst(ball.x, ball.y, ["#ffe27a", "#f2b61b", "#ffffff", "#ffc46b"], 44, { speed: 300, life: 0.8 });
   fx.ring(ball.x, ball.y, "#ffe27a", 170, 0.6, 2); fx.ring(ball.x, ball.y, "#ffffff", 110, 0.4);
   audio.sfx("goal", place); audio.duck(0.18, 0.1); setTimeout(() => audio.unduck(), 700);
@@ -181,7 +198,7 @@ function finalizeRace() {
   const results = [...state.results];
   host.setStageLabel(`${results.map((n, i) => `${i + 1}등 ${displayName(n)}`).join(" · ")}`);
   state.lastResult = { type: "race", mode: state.mode, results, participants: [...state.participants], names: { ...state.names }, basis: state.basis, style: state.style, comeback: state.comeback, createdAt: new Date() };
-  host.afterRun(results);
   const token = state.runToken;
-  winnerSequence(results).then((ok) => { if (ok && token === state.runToken) { host.showRaceResults(results); audio.sfx("done"); } });
+  winnerSequence(results).then((ok) => { if (ok && token === state.runToken) { host.afterRun(results); host.showRaceResults(results); audio.sfx("done"); } });
 }
+

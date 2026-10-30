@@ -17,12 +17,12 @@ function showResultShell(title, sub, eyebrow) {
   els.stageLabel.style.visibility = "hidden"; els.closeResultBtn.hidden = false;
 }
 export function showRaceResults(results) {
-  showResultShell(state.mode === "rank" ? "최종 순위" : "추첨 결과", `${results.length}명의 번호가 결정되었습니다.`, state.basis === "fair" ? "FAIR RANDOM RESULT" : "PHYSICS RACE RESULT");
+  showResultShell("레이스 결과", `${results.length}명의 번호가 결정되었습니다.`, "PHYSICS RACE RESULT");
   if (results.length <= 3) {
     const podium = el("div", "podium"), order = results.length === 3 ? [1, 0, 2] : results.length === 2 ? [1, 0] : [0];
     order.forEach((idx) => {
       const card = el("div", `podium-card p${idx + 1}`); card.style.animationDelay = `${idx * 0.12}s`;
-      card.append(el("div", "medal", state.mode === "rank" ? `${idx + 1}등` : `당첨 ${idx + 1}`), el("div", "podium-num", results[idx]));
+      card.append(el("div", "medal", `${idx + 1}등`), el("div", "podium-num", results[idx]));
       const name = nameOf(results[idx]);
       card.append(el("div", "podium-name", name ? `${results[idx]}번 ${name}` : `${results[idx]}번`));
       podium.appendChild(card);
@@ -138,3 +138,4 @@ function drawOrderPng(g, order, names, F) {
     g.fillStyle = "#c7b2ff"; g.textAlign = "left"; g.fillText(`${i + 1}.`, x + 14, y + 36); g.fillStyle = "#fff"; g.fillText(names[n] ? `${n} ${names[n]}` : String(n), x + 62, y + 36);
   });
 }
+

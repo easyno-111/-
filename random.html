@@ -4,20 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#05070f">
-  <title>랜덤 아레나 V7</title>
+  <title>랜덤 아레나 V8</title>
   <link rel="stylesheet" href="assets/arena.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">R</div>
-      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V7</span></h1></div>
+      <div><div class="brand-kicker">PIXEL RANDOM ARENA</div><h1>랜덤 아레나 <span class="version">V8</span></h1></div>
     </div>
     <nav class="mode-strip" aria-label="추첨 모드">
-      <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">01</span><span class="mode-title">빠른 추첨</span></button>
-      <button class="mode-card" data-mode="rank" style="--mode-color:#f2b61b" type="button"><span class="mode-number">02</span><span class="mode-title">1~3등</span></button>
-      <button class="mode-card" data-mode="teams" style="--mode-color:#2fc278" type="button"><span class="mode-number">03</span><span class="mode-title">팀 나누기</span></button>
-      <button class="mode-card" data-mode="order" style="--mode-color:#8a5cf6" type="button"><span class="mode-number">04</span><span class="mode-title">전체 순서</span></button>
+      <button class="mode-card active" data-mode="quick" style="--mode-color:#5ed4ff" type="button"><span class="mode-number">01</span><span class="mode-title">번호 뽑기</span></button>
+      <button class="mode-card" data-mode="teams" style="--mode-color:#2fc278" type="button"><span class="mode-number">02</span><span class="mode-title">팀 나누기</span></button>
+      <button class="mode-card" data-mode="order" style="--mode-color:#8a5cf6" type="button"><span class="mode-number">03</span><span class="mode-title">전체 순서</span></button>
     </nav>
     <div class="top-actions">
       <button id="soundBtn" class="icon-btn" type="button" aria-label="효과음 켜기 또는 끄기" title="효과음">♪</button>
@@ -36,19 +35,26 @@
           <div class="stage-toolbar">
             <div id="stageLabel" class="stage-chip"><i></i><span>설정을 확인하고 추첨을 시작하세요</span></div>
             <div class="stage-tools">
+              <button id="paceBtn" type="button" hidden>빠르게 진행</button>
+              <button id="stopBtn" type="button" hidden>중단</button>
               <button id="closeResultBtn" type="button" hidden>× <span>결과 닫기</span></button>
               <button id="stageFullscreenBtn" type="button">□ <span>크게 보기</span></button>
             </div>
           </div>
           <div id="countdown" class="countdown"><span id="countdownText">3</span></div>
           <div id="resultBoard" class="result-board" aria-live="polite"></div>
+          <div id="raceNotice" class="race-notice" role="status" aria-live="polite"></div>
+          <div class="spectator-controls" id="spectatorControls" hidden>
+            <label>응원 번호 <select id="cheerSelect" aria-label="응원할 번호"><option value="">선택 안 함</option></select></label>
+            <button id="followBtn" type="button" aria-pressed="false">따라가기</button>
+          </div>
           <div class="stage-vignette" aria-hidden="true"></div>
           <div id="fileWarning" class="file-warning" hidden>이 페이지는 파일로 직접 열면 동작하지 않습니다. 포털(GitHub Pages)에서 실행해 주세요.</div>
         </div>
         <div class="stage-foot">
           <div class="stage-head">
             <span class="stat"><span class="stat-label">참가</span><span id="statParticipants" class="stat-value">30명</span></span>
-            <span class="stat"><span class="stat-label">모드</span><span id="statMode" class="stat-value">빠른 추첨</span></span>
+            <span class="stat"><span class="stat-label">모드</span><span id="statMode" class="stat-value">번호 뽑기</span></span>
             <span class="stat"><span class="stat-label">상태</span><span id="statStatus" class="stat-value live">대기</span></span>
             <span class="stat"><span class="stat-label">기록</span><span id="statResults" class="stat-value gold">0명</span></span>
           </div>
@@ -57,10 +63,11 @@
       </section>
 
       <aside class="control-panel">
+        <p class="setup-guide">반 선택 · 결석자 제외 · 모드 선택 · 시작</p>
         <section class="panel-card start-card">
           <div class="panel-body">
-            <button id="startBtn" class="primary-btn" type="button">빠른 추첨 시작</button>
-            <p class="hint start-hint"><span id="settingHint">빠른 레이스</span> · Space 시작 · F 크게 보기 · Esc 결과 닫기</p>
+            <button id="startBtn" class="primary-btn" type="button">번호 뽑기 시작</button>
+            <p class="hint start-hint"><span id="settingHint">핀볼 레이스</span> · Space 시작 · F 크게 보기 · Esc 결과 닫기</p>
           </div>
         </section>
 
@@ -112,10 +119,9 @@
               <span class="field-label">팀 개수</span>
               <div class="stepper"><button id="teamMinus" type="button" aria-label="팀 줄이기">−</button><output id="teamCount">4</output><button id="teamPlus" type="button" aria-label="팀 늘리기">＋</button></div>
             </div>
-            <div id="basisBlock" class="setting-block">
-              <span class="field-label">순위 결정 방식</span>
-              <div class="segmented"><button class="seg-btn active" data-basis="fair" type="button">로또 캡슐</button><button class="seg-btn" data-basis="physics" type="button">핀볼 물리</button></div>
-              <p id="basisHelp" class="hint">모든 번호를 같은 확률로 뽑고, 캡슐에 담긴 공이 추출관을 지나 공개됩니다.</p>
+            <div class="setting-block">
+              <label class="field"><span class="field-label">핀볼 코스</span><select id="courseSelect" class="select-input"><option value="factory">범퍼 공장 · 튕김과 속도</option><option value="split">갈림길 정원 · 합류와 역전</option><option value="tower">회전 타워 · 통과 타이밍</option></select></label>
+              <p class="hint">출발 위치는 매번 섞습니다. 실제 골인 순서로 결정하는 물리 경기입니다.</p>
             </div>
             <div id="styleBlock" class="setting-block">
               <span id="styleLabel" class="field-label">추첨 연출</span>
@@ -157,7 +163,7 @@
         </section>
       </aside>
     </div>
-    <footer class="footer">랜덤 아레나 V7 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
+    <footer class="footer">랜덤 아레나 V8 · PC / iPad / 모바일 지원 · 데이터는 현재 기기에만 저장됩니다 · 글꼴 Neo둥근모(OFL)</footer>
   </main>
 
   <dialog id="rosterModal" class="roster-modal">
@@ -175,6 +181,7 @@
   <script>
     if (location.protocol === "file:") document.getElementById("fileWarning").hidden = false;
   </script>
-  <script type="module" src="js/arena/main.js"></script>
+  <script type="module" src="js/arena/main.js?v=8"></script>
 </body>
 </html>
+

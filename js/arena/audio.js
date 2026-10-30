@@ -127,7 +127,6 @@ export class ArenaAudio {
       }
       case "suck": this.noise(0.6, 0.05, { type: "bandpass", freq: 300, sweepTo: 2600 }); this.tone(160, 0.6, "sine", 0.035, { slideTo: 640 }); break;
       case "tick": this.tone(1200 + arg * 40, 0.03, "square", 0.028); break;
-      case "capsuleShake": this.noise(0.04, 0.035, { freq: 2200 }); this.tone(400 + arg * 25, 0.05, "square", 0.02); break;
       case "crack": this.noise(0.25, 0.12, { freq: 500, sweepTo: 5000 }); this.kick(0, 0.25); this.tone(1400, 0.12, "square", 0.05, { slideTo: 2600 }); break;
       case "reveal": [0, 0.1, 0.2, 0.3].forEach((d, i) => this.tone(660 * Math.pow(2, [0, 4, 7, 12][i] / 12), 0.3, "square", 0.045, { delay: d })); this.tone(1320, 0.7, "triangle", 0.05, { delay: 0.4 }); break;
       case "stamp": this.kick(0, 0.2); this.noise(0.08, 0.06, { freq: 1500 }); this.tone(220, 0.08, "square", 0.04, { slideTo: 110 }); break;
@@ -158,7 +157,7 @@ export class ArenaAudio {
     if (!this.enabled || !this.musicEnabled) { this.track = name; return; }
     const ac = this.ensure(); if (!ac) return;
     this.track = name; this.intensity = intensity;
-    this.bpm = name === "lotto" ? 96 : 118;
+    this.bpm = name === "shuffle" ? 96 : 118;
     this.musicGain.gain.cancelScheduledValues(ac.currentTime);
     this.musicGain.gain.setTargetAtTime(0.5, ac.currentTime, 0.4);
     if (!this.timer) {
@@ -168,7 +167,7 @@ export class ArenaAudio {
   }
   setIntensity(v) {
     this.intensity = clamp(v, 0, 1);
-    const base = this.track === "lotto" ? 96 : 118, span = this.track === "lotto" ? 44 : 40;
+    const base = this.track === "shuffle" ? 96 : 118, span = this.track === "shuffle" ? 44 : 40;
     this.bpm = base + span * this.intensity;
   }
   duck(level = 0.12, time = 0.3) { if (this.musicGain && this.ctx) this.musicGain.gain.setTargetAtTime(level, this.ctx.currentTime, time); }
@@ -197,7 +196,7 @@ export class ArenaAudio {
       if (beat === 0 || (inten > 0.45 && beat === 2)) this.hat(delay, 0.018, dest);
       if (inten > 0.3) { const a = RACE_ARP[i]; if (a) this.tone(noteFreq(a), 0.1, "square", 0.03 * Math.min(1, (inten - 0.3) * 3), { delay, dest }); }
       if (inten > 0.6) { const l = RACE_LEAD[i]; if (l) this.tone(noteFreq(l), 0.26, "square", 0.045, { delay, dest }); }
-    } else if (this.track === "lotto") {
+    } else if (this.track === "shuffle") {
       const bass = LOTTO_BASS[i]; if (bass) this.tone(noteFreq(bass), 0.4, "triangle", 0.17, { delay, dest });
       if (inten > 0.35 && bar16 % 4 === 0) this.kick(delay, 0.1 + 0.08 * inten, dest);
       if (beat === 0) this.hat(delay, 0.012 + inten * 0.02, dest);
@@ -208,3 +207,4 @@ export class ArenaAudio {
     }
   }
 }
+

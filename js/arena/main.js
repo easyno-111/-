@@ -2,11 +2,10 @@
 import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js";
 import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js";
 import { fx, audio, host } from "./core.js";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawLottoScene, drawOrderScene } from "./render.js";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js";
 import { runRaceMode } from "./engines/race.js";
-import { runLottoMode } from "./engines/lotto.js";
 import { runTeamMode } from "./engines/teams.js";
-import { runListMode } from "./engines/order.js";
+import { runListMode, revealAllOrder } from "./engines/order.js";
 import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js";
 import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js";
 import { parseRosterFile } from "./roster.js";
@@ -16,13 +15,14 @@ const els = {};
 [
   "gameCanvas", "hudCanvas", "stage", "resultBoard", "countdown", "countdownText", "stageLabel", "liveRanks", "toast", "startBtn", "savePngBtn", "copyBtn",
   "minNum", "maxNum", "excludeInput", "directInput", "numberPad", "participantChips", "selectedCount", "participantBadge", "remainingLabel",
-  "countBlock", "teamBlock", "cameraBlock", "trackSelect", "cameraHelp", "styleBlock", "basisBlock", "comebackBlock", "excludeBlock",
-  "drawCount", "teamCount", "countLabel", "settingHint", "basisHelp", "comebackHelp", "styleLabel", "excludeWinners", "sessionResults",
+  "countBlock", "teamBlock", "cameraBlock", "trackSelect", "cameraHelp", "styleBlock", "comebackBlock", "excludeBlock",
+  "drawCount", "teamCount", "countLabel", "settingHint", "comebackHelp", "styleLabel", "excludeWinners", "sessionResults",
   "presetName", "presetSelect", "statParticipants", "statMode", "statStatus", "statResults", "soundBtn", "musicBtn", "fullscreenBtn", "stageFullscreenBtn", "closeResultBtn",
   "rosterChip", "rosterLabel", "rosterClearBtn", "importRosterBtn", "rosterFile", "rosterModal", "rosterList", "rosterSummary", "rosterSaveBtn", "rosterCancelBtn", "replayToggle", "scanlineToggle"
 ].forEach((id) => (els[id] = $(id)));
 let toastTimer = 0;
 let pendingRoster = [];
+const extra = Object.fromEntries(["paceBtn", "stopBtn", "cheerSelect", "followBtn", "spectatorControls", "raceNotice", "courseSelect"].map(id => [id, $(id)]));
 
 // ---------- 참가자 ----------
 function collectParticipants(showError = false) {
@@ -38,7 +38,7 @@ function collectParticipants(showError = false) {
   return numbers;
 }
 function eligibleParticipants() {
-  const shouldExclude = (state.mode === "quick" || state.mode === "rank") && els.excludeWinners.checked;
+  const shouldExclude = (state.mode === "quick") && els.excludeWinners.checked;
   return shouldExclude ? state.participants.filter((n) => !state.sessionDrawn.has(n)) : [...state.participants];
 }
 function refreshParticipants() {
@@ -53,6 +53,9 @@ function renderTrackOptions() {
   els.trackSelect.replaceChildren();
   const base = document.createElement("option"); base.value = ""; base.textContent = "추적할 번호 선택"; els.trackSelect.appendChild(base);
   nums.forEach((n) => { const o = document.createElement("option"); o.value = n; o.textContent = displayName(n); els.trackSelect.appendChild(o); });
+  extra.cheerSelect.replaceChildren(new Option('선택 안 함', ''), ...nums.map(n => new Option(displayName(n), n)));
+  if (state.cheerNum != null && nums.includes(state.cheerNum)) extra.cheerSelect.value = String(state.cheerNum);
+  else state.cheerNum = null;
   if (current != null && nums.includes(current)) els.trackSelect.value = String(current); else if (current != null) state.trackedNum = null;
 }
 function renderParticipantChips() {
@@ -106,34 +109,32 @@ function setInputType(type) {
 // ---------- 모드/설정 ----------
 function selectMode(mode) {
   if (state.running) { notify("진행 중에는 모드를 바꿀 수 없습니다.", true); return; }
-  state.mode = mode; const race = mode === "quick" || mode === "rank";
-  if (mode === "rank") { state.drawCount = clamp(state.drawCount, 1, 3); if (state.drawCount === 1) state.drawCount = 3; state.style = "tension"; }
+  mode = mode === "rank" ? "quick" : mode;
+  state.mode = mode; const race = mode === "quick";
   if (mode === "quick") { state.drawCount = clamp(state.drawCount, 1, 10); }
   document.querySelectorAll(".mode-card").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
-  els.countBlock.hidden = !race; els.teamBlock.hidden = mode !== "teams"; els.styleBlock.hidden = !race; els.basisBlock.hidden = !race; els.excludeBlock.hidden = !race;
-  els.countLabel.textContent = mode === "rank" ? "뽑을 순위" : "당첨 인원"; els.drawCount.textContent = state.drawCount; els.teamCount.textContent = state.teamCount;
+  els.countBlock.hidden = !race; els.teamBlock.hidden = mode !== "teams"; els.styleBlock.hidden = !race; els.excludeBlock.hidden = !race;
+  els.countLabel.textContent = "뽑을 인원"; els.drawCount.textContent = state.drawCount; els.teamCount.textContent = state.teamCount;
   els.startBtn.textContent = MODE_INFO[mode].start; els.settingHint.textContent = MODE_INFO[mode].hint; els.statMode.textContent = MODE_INFO[mode].name;
   updateSegmented(); hideResult(); resetStageForMode(); refreshParticipants(); renderSessionResults(); saveLastConfig();
 }
 function updateSegmented() {
-  document.querySelectorAll("[data-style]").forEach((b) => b.classList.toggle("active", b.dataset.style === state.style));
-  document.querySelectorAll("[data-basis]").forEach((b) => b.classList.toggle("active", b.dataset.basis === state.basis));
-  document.querySelectorAll("[data-comeback]").forEach((b) => b.classList.toggle("active", b.dataset.comeback === state.comeback));
-  document.querySelectorAll("[data-camera]").forEach((b) => b.classList.toggle("active", b.dataset.camera === state.cameraMode));
-  els.styleLabel.textContent = state.basis === "fair" ? "캡슐 공개 연출" : "핀볼 코스";
-  document.querySelectorAll("[data-style]").forEach((b) => { b.textContent = state.basis === "fair" ? (b.dataset.style === "quick" ? "빠르게" : "긴장감 있게") : (b.dataset.style === "quick" ? "장거리 코스" : "울트라 코스"); });
-  els.comebackBlock.hidden = state.basis !== "physics";
-  els.cameraBlock.hidden = !(state.mode === "teams" || ((state.mode === "quick" || state.mode === "rank") && state.basis === "physics"));
-  els.trackSelect.disabled = state.cameraMode !== "track";
-  els.cameraHelp.textContent = state.cameraMode === "track" ? (state.trackedNum == null ? "추적할 번호를 선택하면 해당 공을 계속 따라갑니다." : `${displayName(state.trackedNum)} 공을 추적합니다. 당첨 연출은 잠시 우선합니다.`) : state.cameraMode === "overview" ? "진행 중인 공 전체가 최대한 보이도록 화면을 맞춥니다." : "자동 카메라가 선두와 주요 장면을 따라갑니다. 결승에서는 슬로모션·사진 판정이 작동합니다.";
-  els.comebackHelp.textContent = state.comeback === "pure" ? "위치 보정 없이 갈림길·통과문·범퍼·혼합실의 물리 작용만 사용합니다." : state.comeback === "boost" ? "추격 바람을 일찍 강하게 적용하고, 누구나 밟을 수 있는 슬링샷 부스터를 코스에 추가합니다." : "갈림길과 시간차 통과문에 약한 추격 바람을 더합니다. 골인 구간에서는 보정이 자동으로 꺼집니다.";
-  els.basisHelp.textContent = state.basis === "fair" ? "모든 번호를 같은 확률로 뽑고, 캡슐에 담긴 공이 추출관을 지나 흔들린 뒤 공개됩니다." : "중앙 골을 실제로 통과한 순서로 결정합니다. 골인 직전에는 슬로모션·확대·사진 판정과 리플레이가 작동합니다.";
-  if (state.mode === "quick") els.startBtn.textContent = state.basis === "fair" ? "로또 추첨 시작" : "핀볼 레이스 시작";
-  if (state.mode === "rank") els.startBtn.textContent = state.basis === "fair" ? "1~3등 로또 추첨 시작" : "순위 레이스 시작";
-  if (state.mode === "quick" || state.mode === "rank") els.settingHint.textContent = state.basis === "fair" ? "로또 캡슐 공정 추첨" : (state.style === "quick" ? "장거리 물리 코스" : "울트라 물리 코스");
+  document.querySelectorAll('[data-style]').forEach(b => { b.classList.toggle('active', b.dataset.style === state.style); b.textContent = b.dataset.style === 'quick' ? '기본 코스' : '긴 코스'; });
+  document.querySelectorAll('[data-comeback]').forEach(b => b.classList.toggle('active', b.dataset.comeback === state.comeback));
+  document.querySelectorAll('[data-camera]').forEach(b => b.classList.toggle('active', b.dataset.camera === state.cameraMode));
+  els.styleLabel.textContent = '코스 길이';
+  extra.courseSelect.value = state.course;
+  extra.courseSelect.closest('.setting-block').hidden = state.mode !== 'quick';
+  els.comebackBlock.hidden = state.mode !== 'quick';
+  els.cameraBlock.hidden = state.mode === 'order';
+  els.trackSelect.disabled = state.cameraMode !== 'track';
+  els.cameraHelp.textContent = '자동은 선두, 전체는 전체 코스, 번호 추적은 선택한 공을 따라갑니다.';
+  els.comebackHelp.textContent = state.comeback === 'pure' ? '갈림길·범퍼·통과문으로 역전합니다. 막힌 공을 푸는 공통 구조 동작은 적용됩니다.' : '뒤처진 공에 추격 바람을 적용합니다. 결승 구간에서는 꺼지며, 특정 번호를 지정하지 않습니다.';
+  extra.followBtn.setAttribute('aria-pressed', String(state.cameraMode === 'track' && state.trackedNum === state.cheerNum && state.cheerNum != null));
+  if (state.mode === 'quick') { els.startBtn.textContent = '핀볼 레이스 시작'; els.settingHint.textContent = `${state.drawCount}명 선발 · 실제 골인 순서`; }
 }
-function changeCount(delta) { const max = state.mode === "rank" ? 3 : 10; state.drawCount = clamp(state.drawCount + delta, 1, max); els.drawCount.textContent = state.drawCount; audio.sfx("ui"); saveLastConfig(); if (!state.running) drawIdle(); }
-function changeTeams(delta) { state.teamCount = clamp(state.teamCount + delta, 2, 8); els.teamCount.textContent = state.teamCount; audio.sfx("ui"); saveLastConfig(); if (!state.running) { resizeCanvas(); drawIdle(); } }
+function changeCount(delta) { if (state.running) return; const max = 10; state.drawCount = clamp(state.drawCount + delta, 1, max); els.drawCount.textContent = state.drawCount; updateSegmented(); audio.sfx("ui"); saveLastConfig(); if (!state.running) drawIdle(); }
+function changeTeams(delta) { if (state.running) return; state.teamCount = clamp(state.teamCount + delta, 2, 8); els.teamCount.textContent = state.teamCount; audio.sfx("ui"); saveLastConfig(); if (!state.running) { resizeCanvas(); drawIdle(); } }
 function resetStageForMode() {
   state.engine = "idle"; state.results = []; state.lastResult = null; els.savePngBtn.disabled = true; els.copyBtn.disabled = true; els.statResults.textContent = "0명"; els.statStatus.textContent = "대기";
   setStageLabel(state.mode === "teams" ? "참가 번호를 여러 팀으로 고르게 나눕니다" : state.mode === "order" ? "모든 참가 번호의 순서를 정합니다" : "설정을 확인하고 추첨을 시작하세요");
@@ -150,18 +151,18 @@ async function startDraw() {
   state.participants = participants; const eligible = eligibleParticipants();
   const needed = state.mode === "teams" ? state.teamCount : state.mode === "order" ? 1 : state.drawCount;
   if (eligible.length < needed) { notify("남은 참가 번호가 필요한 인원보다 적습니다. 당첨 기록을 초기화하거나 인원을 줄여주세요.", true); return; }
-  if ((state.mode === "quick" || state.mode === "rank") && eligible.length > 48) { notify("레이스와 로또는 번호가 잘 보이도록 최대 48명까지 참가할 수 있습니다.", true); return; }
+  if ((state.mode === "quick") && eligible.length > 48) { notify("핀볼 레이스는 번호가 잘 보이도록 최대 48명까지 참가할 수 있습니다.", true); return; }
   if ((state.mode === "teams" || state.mode === "order") && eligible.length > 120) { notify("팀과 순서 모드는 최대 120명까지 사용할 수 있습니다.", true); return; }
   hideResult(); state.results = []; state.lastResult = null; renderLiveRanks(); els.savePngBtn.disabled = true; els.copyBtn.disabled = true;
   state.runToken++; const token = state.runToken; state.running = true; state.ending = false; els.startBtn.disabled = true; setStatus("카운트");
-  state.courseSeed = newSeed(); saveLastConfig();
+  state.courseSeed = newSeed(); state.spectatorSpeed = 1; state.raceEvent = null;
+  setRunView(true); saveLastConfig();
   try {
     if (state.mode === "teams") await runTeamMode(eligible, token);
     else if (state.mode === "order") await runListMode(eligible, token);
-    else if (state.basis === "fair") await runLottoMode(eligible, token);
     else await runRaceMode(eligible, token);
   } catch (err) {
-    console.error(err); state.running = false; els.startBtn.disabled = false; setStatus("오류"); notify("추첨 중 문제가 생겼습니다. 다시 시도해주세요.", true); audio.stopTrack(0.2);
+    console.error(err); setRunView(false); state.running = false; els.startBtn.disabled = false; setStatus("오류"); notify("추첨 중 문제가 생겼습니다. 다시 시도해주세요.", true); audio.stopTrack(0.2);
   }
 }
 async function countdown(token) {
@@ -182,13 +183,14 @@ function renderLiveRanks() {
   if (!state.results.length) { const p = document.createElement("span"); p.className = "rank-placeholder"; p.textContent = "추첨 결과가 여기에 차례대로 기록됩니다."; els.liveRanks.appendChild(p); return; }
   const chip = (label, num) => { const c = document.createElement("div"); c.className = "rank-chip"; const b = document.createElement("b"); b.textContent = label; const s = document.createElement("span"); s.textContent = displayName(num); c.append(b, s); return c; };
   if (state.mode === "teams") { state.teamAssignments.slice(-16).forEach((a) => els.liveRanks.appendChild(chip(`${a.team}조`, a.num))); return; }
-  state.results.forEach((n, i) => els.liveRanks.appendChild(chip(state.mode === "rank" ? `${i + 1}등` : `${i + 1}`, n)));
+  state.results.forEach((n, i) => els.liveRanks.appendChild(chip(`${i + 1}등`, n)));
 }
 function afterRun(results) {
-  if (results && els.excludeWinners.checked && (state.mode === "quick" || state.mode === "rank")) results.forEach((n) => state.sessionDrawn.add(n));
+  setRunView(false);
+  if (results && els.excludeWinners.checked && (state.mode === "quick")) results.forEach((n) => state.sessionDrawn.add(n));
   renderSessionResults(); refreshParticipants();
   els.startBtn.disabled = false; els.savePngBtn.disabled = false; els.copyBtn.disabled = false;
-  els.startBtn.textContent = state.mode === "teams" ? "다시 팀 나누기" : state.mode === "order" ? "다시 섞기" : state.mode === "rank" ? (state.basis === "fair" ? "다음 로또 추첨" : "다음 순위 레이스") : "다시 추첨";
+  els.startBtn.textContent = state.mode === "teams" ? "다시 팀 나누기" : state.mode === "order" ? "다시 섞기" : "다음 레이스";
   els.statResults.textContent = `${state.results.length}명`; setStatus("완료");
 }
 function renderSessionResults() {
@@ -198,6 +200,23 @@ function renderSessionResults() {
   els.remainingLabel.textContent = `남은 ${eligibleParticipants().length}명`;
 }
 function resetSession() { if (state.running) { notify("진행 중에는 기록을 초기화할 수 없습니다.", true); return; } state.sessionDrawn.clear(); renderSessionResults(); refreshParticipants(); notify("이번 당첨 기록을 초기화했습니다."); }
+
+function setRunView(running) {
+  document.body.classList.toggle('racing', running);
+  extra.paceBtn.hidden = !running; extra.stopBtn.hidden = !running;
+  extra.spectatorControls.hidden = !running || state.mode === 'order';
+  extra.paceBtn.textContent = state.mode === 'order' ? '결과 바로 보기' : '빠르게 진행';
+  extra.raceNotice.textContent = '';
+  document.querySelectorAll('.control-panel input, .control-panel select, .control-panel textarea, .control-panel button, .mode-card').forEach(el => { el.disabled = running; });
+  if (running) { els.stage.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(redraw, 100); }
+  else setTimeout(redraw, 100);
+}
+function cancelRun() {
+  state.runToken++; cancelAnimationFrame(state.animationId); state.running = false; state.ending = false; state.spectatorSpeed = 1;
+  state.replayState = null; state.orderGame = null; state.raceEvent = null;
+  els.countdown.classList.remove('show'); audio.stopTrack(.2); setRunView(false); resetStageForMode();
+  notify('진행을 중단했습니다. 이번 결과는 기록하지 않았습니다.');
+}
 
 // ---------- 프리셋 ----------
 function renderPresets(selected = "") {
@@ -272,25 +291,26 @@ function saveRosterSelection() {
 
 // ---------- 설정 저장 ----------
 function saveLastConfig() {
-  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, style: state.style, basis: state.basis, comeback: state.comeback, cameraMode: state.cameraMode, trackedNum: state.trackedNum, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
+  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, course: state.course, style: state.style, basis: state.basis, comeback: state.comeback, cameraMode: state.cameraMode, trackedNum: state.trackedNum, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
   try { localStorage.setItem(LAST_KEY, JSON.stringify(data)); } catch {}
 }
 function restoreLastConfig() {
   let d = null;
   try { d = JSON.parse(localStorage.getItem(LAST_KEY) || "null"); } catch {}
-  if (!d) { try { d = JSON.parse(localStorage.getItem("randomArenaLastV6") || "null"); } catch {} }
+  if (!d) { try { d = JSON.parse(localStorage.getItem("randomArenaLastV7") || localStorage.getItem("randomArenaLastV6") || "null"); } catch {} }
+  if (d && (typeof d !== "object" || Array.isArray(d))) d = null;
   if (!d) { setInputType("range"); selectMode("quick"); return; }
   els.minNum.value = d.min || 1; els.maxNum.value = d.max || 30; els.excludeInput.value = d.exclude || ""; els.directInput.value = d.direct || "";
   state.inputType = d.inputType === "direct" ? "direct" : "range";
-  state.style = d.style === "tension" ? "tension" : "quick"; state.basis = d.basis === "physics" ? "physics" : "fair";
-  state.comeback = d.comeback === "pure" ? "pure" : d.comeback === "boost" ? "boost" : "natural";
+  state.style = d.style === "tension" ? "tension" : "quick"; state.basis = "physics"; state.course = ["factory", "split", "tower"].includes(d.course) ? d.course : "factory";
+  state.comeback = ["pure", "natural", "boost"].includes(d.comeback) ? d.comeback : "pure";
   state.cameraMode = ["auto", "overview", "track"].includes(d.cameraMode) ? d.cameraMode : "auto";
   state.trackedNum = Number.isFinite(Number(d.trackedNum)) && d.trackedNum !== null ? Number(d.trackedNum) : null;
   state.drawCount = clamp(Number(d.drawCount) || 1, 1, 10); state.teamCount = clamp(Number(d.teamCount) || 4, 2, 8);
   state.sound = d.sound !== false; state.music = d.music !== false; state.scanlines = d.scanlines !== false; state.replay = d.replay !== false;
   state.names = d.names && typeof d.names === "object" ? d.names : {}; state.rosterLabel = d.rosterLabel || "";
   els.excludeWinners.checked = d.excludeWinners !== false;
-  setInputType(state.inputType); selectMode(MODE_INFO[d.mode] ? d.mode : "quick");
+  setInputType(state.inputType); selectMode(d.mode === "rank" ? "quick" : MODE_INFO[d.mode] ? d.mode : "quick");
 }
 
 // ---------- 보조 ----------
@@ -314,7 +334,7 @@ function applyAudioButtons() {
 function toggleSound() { state.sound = !state.sound; applyAudioButtons(); if (state.sound) audio.sfx("ui"); saveLastConfig(); notify(state.sound ? "효과음을 켰습니다." : "효과음을 껐습니다."); }
 function toggleMusic() { state.music = !state.music; applyAudioButtons(); if (state.music && state.running && audio.track) audio.playTrack(audio.track, audio.intensity); saveLastConfig(); notify(state.music ? "음악을 켰습니다." : "음악을 껐습니다."); }
 function applyScanlines() { document.body.classList.toggle("crt", state.scanlines); els.scanlineToggle.checked = state.scanlines; }
-function redraw() { resizeCanvas(); if (!state.running) drawIdle(); else if (state.engine === "lotto") drawLottoScene(); else if (state.engine === "list") drawOrderScene(performance.now()); else drawScene(); }
+function redraw() { resizeCanvas(); if (!state.running) drawIdle(); else if (state.engine === "list") drawOrderScene(performance.now()); else drawScene(); }
 async function togglePresentation() {
   state.presenting = !state.presenting; document.body.classList.toggle("presenting", state.presenting);
   els.fullscreenBtn.textContent = state.presenting ? "원래 화면" : "무대 크게 보기";
@@ -326,7 +346,7 @@ function bindEvents() {
   document.querySelectorAll(".mode-card").forEach((b) => b.addEventListener("click", () => { audio.sfx("ui"); selectMode(b.dataset.mode); }));
   document.querySelectorAll("[data-input-type]").forEach((b) => b.addEventListener("click", () => setInputType(b.dataset.inputType)));
   const segment = (attr, key) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => { if (state.running) return; state[key] = b.dataset[attr]; audio.sfx("ui"); updateSegmented(); state.courseSeed = newSeed(); resizeCanvas(); drawIdle(); saveLastConfig(); }));
-  segment("style", "style"); segment("basis", "basis"); segment("comeback", "comeback");
+  segment("style", "style"); segment("comeback", "comeback");
   document.querySelectorAll("[data-camera]").forEach((b) => b.addEventListener("click", () => { state.cameraMode = b.dataset.camera; if (state.cameraMode === "track" && state.trackedNum == null && state.participants.length) { state.trackedNum = state.participants[0]; els.trackSelect.value = String(state.trackedNum); } updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); }));
   els.trackSelect.addEventListener("change", () => { state.trackedNum = els.trackSelect.value === "" ? null : Number(els.trackSelect.value); if (state.trackedNum != null) state.cameraMode = "track"; updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); });
   [els.minNum, els.maxNum, els.excludeInput, els.directInput].forEach((el) => el.addEventListener("input", () => { if (!state.running) { refreshParticipants(); drawIdle(); } }));
@@ -343,13 +363,13 @@ function bindEvents() {
   els.excludeWinners.addEventListener("change", () => { refreshParticipants(); renderSessionResults(); saveLastConfig(); });
   els.replayToggle.addEventListener("change", () => { state.replay = els.replayToggle.checked; saveLastConfig(); });
   els.scanlineToggle.addEventListener("change", () => { state.scanlines = els.scanlineToggle.checked; applyScanlines(); saveLastConfig(); });
-  els.stage.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) return; if (state.running && state.engine === "list" && state.orderGame) { state.orderGame.fast = !state.orderGame.fast; audio.sfx("ui"); } });
+
   let resizeTimer = 0;
   window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(redraw, 120); });
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && state.presenting) { state.presenting = false; document.body.classList.remove("presenting"); els.fullscreenBtn.textContent = "무대 크게 보기"; setTimeout(redraw, 100); } });
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input,textarea,select") || els.rosterModal.open) return;
-    if (e.code === "Space") { e.preventDefault(); if (state.running && state.engine === "list" && state.orderGame) { state.orderGame.fast = !state.orderGame.fast; return; } startDraw(); }
+    if (e.code === "Space") { e.preventDefault(); if (state.running && state.engine === "list" && state.orderGame) { revealAllOrder(); return; } startDraw(); }
     else if (e.key.toLowerCase() === "f") { e.preventDefault(); togglePresentation(); }
     else if (e.key === "Escape" && els.resultBoard.classList.contains("show")) hideResult();
   });
@@ -362,9 +382,15 @@ async function init() {
   initRenderer(els.gameCanvas, els.hudCanvas, els.stage);
   initResults({ resultBoard: els.resultBoard, stageLabel: els.stageLabel, closeResultBtn: els.closeResultBtn }, { again: startDraw, notify });
   Object.assign(host, {
-    setStatus, setStageLabel, renderLiveRanks, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
+    setStatus, setStageLabel, renderLiveRanks,
+    raceNotice(event) { extra.raceNotice.textContent = event.type === 'lead' ? `선두 교체 · ${displayName(event.previous)} → ${displayName(event.num)}` : `${displayName(event.num)} · ${event.gain}계단 상승! ${event.from}위 → ${event.to}위`; }, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
     showRaceResults, showTeamResults, showOrderResults, afterRun, notify, celebrate, countdown
   });
+  extra.courseSelect.addEventListener('change', () => { if (state.running) return; state.course = extra.courseSelect.value; resetStageForMode(); saveLastConfig(); });
+  extra.cheerSelect.addEventListener('change', () => { state.cheerNum = extra.cheerSelect.value ? Number(extra.cheerSelect.value) : null; if (state.cameraMode === 'track') state.trackedNum = state.cheerNum; updateSegmented(); });
+  extra.followBtn.addEventListener('click', () => { if (state.cheerNum == null) { notify('응원할 번호를 먼저 선택하세요.'); return; } state.cameraMode = state.cameraMode === 'track' ? 'auto' : 'track'; state.trackedNum = state.cheerNum; updateSegmented(); });
+  extra.stopBtn.addEventListener('click', cancelRun);
+  extra.paceBtn.addEventListener('click', () => { if (state.engine === 'list') revealAllOrder(); else { state.spectatorSpeed = state.spectatorSpeed === 1 ? 4 : 1; extra.paceBtn.textContent = state.spectatorSpeed === 1 ? '빠르게 진행' : '기본 속도'; } });
   buildNumberPad(); bindEvents(); renderPresets(); restoreLastConfig();
   applyAudioButtons(); applyScanlines(); els.replayToggle.checked = state.replay;
   refreshParticipants(); renderSessionResults(); resizeCanvas(); drawIdle();
@@ -373,3 +399,4 @@ async function init() {
   window.__arena = { state, fx, audio, startDraw, selectMode, redraw };
 }
 init();
+

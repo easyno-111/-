@@ -1,6 +1,6 @@
 // 엑셀 명단 가져오기: 학적 현황표(가로 반복 배치)나 단순 번호·이름 표를 반별로 묶는다.
 // 이름은 저장 전에 반드시 가려진다 (이지후 → 이O후). 원본 이름은 메모리에 남기지 않는다.
-import { maskName } from "./util.js?v=8.1";
+import { maskName } from "./util.js?v=8.2";
 
 const NUM_HEADERS = new Set(["번호", "no", "no.", "num", "number", "출석번호", "학번", "순번"]);
 const NAME_HEADERS = new Set(["성명", "이름", "학생명", "name", "학생이름", "성명(이름)", "학생성명"]);

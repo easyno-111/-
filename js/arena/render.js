@@ -1,10 +1,11 @@
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.2';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.1";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.1";
-import { pix, fx } from "./core.js?v=8.1";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.1";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.1";
-import { secureShuffle } from "./util.js?v=8.1";
+import { clamp, makeRand, lerp } from "./util.js?v=8.2";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.2";
+import { pix, fx } from "./core.js?v=8.2";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.2";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.2";
+import { secureShuffle } from "./util.js?v=8.2";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -42,6 +43,7 @@ export function resizeCanvas() {
   els.hud.style.width = `${state.W}px`; els.hud.style.height = `${state.H}px`;
   hud.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
   bgCache = null;
+  if (state.chase && (Math.abs(state.W - oldW) > 1 || Math.abs(state.H - oldH) > 1)) state.chase.cancelled = true;
   if (!state.zoomFocusX) state.zoomFocusX = state.W / 2;
   if (state.running && state.engine === "race" && state.balls.length) {
     const nextWorld = raceWorldHeight(), sx = state.W / oldW, sy = nextWorld / oldWorld;
@@ -160,24 +162,16 @@ function drawCourse() {
   }
   for (const wheel of state.wheels) {
     if (wheel.y + wheel.r < top || wheel.y - wheel.r > bottom) continue;
-    const x = mapX(wheel.x), y = mapY(wheel.y), r = Math.max(4, Math.round(wheel.r * u));
-    const [light, base, dark] = shades(wheel.color);
-    pix.disc(x, y, r + 2, PAL.ink); pix.disc(x, y, r, dark);
-    pix.ditherDisc(x, y, r - 3, base, 3);
-    pix.ring(x, y, r - 1, wheel.hit > 0 ? PAL.white : light);
-    pix.ring(x, y, Math.max(2, r - 5), base);
-    // Six broad rotating spokes, riveted rim and a solid axle.
-    for (let i = 0; i < 6; i++) {
-      const angle = wheel.angle + i * Math.PI / 3;
-      const ex = Math.round(x + Math.cos(angle) * (r - 7)), ey = Math.round(y + Math.sin(angle) * (r - 7));
-      pix.line(x, y, ex, ey, PAL.ink, Math.max(3, Math.round(13 * u)));
-      pix.line(x, y, ex, ey, i % 2 ? base : light, Math.max(1, Math.round(7 * u)));
-      pix.disc(ex, ey, Math.max(1, Math.round(3 * u)), PAL.steel3);
+    const x = mapX(wheel.x), y = mapY(wheel.y), [light, base] = shades(wheel.color);
+    for (const segment of wheelSegments(wheel)) {
+      thickLine(mapX(segment.x1), mapY(segment.y1), mapX(segment.x2), mapY(segment.y2), segment.w,
+        { edge: PAL.ink, core: wheel.hit > 0 ? light : base, glow: light });
     }
-    const hub = Math.max(3, Math.round(18 * u));
-    pix.disc(x, y, hub + 2, PAL.ink); pix.disc(x, y, hub, PAL.steel1);
-    pix.ring(x, y, Math.max(2, hub - 2), PAL.steel3); pix.disc(x, y, Math.max(2, hub / 3 | 0), light);
+    const hub = Math.max(3, Math.round(wheelHubRadius(wheel) * u));
+    pix.disc(x, y, hub + 1, PAL.ink); pix.disc(x, y, hub, PAL.steel1);
+    pix.ring(x, y, Math.max(2, hub - 1), PAL.steel3); pix.disc(x, y, Math.max(2, hub / 3 | 0), light);
   }
+
   for (const r of state.rotors) {
     if (r.y < top - 80 || r.y > bottom + 80) continue;
     const len = r.len * u, cx = mapX(r.x), cy = mapY(r.y), t = Math.max(2, Math.round(10 * u));
@@ -230,6 +224,16 @@ function drawBallSprite(b, x, y, rr, now) {
   if (b.glow > 0.05) pix.ring(x, y, rr + 3, PAL.gold2);
   if (state.cheerNum === b.num || (state.cameraMode === "track" && state.trackedNum === b.num)) { pix.ring(x, y, rr + 4 + (Math.floor(now / 150) % 2), PAL.green2); }
   if (now < (b.overtakeUntil || 0)) { pix.ring(x, y, rr + 6, PAL.gold2); pix.hline(x - rr, x + rr, y - rr - 8, PAL.gold2); }
+  if ((b.boostFlame || 0) > .02) {
+    const dx = b.boostDx || 0, dy = b.boostDy || 1, length = Math.hypot(dx, dy), nx = -dx / length, ny = -dy / length;
+    const power = b.boostFlame, flicker = 1 + Math.sin(now * .06 + b.num) * .15;
+    const tail = rr * (2.6 + power) * flicker;
+    const sx = x + nx * rr * .6, sy = y + ny * rr * .6;
+    pix.line(Math.round(sx), Math.round(sy), Math.round(x + nx * tail), Math.round(y + ny * tail), PAL.orange1, Math.max(3, Math.round(rr * 1.1 * power)));
+    pix.line(Math.round(sx), Math.round(sy), Math.round(x + nx * tail * .76), Math.round(y + ny * tail * .76), PAL.gold2, Math.max(2, Math.round(rr * .7 * power)));
+    pix.line(Math.round(sx), Math.round(sy), Math.round(x + nx * tail * .4), Math.round(y + ny * tail * .4), PAL.white, Math.max(1, Math.round(rr * .35 * power)));
+    for (let i = 0; i < 4; i++) { const t = ((now * .002 + i / 4) % 1), side = Math.sin(i * 7 + now * .01) * rr * .5; pix.rect(Math.round(x + nx * (rr + tail * t) - ny * side), Math.round(y + ny * (rr + tail * t) + nx * side), 2, 2, i % 2 ? PAL.gold2 : PAL.orange1); }
+  }
   pix.ball(x, y, rr, b.color);
 }
 function drawBallLabel(b, x, y, rr) {
@@ -244,11 +248,12 @@ export function drawScene() {
   drawBackground(state.cameraY, "race");
   drawCourse();
   const u = unit(), replay = !!state.replayState, labels = [];
+  const [visibleTop, visibleBottom] = visibleRange();
   for (const b of state.balls) {
     const active = replay ? (b.rActive ?? b.active) : b.active;
     if (!active && !b.finished) continue;
     const wx = replay ? (b.rx ?? b.x) : b.x, wy = replay ? (b.ry ?? b.y) : b.y;
-    if (wy < state.cameraY - 60 || wy > state.cameraY + state.H / state.zoom + 60 + cinematicAnchorY()) continue;
+    if (wy < visibleTop || wy > visibleBottom) continue;
     const x = mapX(wx), y = mapY(wy), rr = Math.max(2, Math.round(b.r * u));
     if (x < -20 || y < -20 || x > pix.w + 20 || y > pix.h + 20) continue;
     drawBallSprite(b, x, y, rr, now);
@@ -265,7 +270,7 @@ export function drawScene() {
   if (replay) { drawReplayTag(now); drawFloaters(); return; }
   if (state.engine === "teams") drawTeamHud(); else drawRaceHud();
   drawMinimap();
-  if (state.engine === "race") drawComebackBanner(now);
+  if (state.chase) drawChaseBanner(); else if (state.engine === "race") drawComebackBanner(now);
   drawTrackingIndicator();
   drawWinnerEffect(now);
   drawTeamAssignEffect(now);
@@ -281,7 +286,7 @@ function drawLetterbox() {
   hud.fillStyle = PAL.ink; hud.fillRect(0, 0, state.W, h); hud.fillRect(0, state.H - h, state.W, h);
 }
 function drawRaceHud() {
-  const ranked = state.balls.filter((b) => b.active).sort((a, b) => b.y - a.y).slice(0, 3), boxW = state.W < 520 ? 118 : 150, rowH = 20, boxH = 30 + ranked.length * rowH;
+  const ranked = state.balls.filter((b) => b.active).sort((a, b) => b.y - a.y).slice(0, 3), boxW = state.W < 520 ? 118 : 150, rowH = 20, boxH = 48 + ranked.length * rowH;
   panel(12, 56, boxW, boxH);
   text("주행 TOP 3", 22, 72, { size: 12, color: PAL.cyan2, align: "left", outline: false });
   ranked.forEach((b, i) => {
@@ -290,12 +295,7 @@ function drawRaceHud() {
     const progress = clamp(b.y / state.worldH, 0, 1);
     hud.fillStyle = "rgba(255,255,255,.1)"; hud.fillRect(12 + boxW - 42, y - 2, 32, 4); hud.fillStyle = i === 0 ? PAL.gold1 : PAL.cyan2; hud.fillRect(12 + boxW - 42, y - 2, Math.round(32 * progress), 4);
   });
-  if (state.chaseWind > 0.04) {
-    hud.save(); hud.globalAlpha = state.chaseWind;
-    const label = state.comeback === "boost" ? "↯ 강화 추격 발동" : "↯ 추격 바람 발동", w = textWidth(label, 12) + 24;
-    panel(state.W / 2 - w / 2, 58, w, 24, { fill: "rgba(13,92,122,.85)", edge: PAL.cyan2 });
-    text(label, state.W / 2, 70, { size: 12, color: PAL.cyan3, outline: false }); hud.restore();
-  }
+  text(`${Math.floor(state.raceElapsed || 0)}초${state.chase ? ' · 시간 정지' : ''}`, 22, 56 + boxH - 10, { size: 11, color: PAL.steel3, align: 'left', outline: false });
   if (state.photoFinish) {
     const blink = Math.floor(performance.now() / 140) % 2 === 0;
     text("PHOTO FINISH!", state.W / 2, state.H * 0.2, { size: state.W < 520 ? 24 : 32, color: blink ? PAL.gold2 : "#ffffff", outlineWidth: 5 });
@@ -331,6 +331,13 @@ function drawMinimap() {
   const viewTop = clamp(state.cameraY, 0, state.worldH), viewBottom = clamp(state.cameraY + state.H / state.zoom, 0, state.worldH);
   hud.strokeStyle = PAL.cyan2; hud.lineWidth = 2; hud.strokeRect(x + 3, Math.round(y + 4 + viewTop * sy), w - 6, Math.max(5, (viewBottom - viewTop) * sy));
   text("MAP", x + w / 2, y - 8, { size: 10, color: PAL.cyan3, outline: false });
+}
+function drawChaseBanner() {
+  const e = state.chase, w = Math.min(state.W - 30, 390), y = state.W < 520 ? 195 : 80;
+  panel((state.W - w) / 2, y, w, 72, { edge: PAL.orange1, fill: 'rgba(35,16,5,.96)' });
+  const phase = { freeze: '시간 정지', pan: '추격 대상을 비춥니다', charge: '부스터 점화!', boost: '추격 발진!', return: '경기 재개 준비' }[e.phase];
+  text(e.type === 'mid' ? `하위 50% · ${e.plans.length}명 부스터` : `꼴등 부스터 · ${e.plans[0].num}번`, state.W / 2, y + 23, { size: state.W < 520 ? 17 : 22, color: PAL.gold2 });
+  text(phase, state.W / 2, y + 50, { size: 14 });
 }
 function drawComebackBanner(now) {
   const event = state.raceEvent;

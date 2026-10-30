@@ -1,14 +1,14 @@
 // 랜덤 아레나 V7 진입점: DOM 연결, 참가자/설정, 프리셋, 엑셀 명단, 실행 흐름
-import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.1";
-import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.1";
-import { fx, audio, host } from "./core.js?v=8.1";
-import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.1";
-import { runRaceMode } from "./engines/race.js?v=8.1";
-import { runTeamMode } from "./engines/teams.js?v=8.1";
-import { runListMode, revealAllOrder } from "./engines/order.js?v=8.1";
-import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.1";
-import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.1";
-import { parseRosterFile } from "./roster.js?v=8.1";
+import { clamp, sleep, parseSpec, newSeed, randomInt } from "./util.js?v=8.2";
+import { state, MODE_INFO, LAST_KEY, displayName } from "./state.js?v=8.2";
+import { fx, audio, host } from "./core.js?v=8.2";
+import { initRenderer, resizeCanvas, drawIdle, drawScene, drawOrderScene } from "./render.js?v=8.2";
+import { runRaceMode } from "./engines/race.js?v=8.2";
+import { runTeamMode } from "./engines/teams.js?v=8.2";
+import { runListMode, revealAllOrder } from "./engines/order.js?v=8.2";
+import { initResults, showRaceResults, showTeamResults, showOrderResults, hideResult, copyResult, saveResultsPng } from "./results.js?v=8.2";
+import { loadPresets, upsertPreset, upsertMany, deletePreset, findPreset } from "./presets.js?v=8.2";
+import { parseRosterFile } from "./roster.js?v=8.2";
 
 const $ = (id) => document.getElementById(id);
 const els = {};
@@ -22,7 +22,7 @@ const els = {};
 ].forEach((id) => (els[id] = $(id)));
 let toastTimer = 0;
 let pendingRoster = [];
-const extra = Object.fromEntries(["paceBtn", "stopBtn", "cheerSelect", "followBtn", "spectatorControls", "raceNotice", "courseSelect"].map(id => [id, $(id)]));
+const extra = Object.fromEntries(["paceBtn", "stopBtn", "cheerSelect", "followBtn", "spectatorControls", "raceNotice", "courseSelect", "boostMidToggle", "boostFinalToggle"].map(id => [id, $(id)]));
 
 // ---------- 참가자 ----------
 function collectParticipants(showError = false) {
@@ -120,7 +120,7 @@ function selectMode(mode) {
 }
 function updateSegmented() {
   document.querySelectorAll('[data-style]').forEach(b => { b.classList.toggle('active', b.dataset.style === state.style); b.textContent = b.dataset.style === 'quick' ? '기본 코스' : '긴 코스'; });
-  document.querySelectorAll('[data-comeback]').forEach(b => b.classList.toggle('active', b.dataset.comeback === state.comeback));
+  extra.boostMidToggle.checked = state.boostMidEnabled; extra.boostFinalToggle.checked = state.boostFinalEnabled;
   document.querySelectorAll('[data-camera]').forEach(b => b.classList.toggle('active', b.dataset.camera === state.cameraMode));
   els.styleLabel.textContent = '코스 길이';
   extra.courseSelect.value = state.course;
@@ -129,7 +129,7 @@ function updateSegmented() {
   els.cameraBlock.hidden = state.mode === 'order';
   els.trackSelect.disabled = state.cameraMode !== 'track';
   els.cameraHelp.textContent = '자동은 선두, 전체는 넓은 범위, 번호 추적은 선택한 공을 따라갑니다.';
-  els.comebackHelp.textContent = state.comeback === 'pure' ? '갈림길·범퍼·통과문으로 역전합니다. 막힌 공을 푸는 공통 구조 동작은 적용됩니다.' : '뒤처진 공에 추격 바람을 적용합니다. 결승 구간에서는 꺼지며, 특정 번호를 지정하지 않습니다.';
+
   extra.followBtn.setAttribute('aria-pressed', String(state.cameraMode === 'track' && state.trackedNum === state.cheerNum && state.cheerNum != null));
   if (state.mode === 'quick') { els.startBtn.textContent = '핀볼 레이스 시작'; els.settingHint.textContent = `${state.drawCount}명 선발 · 실제 골인 순서`; }
 }
@@ -213,7 +213,7 @@ function setRunView(running) {
 }
 function cancelRun() {
   state.runToken++; cancelAnimationFrame(state.animationId); state.running = false; state.ending = false; state.spectatorSpeed = 1;
-  state.replayState = null; state.orderGame = null; state.raceEvent = null;
+  state.replayState = null; state.orderGame = null; state.raceEvent = null; state.chase = null; state.raceElapsed = 0;
   els.countdown.classList.remove('show'); audio.stopTrack(.2); setRunView(false); resetStageForMode();
   notify('진행을 중단했습니다. 이번 결과는 기록하지 않았습니다.');
 }
@@ -291,7 +291,7 @@ function saveRosterSelection() {
 
 // ---------- 설정 저장 ----------
 function saveLastConfig() {
-  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, course: state.course, style: state.style, basis: state.basis, comeback: state.comeback, cameraMode: state.cameraMode, trackedNum: state.trackedNum, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
+  const data = { inputType: state.inputType, min: els.minNum.value, max: els.maxNum.value, exclude: els.excludeInput.value, direct: els.directInput.value, mode: state.mode, course: state.course, style: state.style, basis: state.basis, boostMidEnabled: state.boostMidEnabled, boostFinalEnabled: state.boostFinalEnabled, cameraMode: state.cameraMode, trackedNum: state.trackedNum, drawCount: state.drawCount, teamCount: state.teamCount, sound: state.sound, music: state.music, scanlines: state.scanlines, replay: state.replay, excludeWinners: els.excludeWinners.checked, names: state.names, rosterLabel: state.rosterLabel };
   try { localStorage.setItem(LAST_KEY, JSON.stringify(data)); } catch {}
 }
 function restoreLastConfig() {
@@ -303,7 +303,7 @@ function restoreLastConfig() {
   els.minNum.value = d.min || 1; els.maxNum.value = d.max || 30; els.excludeInput.value = d.exclude || ""; els.directInput.value = d.direct || "";
   state.inputType = d.inputType === "direct" ? "direct" : "range";
   state.style = d.style === "tension" ? "tension" : "quick"; state.basis = "physics"; state.course = ["factory", "split", "tower"].includes(d.course) ? d.course : "factory";
-  state.comeback = ["pure", "natural", "boost"].includes(d.comeback) ? d.comeback : "pure";
+  state.comeback = "pure"; state.boostMidEnabled = d.boostMidEnabled !== false; state.boostFinalEnabled = d.boostFinalEnabled !== false;
   state.cameraMode = ["auto", "overview", "track"].includes(d.cameraMode) ? d.cameraMode : "auto";
   state.trackedNum = Number.isFinite(Number(d.trackedNum)) && d.trackedNum !== null ? Number(d.trackedNum) : null;
   state.drawCount = clamp(Number(d.drawCount) || 1, 1, 10); state.teamCount = clamp(Number(d.teamCount) || 4, 2, 8);
@@ -346,7 +346,7 @@ function bindEvents() {
   document.querySelectorAll(".mode-card").forEach((b) => b.addEventListener("click", () => { audio.sfx("ui"); selectMode(b.dataset.mode); }));
   document.querySelectorAll("[data-input-type]").forEach((b) => b.addEventListener("click", () => setInputType(b.dataset.inputType)));
   const segment = (attr, key) => document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => { if (state.running) return; state[key] = b.dataset[attr]; audio.sfx("ui"); updateSegmented(); state.courseSeed = newSeed(); resizeCanvas(); drawIdle(); saveLastConfig(); }));
-  segment("style", "style"); segment("comeback", "comeback");
+  segment("style", "style");
   document.querySelectorAll("[data-camera]").forEach((b) => b.addEventListener("click", () => { state.cameraMode = b.dataset.camera; if (state.cameraMode === "track" && state.trackedNum == null && state.participants.length) { state.trackedNum = state.participants[0]; els.trackSelect.value = String(state.trackedNum); } updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); }));
   els.trackSelect.addEventListener("change", () => { state.trackedNum = els.trackSelect.value === "" ? null : Number(els.trackSelect.value); if (state.trackedNum != null) state.cameraMode = "track"; updateSegmented(); saveLastConfig(); if (!state.running) drawIdle(); });
   [els.minNum, els.maxNum, els.excludeInput, els.directInput].forEach((el) => el.addEventListener("input", () => { if (!state.running) { refreshParticipants(); drawIdle(); } }));
@@ -383,9 +383,12 @@ async function init() {
   initResults({ resultBoard: els.resultBoard, stageLabel: els.stageLabel, closeResultBtn: els.closeResultBtn }, { again: startDraw, notify });
   Object.assign(host, {
     setStatus, setStageLabel, renderLiveRanks,
+    chaseNotice(event) { const phase = { freeze:'시간 정지', pan:'카메라 이동', charge:'점화', boost:'발진', return:'경기 재개' }[event.phase]; extra.raceNotice.textContent = event.type === 'mid' ? `하위 ${event.plans.length}명 추격 부스터 · ${phase}` : `꼴등 ${event.plans[0].num}번 부스터 · ${phase}`; },
     raceNotice(event) { extra.raceNotice.textContent = event.type === 'lead' ? `선두 교체 · ${displayName(event.previous)} → ${displayName(event.num)}` : `${displayName(event.num)} · ${event.gain}계단 상승! ${event.from}위 → ${event.to}위`; }, setResultCount: (n) => (els.statResults.textContent = `${n}명`),
     showRaceResults, showTeamResults, showOrderResults, afterRun, notify, celebrate, countdown
   });
+  extra.boostMidToggle.addEventListener('change', () => { state.boostMidEnabled = extra.boostMidToggle.checked; saveLastConfig(); });
+  extra.boostFinalToggle.addEventListener('change', () => { state.boostFinalEnabled = extra.boostFinalToggle.checked; saveLastConfig(); });
   extra.courseSelect.addEventListener('change', () => { if (state.running) return; state.course = extra.courseSelect.value; resetStageForMode(); saveLastConfig(); });
   extra.cheerSelect.addEventListener('change', () => { state.cheerNum = extra.cheerSelect.value ? Number(extra.cheerSelect.value) : null; if (state.cameraMode === 'track') state.trackedNum = state.cheerNum; updateSegmented(); });
   extra.followBtn.addEventListener('click', () => { if (state.cheerNum == null) { notify('응원할 번호를 먼저 선택하세요.'); return; } state.cameraMode = state.cameraMode === 'track' ? 'auto' : 'track'; state.trackedNum = state.cheerNum; updateSegmented(); });

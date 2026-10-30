@@ -137,7 +137,7 @@ function drawCourse() {
     const y = mapY(section.y) + 4; pix.dashedLine(mapX(30), y, mapX(state.W - 30), y, PAL.steel0, 3, 5);
   }
   for (const r of state.rails) {
-    const cy = (r.y1 + r.y2) / 2; if (cy < top - 200 || cy > bottom + 200) continue;
+    if (Math.max(r.y1,r.y2)<top || Math.min(r.y1,r.y2)>bottom) continue;
     thickLine(mapX(r.x1), mapY(r.y1), mapX(r.x2), mapY(r.y2), r.w, RAIL_COLORS[r.finish ? "finish" : r.railType || "normal"]);
   }
   const pr = Math.max(1, Math.round(5.2 * u));

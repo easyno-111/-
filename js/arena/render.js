@@ -1,11 +1,11 @@
-import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.7';
+import { wheelSegments, wheelHubRadius } from './wheel-geometry.js?v=8.8';
 // 도트 렌더러: 저해상도 월드 버퍼 + 원본 해상도 HUD(네오둥근모) 2층 구조
-import { clamp, makeRand, lerp } from "./util.js?v=8.7";
-import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.7";
-import { pix, fx } from "./core.js?v=8.7";
-import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.7";
-import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.7";
-import { secureShuffle } from "./util.js?v=8.7";
+import { clamp, makeRand, lerp } from "./util.js?v=8.8";
+import { state, MODE_INFO, displayName, shortName } from "./state.js?v=8.8";
+import { pix, fx } from "./core.js?v=8.8";
+import { PAL, RAIL_COLORS, shades, BALL_PALETTES } from "./palette.js?v=8.8";
+import { finishGeometry, buildCourse, raceWorldHeight, teamWorldHeight, prepareTeamBins, layoutTeamBins, buildTeamCourse } from "./courses.js?v=8.8";
+import { secureShuffle } from "./util.js?v=8.8";
 
 const FONT = "NeoDunggeunmo, 'Press Start 2P', monospace";
 const els = { canvas: null, hud: null, stage: null };
@@ -110,21 +110,26 @@ function thickLine(x1, y1, x2, y2, w, colors) {
   pix.line(x1, y1 - ((t >> 1) + 0), x2, y2 - ((t >> 1) + 0), colors.glow, 1);
 }
 function drawFinalGateWorld(){
-  const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange(),u=unit();
-  for(const lane of g.lanes){
-    if(g.startY+400<top||g.startY>bottom)continue;
-    for(let y=g.startY+160;y<g.startY+680;y+=100){
-      const x=mapX(lane.x),py=mapY(y);if(lane.type==='speed')for(let i=0;i<3;i++)pix.line(x-3+i,py+i,x+3-i,py+i,lane.color,1);
+  const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange();
+  // Filled wall islands make the physical branches readable, including on phones.
+  for(const island of g.islands){
+    const points=island.points.map(p=>({x:mapX(p.x),y:mapY(p.y)}));
+    const lo=Math.max(0,Math.min(...points.map(p=>p.y))),hi=Math.min(pix.h,Math.max(...points.map(p=>p.y)));
+    for(let y=Math.ceil(lo);y<hi;y++){
+      const xs=[];for(let i=0,j=points.length-1;i<points.length;j=i++){
+        const a=points[j],b=points[i];if((a.y>y)!==(b.y>y))xs.push(a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y));
+      }
+      xs.sort((a,b)=>a-b);for(let i=0;i+1<xs.length;i+=2)pix.ditherRect(Math.ceil(xs[i]),y,Math.floor(xs[i+1]-xs[i]),1,PAL.steel0,9);
     }
   }
 }
 function drawFinalGateLabels(){
   const g=state.finalGate;if(!g)return;const [top,bottom]=visibleRange();
   if(g.startY+100>top&&g.startY+100<bottom)for(const lane of g.lanes){
-    const label={speed:'고속',fork:'갈림길',wheel:'회전'}[lane.type];
-    text(`${lane.num} ${label}`,hudX(lane.x),hudY(g.startY+70),{size:state.W<600?12:14,color:lane.color});
+    const label=lane.type==='zigzag'?'지그재그':'분기';text(`${lane.num} ${label}`,hudX(lane.x),hudY(g.startY+85),{size:state.W<600?12:14,color:lane.color});
   }
-  if(g.kicker.y>top&&g.kicker.y<bottom)text('FINAL BOUNCE',hudX(state.W/2),hudY(g.kicker.y)-72,{size:12,color:PAL.gold2});
+  for(const [i,door] of g.doors.entries())if(door.y>top&&door.y<bottom)text(`회전문 ${i+1}`,hudX(door.x),hudY(door.y)-door.r-23,{size:11,color:door.color});
+  if(g.kicker.y>top&&g.kicker.y<bottom)text('FINAL BOUNCE',hudX(state.W/2),hudY(g.kicker.y)-100,{size:12,color:PAL.gold2});
 }
 function drawCourse() {
   const [top, bottom] = visibleRange(), u = unit();

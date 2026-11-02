@@ -1,4 +1,5 @@
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.7';
+import { pointInMazeIsland } from './final-gate.js?v=8.8';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.8';
 
 function segmentBlocks(x, y, r, segment) {
   const p = closestOnSegment(x, y, segment);
@@ -6,6 +7,7 @@ function segmentBlocks(x, y, r, segment) {
 }
 export function clearLanding(s, ball, x, y, reserved = []) {
   const r = ball.r;
+  if(s.finalGate?.islands?.some(island=>pointInMazeIsland(x,y,island)))return false;
   if (x < 20 + r + 4 || x > s.W - 20 - r - 4 || y < 28 || y > s.worldH - 124) return false;
   for (const c of [...s.pegs, ...s.bumpers]) if (Math.hypot(x-c.x,y-c.y) < r+c.r+4) return false;
   for (const w of s.wheels) {

@@ -1,8 +1,8 @@
-import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.7';
+import { FINAL_GATE_HEIGHT, buildFinalGate } from './final-gate.js?v=8.8';
 // 코스 생성: 핀 숲, 갈림길, 타이밍 게이트, 범퍼, 회전봉, 혼합실, 결승 깔때기, 팀 통
-import { clamp, makeRand } from "./util.js?v=8.7";
-import { state } from "./state.js?v=8.7";
-import { PAL, TEAM_COLORS } from "./palette.js?v=8.7";
+import { clamp, makeRand } from "./util.js?v=8.8";
+import { state } from "./state.js?v=8.8";
+import { PAL, TEAM_COLORS } from "./palette.js?v=8.8";
 
 export function raceMainHeight() {
   if (state.course === 'factory') return state.style === 'tension' ? 3600 : 2600;
@@ -27,7 +27,7 @@ export function buildCourse() {
   buildArenaCourse(rand, W, worldH-FINAL_GATE_HEIGHT);
   state.finalGate=buildFinalGate(W,worldH-FINAL_GATE_HEIGHT,rand);
   state.rails.push(...state.finalGate.rails);state.wheels.push(...state.finalGate.wheels);
-  state.sections.push({y:state.finalGate.startY-60,label:'마지막 관문 · 고속 / 갈림길 / 회전 통로'}, {y:state.finalGate.mergeY-35,label:'하나의 통로로 합류'}, {y:state.finalGate.kicker.y-85,label:'최종 회전 범퍼 · 끝까지 승부!'});
+  state.sections.push({y:state.finalGate.startY-60,label:'미로 진입 · 분기와 지그재그'}, {y:state.finalGate.junctionY-30,label:'회전문 교차로 · 경로 다시 선택'}, {y:state.finalGate.startY+650,label:'마지막 갈림길'}, {y:state.finalGate.mergeY-35,label:'하나의 통로로 합류'}, {y:state.finalGate.kicker.y-85,label:'최종 회전 범퍼 · 끝까지 승부!'});
   if (state.comeback === "boost") addBoosters(W, worldH);
   buildFinishFunnel(W, worldH);
 }

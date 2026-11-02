@@ -1,11 +1,11 @@
-import { updateFinalGate } from './final-gate.js?v=8.7';
-import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.7';
+import { updateFinalGate } from './final-gate.js?v=8.8';
+import { wheelSegments, wheelHubRadius, closestOnSegment } from './wheel-geometry.js?v=8.8';
 // 핀볼 물리: 공, 핀, 범퍼, 회전봉, 타이밍 게이트, 레일, 공끼리 충돌, 끼임 구조
-import { clamp } from "./util.js?v=8.7";
-import { state } from "./state.js?v=8.7";
-import { fx, audio } from "./core.js?v=8.7";
-import { BALL_PALETTES } from "./palette.js?v=8.7";
-import { finishGeometry } from "./courses.js?v=8.7";
+import { clamp } from "./util.js?v=8.8";
+import { state } from "./state.js?v=8.8";
+import { fx, audio } from "./core.js?v=8.8";
+import { BALL_PALETTES } from "./palette.js?v=8.8";
+import { finishGeometry } from "./courses.js?v=8.8";
 
 export function makePhysicsBall(num, x, y, r, i, now = performance.now()) {
   return {

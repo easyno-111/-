@@ -1,6 +1,6 @@
-import { clamp } from './util.js?v=8.7';
-import { clearLanding } from './landing.js?v=8.7';
-export { clearLanding } from './landing.js?v=8.7';
+import { clamp } from './util.js?v=8.8';
+import { clearLanding } from './landing.js?v=8.8';
+export { clearLanding } from './landing.js?v=8.8';
 
 function landing(s, ball, nominal, maxY, reserved) {
   if(maxY<=ball.y+8)return{x:ball.x,y:ball.y};
